@@ -1,9 +1,6 @@
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-// Usamos un nombre de base de datos específico para nuestra aplicación.
-const DB_NAME = 'schemas-work-db';
-
 /**
  * Crea y devuelve un proveedor de persistencia para un documento Y.js específico.
  * Este servicio encapsula la lógica de configuración de y-indexeddb.
