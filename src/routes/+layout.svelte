@@ -1,11 +1,13 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
-
-	let { children } = $props();
+  // Importamos el ADN visual de nuestra aplicación.
+  // Al hacerlo en el layout raíz, nos aseguramos de que estos estilos
+  // estén disponibles globalmente en cada página.
+  import '$lib/styles/app.css';
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-</svelte:head>
-
-{@render children?.()}
+<!--
+  El componente <slot /> es un marcador de posición especial de SvelteKit.
+  Aquí es donde se renderizará el contenido de la página actual 
+  (por ejemplo, +page.svelte) o de layouts anidados.
+-->
+<slot />

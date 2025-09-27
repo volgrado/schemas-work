@@ -1,0 +1,50 @@
+# Nombre del workflow que aparecerá en la pestaña "Actions" de GitHub.
+name: CI - Build and Test
+
+# Define cuándo se debe ejecutar este workflow.
+on:
+  push:
+    branches: [main] # Se ejecuta en cada push a la rama 'main'.
+
+# Define los trabajos (jobs) que se ejecutarán.
+jobs:
+  # Nombramos nuestro único job 'build'.
+  build:
+    # El tipo de máquina virtual en la que se ejecutará el job. 'ubuntu-latest' es el estándar.
+    runs-on: ubuntu-latest
+
+    # Secuencia de pasos que componen el job.
+    steps:
+      # 1. Checkout del código
+      # Este paso descarga una copia de tu repositorio en la máquina virtual.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configuración de Node.js
+      # Instala la versión de Node.js que especificamos.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3. Instalación de dependencias
+      # Usa 'npm ci' que es más rápido y seguro para entornos de CI, ya que
+      # instala las versiones exactas del archivo package-lock.json.
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Verificación de calidad de código (Linting)
+      # Ejecuta el script 'lint' definido en package.json.
+      - name: Run linter
+        run: npm run lint
+
+      # 5. Ejecución de tests unitarios
+      # Ejecuta el script 'test' definido en package.json.
+      - name: Run unit tests
+        run: npm run test
+
+      # 6. Compilación del proyecto para producción
+      # Ejecuta el script 'build' para generar la aplicación estática.
+      # Si algún paso anterior falla, este no se ejecutará.
+      - name: Build project
+        run: npm run build

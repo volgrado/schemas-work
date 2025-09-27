@@ -1,0 +1,53 @@
+/* 1. CARGA DE LA FUENTE LOCAL
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900; /* Rango de grosores para la fuente variable */
+  font-display: swap; /* Mejora el rendimiento de carga percibido */
+  src: url('/fonts/Inter-VariableFont_slnt,wght.woff2') format('woff2');
+}
+
+/* 2. DEFINICIÓN DE VARIABLES GLOBALES (DESIGN TOKENS)
+   ========================================================================== */
+
+:root {
+  /* Paleta de Colores Minimalista */
+  --color-background: #ffffff;
+  --color-text: #111111;
+  --color-accent: #007aff; /* Azul estándar de Apple, un buen punto de partida */
+  --color-gray-100: #f2f2f2; /* Gris muy claro para fondos sutiles */
+  --color-gray-500: #8e8e93; /* Gris medio para texto secundario */
+
+  /* Tipografía */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+  /* Escala de Espaciado (basada en una rejilla de 4px) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 64px;
+}
+
+/* 3. RESETEO Y ESTILOS BASE PARA EL BODY
+   ========================================================================== */
+
+body {
+  margin: 0;
+  padding: 0;
+  
+  /* Aplicación de las variables globales */
+  font-family: var(--font-main);
+  background-color: var(--color-background);
+  color: var(--color-text);
+
+  /* Mejoras de renderizado de texto para calidad profesional */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
