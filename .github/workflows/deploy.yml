@@ -1,43 +1,35 @@
-# Nombre del workflow que aparecerá en la pestaña "Actions" de GitHub.
 name: CI - Build and Test
 
-# Define cuándo se debe ejecutar este workflow.
 on:
   push:
-    branches: [main] # Se ejecuta en cada push a la rama 'main'.
+    branches: [main]
 
-# Define los trabajos (jobs) que se ejecutarán.
 jobs:
-  # Nombramos nuestro único job 'build'.
   build:
-    # El tipo de máquina virtual en la que se ejecutará el job. 'ubuntu-latest' es el estándar.
     runs-on: ubuntu-latest
 
-    # Secuencia de pasos que componen el job.
     steps:
-      # 1. Checkout del código
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configuración de Node.js
-      # CORRECCIÓN: Usamos Node.js v20, que es la versión LTS actual y compatible.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # 3. Instalación de dependencias
       - name: Install dependencies
         run: npm ci
 
-      # 4. Verificación de calidad de código (Linting)
+      # NUEVO PASO: Instalar los navegadores para Playwright
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
       - name: Run linter
         run: npm run lint
 
-      # 5. Ejecución de tests unitarios
-      - name: Run unit tests
+      # El nombre del paso de test ha sido actualizado para mayor claridad
+      - name: Run E2E and Unit Tests
         run: npm run test
 
-      # 6. Compilación del proyecto para producción
       - name: Build project
         run: npm run build
