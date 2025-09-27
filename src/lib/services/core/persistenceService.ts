@@ -13,7 +13,7 @@ const DB_NAME = 'schemas-work-db';
  */
 export function getDocumentProvider(docId: string) {
   const ydoc = new Y.Doc();
-  
+
   // El proveedor de persistencia se encarga de:
   // 1. Cargar el estado del documento desde IndexedDB cuando se crea.
   // 2. Guardar automáticamente cualquier cambio en el documento a IndexedDB.

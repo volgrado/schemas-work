@@ -36,8 +36,14 @@ export async function getOrCreateIdentity(): Promise<Identity> {
   );
 
   // Exportamos las claves en formato JWK (JSON Web Key) para poder almacenarlas como texto.
-  const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
-  const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
+  const publicKeyJwk = await window.crypto.subtle.exportKey(
+    'jwk',
+    keyPair.publicKey
+  );
+  const privateKeyJwk = await window.crypto.subtle.exportKey(
+    'jwk',
+    keyPair.privateKey
+  );
 
   const newIdentity: Identity = {
     publicKey: JSON.stringify(publicKeyJwk),
