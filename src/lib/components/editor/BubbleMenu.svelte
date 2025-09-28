@@ -4,6 +4,7 @@
   import type { Editor } from '@tiptap/core';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { computePosition, flip, shift, offset } from '@floating-ui/dom';
+  import { Toaster } from 'svelte-sonner';
 
   export let editor: Editor;
 
@@ -93,6 +94,8 @@
     editor.off('selectionUpdate', handleUpdate);
   });
 </script>
+
+<Toaster position="bottom-center" />
 
 <div
   class="bubble-menu-container"

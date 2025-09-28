@@ -1,11 +1,11 @@
-<!-- src/lib/components/ui/CommandBar.svelte (VERSIÓN FINAL CON STORE) -->
+<!-- src/lib/components/ui/CommandBar.svelte (VERSIÓN FINAL SPRINT 3 - CARPETAS) -->
 <script lang="ts">
   // --- Svelte Core ---
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { z } from 'zod';
-
   import { get } from 'svelte/store';
+  import { toast } from 'svelte-sonner';
 
   // --- Componentes de UI ---
   import Icon from '$lib/components/ui/Icon.svelte';
@@ -32,10 +32,19 @@
   } from '$lib/types';
 
   // --- Estado Interno del Componente ---
-  let schemas: SchemaMetadata[] = [];
+  let items: SchemaMetadata[] = [];
   let currentView: 'main' | 'list-schemas' | 'ai-actions' = 'main';
+
+  // Estado para navegación y gestión de ítems
+  let currentParentId: string | null = null;
+  let breadcrumbs: SchemaMetadata[] = [];
+  let editingItemId: string | null = null;
+  let renameInput: HTMLInputElement;
+
+  // Estado para Modales
   let showPasswordModal = false;
   let passwordInput = '';
+  let passwordModalAction: 'export' | 'import' = 'export';
   let showAiHelper = false;
   let helperConfig = {
     title: '',
@@ -70,8 +79,8 @@
     },
     {
       id: 'switch-schema',
-      label: 'Cambiar de Esquema...',
-      icon: 'file-text' as const,
+      label: 'Explorar Esquemas...',
+      icon: 'folder' as const,
       isEnabled: true,
     },
     {
@@ -127,26 +136,29 @@
   ];
 
   // --- Manejadores de Eventos ---
+
   async function handleAction(actionId: string) {
     switch (actionId) {
       case 'new-schema':
-        await documentStore.createNewDocument();
+        // Creamos el nuevo esquema en la carpeta raíz por defecto
+        await documentStore.createNewDocument('Nuevo Esquema', undefined, null);
         commandBarStore.close();
         break;
       case 'switch-schema':
-        schemas = await directoryService.listSchemas();
-        currentView = 'list-schemas';
+        await openSchemaList();
         break;
       case 'ai-submenu':
         currentView = 'ai-actions';
         break;
       case 'export-vault':
+        passwordModalAction = 'export';
         commandBarStore.close();
         showPasswordModal = true;
         break;
       case 'import-vault':
+        passwordModalAction = 'import';
         commandBarStore.close();
-        await backupService.importVault();
+        showPasswordModal = true;
         break;
       case 'start-review':
         reviewStore.startReview();
@@ -160,9 +172,7 @@
   }
 
   function handleAiAction(actionId: string) {
-    commandBarStore.close(); // Cerramos la CommandBar para mostrar el modal de ayuda
-
-    // --- Acción Global: Crear Esquema ---
+    commandBarStore.close();
     if (actionId === 'create-schema-from-text') {
       helperConfig = {
         title: 'Asistente: Crear Esquema desde Texto',
@@ -202,22 +212,22 @@
               { type: 'bulletList', content: buildTiptapContent(data.nodes) },
             ],
           };
-          documentStore.createNewDocument(data.title, tiptapContent);
+          documentStore.createNewDocument(
+            data.title,
+            tiptapContent,
+            currentParentId
+          );
         },
       };
       showAiHelper = true;
       return;
     }
-
-    // --- Acciones Contextuales (requieren un nodo seleccionado) ---
     const editorState = get(editorStore);
     const editor = editorState.instance;
     if (!editor || editorState.selectedNodePos === null) return;
-
     const currentPos = editorState.selectedNodePos;
     const node = editor.state.doc.nodeAt(currentPos);
     if (!node) return;
-
     switch (actionId) {
       case 'generate-flashcards':
         helperConfig = {
@@ -239,7 +249,6 @@
         };
         showAiHelper = true;
         break;
-
       case 'expand-node':
         helperConfig = {
           title: 'Asistente: Expandir Nodo',
@@ -287,28 +296,160 @@
   async function handlePasswordSubmit() {
     if (!passwordInput) return;
     try {
-      await backupService.exportVault(passwordInput);
+      if (passwordModalAction === 'export') {
+        await backupService.exportVault(passwordInput);
+        toast.success('Bóveda exportada correctamente.');
+      } else {
+        await backupService.importVault(passwordInput);
+      }
     } catch (error) {
-      console.error('Error al exportar la bóveda:', error);
+      console.error(
+        `Error durante la operación de ${passwordModalAction}:`,
+        error
+      );
     } finally {
       showPasswordModal = false;
       passwordInput = '';
     }
   }
 
-  function handleSchemaSelect(schemaId: string) {
-    documentStore.loadDocument(schemaId);
-    commandBarStore.close();
+  // --- Lógica de Navegación y Gestión de Items ---
+
+  async function openSchemaList() {
+    currentParentId = null;
+    breadcrumbs = [];
+    await fetchItemsForCurrentView();
+    currentView = 'list-schemas';
+  }
+
+  async function fetchItemsForCurrentView() {
+    items = await directoryService.listItemsByParentId(currentParentId);
+    items.sort((a, b) => {
+      if (a.type === 'folder' && b.type === 'schema') return -1;
+      if (a.type === 'schema' && b.type === 'folder') return 1;
+      return a.title.localeCompare(b.title);
+    });
+  }
+
+  async function handleItemClick(item: SchemaMetadata) {
+    if (editingItemId === item.id) return;
+
+    if (item.type === 'folder') {
+      currentParentId = item.id;
+      breadcrumbs = [...breadcrumbs, item];
+      await fetchItemsForCurrentView();
+    } else {
+      documentStore.loadDocument(item.id);
+      commandBarStore.close();
+    }
+  }
+
+  async function navigateToBreadcrumb(folderId: string | null, index: number) {
+    currentParentId = folderId;
+    breadcrumbs = breadcrumbs.slice(0, index);
+    await fetchItemsForCurrentView();
+  }
+
+  async function handleNewFolder() {
+    const folderName = prompt('Nombre de la nueva carpeta:');
+    if (folderName?.trim()) {
+      await directoryService.createFolder(folderName.trim(), currentParentId);
+      await fetchItemsForCurrentView();
+      toast.success(`Carpeta "${folderName.trim()}" creada.`);
+    }
+  }
+
+  async function startEditing(item: SchemaMetadata) {
+    editingItemId = item.id;
+    await tick();
+    renameInput?.focus();
+    renameInput?.select();
+  }
+
+  async function commitRename(item: SchemaMetadata, newTitle: string) {
+    editingItemId = null;
+    const oldTitle = item.title;
+    const trimmedTitle = newTitle.trim();
+    if (trimmedTitle === '' || trimmedTitle === oldTitle) return;
+
+    item.title = trimmedTitle;
+    items = items;
+
+    try {
+      await directoryService.updateItemMetadata(item.id, {
+        title: trimmedTitle,
+      });
+      toast.success(`'${oldTitle}' renombrado a '${trimmedTitle}'.`);
+      if (item.type === 'schema' && get(documentStore).docId === item.id) {
+        documentStore.updateActiveDocumentMetadata({ title: trimmedTitle });
+      }
+    } catch (error) {
+      toast.error('No se pudo renombrar el ítem.');
+      item.title = oldTitle;
+      items = items;
+      console.error(error);
+    }
+  }
+
+  async function handleRenameKeyDown(
+    event: KeyboardEvent,
+    item: SchemaMetadata
+  ) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await commitRename(item, (event.target as HTMLInputElement).value);
+    } else if (event.key === 'Escape') {
+      editingItemId = null;
+    }
+  }
+
+  async function handleDeleteItem(item: SchemaMetadata) {
+    const itemType = item.type === 'folder' ? 'La carpeta' : 'El esquema';
+    toast.warning(`¿Eliminar "${item.title}"?`, {
+      description: `${itemType} y todo su contenido se eliminarán permanentemente.`,
+      action: {
+        label: 'Eliminar',
+        onClick: async () => {
+          try {
+            const isDeletingActiveDoc = get(documentStore).docId === item.id;
+            await directoryService.deleteItem(item.id);
+            await fetchItemsForCurrentView();
+            toast.success('Ítem eliminado.');
+
+            if (isDeletingActiveDoc) {
+              const allSchemas = (await directoryService.getAllItems()).filter(
+                (i) => i.type === 'schema'
+              );
+              if (allSchemas.length > 0) {
+                await documentStore.loadDocument(allSchemas[0].id);
+              } else {
+                await documentStore.createNewDocument(
+                  'Mi Primer Esquema',
+                  undefined,
+                  null
+                );
+              }
+            }
+          } catch (error) {
+            toast.error('No se pudo eliminar el ítem.');
+            console.error(error);
+          }
+        },
+      },
+    });
   }
 
   function handleKeydown(event: KeyboardEvent) {
     if (showPasswordModal || showAiHelper) return;
-
     if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       commandBarStore.toggle();
     }
     if (event.key === 'Escape' && $commandBarStore) {
+      if (editingItemId) {
+        editingItemId = null;
+        return;
+      }
       if (currentView !== 'main') {
         currentView = 'main';
       } else {
@@ -323,13 +464,17 @@
 
 <!-- Modales -->
 <Modal
-  title="Encriptar y Exportar Bóveda"
+  title={passwordModalAction === 'export'
+    ? 'Encriptar Bóveda'
+    : 'Importar Bóveda'}
   show={showPasswordModal}
   onClose={() => (showPasswordModal = false)}
 >
   <form on:submit|preventDefault={handlePasswordSubmit}>
     <p>
-      Introduce una contraseña segura para encriptar tu archivo de respaldo.
+      {passwordModalAction === 'export'
+        ? 'Introduce una contraseña segura.'
+        : 'Introduce la contraseña del respaldo.'}
     </p>
     <input
       type="password"
@@ -338,7 +483,9 @@
       required
     />
     <div class="modal-actions">
-      <Button type="submit">Exportar</Button>
+      <Button type="submit"
+        >{passwordModalAction === 'export' ? 'Exportar' : 'Importar'}</Button
+      >
     </div>
   </form>
 </Modal>
@@ -364,8 +511,11 @@
     aria-label="Cerrar menú"
   ></button>
 
-  <div class="panel" transition:fly={{ y: 20, duration: 200 }}>
-    <!-- Vistas del panel -->
+  <div
+    class="panel"
+    class:is-list-view={currentView === 'list-schemas'}
+    transition:fly={{ y: 20, duration: 200 }}
+  >
     {#if currentView === 'main'}
       <div
         class="action-list"
@@ -384,21 +534,85 @@
         {/each}
       </div>
     {:else if currentView === 'list-schemas'}
-      <div
-        class="action-list"
-        in:fade={{ duration: 100, delay: 100 }}
-        out:fade={{ duration: 100 }}
-      >
-        {#each schemas as schema}
-          <button
-            class="action-button"
-            on:click={() => handleSchemaSelect(schema.id)}
+      <header class="list-header">
+        <div class="breadcrumbs">
+          <button on:click={() => navigateToBreadcrumb(null, 0)}>Raíz</button>
+          {#each breadcrumbs as crumb, i (crumb.id)}
+            <span>/</span>
+            <button on:click={() => navigateToBreadcrumb(crumb.id, i + 1)}
+              >{crumb.title}</button
+            >
+          {/each}
+        </div>
+        <Button on:click={handleNewFolder} size="sm" variant="secondary">
+          <Icon name="plus" size={14} /> Nueva Carpeta
+        </Button>
+      </header>
+
+      <div class="action-list list-view">
+        {#if items.length === 0}
+          <div class="empty-state-list">Esta carpeta está vacía.</div>
+        {/if}
+        {#each items as item (item.id)}
+          <div
+            class="schema-item"
+            on:click={() => handleItemClick(item)}
+            on:keydown={(e) => e.key === 'Enter' && handleItemClick(item)}
+            role="button"
+            tabindex="0"
           >
-            <Icon name="file-text" size={18} />
-            <span>{schema.title}</span>
-          </button>
+            {#if editingItemId === item.id}
+              <div class="schema-edit-wrapper">
+                <Icon
+                  name={item.type === 'folder' ? 'folder' : 'file-text'}
+                  size={18}
+                />
+                <input
+                  type="text"
+                  class="rename-input"
+                  value={item.title}
+                  bind:this={renameInput}
+                  on:blur={(e) => commitRename(item, e.currentTarget.value)}
+                  on:keydown={(e) => handleRenameKeyDown(e, item)}
+                  on:click|stopPropagation
+                />
+              </div>
+            {:else}
+              <div class="item-main-content">
+                <Icon
+                  name={item.type === 'folder' ? 'folder' : 'file-text'}
+                  size={18}
+                />
+                <span>{item.title}</span>
+              </div>
+              <div class="schema-actions">
+                <button
+                  class="icon-button"
+                  on:click|stopPropagation={() => startEditing(item)}
+                  aria-label="Renombrar"
+                >
+                  <Icon name="pen-tool" size={16} />
+                </button>
+                <button
+                  class="icon-button"
+                  on:click|stopPropagation={() => handleDeleteItem(item)}
+                  aria-label="Eliminar"
+                >
+                  <Icon name="trash-2" size={16} />
+                </button>
+              </div>
+            {/if}
+          </div>
         {/each}
       </div>
+
+      <footer class="panel-footer">
+        <hr class="separator" />
+        <button class="action-button" on:click={() => (currentView = 'main')}>
+          <Icon name="x" size={18} />
+          <span>Volver al menú principal</span>
+        </button>
+      </footer>
     {:else if currentView === 'ai-actions'}
       <div
         class="action-list"
@@ -438,7 +652,6 @@
     --scrollbar-thumb: rgba(0, 0, 0, 0.1);
     --scrollbar-thumb-dark: rgba(255, 255, 255, 0.1);
   }
-
   .overlay {
     position: fixed;
     inset: 0;
@@ -447,7 +660,6 @@
     z-index: 99;
     border: none;
   }
-
   .panel {
     position: fixed;
     top: 15%;
@@ -456,7 +668,6 @@
     width: 100%;
     max-width: 640px;
     max-height: 70vh;
-    padding: 12px 14px;
     box-sizing: border-box;
     background-color: var(--panel-bg-light);
     border: 1px solid var(--panel-border-light);
@@ -469,27 +680,38 @@
     z-index: 100;
     display: flex;
     flex-direction: column;
+    padding: 12px 14px;
   }
-
   .action-list {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
     gap: 2px;
-    padding: 4px 0;
+  }
+  .panel.is-list-view {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+    padding: 6px;
+  }
+  .action-list.list-view {
+    overflow-y: auto;
+    padding: 0 8px;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
-
-  .action-list::-webkit-scrollbar {
+  .action-list.list-view::-webkit-scrollbar {
     width: 6px;
   }
-
-  .action-list::-webkit-scrollbar-thumb {
+  .action-list.list-view::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-thumb);
     border-radius: 4px;
   }
-
+  .panel-footer {
+    padding-top: var(--space-xs);
+  }
+  .panel-footer .separator {
+    margin: 0;
+  }
   .action-button {
     display: flex;
     align-items: center;
@@ -509,51 +731,149 @@
       background-color 0.2s ease,
       transform 0.1s ease;
   }
-
   .action-button:hover:not(:disabled),
   .action-button:focus-visible {
-    /* Usamos focus-visible para accesibilidad con teclado */
     background-color: var(--btn-hover-bg);
-    /* El texto del elemento seleccionado se vuelve más audaz */
     font-weight: 600;
   }
-
-  /* El icono dentro del botón obtiene estilos especiales al interactuar */
   .action-button :global(svg) {
-    /* Preparamos el icono para la animación */
     transition:
       transform 0.2s ease,
       color 0.2s ease;
   }
-
   .action-button:hover:not(:disabled) :global(svg),
   .action-button:focus-visible :global(svg) {
-    /* El icono cambia al color de acento de la marca */
     color: var(--color-accent);
-    /* El icono hace un pequeño "pop" para dar feedback */
     transform: scale(1.1);
   }
-
-  .action-button:hover:not(:disabled) {
-    background-color: var(--btn-hover-bg);
-  }
-
   .action-button:active:not(:disabled) {
     transform: scale(0.985);
   }
-
   .action-button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-
+  .schema-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+  }
+  .schema-item:hover {
+    background-color: var(--btn-hover-bg);
+  }
+  .item-main-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    flex-grow: 1;
+    min-width: 0; /* Prevents text overflow issues */
+  }
+  .item-main-content span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .schema-actions {
+    display: flex;
+    align-items: center;
+    padding-right: 12px;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .schema-item:hover .schema-actions {
+    opacity: 1;
+  }
+  .icon-button {
+    display: grid;
+    place-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    color: var(--color-gray-500);
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .icon-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-text);
+  }
+  .schema-edit-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .rename-input {
+    flex-grow: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--font-main);
+    font-size: 0.925rem;
+    font-weight: 500;
+    color: var(--color-text);
+    padding: 0;
+    margin: 0;
+    caret-color: var(--color-accent);
+  }
+  .empty-state-list {
+    text-align: center;
+    padding: var(--space-lg);
+    color: var(--color-gray-500);
+    font-style: italic;
+  }
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px var(--space-sm) 8px;
+    border-bottom: 1px solid var(--panel-border-light);
+    margin-bottom: var(--space-xs);
+  }
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .breadcrumbs button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray-500);
+    padding: 4px;
+    border-radius: 4px;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+  .breadcrumbs button:hover {
+    color: var(--color-text);
+    background-color: var(--btn-hover-bg);
+  }
+  .breadcrumbs span {
+    color: var(--color-gray-500);
+  }
   .modal-actions {
     margin-top: var(--space-md);
     display: flex;
     justify-content: flex-end;
   }
-
-  input[type='password'] {
+  input[type='password'],
+  input[type='text'] {
     box-sizing: border-box;
     width: 100%;
     padding: var(--space-sm);
@@ -565,17 +885,13 @@
     background-color: rgba(0, 0, 0, 0.04);
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   }
-
   input:focus {
     outline: 2px solid var(--color-accent);
   }
-
   .separator {
     border: none;
     border-top: 1px solid var(--panel-border-light);
-    margin: var(--space-xs) 0;
   }
-
   @media (max-width: 768px) {
     .panel {
       top: auto;
@@ -587,10 +903,6 @@
       width: 100%;
       max-width: none;
       border-radius: 20px 20px 0 0;
-      border: 1px solid var(--panel-border-light);
-      background-color: var(--panel-bg-light);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       padding: var(--space-md);
       padding-bottom: env(safe-area-inset-bottom, var(--space-md));
       transform: none;
@@ -608,7 +920,6 @@
       gap: 4px;
     }
   }
-
   @media (prefers-color-scheme: dark) {
     .panel {
       background-color: var(--panel-bg-dark);
@@ -620,16 +931,34 @@
     .action-button:hover:not(:disabled) {
       background-color: var(--btn-hover-bg-dark);
     }
-    .action-list::-webkit-scrollbar-thumb {
+    .action-list.list-view::-webkit-scrollbar-thumb {
       background-color: var(--scrollbar-thumb-dark);
     }
-    input[type='password'] {
+    input[type='password'],
+    input[type='text'] {
       background-color: rgba(255, 255, 255, 0.08);
       color: white;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     }
     .separator {
       border-top-color: var(--panel-border-dark);
+    }
+    .schema-item:hover {
+      background-color: var(--btn-hover-bg-dark);
+    }
+    .icon-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    .rename-input {
+      color: white;
+    }
+    .list-header {
+      border-bottom-color: var(--panel-border-dark);
+    }
+    .breadcrumbs button:hover {
+      background-color: var(--btn-hover-bg-dark);
+      color: white;
     }
   }
 </style>

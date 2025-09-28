@@ -1,4 +1,4 @@
-<!-- src/lib/components/ui/Icon.svelte (SOLUCIÓN FINAL CON ICONOS AÑADIDOS) -->
+<!-- src/lib/components/ui/Icon.svelte (ACTUALIZADO CON ICONO DE CARPETA) -->
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
 
@@ -22,12 +22,13 @@
     LockIcon,
     HelpCircleIcon,
     PenToolIcon,
-
-    // *** NUEVOS ICONOS PARA EL EDITOR DE TEXTO ***
     BoldIcon,
     ItalicIcon,
     ListIcon,
-    TypeIcon, // Para representar "Título" o "Tipo de Texto"
+    TypeIcon,
+
+    // *** NUEVO ICONO AÑADIDO PARA SPRINT 3 ***
+    FolderIcon,
   } from 'svelte-feather-icons';
 
   interface FeatherIconProps {
@@ -43,12 +44,13 @@
     'download-cloud': DownloadCloudIcon,
     'upload-cloud': UploadCloudIcon,
     'file-text': FileTextIcon,
+    folder: FolderIcon, // <-- ¡AÑADIDO AQUÍ!
 
     // UI y Acciones
     x: XIcon,
     copy: CopyIcon,
     'trash-2': Trash2Icon,
-    sparkles: StarIcon, // 'sparkles' es un alias que hemos creado para StarIcon
+    sparkles: StarIcon,
     'pen-tool': PenToolIcon,
 
     // Funcionalidades
@@ -62,7 +64,7 @@
     lock: LockIcon,
     'help-circle': HelpCircleIcon,
 
-    // *** NUEVAS ENTRADAS PARA EL EDITOR DE TEXTO ***
+    // Editor de Texto
     bold: BoldIcon,
     italic: ItalicIcon,
     list: ListIcon,
