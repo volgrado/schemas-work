@@ -1,0 +1,183 @@
+<!-- src/lib/components/editor/BubbleMenu.svelte (SOLUCIÓN FINAL DE REACTIVIDAD) -->
+<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import type { Editor } from '@tiptap/core';
+  import Icon from '$lib/components/ui/Icon.svelte';
+
+  export let editor: Editor;
+
+  let menuElement: HTMLElement;
+  let isVisible = false;
+  let style = 'top: -1000px; left: -1000px;';
+
+  // *** LA CLAVE DE LA REACTIVIDAD ***
+  // Creamos una variable 'version' que actuará como un "disparador".
+  // Su valor no importa, solo el hecho de que cambia.
+  let version = 0;
+
+  const actions = [
+    {
+      name: 'bold',
+      icon: 'bold',
+      command: () => editor.chain().focus().toggleBold().run(),
+    },
+    {
+      name: 'italic',
+      icon: 'italic',
+      command: () => editor.chain().focus().toggleItalic().run(),
+    },
+    {
+      name: 'bulletList',
+      icon: 'list',
+      command: () => editor.chain().focus().toggleBulletList().run(),
+    },
+    {
+      name: 'heading',
+      icon: 'type',
+      command: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+    },
+  ] as const;
+
+  function updateMenuPosition() {
+    const { view } = editor;
+    const { state } = view;
+
+    if (state.selection.empty) {
+      isVisible = false;
+      return;
+    }
+
+    const { from, to } = state.selection;
+    const start = view.coordsAtPos(from);
+    const end = view.coordsAtPos(to);
+
+    if (!menuElement) return;
+    const box = menuElement.getBoundingClientRect();
+
+    const centerX = start.left + (end.left - start.left) / 2;
+
+    style = `
+      left: ${centerX - box.width / 2}px;
+      top: ${start.top - box.height - 10}px;
+    `;
+    isVisible = true;
+  }
+
+  const handleUpdate = () => {
+    updateMenuPosition();
+    // *** LA MAGIA DE LA REACTIVIDAD ***
+    // Cada vez que el editor se actualiza, incrementamos nuestra variable 'version'.
+    // Svelte ve que 'version' ha cambiado y re-renderizará cualquier parte del markup
+    // que dependa de ella, forzando la re-evaluación de `editor.isActive()`.
+    version++;
+  };
+
+  onMount(() => {
+    editor.on('update', handleUpdate);
+    editor.on('selectionUpdate', handleUpdate);
+  });
+
+  onDestroy(() => {
+    editor.off('update', handleUpdate);
+    editor.off('selectionUpdate', handleUpdate);
+  });
+</script>
+
+<!--
+  Añadimos `{:key version}` al bucle. Esto le dice a Svelte:
+  "Si la variable 'version' cambia, considera que toda esta sección
+  ha cambiado y vuelve a dibujarla desde cero".
+  Es la forma más explícita de forzar una actualización.
+-->
+<div
+  class="bubble-menu-container"
+  class:is-visible={isVisible}
+  {style}
+  bind:this={menuElement}
+>
+  {#key version}
+    {#each actions as action}
+      <button
+        class="menu-button"
+        class:is-active={editor.isActive(action.name) ||
+          (action.name === 'heading' &&
+            editor.isActive('heading', { level: 2 }))}
+        on:click={action.command}
+        aria-label={action.name}
+      >
+        <Icon name={action.icon} size={18} />
+      </button>
+    {/each}
+  {/key}
+</div>
+
+<style>
+  .bubble-menu-container {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+    border-radius: var(--space-sm);
+    z-index: 20;
+    will-change: top, left, opacity;
+
+    /* --- *** LA SOLUCIÓN DEFINITIVA *** --- */
+    /* Por defecto, el menú es invisible E NO INTERACTIVO */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Esta es la línea clave que previene los "clics fantasma" */
+    transition:
+      opacity 0.15s ease-in-out,
+      visibility 0.15s ease-in-out;
+
+    /* Estilos por defecto (Modo Oscuro) */
+    background-color: var(--color-gray-100);
+    color: var(--color-text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Cuando añadimos la clase .is-visible, se vuelve opaco e interactivo */
+  .bubble-menu-container.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+  }
+
+  @media (prefers-color-scheme: light) {
+    .bubble-menu-container {
+      background-color: var(--color-text);
+      color: var(--color-background);
+      border: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .menu-button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    border-radius: var(--space-xs);
+    cursor: pointer;
+    transition:
+      opacity 0.2s,
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .menu-button:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .menu-button.is-active {
+    opacity: 1;
+    color: var(--color-accent);
+  }
+</style>

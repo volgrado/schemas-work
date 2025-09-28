@@ -25,7 +25,8 @@
     "@sveltejs/kit": "^2.22.0",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
     "@types/deep-eql": "^4.0.2",
-    "@types/node": "^22",
+    "@types/node": "^24.5.2",
+    "@types/uuid": "^10.0.0",
     "@vitest/browser": "^3.2.3",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.0.1",
@@ -43,7 +44,22 @@
     "vitest-browser-svelte": "^0.1.0"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.4",
+    "@tiptap/core": "^3.6.1",
+    "@tiptap/extension-bold": "^3.6.1",
+    "@tiptap/extension-bullet-list": "^3.6.1",
+    "@tiptap/extension-collaboration": "^3.6.1",
+    "@tiptap/extension-document": "^3.6.1",
+    "@tiptap/extension-heading": "^3.6.1",
+    "@tiptap/extension-list-item": "^3.6.1",
+    "@tiptap/extension-paragraph": "^3.6.1",
+    "@tiptap/extension-text": "^3.6.1",
+    "@tiptap/pm": "^3.6.1",
+    "@tiptap/starter-kit": "^3.6.1",
+    "svelte-feather-icons": "^4.2.0",
+    "uuid": "^13.0.0",
     "y-indexeddb": "^9.0.12",
-    "yjs": "^13.6.27"
+    "yjs": "^13.6.27",
+    "zod": "^4.1.11"
   }
 }
