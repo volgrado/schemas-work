@@ -589,10 +589,10 @@
 {/if}
 
 <style>
-  /* === Variables Locales para el Panel === */
+  /* === Variables Locales === */
   :global(:root) {
     --panel-bg-light: rgba(255, 255, 255, 0.85);
-    --panel-bg-dark: rgba(28, 28, 30, 0.85); /* Un gris oscuro más profundo */
+    --panel-bg-dark: rgba(28, 28, 30, 0.85);
     --panel-border-light: rgba(0, 0, 0, 0.08);
     --panel-border-dark: rgba(255, 255, 255, 0.12);
     --overlay-bg: rgba(0, 0, 0, 0.1);
@@ -611,7 +611,7 @@
     -webkit-backdrop-filter: blur(4px);
     z-index: 99;
     border: none;
-    cursor: default; /* Evita que parezca un botón */
+    cursor: default;
   }
 
   /* === Panel Principal === */
@@ -624,53 +624,41 @@
     max-width: 640px;
     max-height: 70vh;
     box-sizing: border-box;
-
     background-color: var(--panel-bg-light);
     border: 1px solid var(--panel-border-light);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     z-index: 100;
-
     display: flex;
     flex-direction: column;
-    padding: var(--space-sm);
-  }
-
-  /* --- Modificador para la vista de lista --- */
-  .panel.is-list-view {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
     overflow: hidden;
-    padding: 6px; /* Padding más pequeño para aprovechar el espacio */
+    padding: var(--space-xs);
   }
 
-  /* === Lista de Acciones/Items === */
+  /* === Lista de Acciones/Items (Contenedor del Scroll) === */
   .action-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-  }
-
-  .action-list.list-view {
+    flex-grow: 1;
     overflow-y: auto;
-    padding: 0 8px;
+    min-height: 0;
+    padding: var(--space-xs);
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
-  .action-list.list-view::-webkit-scrollbar {
+  .action-list::-webkit-scrollbar {
     width: 6px;
   }
-
-  .action-list.list-view::-webkit-scrollbar-thumb {
+  .action-list::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
-  /* --- Botón de Acción Principal --- */
+  /* --- Botón de Acción Principal y otros estilos --- */
   .action-button {
     display: flex;
     align-items: center;
@@ -689,7 +677,7 @@
     transition:
       background-color 0.2s ease,
       transform 0.1s ease;
-    outline: none; /* Se gestionará con :focus-visible */
+    outline: none;
   }
 
   .action-button:hover:not(:disabled),
@@ -697,7 +685,6 @@
     background-color: var(--btn-hover-bg);
   }
 
-  /* Accesibilidad: Estilo de foco claro */
   .action-button:focus-visible {
     box-shadow: 0 0 0 2px var(--color-accent);
   }
@@ -718,20 +705,25 @@
   .action-button:active:not(:disabled) {
     transform: scale(0.985);
   }
-
   .action-button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
   /* === Vista de Explorador de Archivos === */
+  .list-header,
+  .panel-footer {
+    flex-shrink: 0;
+    padding: var(--space-sm);
+  }
+
   .list-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 8px var(--space-sm) 8px;
     border-bottom: 1px solid var(--panel-border-light);
     margin-bottom: var(--space-xs);
+    padding-bottom: var(--space-sm);
   }
 
   .breadcrumbs {
@@ -773,10 +765,9 @@
     border-radius: 8px;
     transition: background-color 0.2s ease;
     cursor: pointer;
-    outline: none; /* Gestionado con :focus-visible */
+    outline: none;
   }
 
-  /* Accesibilidad: Estilo de foco para navegación con teclado */
   .schema-item:focus-visible {
     background-color: var(--btn-hover-bg);
     box-shadow: 0 0 0 2px var(--color-accent);
@@ -792,7 +783,7 @@
     gap: 10px;
     padding: 12px 14px;
     flex-grow: 1;
-    min-width: 0; /* Previene desbordamiento de texto */
+    min-width: 0;
   }
 
   .item-main-content span {
@@ -919,7 +910,6 @@
       max-width: none;
       border-radius: 20px 20px 0 0;
       padding: var(--space-md);
-      /* Espacio seguro en la parte inferior para iPhones */
       padding-bottom: env(safe-area-inset-bottom, var(--space-md));
       transform: none;
       animation: slideUp 0.3s ease-out forwards;
@@ -937,16 +927,20 @@
 
   /* === Tema Oscuro === */
   @media (prefers-color-scheme: dark) {
+    .action-list {
+      scrollbar-color: var(--scrollbar-thumb-dark) transparent;
+    }
+    .action-list::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb-dark);
+    }
     .panel {
       background-color: var(--panel-bg-dark);
       border-color: var(--panel-border-dark);
     }
-
     .action-button,
     .rename-input {
       color: rgba(255, 255, 255, 0.95);
     }
-
     .action-button:hover:not(:disabled),
     .action-button:focus-visible,
     .schema-item:hover,
@@ -954,26 +948,17 @@
     .breadcrumbs button:hover {
       background-color: var(--btn-hover-bg-dark);
     }
-
     .list-header,
     .separator {
       border-color: var(--panel-border-dark);
     }
-
-    .action-list.list-view::-webkit-scrollbar-thumb {
-      background-color: var(--scrollbar-thumb-dark);
-    }
-
     .icon-button:hover {
       background-color: rgba(255, 255, 255, 0.1);
       color: white;
     }
-
     input[type='password'],
     input[type='text'] {
-      background-color: var(
-        --color-gray-100
-      ); /* En oscuro, gray-100 es más oscuro */
+      background-color: var(--color-gray-100);
       color: white;
       border-color: rgba(255, 255, 255, 0.15);
     }
