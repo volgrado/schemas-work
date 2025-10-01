@@ -1,108 +1,57 @@
-<!-- src/routes/+layout.svelte (SOLUCIÓN FINAL DE REGRESIONES) -->
+<!-- src/routes/+layout.svelte (VERSIÓN CORRECTA Y SIMPLIFICADA) -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { get } from 'svelte/store';
   import { browser } from '$app/environment';
 
+  // --- Estilos y Servicios Globales ---
   import '$lib/styles/app.css';
+  import * as errorService from '$lib/services/core/errorService';
 
-  // --- Componentes Globales ---
-  import AppHeader from '$lib/components/layout/AppHeader.svelte';
-  import CardEditorPanel from '$lib/components/review/CardEditorPanel.svelte';
-  import WelcomeAnimator from '$lib/components/layout/WelcomeAnimator.svelte';
-  import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
-
-  // --- Stores ---
-  import { editorStore } from '$lib/stores/editorStore';
-  import { cardEditorStore } from '$lib/stores/cardEditorStore';
-  // *** CORRECCIÓN #1 ***: Importamos el store de la CommandBar
-  import { commandBarStore } from '$lib/stores/commandBarStore';
-
+  // --- Props y Estado del Layout ---
   export let data;
-  let showWelcomeScreen = data.showWelcome;
 
-  let hasNodeSelected = false;
-  const unsubscribeEditor = editorStore.subscribe((value) => {
-    hasNodeSelected = value.selectedNodePos !== null;
-  });
-
-  let isMobile = browser ? window.innerWidth <= 768 : false;
-
-  function handleResize() {
-    isMobile = window.innerWidth <= 768;
-  }
-
-  function onAnimationComplete() {
-    localStorage.setItem('schemas-work-has-seen-welcome', 'true');
-    showWelcomeScreen = false;
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if ((event.metaKey || event.ctrlKey) && event.key === "'") {
-      event.preventDefault();
-      openCardEditor();
-    }
-  }
-
-  function openCardEditor() {
-    const editor = get(editorStore).instance;
-    const pos = get(editorStore).selectedNodePos;
-    if (!editor || pos === null) return;
-    const node = editor.state.doc.nodeAt(pos);
-    if (!node) return;
-    cardEditorStore.open(pos, node.attrs.cards || []);
-  }
-
-  // *** CORRECCIÓN #1 ***: La función ahora llama a la acción del store.
-  function openCommandBar() {
-    commandBarStore.open();
-  }
-
+  // --- Ciclo de Vida del Componente ---
   onMount(() => {
-    window.addEventListener('keydown', handleKeydown);
-    window.addEventListener('resize', handleResize);
+    // Sistema de Reporte de Errores Global
+    const originalOnError = window.onerror;
+    const originalOnUnhandledRejection = window.onunhandledrejection;
+
+    window.onerror = (message, source, lineno, colno, error) => {
+      errorService.reportError(error || new Error(message.toString()), {
+        source,
+        lineno,
+        colno,
+        type: 'window.onerror',
+      });
+      if (originalOnError)
+        return originalOnError.call(
+          window,
+          message,
+          source,
+          lineno,
+          colno,
+          error
+        );
+      return !import.meta.env.DEV;
+    };
+
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      errorService.reportError(event.reason, { type: 'unhandledrejection' });
+      if (originalOnUnhandledRejection)
+        return originalOnUnhandledRejection.call(window, event);
+      if (!import.meta.env.DEV) event.preventDefault();
+    };
+
+    // Función de Limpieza
     return () => {
-      window.removeEventListener('keydown', handleKeydown);
-      window.removeEventListener('resize', handleResize);
-      unsubscribeEditor();
+      window.onerror = originalOnError;
+      window.onunhandledrejection = originalOnUnhandledRejection;
     };
   });
 </script>
 
-{#if !showWelcomeScreen}
-  <AppHeader />
-{/if}
-
-{#if showWelcomeScreen}
-  <WelcomeAnimator on:animationComplete={onAnimationComplete} />
-{/if}
-
-<main>
-  <slot />
-</main>
-
-{#if !showWelcomeScreen}
-  <CardEditorPanel />
-
-  <!-- Lógica de los Botones Flotantes en Móvil -->
-  {#if isMobile}
-    <!-- Botón de CommandBar: SIEMPRE visible en móvil, a la derecha -->
-    <FloatingActionButton
-      icon="command"
-      label="Menú"
-      position="right"
-      on:click={openCommandBar}
-    />
-
-    <!-- *** CORRECCIÓN #2 ***: RESTAURAMOS el botón de Editar Tarjetas -->
-    <!-- Este botón SOLO es visible si hay un nodo seleccionado, y se posiciona en el centro -->
-    {#if hasNodeSelected}
-      <FloatingActionButton
-        icon="copy"
-        label="Editar Tarjetas"
-        position="center"
-        on:click={openCardEditor}
-      />
-    {/if}
-  {/if}
-{/if}
+<!-- 
+  El layout ahora es mucho más simple. Renderiza el `<slot />`
+  y no se preocupa por la lógica de la página.
+-->
+<slot />

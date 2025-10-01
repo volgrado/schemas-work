@@ -35,6 +35,10 @@ export interface SchemaMetadata {
   createdAt: number;
   /** Timestamp (en milisegundos) de la última modificación. */
   updatedAt: number;
+  /** Distingue entre un documento y un contenedor. */
+  type: 'schema' | 'folder';
+  /** El ID del padre. Si es `null`, está en la raíz. */
+  parentId: string | null;
 }
 
 /**
@@ -56,13 +60,23 @@ export interface Vault {
 
 /**
  * Representa una única tarjeta de estudio (pregunta y respuesta)
- * asociada a un nodo del esquema.
+ * asociada a un nodo del esquema, con datos para la repetición espaciada.
  */
 export interface DomainCard {
   /** El texto de la pregunta (Question). */
   q: string;
   /** El texto de la respuesta (Answer). */
   a: string;
+
+  // --- NUEVOS CAMPOS PARA SRS (Spaced Repetition System) ---
+  /** Factor de facilidad (Ease Factor). Empieza en 2.5. Un número más bajo significa que la tarjeta es más difícil. */
+  easeFactor?: number;
+  /** El intervalo en días hasta la próxima revisión. */
+  interval?: number;
+  /** El número de veces que se ha repasado correctamente la tarjeta. */
+  repetitions?: number;
+  /** La fecha (en formato timestamp de milisegundos) en la que esta tarjeta debe ser repasada. */
+  dueDate?: number;
 }
 
 // --- Interacción con IA ---

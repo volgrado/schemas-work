@@ -2,6 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { SchemaMetadata } from '$lib/types';
+import * as errorService from '$lib/services/core/errorService';
 
 const DIRECTORY_STORAGE_KEY = 'schemas-work-directory';
 const LAST_ACTIVE_DOC_KEY = 'schemas-work-last-active';
@@ -14,7 +15,19 @@ const LAST_ACTIVE_DOC_KEY = 'schemas-work-last-active';
 export async function getAllItems(): Promise<SchemaMetadata[]> {
   if (typeof window === 'undefined') return [];
   const storedDirectory = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-  return storedDirectory ? JSON.parse(storedDirectory) : [];
+
+  // *** NUEVO: Bloque try...catch para el parseo ***
+  try {
+    return storedDirectory ? JSON.parse(storedDirectory) : [];
+  } catch (error) {
+    errorService.reportError(error, {
+      operation: 'getAllItems',
+      description:
+        'Failed to parse directory from localStorage. Data might be corrupt.',
+    });
+    // Devuelve un estado seguro (array vacío) para evitar que la aplicación se bloquee.
+    return [];
+  }
 }
 
 /**
@@ -106,7 +119,14 @@ export async function updateItemMetadata(
   const itemIndex = allItems.findIndex((s) => s.id === id);
 
   if (itemIndex === -1) {
-    throw new Error(`No se encontró el ítem con id: ${id}`);
+    // *** NUEVO: Reportar error si el ítem no se encuentra ***
+    const error = new Error(`Item not found for update: ${id}`);
+    errorService.reportError(error, {
+      operation: 'updateItemMetadata',
+      itemId: id,
+      updates: updates,
+    });
+    throw error; // Relanzamos el error para que el llamador sepa que la operación falló.
   }
 
   const updatedItem = {
@@ -149,14 +169,27 @@ export async function deleteItem(itemId: string): Promise<void> {
     const item = allItems.find((i) => i.id === id);
     if (item && item.type === 'schema') {
       dbDeletionPromises.push(
-        new Promise((resolve, reject) => {
+        new Promise<void>((resolve, reject) => {
           const request = window.indexedDB.deleteDatabase(id);
           request.onsuccess = () => resolve();
-          request.onerror = () => reject(request.error);
-          request.onblocked = () =>
-            reject(
-              new Error(`La eliminación de la BD '${id}' está bloqueada.`)
+          // *** NUEVO: Reportar error en onerror y onblocked ***
+          request.onerror = (event) => {
+            errorService.reportError(request.error || event, {
+              operation: 'deleteItem.indexedDB.deleteDatabase',
+              itemId: id,
+            });
+            reject(request.error || event);
+          };
+          request.onblocked = (event) => {
+            const error = new Error(
+              `Database deletion blocked for item ID: ${id}`
             );
+            errorService.reportError(error, {
+              operation: 'deleteItem.indexedDB.onblocked',
+              itemId: id,
+            });
+            reject(error);
+          };
         })
       );
     }
@@ -167,7 +200,15 @@ export async function deleteItem(itemId: string): Promise<void> {
   );
   await saveDirectory(updatedItems);
 
-  await Promise.all(dbDeletionPromises);
+  // *** NUEVO: Envolver Promise.all en un try...catch para capturar fallos de borrado de DB ***
+  try {
+    await Promise.all(dbDeletionPromises);
+  } catch (error) {
+    // El error ya se reportó dentro de la promesa, aquí solo lo relanzamos
+    // para que el llamador (CommandBar) sepa que algo falló.
+    // El toast.error del CommandBar se encargará del feedback al usuario.
+    throw error;
+  }
 }
 
 // --- Funciones de utilidad ---

@@ -19,7 +19,9 @@
 <header class="app-header {className}">
   <div class="header-content">
     <!-- Sección Izquierda: Un placeholder para futuras acciones como 'Menú' o 'Atrás' -->
-    <div class="header-section left"></div>
+    <div class="header-section left">
+      <slot />
+    </div>
 
     <!-- Sección Central: La marca, centrada perfectamente -->
     <div class="header-section center">

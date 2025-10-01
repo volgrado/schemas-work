@@ -1,10 +1,9 @@
-<!-- src/lib/components/editor/BubbleMenu.svelte (SOLUCIÓN FINAL CON Z-INDEX Y FLIP CORREGIDOS) -->
+<!-- src/lib/components/editor/BubbleMenu.svelte -->
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
   import type { Editor } from '@tiptap/core';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { computePosition, flip, shift, offset } from '@floating-ui/dom';
-  import { Toaster } from 'svelte-sonner';
 
   export let editor: Editor;
 
@@ -12,40 +11,64 @@
   let isVisible = false;
   let style = 'top: -1000px; left: -1000px;';
 
+  // Usamos 'version' como una clave para forzar el re-renderizado de los botones
+  // y asegurar que su estado 'is-active' se actualice correctamente.
   let version = 0;
 
+  // --- Definición Modular de Acciones ---
+  // Cada acción ahora es un objeto que contiene todo lo que necesita:
+  // su nombre, icono, el comando a ejecutar, y cómo determinar si está activo.
   const actions = [
     {
       name: 'bold',
-      icon: 'bold',
+      icon: 'bold' as const,
       command: () => editor.chain().focus().toggleBold().run(),
+      isActive: () => editor.isActive('bold'),
     },
     {
       name: 'italic',
-      icon: 'italic',
+      icon: 'italic' as const,
       command: () => editor.chain().focus().toggleItalic().run(),
+      isActive: () => editor.isActive('italic'),
     },
     {
       name: 'bulletList',
-      icon: 'list',
-      command: () => editor.chain().focus().toggleBulletList().run(),
+      icon: 'list' as const,
+      // *** USAREMOS NUESTRO COMANDO PERSONALIZADO ***
+      command: () => editor.chain().focus().toggleSchemaList().run(),
+      isActive: () => editor.isActive('bulletList'),
     },
     {
       name: 'heading',
-      icon: 'type',
-      command: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      icon: 'type' as const,
+      // *** LÓGICA CORREGIDA ***
+      // Usamos `setNode` para ser explícitos sobre las transformaciones,
+      // en lugar del `toggleHeading` que asume la existencia de 'paragraph'.
+      command: () => {
+        if (editor.isActive('heading', { level: 2 })) {
+          // Si ya es un heading, lo convertimos de vuelta a un 'schemaTerm'.
+          editor.chain().focus().setNode('schemaTerm').run();
+        } else {
+          // Si es cualquier otra cosa (probablemente un 'schemaTerm'),
+          // lo convertimos en un 'heading' de nivel 2.
+          editor.chain().focus().setNode('heading', { level: 2 }).run();
+        }
+      },
+      isActive: () => editor.isActive('heading', { level: 2 }),
     },
-  ] as const;
+  ];
 
   async function updateMenuPosition() {
     const { view } = editor;
     const { state } = view;
 
+    // Oculta el menú si no hay selección o el elemento del menú no existe
     if (state.selection.empty || !menuElement) {
       isVisible = false;
       return;
     }
 
+    // Crea un elemento virtual que representa la selección del usuario
     const virtualEl = {
       getBoundingClientRect: () => {
         const { from, to } = state.selection;
@@ -61,17 +84,16 @@
     };
 
     isVisible = true;
-    await tick();
+    await tick(); // Espera al próximo ciclo de renderizado para que el menú sea visible
 
+    // Calcula la posición óptima del menú usando @floating-ui/dom
     const { x, y } = await computePosition(virtualEl, menuElement, {
       placement: 'top',
       middleware: [
         offset(8),
-        // --- *** MEJORA DE POSICIONAMIENTO *** ---
-        // El AppHeader tiene unos 50px de alto. Al poner un padding de 60px,
-        // forzamos al menú a "voltearse" (flip) hacia abajo mucho antes,
-        // evitando por completo el área del header.
+        // Evita que el menú se solape con el header (aprox. 60px de alto)
         flip({ padding: 60 }),
+        // Evita que el menú se salga de los bordes de la pantalla
         shift({ padding: 10 }),
       ],
     });
@@ -79,9 +101,10 @@
     style = `left: ${x}px; top: ${y}px;`;
   }
 
+  // Hook que se ejecuta cada vez que el contenido o la selección del editor cambian
   const handleUpdate = () => {
     updateMenuPosition();
-    version++;
+    version++; // Incrementa para forzar el re-renderizado
   };
 
   onMount(() => {
@@ -95,8 +118,6 @@
   });
 </script>
 
-<Toaster position="bottom-center" />
-
 <div
   class="bubble-menu-container"
   class:is-visible={isVisible}
@@ -107,10 +128,8 @@
     {#each actions as action}
       <button
         class="menu-button"
-        class:is-active={editor.isActive(action.name) ||
-          (action.name === 'heading' &&
-            editor.isActive('heading', { level: 2 }))}
-        on:click={action.command}
+        class:is-active={action.isActive()}
+        onclick={action.command}
         aria-label={action.name}
       >
         <Icon name={action.icon} size={18} />
@@ -128,8 +147,7 @@
     padding: var(--space-xs);
     border-radius: var(--space-sm);
 
-    /* --- *** CORRECCIÓN DE APILAMIENTO (Z-INDEX) *** --- */
-    /* El AppHeader tiene z-index: 50. Este valor debe ser MAYOR. */
+    /* Z-index mayor que el AppHeader (50) para que aparezca por encima */
     z-index: 60;
 
     will-change: top, left, opacity;
@@ -139,19 +157,21 @@
     transition:
       opacity 0.15s ease-in-out,
       visibility 0.15s ease-in-out;
+
+    /* Estilos por defecto para tema oscuro */
     background-color: var(--color-gray-100);
     color: var(--color-text);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   }
 
-  /* El resto del CSS no necesita cambios */
   .bubble-menu-container.is-visible {
     opacity: 1;
     visibility: visible;
     pointer-events: all;
   }
 
+  /* Estilos para tema claro */
   @media (prefers-color-scheme: light) {
     .bubble-menu-container {
       background-color: var(--color-text);

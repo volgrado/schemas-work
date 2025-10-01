@@ -25,8 +25,8 @@
   }
 
   function addCard() {
-    localCards = [...localCards, { q: '', a: '' }];
-    handleUpdate();
+    // En lugar de modificar el array local, llamamos a la acción del store
+    cardEditorStore.prefillAndAddCard();
   }
 
   function removeCard(index: number) {

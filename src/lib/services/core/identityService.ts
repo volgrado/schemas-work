@@ -1,6 +1,7 @@
 // src/lib/services/core/identityService.ts
 
 import type { Identity } from '$lib/types';
+import * as errorService from '$lib/services/core/errorService';
 
 /**
  * Este servicio gestiona la identidad criptográfica del usuario, que es
@@ -20,57 +21,59 @@ const IDENTITY_STORAGE_KEY = 'schemas-work-identity';
  * @returns {Promise<Identity>} Una promesa que se resuelve con la identidad del usuario.
  */
 export async function getOrCreateIdentity(): Promise<Identity> {
-  // En SSR, `window` no está disponible. Devolvemos una identidad vacía
-  // ya que la criptografía solo es relevante en el cliente.
   if (typeof window === 'undefined') {
     return { publicKey: '', privateKey: '' };
   }
 
-  const storedIdentity = localStorage.getItem(IDENTITY_STORAGE_KEY);
+  // *** 2. ENVOLVER TODA LA LÓGICA EN try...catch ***
+  try {
+    const storedIdentity = localStorage.getItem(IDENTITY_STORAGE_KEY);
 
-  if (storedIdentity) {
-    try {
-      // Si ya existe una identidad, la parseamos y la devolvemos.
-      return JSON.parse(storedIdentity) as Identity;
-    } catch (error) {
-      console.error(
-        'Error al parsear la identidad almacenada. Se generará una nueva.',
-        error
-      );
-      // Si los datos están corruptos, procedemos a crear una nueva identidad.
+    if (storedIdentity) {
+      try {
+        return JSON.parse(storedIdentity) as Identity;
+      } catch (parseError) {
+        errorService.reportError(parseError, {
+          operation: 'getOrCreateIdentity.parse',
+          description: 'Stored identity is corrupt. Generating a new one.',
+        });
+        // Si el parseo falla, continuamos para generar una nueva identidad.
+      }
     }
+
+    // --- Generar una nueva identidad ---
+    const keyPair = await window.crypto.subtle.generateKey(
+      { name: 'Ed25519' },
+      true,
+      ['sign', 'verify']
+    );
+
+    const publicKeyJwk = await window.crypto.subtle.exportKey(
+      'jwk',
+      keyPair.publicKey
+    );
+    const privateKeyJwk = await window.crypto.subtle.exportKey(
+      'jwk',
+      keyPair.privateKey
+    );
+
+    const newIdentity: Identity = {
+      publicKey: JSON.stringify(publicKeyJwk),
+      privateKey: JSON.stringify(privateKeyJwk),
+    };
+
+    localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(newIdentity));
+
+    return newIdentity;
+  } catch (error) {
+    errorService.reportError(error, {
+      operation: 'getOrCreateIdentity.crypto',
+      description: 'Failed during cryptographic key generation or export.',
+    });
+
+    // En caso de un error criptográfico grave, devolvemos una identidad vacía
+    // para evitar que la aplicación se bloquee, aunque algunas funcionalidades
+    // futuras podrían no funcionar.
+    return { publicKey: '', privateKey: '' };
   }
-
-  // --- No se encontró una identidad válida, generamos una nueva ---
-
-  // Usamos Ed25519, un algoritmo de firma digital moderno, rápido y seguro.
-  const keyPair = await window.crypto.subtle.generateKey(
-    {
-      name: 'Ed25519',
-    },
-    true, // `extractable` debe ser `true` para poder exportar las claves a JSON.
-    ['sign', 'verify'] // Especificamos los usos permitidos para este par de claves.
-  );
-
-  // Exportamos las claves en formato JWK (JSON Web Key), un estándar para
-  // representar claves criptográficas en formato JSON, lo que nos permite
-  // almacenarlas fácilmente como texto en localStorage.
-  const publicKeyJwk = await window.crypto.subtle.exportKey(
-    'jwk',
-    keyPair.publicKey
-  );
-  const privateKeyJwk = await window.crypto.subtle.exportKey(
-    'jwk',
-    keyPair.privateKey
-  );
-
-  const newIdentity: Identity = {
-    publicKey: JSON.stringify(publicKeyJwk),
-    privateKey: JSON.stringify(privateKeyJwk),
-  };
-
-  // Guardamos la nueva identidad en localStorage para futuras sesiones.
-  localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(newIdentity));
-
-  return newIdentity;
 }

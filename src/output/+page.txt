@@ -1,12 +1,20 @@
-<!-- src/routes/+page.svelte (VERSIÓN FINAL Y COMPLETA) -->
+<!-- src/routes/+page.svelte (VERSIÓN COMPLETA - FIN DE SPRINT 1) -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
+  import { Toaster } from 'svelte-sonner';
 
-  // --- Componentes ---
+  // --- Componentes de Layout y UI ---
   import DocumentView from '$lib/components/editor/DocumentView.svelte';
   import WelcomeAnimator from '$lib/components/layout/WelcomeAnimator.svelte';
   import AppHeader from '$lib/components/layout/AppHeader.svelte';
+
+  // --- Componentes de UI Globales (Controladores) ---
+  import CommandBar from '$lib/components/ui/CommandBar.svelte';
+  import CardEditorPanel from '$lib/components/review/CardEditorPanel.svelte';
+  import ReviewController from '$lib/components/review/ReviewController.svelte';
+  import TTSController from '$lib/components/features/TTSController.svelte';
+  import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
 
   // --- Stores y Servicios ---
   import { documentStore } from '$lib/stores/documentStore';
@@ -16,81 +24,94 @@
   export let data: { showWelcome: boolean };
   const state = documentStore;
 
+  // El estado inicial de la bienvenida viene de `+layout.ts`
   let showWelcome = data.showWelcome;
 
-  // Estado para controlar la animación de entrada del contenido principal y del header.
-  // Se inicializa en `true` si no mostramos la bienvenida, para que aparezca al cargar.
+  // Controla la animación de entrada del contenido principal
   let isRevealingContent = !showWelcome;
 
   onMount(() => {
-    // Si el usuario ya ha visto la bienvenida, cargamos su documento directamente.
+    // Si el usuario ya ha visto la bienvenida, cargamos su documento al iniciar.
     if (!showWelcome) {
       loadInitialDocument();
     }
   });
 
   /**
-   * Se activa cuando la animación del WelcomeAnimator ha terminado.
-   * Es el "relevo" que inicia la aparición del espacio de trabajo.
+   * Se dispara cuando la animación de WelcomeAnimator termina.
+   * Marca la bienvenida como vista, la oculta, y comienza a mostrar el editor.
    */
   function onAnimationComplete() {
     localStorage.setItem('schemas-work-has-seen-welcome', 'true');
     showWelcome = false;
-
-    // Activamos la animación de entrada para el AppHeader y el DocumentView.
-    isRevealingContent = true;
-
+    isRevealingContent = true; // Activa la animación de entrada del contenido
     loadInitialDocument();
   }
 
   /**
-   * Carga el último documento del usuario o crea uno nuevo.
+   * Se dispara cuando el usuario hace clic en el logo en el AppHeader.
+   * Vuelve a mostrar la pantalla de bienvenida.
+   */
+  function handleShowWelcome() {
+    showWelcome = true;
+    isRevealingContent = false;
+  }
+
+  /**
+   * Carga el último documento en el que trabajó el usuario.
+   * Si no hay ninguno, crea un nuevo documento por defecto.
    */
   async function loadInitialDocument() {
     if (get(state).status === 'ready') {
       return;
     }
 
-    const schemas = await directoryService.listSchemas();
+    // *** CAMBIO: Usamos getAllItems y filtramos por 'schema' ***
+    const allItems = await directoryService.getAllItems();
+    const schemas = allItems.filter((item) => item.type === 'schema');
 
     if (schemas.length > 0) {
       const lastActiveId = await directoryService.getLastActiveDocId();
-      const docToLoadId = lastActiveId || schemas[0].id;
+      // Asegurarnos de que el último ID activo siga existiendo y sea un esquema
+      const lastActiveSchema = schemas.find((s) => s.id === lastActiveId);
+
+      const docToLoadId = lastActiveSchema
+        ? lastActiveSchema.id
+        : schemas[0].id;
       documentStore.loadDocument(docToLoadId);
     } else {
-      documentStore.createNewDocument('Mi Primer Esquema');
+      // Al crear, le decimos que lo ponga en la raíz (parentId: null)
+      documentStore.createNewDocument('Mi Primer Esquema', undefined, null);
     }
   }
 </script>
 
-<!-- 
-  El AppHeader solo se muestra si la bienvenida ya ha pasado.
-  Le aplicamos la clase 'reveal' para que se anime junto con el resto del contenido.
--->
+<!-- Componente para mostrar notificaciones (toasts) en toda la app -->
+<Toaster position="bottom-center" />
+
+<!-- El header solo se muestra si NO estamos en la bienvenida -->
 {#if !showWelcome}
-  <AppHeader class={isRevealingContent ? 'reveal' : ''} />
+  <AppHeader
+    class={isRevealingContent ? 'reveal' : ''}
+    on:showWelcome={handleShowWelcome}
+  />
 {/if}
 
-<!-- 
-  Si es la primera visita, mostramos el animador.
-  Este componente se encargará de la espectacular transición de salida.
--->
+<!-- El animador de bienvenida solo se muestra SI es la primera visita -->
 {#if showWelcome}
   <WelcomeAnimator on:animationComplete={onAnimationComplete} />
 {/if}
 
-<!-- 
-  El contenido principal (el editor) está envuelto en un div.
-  Este div comienza invisible y se anima para aparecer suavemente.
--->
+<!-- Contenedor principal del editor -->
 <div class="main-content" class:reveal={isRevealingContent}>
-  <!-- Solo mostramos el contenido una vez que la bienvenida ha pasado -->
   {#if !showWelcome}
     {#if $state.status === 'loading' || $state.status === 'idle'}
       <div class="status-container">
         <p>Cargando jardín...</p>
       </div>
     {:else if $state.status === 'ready' && $state.ydoc}
+      <!-- La directiva #key es crucial para que Svelte remonte
+           DocumentView cuando cambiamos de documento, evitando bugs. -->
       {#key $state.docId}
         <DocumentView
           ydoc={$state.ydoc}
@@ -105,6 +126,20 @@
   {/if}
 </div>
 
+<!-- 
+  Hogar de todos los componentes de UI globales y flotantes.
+  Solo se montan cuando la aplicación principal es visible.
+  Cada uno de ellos gestiona su propia visibilidad internamente
+  basándose en el estado de sus respectivos stores.
+-->
+{#if !showWelcome}
+  <CommandBar />
+  <CardEditorPanel />
+  <ReviewController />
+  <TTSController />
+  <SlashMenuController />
+{/if}
+
 <style>
   .status-container {
     display: flex;
@@ -115,23 +150,21 @@
     color: var(--color-gray-500);
   }
 
-  /* --- Animaciones de Entrada Sincronizadas --- */
+  /* --- Animaciones de Entrada --- */
 
-  /* Por defecto, tanto el header como el contenido principal son invisibles. */
+  /* Por defecto, el contenido principal y el header están ocultos */
   .main-content,
   :global(.app-header) {
     opacity: 0;
-    /* Evita que se vea un "salto" al cargar si la animación no se activa */
     will-change: transform, opacity;
   }
 
-  /* Cuando se añade la clase 'reveal', se disparan las animaciones. */
+  /* La clase 'reveal' activa las animaciones de aparición */
   .main-content.reveal {
     animation: fadeInUp 0.8s ease-out forwards;
   }
 
   :global(.app-header.reveal) {
-    /* El header aparece un poco más rápido y con un ligero retraso. */
     animation: fadeInUp 0.6s ease-out 0.2s forwards;
   }
 

@@ -22,6 +22,10 @@ export type IconName =
   | 'download-cloud'
   | 'upload-cloud'
   | 'file-text'
+  | 'folder' // <-- ¡AÑADIR ESTA LÍNEA!
+  | 'check-circle'
+  | 'git-branch' // <-- AÑADIR
+  | 'edit-3' // <-- AÑADIR
   // UI y Acciones
   | 'x'
   | 'copy'

@@ -6,14 +6,9 @@
  * estilos base para asegurar una apariencia consistente y profesional.
  */
 
-/* 1. CARGA DE LA FUENTE LOCAL
+/* 2. CARGA DE LA FUENTE LOCAL
    ========================================================================== */
 
-/*
- * Se carga la fuente variable 'Inter' localmente desde la carpeta /static.
- * Esto mejora el rendimiento, la privacidad y elimina la dependencia de
- * servicios de terceros como Google Fonts.
- */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -22,14 +17,14 @@
   src: url('/fonts/Inter-VariableFont_slnt,wght.woff2') format('woff2');
 }
 
-/* 2. DEFINICIÓN DE VARIABLES GLOBALES (DESIGN TOKENS)
+/* 3. DEFINICIÓN DE VARIABLES GLOBALES (DESIGN TOKENS)
    ========================================================================== */
 
 :root {
   /* Paleta de Colores Minimalista */
   --color-background: #ffffff;
   --color-text: #111111;
-  --color-accent: #d9534f; /* Azul estándar de Apple, un buen punto de partida */
+  --color-accent: #d9534f; /* Rojo/coral para acentos */
   --color-gray-100: #f2f2f2; /* Gris muy claro para fondos sutiles, bordes, hovers */
   --color-gray-500: #a1a1a6; /* Gris medio para texto secundario, iconos y pistas */
   --color-danger: #e53e3e; /* Rojo para acciones destructivas */
@@ -48,38 +43,29 @@
   --space-xxl: 64px;
 }
 
-/* 3. RESETEO Y ESTILOS BASE PARA EL BODY
+/* 4. RESETEO Y ESTILOS BASE PARA EL BODY
    ========================================================================== */
 
 body {
   margin: 0;
   padding: 0;
-
-  /* Aplicación de las variables globales */
   font-family: var(--font-main);
   background-color: var(--color-background);
   color: var(--color-text);
-
-  /* Mejoras de renderizado de texto para una apariencia más nítida */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-
-  /* Evita que los navegadores sinteticen negritas o cursivas si la fuente no las soporta */
   font-synthesis: none;
 }
 
-/* 4. CLASES DE ESTADO GLOBAL
+/* 5. CLASES DE ESTADO GLOBAL
    ========================================================================== */
 
 /* --- MODO REPASO --- */
-/* Cuando el body tiene esta clase, se atenúa todo el contenido del editor por defecto */
 .is-reviewing .prose > * {
   transition: opacity 0.3s ease;
   opacity: 0.2;
 }
-
-/* El nodo actualmente en revisión (y sus hijos) recupera la opacidad completa */
 .is-reviewing .prose .is-current-review-node {
   opacity: 1;
 }
@@ -89,112 +75,140 @@ body {
   transition: opacity 0.3s ease;
   opacity: 0.4;
 }
-
 .is-reading-aloud .prose .is-current-tts-node {
   opacity: 1;
-  /* Opcional: un fondo sutil para el nodo que se está leyendo */
   background-color: #007aff1a;
   border-radius: var(--space-sm);
 }
 
-/* 5. TEMA OSCURO AUTOMÁTICO
+/* 6. TEMA OSCURO AUTOMÁTICO
    ========================================================================== */
 
 @media (prefers-color-scheme: dark) {
-  /* ...redefinimos nuestras variables de color globales. */
   :root {
-    /* Paleta de Colores para Modo Oscuro */
-    --color-background: #1c1c1e; /* Un gris oscuro profundo, estándar en iOS */
-    --color-text: rgba(
-      255,
-      255,
-      255,
-      0.9
-    ); /* Blanco casi puro para el texto principal */
-
-    /* El acento puede ser un poco más brillante para destacar en fondos oscuros */
-    --color-accent: #ff6347; /* Tomato, un rojo-naranja vibrante */
-
-    /* Grises invertidos para fondos de elementos, bordes y texto secundario */
-    --color-gray-100: #2c2c2e; /* Fondo para elementos como botones secundarios */
-    --color-gray-500: #8e8e93; /* Texto para placeholders e iconos */
+    --color-background: #1c1c1e;
+    --color-text: rgba(255, 255, 255, 0.9);
+    --color-accent: #ff6347; /* Tomato */
+    --color-gray-100: #2c2c2e;
+    --color-gray-500: #8e8e93;
   }
 }
 
-/* 6. ESTILOS DEL EDITOR PERSONALIZADOS
+/* 7. ESTILOS DEL EDITOR PERSONALIZADOS
    ========================================================================== */
 
-/* Cambia el color del cursor de texto (caret) en todos los elementos editables dentro de .prose */
 .prose {
   caret-color: var(--color-accent);
 }
-
-/* 
-  Estiliza el fondo del texto seleccionado por el usuario en toda la página.
-  Esto unifica la experiencia de selección de texto con la identidad de la marca.
-*/
-
-/* Estándar para la mayoría de los navegadores */
 ::selection {
   background-color: var(--color-accent);
-  color: #ffffff; /* Aseguramos que el texto sea blanco y legible sobre el acento */
+  color: #ffffff;
 }
-
-/* Específico para Firefox */
 ::-moz-selection {
   background-color: var(--color-accent);
   color: #ffffff;
 }
-
-/* Ajustes para el modo oscuro para mantener la legibilidad */
 @media (prefers-color-scheme: dark) {
   ::selection,
   ::-moz-selection {
-    /* Sobre el acento, el texto debe ser del color de fondo oscuro para contrastar */
     color: var(--color-background);
   }
 }
 
-/* 7. ESTILOS DE COMPONENTES DE TERCEROS (TIPPY.JS)
+/* 8. SOBREESCRITURA DE ESTILOS DE TIPPY.JS
    ========================================================================== */
 
 /*
-  Estilizamos el contenedor del BubbleMenu de Tiptap.
-  Al poner estas reglas aquí, nos aseguramos de que anulen
-  cualquier otro estilo y se apliquen de forma consistente en toda la app.
+  Aquí personalizamos la apariencia de los popups de Tippy para que coincidan
+  con nuestro sistema de diseño, sobrescribiendo los estilos que importamos arriba.
 */
-
 .tippy-box {
-  /* Forzamos la visibilidad y opacidad */
-  visibility: visible !important;
-  opacity: 1 !important;
-
-  /* En modo claro, el menú es oscuro y sólido */
   background-color: var(--color-text) !important;
   color: var(--color-background) !important;
   border: none !important;
-
   border-radius: var(--space-sm) !important;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Ajustes específicos para el modo oscuro */
 @media (prefers-color-scheme: dark) {
   .tippy-box {
-    /* En modo oscuro, usamos un gris sólido que contrasta con el fondo */
     background-color: var(--color-gray-100) !important;
-    /* El texto sigue siendo claro */
-    color: rgba(255, 255, 255, 0.9) !important;
-    /* Añadimos un borde para definirlo */
+    color: var(--color-text) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 }
 
-/* Ajustes finales para el contenido y la flecha */
 .tippy-content {
-  padding: var(--space-xs) !important;
+  padding: 0 !important; /* El padding lo gestionará nuestro componente Svelte (SlashMenu) */
 }
 
 .tippy-arrow {
-  display: none !important;
+  display: none !important; /* No queremos la flecha en nuestros menús */
+}
+
+/* 10. ESTILOS PARA NODOS DE ESQUEMA
+   ========================================================================== */
+
+/* Estilo para el TÉRMINO */
+.prose .schema-term {
+  font-weight: 500;
+  /* Espacio extra debajo para separarlo de la descripción */
+  margin-bottom: 0.25em !important;
+}
+
+/* Estilo para la DESCRIPCIÓN */
+.prose .schema-description {
+  color: var(--color-gray-500);
+  /* Un poco más pequeño que el texto normal */
+  font-size: 0.9em;
+  line-height: 1.6;
+  margin-top: 0 !important;
+  /* Sangría visual para indicar que pertenece al término de arriba */
+  padding-left: 1.6em;
+}
+
+/* Estilos para el placeholder de los nuevos nodos */
+.prose .schema-term.is-empty::before,
+.prose .schema-description.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-gray-500);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Opcional: Líneas guía para la anidación */
+.prose ul {
+  position: relative;
+}
+
+.prose ul > li > ul::before {
+  content: '';
+  position: absolute;
+  top: 1.5em; /* Alineado con la primera línea de texto */
+  bottom: 0.5em;
+  left: -1em; /* Ajusta esta distancia según tu padding */
+  width: 1px;
+  background-color: var(--color-gray-100);
+  transition: background-color 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose .schema-description {
+    color: var(--color-gray-500);
+  }
+  .prose ul > li > ul::before {
+    background-color: var(--color-gray-100);
+  }
+}
+
+:global(.prose p[data-role='term']) {
+  font-weight: 500;
+  margin-bottom: 0.25em !important;
+}
+:global(.prose p[data-role='description']) {
+  color: var(--color-gray-500);
+  font-size: 0.9em;
+  margin-top: 0 !important;
+  padding-left: 1.6em;
 }

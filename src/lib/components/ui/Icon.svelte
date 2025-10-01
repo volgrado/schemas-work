@@ -29,6 +29,9 @@
 
     // *** NUEVO ICONO AÑADIDO PARA SPRINT 3 ***
     FolderIcon,
+    CheckCircleIcon,
+    GitBranchIcon,
+    Edit3Icon,
   } from 'svelte-feather-icons';
 
   interface FeatherIconProps {
@@ -69,6 +72,10 @@
     italic: ItalicIcon,
     list: ListIcon,
     type: TypeIcon,
+
+    'check-circle': CheckCircleIcon,
+    'git-branch': GitBranchIcon,
+    'edit-3': Edit3Icon,
   };
 
   export let name: keyof typeof icons;

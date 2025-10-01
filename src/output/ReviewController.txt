@@ -1,41 +1,22 @@
-<!--
-  @component
-  ReviewController.svelte
-
-  Este componente es la interfaz de usuario para el "Ritual del Aprendizaje" o Modo Repaso.
-  Aparece como un panel flotante cuando el `reviewStore` está en estado 'isReviewing'.
-
-  Responsabilidades:
-  - Mostrar la pregunta de la tarjeta de estudio actual.
-  - Revelar la respuesta solo cuando el usuario lo solicita.
-  - Proporcionar controles para mostrar la respuesta, avanzar a la siguiente tarjeta
-    o finalizar la sesión de repaso.
-  - Toda la lógica del flujo de repaso reside en `reviewStore.ts`; este
-    componente solo refleja el estado y despacha acciones.
--->
+<!-- src/lib/components/review/ReviewController.svelte (REFACTORIZADO PARA SRS) -->
 <script lang="ts">
-  // --- Svelte Core ---
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-
-  // --- Lógica de la Aplicación ---
   import { reviewStore } from '$lib/stores/reviewStore';
-
-  // --- Componentes de UI ---
   import Button from '$lib/components/ui/Button.svelte';
 
   const state = reviewStore;
 
-  /**
-   * Variable reactiva que deriva la tarjeta actual del estado del store.
-   * Si el estado cambia, `currentCard` se recalcula automáticamente.
-   * Se asume una tarjeta por nodo en esta versión para simplificar.
-   */
   $: currentCard =
     $state.nodesToReview.length > 0 &&
     $state.currentNodeIndex < $state.nodesToReview.length
       ? $state.nodesToReview[$state.currentNodeIndex].cards[0]
       : null;
+
+  // --- NUEVO: Manejador para los botones de calificación ---
+  function submitReview(quality: 0 | 3 | 5) {
+    reviewStore.submitReview(quality);
+  }
 </script>
 
 {#if $state.isReviewing && currentCard}
@@ -46,8 +27,6 @@
     <div class="card">
       <div class="card-content">
         <p class="question">{currentCard.q}</p>
-
-        <!-- La respuesta solo se renderiza cuando isAnswerShown es true -->
         {#if $state.isAnswerShown}
           <div class="answer" transition:fade>
             <p>{currentCard.a}</p>
@@ -57,18 +36,29 @@
 
       <div class="card-actions">
         {#if !$state.isAnswerShown}
-          <!-- Este botón actualiza el store para mostrar la respuesta -->
           <Button on:click={reviewStore.showAnswer} size="md"
             >Mostrar Respuesta</Button
           >
         {:else}
-          <!-- Este botón le pide al store que avance a la siguiente tarjeta -->
-          <Button on:click={reviewStore.nextCard} size="md">Siguiente</Button>
+          <!-- *** MARKUP ACTUALIZADO: Botones de calificación *** -->
+          <div class="review-buttons">
+            <Button
+              on:click={() => submitReview(0)}
+              size="md"
+              variant="secondary">Otra vez</Button
+            >
+            <Button
+              on:click={() => submitReview(3)}
+              size="md"
+              variant="secondary">Difícil</Button
+            >
+            <Button on:click={() => submitReview(5)} size="md" variant="primary"
+              >Fácil</Button
+            >
+          </div>
         {/if}
       </div>
     </div>
-
-    <!-- El botón para salir del modo repaso siempre está visible -->
     <Button on:click={reviewStore.finishReview} variant="ghost" size="sm"
       >Finalizar Repaso</Button
     >
@@ -76,6 +66,7 @@
 {/if}
 
 <style>
+  /* ... (estilos existentes de .panel, .card, etc.) ... */
   .panel {
     position: fixed;
     bottom: var(--space-lg);
@@ -119,5 +110,11 @@
     padding: var(--space-sm) var(--space-lg);
     display: flex;
     justify-content: flex-end;
+  }
+
+  /* --- NUEVO: Estilos para el contenedor de botones --- */
+  .review-buttons {
+    display: flex;
+    gap: var(--space-sm);
   }
 </style>

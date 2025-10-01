@@ -36,6 +36,17 @@ declare module '@tiptap/core' {
     listItem: {
       setCards: (cards: DomainCard[]) => ReturnType;
     };
+    schemaNode: {
+      /**
+       * Divide un `schemaNode` actual, asegurando que el nuevo nodo
+       * también tenga la estructura `schemaTerm`.
+       */
+      splitSchemaNode: () => ReturnType;
+      /**
+       * Establece las tarjetas de estudio para el `schemaNode` actual.
+       */
+      setCards: (cards: import('$lib/types').DomainCard[]) => ReturnType;
+    };
   }
 }
 

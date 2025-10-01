@@ -1,133 +1,270 @@
-<!-- src/routes/+page.svelte (VERSIÓN COMPLETA - FIN DE SPRINT 1) -->
+<!-- src/routes/+page.svelte (VERSIÓN SIMPLE Y ROBUSTA) -->
 <script lang="ts">
+  // --- Svelte Core y Entorno ---
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
+  import { browser } from '$app/environment';
   import { Toaster } from 'svelte-sonner';
 
-  // --- Componentes de Layout y UI ---
+  // --- Componentes ---
+  import Icon from '$lib/components/ui/Icon.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import DocumentView from '$lib/components/editor/DocumentView.svelte';
   import WelcomeAnimator from '$lib/components/layout/WelcomeAnimator.svelte';
   import AppHeader from '$lib/components/layout/AppHeader.svelte';
-
-  // --- Componentes de UI Globales (Controladores) ---
   import CommandBar from '$lib/components/ui/CommandBar.svelte';
   import CardEditorPanel from '$lib/components/review/CardEditorPanel.svelte';
   import ReviewController from '$lib/components/review/ReviewController.svelte';
   import TTSController from '$lib/components/features/TTSController.svelte';
+  import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
+  import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
+  import SchemaTree from '$lib/components/views/SchemaTree.svelte';
+  import type { TreeNodeData } from '$lib/components/views/SchemaTree.svelte';
 
   // --- Stores y Servicios ---
   import { documentStore } from '$lib/stores/documentStore';
+  import { editorStore } from '$lib/stores/editorStore';
+  import { cardEditorStore } from '$lib/stores/cardEditorStore';
+  import { commandBarStore } from '$lib/stores/commandBarStore';
   import * as directoryService from '$lib/services/core/directoryService';
+  import * as schemaService from '$lib/services/features/schemaService';
 
-  // --- Props y Estado ---
-  export let data: { showWelcome: boolean };
-  const state = documentStore;
+  import { debounce } from '$lib/utils/debounce';
 
-  // El estado inicial de la bienvenida viene de `+layout.ts`
-  let showWelcome = data.showWelcome;
+  let { data }: { data: { showWelcome: boolean } } = $props();
+  const docState = documentStore;
 
-  // Controla la animación de entrada del contenido principal
-  let isRevealingContent = !showWelcome;
+  let showWelcome = $state(data.showWelcome);
+  let isRevealingContent = $state(!data.showWelcome);
+  let currentView = $state<'editor' | 'tree'>('editor');
+  let treeData: TreeNodeData | null = $state(null);
+  let selectedNodeId: string | null = $state(null);
+  let nodeToFocus: number | null = $state(null);
+  let hasNodeSelected = $state(false);
+  let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
-  onMount(() => {
-    // Si el usuario ya ha visto la bienvenida, cargamos su documento al iniciar.
+  const selectedPos = $derived(get(editorStore).selectedNodePos);
+
+  $effect(() => {
+    hasNodeSelected = selectedPos !== null;
+    selectedNodeId = selectedPos !== null ? `node-${selectedPos}` : null;
+  });
+
+  // Efecto que se suscribe al editor y actualiza `treeData` de forma reactiva
+  $effect(() => {
+    const editor = get(editorStore).instance;
+    if (editor && get(documentStore).status === 'ready') {
+      // La función original que hace el trabajo pesado
+      const handleUpdate = () => {
+        treeData = schemaService.documentToTreeData(editor.state.doc);
+      };
+
+      // **AQUÍ ESTÁ LA MAGIA: Creamos una versión "debounced" de nuestra función**
+      const debouncedHandleUpdate = debounce(handleUpdate, 300); // 300ms de retraso
+
+      // Nos suscribimos al evento del editor usando la versión debounced
+      editor.on('update', debouncedHandleUpdate);
+
+      // Hacemos una llamada inicial INMEDIATA para que el árbol se cargue la primera vez
+      handleUpdate();
+
+      // La función de limpieza se desuscribe de la versión debounced
+      return () => editor.off('update', debouncedHandleUpdate);
+    } else {
+      treeData = null;
+    }
+  });
+
+  // Efecto que actualiza el nodo seleccionado para pasarlo al árbol
+  $effect(() => {
+    const pos = get(editorStore).selectedNodePos;
+    hasNodeSelected = pos !== null;
+    selectedNodeId = pos !== null ? `node-${pos}` : null;
+  });
+
+  // Efecto para la carga inicial del documento
+  $effect(() => {
     if (!showWelcome) {
       loadInitialDocument();
     }
   });
 
-  /**
-   * Se dispara cuando la animación de WelcomeAnimator termina.
-   * Marca la bienvenida como vista, la oculta, y comienza a mostrar el editor.
-   */
-  function onAnimationComplete() {
-    localStorage.setItem('schemas-work-has-seen-welcome', 'true');
-    showWelcome = false;
-    isRevealingContent = true; // Activa la animación de entrada del contenido
-    loadInitialDocument();
+  // --- Manejadores de Eventos y Acciones ---
+
+  function handleResize() {
+    isMobile = window.innerWidth <= 768;
   }
 
-  /**
-   * Se dispara cuando el usuario hace clic en el logo en el AppHeader.
-   * Vuelve a mostrar la pantalla de bienvenida.
-   */
+  async function onAnimationComplete() {
+    localStorage.setItem('schemas-work-has-seen-welcome', 'true');
+    showWelcome = false;
+    isRevealingContent = true;
+  }
+
   function handleShowWelcome() {
+    currentView = 'editor';
     showWelcome = true;
     isRevealingContent = false;
   }
 
-  /**
-   * Carga el último documento en el que trabajó el usuario.
-   * Si no hay ninguno, crea un nuevo documento por defecto.
-   */
-  async function loadInitialDocument() {
-    // Evita recargar si ya hay un documento listo
-    if (get(state).status === 'ready') {
-      return;
-    }
-
-    const schemas = await directoryService.listSchemas();
-    if (schemas.length > 0) {
-      const lastActiveId = await directoryService.getLastActiveDocId();
-      const docToLoadId = lastActiveId || schemas[0].id;
-      documentStore.loadDocument(docToLoadId);
-    } else {
-      documentStore.createNewDocument('Mi Primer Esquema');
+  function handleNodeClickInTree(event: CustomEvent<{ id: string }>) {
+    const { id } = event.detail;
+    if (id === 'root-title') return;
+    const pos = parseInt(id.replace('node-', ''), 10);
+    if (!isNaN(pos)) {
+      nodeToFocus = pos;
+      currentView = 'editor';
     }
   }
+
+  function openCardEditor() {
+    const editor = get(editorStore).instance;
+    const pos = get(editorStore).selectedNodePos;
+    if (!editor || pos === null) return;
+    const node = editor.state.doc.nodeAt(pos);
+    if (!node) return;
+    cardEditorStore.open(pos, node.attrs.cards || []);
+  }
+
+  function openCommandBar() {
+    commandBarStore.open();
+  }
+
+  async function loadInitialDocument() {
+    if (get(docState).status === 'ready') return;
+    const allItems = await directoryService.getAllItems();
+    const schemas = allItems.filter((item) => item.type === 'schema');
+    if (schemas.length > 0) {
+      const lastActiveId = await directoryService.getLastActiveDocId();
+      const lastActiveSchema = schemas.find((s) => s.id === lastActiveId);
+      const docToLoadId = lastActiveSchema
+        ? lastActiveSchema.id
+        : schemas[0].id;
+      await documentStore.loadDocument(docToLoadId);
+    } else {
+      await documentStore.createNewDocument(
+        'Mi Primer Esquema',
+        undefined,
+        null
+      );
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
 </script>
 
-<!-- Componente para mostrar notificaciones (toasts) en toda la app -->
 <Toaster position="bottom-center" />
 
-<!-- El header solo se muestra si NO estamos en la bienvenida -->
 {#if !showWelcome}
   <AppHeader
-    class={isRevealingContent ? 'reveal' : ''}
     on:showWelcome={handleShowWelcome}
-  />
+    class={isRevealingContent ? 'reveal' : ''}
+  >
+    {#if !isMobile}
+      <Button
+        variant="secondary"
+        size="sm"
+        on:click={() =>
+          (currentView = currentView === 'editor' ? 'tree' : 'editor')}
+        aria-label={currentView === 'editor'
+          ? 'Cambiar a vista de árbol'
+          : 'Cambiar a vista de editor'}
+      >
+        <Icon
+          name={currentView === 'editor' ? 'git-branch' : 'edit-3'}
+          size={16}
+        />
+      </Button>
+    {/if}
+  </AppHeader>
 {/if}
 
-<!-- El animador de bienvenida solo se muestra SI es la primera visita -->
 {#if showWelcome}
   <WelcomeAnimator on:animationComplete={onAnimationComplete} />
 {/if}
 
-<!-- Contenedor principal del editor -->
-<div class="main-content" class:reveal={isRevealingContent}>
-  {#if !showWelcome}
-    {#if $state.status === 'loading' || $state.status === 'idle'}
-      <div class="status-container">
-        <p>Cargando jardín...</p>
-      </div>
-    {:else if $state.status === 'ready' && $state.ydoc}
-      <!-- La directiva #key es crucial para que Svelte remonte
-           DocumentView cuando cambiamos de documento, evitando bugs. -->
-      {#key $state.docId}
-        <DocumentView
-          ydoc={$state.ydoc}
-          initialContent={$state.initialContent}
+<div class="view-wrapper">
+  <div
+    class="view-content"
+    style:display={currentView === 'editor' ? 'block' : 'none'}
+  >
+    <div class="main-content" class:reveal={isRevealingContent}>
+      {#if !showWelcome}
+        {#if $docState.status === 'loading' || $docState.status === 'idle'}
+          <div class="status-container"><p>Cargando jardín...</p></div>
+        {:else if $docState.status === 'ready' && $docState.ydoc}
+          {#key $docState.docId}
+            <DocumentView
+              ydoc={$docState.ydoc}
+              initialContent={$docState.initialContent}
+              focusedNodePos={nodeToFocus}
+              on:focusApplied={() => (nodeToFocus = null)}
+            />
+          {/key}
+        {:else if $docState.status === 'error'}
+          <div class="status-container">
+            <p>Hubo un error al cargar el documento.</p>
+          </div>
+        {/if}
+      {/if}
+    </div>
+  </div>
+
+  <div
+    class="view-content"
+    style:display={currentView === 'tree' ? 'block' : 'none'}
+  >
+    {#if treeData}
+      <div class="tree-view-content" class:reveal={isRevealingContent}>
+        <SchemaTree
+          {treeData}
+          {selectedNodeId}
+          on:nodeClick={handleNodeClickInTree}
         />
-      {/key}
-    {:else if $state.status === 'error'}
+      </div>
+    {:else if !showWelcome}
       <div class="status-container">
-        <p>Hubo un error al cargar el documento.</p>
+        <p>Tu esquema debe contener una lista para generar la visualización.</p>
       </div>
     {/if}
-  {/if}
+  </div>
 </div>
 
-<!-- 
-  Hogar de todos los componentes de UI globales y flotantes.
-  Solo se montan cuando la aplicación principal es visible.
-  Cada uno de ellos gestiona su propia visibilidad internamente
-  basándose en el estado de sus respectivos stores.
--->
 {#if !showWelcome}
   <CommandBar />
   <CardEditorPanel />
   <ReviewController />
   <TTSController />
+  <SlashMenuController />
+
+  {#if isMobile}
+    <FloatingActionButton
+      icon={currentView === 'editor' ? 'git-branch' : 'edit-3'}
+      label={currentView === 'editor' ? 'Árbol' : 'Editor'}
+      position="right"
+      on:click={() =>
+        (currentView = currentView === 'editor' ? 'tree' : 'editor')}
+    />
+    <FloatingActionButton
+      icon="command"
+      label="Menú"
+      position="center"
+      on:click={openCommandBar}
+    />
+    {#if hasNodeSelected && currentView === 'editor'}
+      <FloatingActionButton
+        icon="pen-tool"
+        label="Tarjetas"
+        position="left"
+        on:click={openCardEditor}
+      />
+    {/if}
+  {/if}
 {/if}
 
 <style>
@@ -138,24 +275,46 @@
     min-height: 100vh;
     font-style: italic;
     color: var(--color-gray-500);
+    padding: 0 var(--space-lg);
+    text-align: center;
   }
 
-  /* --- Animaciones de Entrada --- */
+  .view-wrapper,
+  .view-content {
+    width: 100%;
+    height: 100%;
+  }
 
-  /* Por defecto, el contenido principal y el header están ocultos */
+  .view-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+  }
+
+  .view-content {
+    position: absolute;
+    inset: 0;
+  }
+
+  .tree-view-content {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
+
   .main-content,
   :global(.app-header) {
     opacity: 0;
     will-change: transform, opacity;
   }
 
-  /* La clase 'reveal' activa las animaciones de aparición */
-  .main-content.reveal {
-    animation: fadeInUp 0.8s ease-out forwards;
+  .main-content.reveal,
+  .tree-view-content.reveal {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
 
   :global(.app-header.reveal) {
-    animation: fadeInUp 0.6s ease-out 0.2s forwards;
+    animation: fadeInUp 0.6s cubic-bezier(0.25, 1, 0.5, 1) 0.2s forwards;
   }
 
   @keyframes fadeInUp {

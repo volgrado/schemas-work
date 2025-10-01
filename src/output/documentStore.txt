@@ -6,13 +6,10 @@ import type { SchemaMetadata } from '$lib/types';
 import * as Y from 'yjs';
 import type { IndexeddbPersistence } from 'y-indexeddb';
 
-// Importamos los servicios que este store orquestará.
+// Usamos la API de servicios refactorizada
 import * as directoryService from '$lib/services/core/directoryService';
 import { getDocumentProvider } from '$lib/services/core/persistenceService';
 
-/**
- * Define la forma completa del estado que representa el documento actualmente activo.
- */
 export interface DocumentStoreState {
   docId: string | null;
   metadata: SchemaMetadata | null;
@@ -22,9 +19,6 @@ export interface DocumentStoreState {
   initialContent?: object;
 }
 
-/**
- * El estado inicial del store.
- */
 const initialState: DocumentStoreState = {
   docId: null,
   metadata: null,
@@ -34,40 +28,28 @@ const initialState: DocumentStoreState = {
   initialContent: undefined,
 };
 
-// --- *** CORRECCIÓN DE IMPLEMENTACIÓN DEL CUSTOM STORE *** ---
-
-// 1. Creamos la instancia del store `writable`.
 const _documentStore: Writable<DocumentStoreState> = writable(initialState);
-
-// 2. Extraemos los métodos que necesitamos.
 const { subscribe, update, set } = _documentStore;
 
-/**
- * Función interna para limpiar el estado actual y destruir las conexiones
- * de persistencia.
- */
 function cleanup() {
-  // Ahora `get` se usa sobre la instancia correcta del store.
   const currentState = get(_documentStore);
-
   if (currentState.provider) {
     currentState.provider.destroy();
   }
   set(initialState);
 }
 
-/**
- * Carga un documento existente en el store.
- * @param {string} docId - El ID del documento a cargar.
- */
 async function loadDocument(docId: string) {
   cleanup();
   update((state) => ({ ...state, status: 'loading' }));
 
   try {
-    const metadata = await directoryService.getSchemaById(docId);
-    if (!metadata) {
-      throw new Error(`No se encontró el documento con id: ${docId}`);
+    // *** CAMBIO: Usamos la nueva función `getItemById` ***
+    const metadata = await directoryService.getItemById(docId);
+
+    // Añadimos una verificación para asegurarnos de que no intentamos abrir una carpeta
+    if (!metadata || metadata.type !== 'schema') {
+      throw new Error(`Ítem no es un documento válido: ${docId}`);
     }
 
     const { ydoc, provider } = getDocumentProvider(docId);
@@ -89,20 +71,16 @@ async function loadDocument(docId: string) {
   }
 }
 
-/**
- * Crea un nuevo documento, lo persiste y lo carga en el store.
- * @param {string} [title='Nuevo Esquema'] - El título para el nuevo documento.
- * @param {object} [content] - Contenido opcional en formato JSON de Tiptap.
- */
 async function createNewDocument(
   title: string = 'Nuevo Esquema',
-  content?: object
+  content?: object,
+  parentId: string | null = null
 ) {
   cleanup();
   update((state) => ({ ...state, status: 'loading' }));
 
   try {
-    const newMetadata = await directoryService.createSchema(title);
+    const newMetadata = await directoryService.createSchema(title, parentId);
     const { ydoc, provider } = getDocumentProvider(newMetadata.id);
     await provider.whenSynced;
 
@@ -122,9 +100,6 @@ async function createNewDocument(
   }
 }
 
-/**
- * Limpia la propiedad `initialContent` del estado.
- */
 function clearInitialContent() {
   update((state) => {
     if (state.initialContent) {
@@ -134,10 +109,24 @@ function clearInitialContent() {
   });
 }
 
-// 3. Exportamos el objeto del custom store con la API pública.
+function updateActiveDocumentMetadata(
+  metadataUpdates: Partial<SchemaMetadata>
+) {
+  update((state) => {
+    if (state.metadata) {
+      return {
+        ...state,
+        metadata: { ...state.metadata, ...metadataUpdates },
+      };
+    }
+    return state;
+  });
+}
+
 export const documentStore = {
   subscribe,
   loadDocument,
   createNewDocument,
   clearInitialContent,
+  updateActiveDocumentMetadata,
 };

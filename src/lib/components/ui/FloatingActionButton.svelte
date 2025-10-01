@@ -14,7 +14,7 @@
   // Ahora, TypeScript se quejará si intentamos pasar un nombre de icono que no existe.
   export let icon: IconName;
   export let label: string;
-  export let position: 'center' | 'right' = 'center';
+  export let position: 'center' | 'right' | 'left' = 'center';
 
   const dispatch = createEventDispatcher();
 
@@ -27,6 +27,7 @@
   class="fab-wrapper"
   class:center={position === 'center'}
   class:right={position === 'right'}
+  class:left={position === 'left'}
   transition:fly={{ y: 20, duration: 300, easing: quintOut }}
 >
   <Button
@@ -57,6 +58,10 @@
   }
   .right {
     right: var(--space-lg);
+  }
+
+  .left {
+    left: var(--space-lg);
   }
 
   :global(.fab-wrapper button) {

@@ -1,8 +1,9 @@
-<!-- src/lib/components/editor/BubbleMenu.svelte (SOLUCIÓN FINAL DE REACTIVIDAD) -->
+<!-- src/lib/components/editor/BubbleMenu.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import type { Editor } from '@tiptap/core';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 
   export let editor: Editor;
 
@@ -10,66 +11,100 @@
   let isVisible = false;
   let style = 'top: -1000px; left: -1000px;';
 
-  // *** LA CLAVE DE LA REACTIVIDAD ***
-  // Creamos una variable 'version' que actuará como un "disparador".
-  // Su valor no importa, solo el hecho de que cambia.
+  // Usamos 'version' como una clave para forzar el re-renderizado de los botones
+  // y asegurar que su estado 'is-active' se actualice correctamente.
   let version = 0;
 
+  // --- Definición Modular de Acciones ---
+  // Cada acción ahora es un objeto que contiene todo lo que necesita:
+  // su nombre, icono, el comando a ejecutar, y cómo determinar si está activo.
   const actions = [
     {
       name: 'bold',
-      icon: 'bold',
+      icon: 'bold' as const,
       command: () => editor.chain().focus().toggleBold().run(),
+      isActive: () => editor.isActive('bold'),
     },
     {
       name: 'italic',
-      icon: 'italic',
+      icon: 'italic' as const,
       command: () => editor.chain().focus().toggleItalic().run(),
+      isActive: () => editor.isActive('italic'),
     },
     {
       name: 'bulletList',
-      icon: 'list',
-      command: () => editor.chain().focus().toggleBulletList().run(),
+      icon: 'list' as const,
+      // *** USAREMOS NUESTRO COMANDO PERSONALIZADO ***
+      command: () => editor.chain().focus().toggleSchemaList().run(),
+      isActive: () => editor.isActive('bulletList'),
     },
     {
       name: 'heading',
-      icon: 'type',
-      command: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      icon: 'type' as const,
+      // *** LÓGICA CORREGIDA ***
+      // Usamos `setNode` para ser explícitos sobre las transformaciones,
+      // en lugar del `toggleHeading` que asume la existencia de 'paragraph'.
+      command: () => {
+        if (editor.isActive('heading', { level: 2 })) {
+          // Si ya es un heading, lo convertimos de vuelta a un 'schemaTerm'.
+          editor.chain().focus().setNode('schemaTerm').run();
+        } else {
+          // Si es cualquier otra cosa (probablemente un 'schemaTerm'),
+          // lo convertimos en un 'heading' de nivel 2.
+          editor.chain().focus().setNode('heading', { level: 2 }).run();
+        }
+      },
+      isActive: () => editor.isActive('heading', { level: 2 }),
     },
-  ] as const;
+  ];
 
-  function updateMenuPosition() {
+  async function updateMenuPosition() {
     const { view } = editor;
     const { state } = view;
 
-    if (state.selection.empty) {
+    // Oculta el menú si no hay selección o el elemento del menú no existe
+    if (state.selection.empty || !menuElement) {
       isVisible = false;
       return;
     }
 
-    const { from, to } = state.selection;
-    const start = view.coordsAtPos(from);
-    const end = view.coordsAtPos(to);
+    // Crea un elemento virtual que representa la selección del usuario
+    const virtualEl = {
+      getBoundingClientRect: () => {
+        const { from, to } = state.selection;
+        const start = view.coordsAtPos(from);
+        const end = view.coordsAtPos(to);
+        return new DOMRect(
+          start.left,
+          start.top,
+          end.right - start.left,
+          end.bottom - start.top
+        );
+      },
+    };
 
-    if (!menuElement) return;
-    const box = menuElement.getBoundingClientRect();
-
-    const centerX = start.left + (end.left - start.left) / 2;
-
-    style = `
-      left: ${centerX - box.width / 2}px;
-      top: ${start.top - box.height - 10}px;
-    `;
     isVisible = true;
+    await tick(); // Espera al próximo ciclo de renderizado para que el menú sea visible
+
+    // Calcula la posición óptima del menú usando @floating-ui/dom
+    const { x, y } = await computePosition(virtualEl, menuElement, {
+      placement: 'top',
+      middleware: [
+        offset(8),
+        // Evita que el menú se solape con el header (aprox. 60px de alto)
+        flip({ padding: 60 }),
+        // Evita que el menú se salga de los bordes de la pantalla
+        shift({ padding: 10 }),
+      ],
+    });
+
+    style = `left: ${x}px; top: ${y}px;`;
   }
 
+  // Hook que se ejecuta cada vez que el contenido o la selección del editor cambian
   const handleUpdate = () => {
     updateMenuPosition();
-    // *** LA MAGIA DE LA REACTIVIDAD ***
-    // Cada vez que el editor se actualiza, incrementamos nuestra variable 'version'.
-    // Svelte ve que 'version' ha cambiado y re-renderizará cualquier parte del markup
-    // que dependa de ella, forzando la re-evaluación de `editor.isActive()`.
-    version++;
+    version++; // Incrementa para forzar el re-renderizado
   };
 
   onMount(() => {
@@ -83,12 +118,6 @@
   });
 </script>
 
-<!--
-  Añadimos `{:key version}` al bucle. Esto le dice a Svelte:
-  "Si la variable 'version' cambia, considera que toda esta sección
-  ha cambiado y vuelve a dibujarla desde cero".
-  Es la forma más explícita de forzar una actualización.
--->
 <div
   class="bubble-menu-container"
   class:is-visible={isVisible}
@@ -99,10 +128,8 @@
     {#each actions as action}
       <button
         class="menu-button"
-        class:is-active={editor.isActive(action.name) ||
-          (action.name === 'heading' &&
-            editor.isActive('heading', { level: 2 }))}
-        on:click={action.command}
+        class:is-active={action.isActive()}
+        onclick={action.command}
         aria-label={action.name}
       >
         <Icon name={action.icon} size={18} />
@@ -119,32 +146,32 @@
     gap: var(--space-xs);
     padding: var(--space-xs);
     border-radius: var(--space-sm);
-    z-index: 20;
-    will-change: top, left, opacity;
 
-    /* --- *** LA SOLUCIÓN DEFINITIVA *** --- */
-    /* Por defecto, el menú es invisible E NO INTERACTIVO */
+    /* Z-index mayor que el AppHeader (50) para que aparezca por encima */
+    z-index: 60;
+
+    will-change: top, left, opacity;
     opacity: 0;
     visibility: hidden;
-    pointer-events: none; /* Esta es la línea clave que previene los "clics fantasma" */
+    pointer-events: none;
     transition:
       opacity 0.15s ease-in-out,
       visibility 0.15s ease-in-out;
 
-    /* Estilos por defecto (Modo Oscuro) */
+    /* Estilos por defecto para tema oscuro */
     background-color: var(--color-gray-100);
     color: var(--color-text);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   }
 
-  /* Cuando añadimos la clase .is-visible, se vuelve opaco e interactivo */
   .bubble-menu-container.is-visible {
     opacity: 1;
     visibility: visible;
     pointer-events: all;
   }
 
+  /* Estilos para tema claro */
   @media (prefers-color-scheme: light) {
     .bubble-menu-container {
       background-color: var(--color-text);

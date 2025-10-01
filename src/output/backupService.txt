@@ -9,7 +9,8 @@ import {
   uint8ArrayToBase64,
   base64ToUint8Array,
 } from '$lib/utils/crypto';
-import type { Vault } from '$lib/types';
+import type { Vault, SchemaMetadata } from '$lib/types';
+import { toast } from 'svelte-sonner';
 
 /**
  * Orquesta la exportación de la bóveda completa del usuario a un
@@ -20,16 +21,20 @@ export async function exportVault(password: string): Promise<void> {
     throw new Error('Se requiere una contraseña para exportar la bóveda.');
   }
 
-  const schemas = await directoryService.listSchemas();
-  const content: Record<string, string> = {};
+  // 1. Obtener TODOS los ítems para guardar la estructura completa (carpetas y esquemas)
+  const allItems = await directoryService.getAllItems();
 
+  // 2. Filtrar para obtener solo los esquemas, ya que solo ellos tienen contenido
+  const schemasToExport = allItems.filter((item) => item.type === 'schema');
+
+  const content: Record<string, string> = {};
   const providers: {
     provider: IndexeddbPersistence;
     ydoc: Y.Doc;
     id: string;
   }[] = [];
 
-  for (const schema of schemas) {
+  for (const schema of schemasToExport) {
     const ydoc = new Y.Doc();
     const provider = new IndexeddbPersistence(schema.id, ydoc);
     providers.push({ provider, ydoc, id: schema.id });
@@ -43,7 +48,8 @@ export async function exportVault(password: string): Promise<void> {
     p.provider.destroy();
   }
 
-  const vault: Vault = { schemas, content };
+  // 3. Crear la bóveda. La propiedad `schemas` ahora contiene todos los ítems.
+  const vault: Vault = { schemas: allItems, content };
   const vaultJson = JSON.stringify(vault);
 
   const encryptedVault = await encryptData(password, vaultJson);
@@ -62,21 +68,17 @@ export async function exportVault(password: string): Promise<void> {
  * Orquesta la importación y restauración de una bóveda desde un archivo
  * JSON encriptado.
  */
-export async function importVault(): Promise<void> {
+export async function importVault(password: string): Promise<void> {
   try {
     const file = await selectFile();
     if (!file) return;
 
     const fileContent = await readFile(file);
 
-    // *** CORRECCIÓN ***: El 'prompt' nativo ha sido eliminado.
-    // En una implementación real, la UI (como CommandBar) se encargaría de recoger
-    // la contraseña y pasarla como argumento a esta función.
-    // Por ahora, usamos un prompt temporal para mantener la funcionalidad.
-    const password = prompt(
-      'Introduce la contraseña de la bóveda que quieres importar.'
-    );
-    if (!password) return;
+    if (!password) {
+      toast.error('Se requiere una contraseña para importar la bóveda.');
+      return;
+    }
 
     const encryptedJson = JSON.parse(fileContent);
     const vaultJson = await decryptData(password, encryptedJson);
@@ -88,20 +90,14 @@ export async function importVault(): Promise<void> {
       );
     }
 
-    // *** CORRECCIÓN ***: El 'confirm' nativo ha sido reemplazado por un 'console.warn'.
-    // Esto elimina el bloqueo de la UI. En producción, se usaría un modal de confirmación.
-    console.warn(
-      '¡ADVERTENCIA! Importar esta bóveda reemplazará TODOS tus datos actuales. Esta acción no se puede deshacer.'
-    );
-    const confirmation = true; // Asumimos que el usuario confirma la acción.
-
-    if (!confirmation) return;
-
-    // --- COMIENZA LA OPERACIÓN DESTRUCTIVA ---
     await clearAllData();
 
+    // `vault.schemas` contiene la estructura completa (carpetas y esquemas),
+    // que `saveDirectory` guardará correctamente.
     await directoryService.saveDirectory(vault.schemas);
 
+    // Este bucle sigue funcionando bien, ya que `vault.content` solo
+    // contiene las claves de los esquemas.
     for (const schemaId in vault.content) {
       if (Object.prototype.hasOwnProperty.call(vault.content, schemaId)) {
         const ydoc = new Y.Doc();
@@ -113,23 +109,24 @@ export async function importVault(): Promise<void> {
       }
     }
 
-    // *** CORRECCIÓN ***: El 'alert' de éxito ha sido reemplazado por un 'console.log'.
-    console.log(
-      '¡Importación completada con éxito! La aplicación se recargará ahora.'
+    toast.success(
+      '¡Importación completada! La aplicación se recargará ahora.',
+      {
+        duration: 5000,
+        onDismiss: () => window.location.reload(),
+        onAutoClose: () => window.location.reload(),
+      }
     );
-    window.location.reload();
   } catch (error) {
     console.error('Error durante la importación:', error);
-    // *** CORRECCIÓN ***: El 'alert' de error ha sido reemplazado por un 'console.error'.
-    // Esto es más útil para la depuración y no interrumpe al usuario.
-    console.error(
-      'La importación ha fallado. Es posible que la contraseña sea incorrecta o que el archivo esté corrupto.'
-    );
+    toast.error('La importación ha fallado.', {
+      description:
+        'Es posible que la contraseña sea incorrecta o que el archivo esté corrupto.',
+    });
   }
 }
 
-// --- FUNCIONES DE AYUDA (Helpers) ---
-// (Estas funciones no tienen cambios)
+// --- FUNCIONES DE AYDA (Helpers) ---
 
 function selectFile(): Promise<File | null> {
   return new Promise((resolve) => {
@@ -156,23 +153,21 @@ function readFile(file: File): Promise<string> {
 }
 
 async function clearAllData(): Promise<void> {
-  const oldSchemas = await directoryService.listSchemas();
-  const deletionPromises = oldSchemas.map(
+  // Obtenemos todos los ítems y filtramos para encontrar solo los esquemas,
+  // que son los únicos que tienen una base de datos IndexedDB asociada.
+  const allItems = await directoryService.getAllItems();
+  const schemasToDelete = allItems.filter((item) => item.type === 'schema');
+
+  const deletionPromises = schemasToDelete.map(
     (schema) =>
       new Promise<void>((resolve, reject) => {
         const request = window.indexedDB.deleteDatabase(schema.id);
         request.onsuccess = () => resolve();
         request.onerror = (event) => reject(request.error || event);
-        request.onblocked = (event) => {
-          console.warn(
-            `La eliminación de la BD '${schema.id}' está bloqueada.`
-          );
+        request.onblocked = (event) =>
           reject(
-            new Error(
-              `La eliminación de la base de datos está bloqueada. Cierra otras pestañas.`
-            )
+            new Error(`La eliminación de la BD '${schema.id}' está bloqueada.`)
           );
-        };
       })
   );
   await Promise.all(deletionPromises);

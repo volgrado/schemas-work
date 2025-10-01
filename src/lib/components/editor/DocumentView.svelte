@@ -1,6 +1,6 @@
-<!-- src/lib/components/editor/DocumentView.svelte (VERSIÓN COMPLETA - FIN DE SPRINT 1) -->
+<!-- src/lib/components/editor/DocumentView.svelte (VERSIÓN REACTIVA Y DESACOPLADA) -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
 
   // --- Tiptap Core ---
@@ -10,18 +10,22 @@
   // --- Tiptap Extensions (Nativas) ---
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
-  import Paragraph from '@tiptap/extension-paragraph';
   import Text from '@tiptap/extension-text';
+  import History from '@tiptap/extension-history';
   import Heading from '@tiptap/extension-heading';
   import Bold from '@tiptap/extension-bold';
   import Italic from '@tiptap/extension-italic';
+  import Placeholder from '@tiptap/extension-placeholder';
+  import Paragraph from '@tiptap/extension-paragraph';
+  import ListItem from '@tiptap/extension-list-item';
   import BulletList from '@tiptap/extension-bullet-list';
-  import OrderedList from '@tiptap/extension-ordered-list';
 
   // --- Tiptap Extensions (Personalizadas) ---
-  import { FlippableListItem } from '$lib/editor/extensions/FlippableListItem';
+  import { RoleExtension } from '$lib/editor/extensions/RoleExtension';
+  import { SmartEnter } from '$lib/editor/extensions/SmartEnter';
   import { DynamicHighlighter } from '$lib/editor/extensions/DynamicHighlighter';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
+  import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
 
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
@@ -30,83 +34,121 @@
   // --- Componentes de UI ---
   import BubbleMenu from './BubbleMenu.svelte';
 
-  // Props recibidas desde +page.svelte
-  export let ydoc: Y.Doc;
-  export let initialContent: object | null = null;
+  // --- Props y Eventos ---
+  let {
+    ydoc,
+    initialContent = null,
+    focusedNodePos = null,
+  }: {
+    ydoc: Y.Doc;
+    initialContent?: object | null;
+    focusedNodePos?: number | null; // Prop para controlar el foco desde fuera
+  } = $props();
+
+  const dispatch = createEventDispatcher<{ focusApplied: void }>();
 
   let element: HTMLDivElement;
   let editor: Editor;
+
+  // --- EFECTO REACTIVO para manejar las solicitudes de foco ---
+  $effect(() => {
+    // Solo actuar si se nos pide enfocar un nodo y el editor está listo.
+    if (focusedNodePos !== null && editor && editor.isEditable) {
+      // Comprobamos si ya estamos en el nodo correcto para evitar bucles.
+      const currentSelection = editor.state.selection;
+      const parentListItem = findParentNode(
+        (node) => node.type.name === 'listItem'
+      )(currentSelection);
+
+      if (!parentListItem || parentListItem.pos !== focusedNodePos) {
+        editor.chain().focus().setNodeSelection(focusedNodePos).run();
+      }
+
+      // Notificamos al padre que hemos completado la acción, para que pueda resetear la prop.
+      // Usamos tick() para asegurar que se despacha después de la actualización del DOM.
+      import('svelte').then(({ tick }) =>
+        tick().then(() => dispatch('focusApplied'))
+      );
+    }
+  });
 
   onMount(() => {
     editor = new Editor({
       element: element,
       extensions: [
-        // Nodos y Marcas Básicas
         Document,
         Paragraph,
+        ListItem,
+        BulletList,
         Text,
+        History,
         Heading.configure({ levels: [1, 2, 3] }),
         Bold,
         Italic,
-        BulletList,
-        OrderedList,
-
-        // Nuestras Extensiones Personalizadas
-        FlippableListItem, // Permite guardar tarjetas de estudio en los <li>
-        DynamicHighlighter, // Resalta nodos para Repaso y TTS
-        SlashCommandExtension, // Activa el menú de comandos con "/"
-
-        // Funcionalidad Colaborativa
+        RoleExtension,
+        SmartEnter,
+        PositionSyncExtension,
+        Placeholder.configure({
+          placeholder: ({ editor, node, pos }) => {
+            if (node.type.name === 'heading' && node.attrs.level === 1) {
+              return '¿Cuál es el título de tu esquema?';
+            }
+            if (node.type.name === 'paragraph' && !node.textContent) {
+              const parent = editor.state.doc.resolve(pos).parent;
+              if (parent.firstChild === node) {
+                return 'Escribe un término... (usa Tab para anidar)';
+              }
+            }
+            if (
+              node.type.name === 'paragraph' &&
+              !node.textContent &&
+              node.attrs.role === 'description'
+            ) {
+              return 'Añade una descripción (opcional)';
+            }
+            return '';
+          },
+        }),
+        DynamicHighlighter,
+        SlashCommandExtension,
         Collaboration.configure({ document: ydoc }),
       ],
       editorProps: {
         attributes: {
-          class: 'prose', // Aplica estilos base a la zona editable
+          class: 'prose',
         },
       },
-
-      // Este hook se ejecuta en cada cambio, actualizando el estado global
       onUpdate({ editor }) {
         const { selection } = editor.state;
         const listItemNode = findParentNode(
           (node) => node.type.name === 'listItem'
         )(selection);
 
-        if (listItemNode) {
-          // Si estamos en un <li>, guardamos su posición en el store
-          // para que otros componentes (como la CommandBar) sepan qué nodo está activo.
-          if (listItemNode.pos !== get(editorStore).selectedNodePos) {
-            editorStore.update((s) => ({
-              ...s,
-              selectedNodePos: listItemNode.pos,
-            }));
-          }
-        } else {
-          // Si no estamos en un <li>, reseteamos la posición en el store.
-          if (get(editorStore).selectedNodePos !== null) {
-            editorStore.update((s) => ({ ...s, selectedNodePos: null }));
-          }
+        // Actualizamos el store global con la posición del nodo seleccionado actualmente.
+        const currentSelectedPos = get(editorStore).selectedNodePos;
+        const newSelectedPos = listItemNode ? listItemNode.pos : null;
+
+        if (currentSelectedPos !== newSelectedPos) {
+          editorStore.update((s) => ({
+            ...s,
+            selectedNodePos: newSelectedPos,
+          }));
         }
       },
     });
 
-    // Si se está creando un documento nuevo con contenido inicial (ej. desde la IA),
-    // se inserta aquí.
     if (initialContent) {
       editor.commands.setContent(initialContent);
-      documentStore.clearInitialContent(); // Limpiamos para no volver a insertarlo
+      documentStore.clearInitialContent();
     }
 
-    // Hacemos que la instancia del editor sea accesible globalmente a través del store.
     editorStore.update((s) => ({ ...s, instance: editor }));
   });
 
-  // Limpieza al desmontar el componente para evitar fugas de memoria
   onDestroy(() => {
     if (editor) {
       editor.destroy();
     }
-    // Reseteamos el store del editor
     editorStore.set({ instance: null, selectedNodePos: null });
   });
 </script>
@@ -124,7 +166,7 @@
     max-width: 720px;
     margin: 0 auto;
     padding: var(--space-xxl) var(--space-md);
-    padding-bottom: 50vh; /* Añade espacio al final para poder hacer scroll más allá del último elemento */
+    padding-bottom: 50vh;
     min-height: 100vh;
     outline: none;
   }
@@ -139,13 +181,13 @@
     margin-top: var(--space-xl);
     margin-bottom: var(--space-md);
   }
+
   :global(.prose h2) {
     font-size: 1.5rem;
     margin-top: var(--space-lg);
     margin-bottom: var(--space-sm);
   }
 
-  /* Placeholder para cuando un heading o párrafo está vacío */
   :global(.prose .is-empty::before) {
     content: attr(data-placeholder);
     float: left;

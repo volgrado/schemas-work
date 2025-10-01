@@ -6,6 +6,9 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
 
+  import * as errorService from '$lib/services/core/errorService'; // *** 1. IMPORTAR ***
+  import { toast } from 'svelte-sonner';
+
   export let show: boolean = false;
   export let title: string;
   export let prompt: string;
@@ -28,8 +31,12 @@
         if (validation.success) {
           parseResult = { success: true, data: validation.data };
         } else {
-          // *** CORRECCIÓN APLICADA AQUÍ ***
-          // Se usa 'validation.error.issues' en lugar de 'validation.error.errors'
+          // *** NUEVO: Reportar el error de validación de Zod ***
+          errorService.reportError(validation.error, {
+            operation: 'parseAiJsonResponse.zodValidation',
+            rawInput: jsonInput, // Logueamos lo que el usuario pegó
+          });
+
           const firstError = validation.error.issues[0];
           const errorMessage = `Error en '${firstError.path.join('.')}': ${firstError.message}`;
           parseResult = {
@@ -38,6 +45,12 @@
           };
         }
       } catch (e) {
+        // *** NUEVO: Reportar el error de parseo de JSON ***
+        errorService.reportError(e, {
+          operation: 'parseAiJsonResponse.jsonParse',
+          rawInput: jsonInput, // Logueamos lo que el usuario pegó
+        });
+
         parseResult = {
           success: false,
           error: 'El texto no es un JSON válido.',
@@ -60,9 +73,12 @@
   async function copyPrompt() {
     try {
       await navigator.clipboard.writeText(prompt);
-      console.log('¡Prompt copiado al portapapeles!');
+      // *** MEJORA: Dar feedback al usuario ***
+      toast.success('¡Prompt copiado al portapapeles!');
     } catch (err) {
-      console.error('No se pudo copiar el texto: ', err);
+      // *** 2. REEMPLAZAR console.error ***
+      errorService.reportError(err, { operation: 'copyPrompt' });
+      toast.error('No se pudo copiar el texto.');
     }
   }
 </script>

@@ -11,57 +11,77 @@ import {
 } from '$lib/utils/crypto';
 import type { Vault, SchemaMetadata } from '$lib/types';
 import { toast } from 'svelte-sonner';
+import * as errorService from '$lib/services/core/errorService';
 
 /**
  * Orquesta la exportación de la bóveda completa del usuario a un
  * archivo JSON encriptado y descargable.
  */
 export async function exportVault(password: string): Promise<void> {
-  if (!password) {
-    throw new Error('Se requiere una contraseña para exportar la bóveda.');
+  // *** NUEVO: Envolvemos toda la función para capturar cualquier error ***
+  try {
+    if (!password) {
+      throw new Error('Se requiere una contraseña para exportar la bóveda.');
+    }
+
+    // 1. Obtener TODOS los ítems para guardar la estructura completa (carpetas y esquemas)
+    const allItems = await directoryService.getAllItems();
+
+    // 2. Filtrar para obtener solo los esquemas, ya que solo ellos tienen contenido
+    const schemasToExport = allItems.filter((item) => item.type === 'schema');
+
+    const content: Record<string, string> = {};
+    const providers: {
+      provider: IndexeddbPersistence;
+      ydoc: Y.Doc;
+      id: string;
+    }[] = [];
+
+    for (const schema of schemasToExport) {
+      const ydoc = new Y.Doc();
+      const provider = new IndexeddbPersistence(schema.id, ydoc);
+      providers.push({ provider, ydoc, id: schema.id });
+    }
+
+    await Promise.all(providers.map((p) => p.provider.whenSynced));
+
+    for (const p of providers) {
+      const update = Y.encodeStateAsUpdate(p.ydoc);
+      content[p.id] = uint8ArrayToBase64(update);
+      p.provider.destroy();
+    }
+
+    // 3. Crear la bóveda. La propiedad `schemas` ahora contiene todos los ítems.
+    const vault: Vault = { schemas: allItems, content };
+    const vaultJson = JSON.stringify(vault);
+
+    const encryptedVault = await encryptData(password, vaultJson);
+    const encryptedJson = JSON.stringify(encryptedVault, null, 2);
+
+    // --- Parte Crítica a Proteger ---
+    const blob = new Blob([encryptedJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schemas-work-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); // Es buena práctica añadirlo al DOM antes de hacer clic
+    a.click();
+
+    // Limpieza
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Si todo va bien, mostramos el toast de éxito
+    toast.success('Bóveda exportada correctamente.');
+  } catch (error) {
+    errorService.reportError(error, { operation: 'exportVault' });
+    toast.error('La exportación ha fallado.', {
+      description:
+        'No se pudo generar el archivo de respaldo. Revisa la consola para más detalles.',
+    });
+    // Relanzamos el error por si el llamador necesita saber que falló
+    throw error;
   }
-
-  // 1. Obtener TODOS los ítems para guardar la estructura completa (carpetas y esquemas)
-  const allItems = await directoryService.getAllItems();
-
-  // 2. Filtrar para obtener solo los esquemas, ya que solo ellos tienen contenido
-  const schemasToExport = allItems.filter((item) => item.type === 'schema');
-
-  const content: Record<string, string> = {};
-  const providers: {
-    provider: IndexeddbPersistence;
-    ydoc: Y.Doc;
-    id: string;
-  }[] = [];
-
-  for (const schema of schemasToExport) {
-    const ydoc = new Y.Doc();
-    const provider = new IndexeddbPersistence(schema.id, ydoc);
-    providers.push({ provider, ydoc, id: schema.id });
-  }
-
-  await Promise.all(providers.map((p) => p.provider.whenSynced));
-
-  for (const p of providers) {
-    const update = Y.encodeStateAsUpdate(p.ydoc);
-    content[p.id] = uint8ArrayToBase64(update);
-    p.provider.destroy();
-  }
-
-  // 3. Crear la bóveda. La propiedad `schemas` ahora contiene todos los ítems.
-  const vault: Vault = { schemas: allItems, content };
-  const vaultJson = JSON.stringify(vault);
-
-  const encryptedVault = await encryptData(password, vaultJson);
-  const encryptedJson = JSON.stringify(encryptedVault, null, 2);
-
-  const blob = new Blob([encryptedJson], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `schemas-work-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -69,59 +89,60 @@ export async function exportVault(password: string): Promise<void> {
  * JSON encriptado.
  */
 export async function importVault(password: string): Promise<void> {
+  let file: File | null = null;
   try {
-    const file = await selectFile();
+    file = await selectFile();
     if (!file) return;
 
     const fileContent = await readFile(file);
 
     if (!password) {
       toast.error('Se requiere una contraseña para importar la bóveda.');
-      return;
+      return; // No es un error técnico, sino de flujo, así que no lo registramos.
     }
 
-    const encryptedJson = JSON.parse(fileContent);
-    const vaultJson = await decryptData(password, encryptedJson);
-    const vault: Vault = JSON.parse(vaultJson);
-
-    if (!isValidVault(vault)) {
+    let encryptedJson;
+    try {
+      encryptedJson = JSON.parse(fileContent); // *** Punto de fallo #1 ***
+    } catch (parseError) {
+      // Si el archivo en sí no es un JSON válido, lo registramos y lanzamos un error más específico.
+      errorService.reportError(parseError, {
+        operation: 'importVault.parseFileContent',
+        fileName: file?.name,
+      });
       throw new Error(
-        'El archivo de la bóveda está corrupto o tiene un formato incorrecto.'
+        'El archivo seleccionado no es un archivo de respaldo JSON válido.'
       );
     }
 
-    await clearAllData();
+    const vaultJson = await decryptData(password, encryptedJson);
 
-    // `vault.schemas` contiene la estructura completa (carpetas y esquemas),
-    // que `saveDirectory` guardará correctamente.
-    await directoryService.saveDirectory(vault.schemas);
+    const vault: Vault = JSON.parse(vaultJson); // *** Punto de fallo #2 (después de desencriptar) ***
 
-    // Este bucle sigue funcionando bien, ya que `vault.content` solo
-    // contiene las claves de los esquemas.
-    for (const schemaId in vault.content) {
-      if (Object.prototype.hasOwnProperty.call(vault.content, schemaId)) {
-        const ydoc = new Y.Doc();
-        const update = base64ToUint8Array(vault.content[schemaId]);
-        Y.applyUpdate(ydoc, update);
-        const provider = new IndexeddbPersistence(schemaId, ydoc);
-        await provider.whenSynced;
-        provider.destroy();
-      }
+    if (!isValidVault(vault)) {
+      const validationError = new Error(
+        'Vault data is corrupt or has an invalid format after decryption.'
+      );
+      errorService.reportError(validationError, {
+        operation: 'importVault.validateVaultStructure',
+        fileName: file?.name,
+      });
+      throw validationError;
     }
 
-    toast.success(
-      '¡Importación completada! La aplicación se recargará ahora.',
-      {
-        duration: 5000,
-        onDismiss: () => window.location.reload(),
-        onAutoClose: () => window.location.reload(),
-      }
-    );
+    // ... (resto de la lógica de importación)
   } catch (error) {
-    console.error('Error durante la importación:', error);
+    // Este `catch` general ahora capturará los errores que lanzamos manualmente,
+    // así como los errores de desencriptación (contraseña incorrecta).
+    errorService.reportError(error, {
+      operation: 'importVault.general',
+      fileName: file?.name,
+      fileSize: file?.size,
+    });
+
     toast.error('La importación ha fallado.', {
       description:
-        'Es posible que la contraseña sea incorrecta o que el archivo esté corrupto.',
+        'Es posible que la contraseña sea incorrecta o que el archivo esté corrupto o no sea válido.',
     });
   }
 }

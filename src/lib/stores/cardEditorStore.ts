@@ -3,6 +3,7 @@
 import { writable, get } from 'svelte/store';
 import type { DomainCard } from '$lib/types';
 import { editorStore } from './editorStore';
+import * as errorService from '$lib/services/core/errorService';
 
 /**
  * Define la estructura del estado para el editor de tarjetas.
@@ -59,25 +60,81 @@ function close() {
   });
 }
 
+function prefillAndAddCard() {
+  // *** 2. ENVOLVER EN try...catch ***
+  try {
+    const editor = get(editorStore).instance;
+    const state = get(store);
+
+    if (!editor || state.selectedNodePos === null) {
+      // No es un error, simplemente no hay nada que hacer.
+      return;
+    }
+
+    const node = editor.state.doc.nodeAt(state.selectedNodePos);
+
+    // *** NUEVO: Comprobación explícita del nodo ***
+    if (!node) {
+      throw new Error(
+        `Could not find node at position ${state.selectedNodePos} to prefill card.`
+      );
+    }
+
+    let termText = '';
+    let descriptionText = '';
+
+    // Esta lógica de recorrer los hijos es segura,
+    // pero la mantenemos dentro del try...catch por si acaso.
+    node.forEach((childNode) => {
+      if (childNode.attrs.role === 'term') {
+        // Asumiendo que usamos roles
+        termText = childNode.textContent;
+      } else if (childNode.attrs.role === 'description') {
+        descriptionText = childNode.textContent;
+      }
+    });
+
+    const newCard: DomainCard = {
+      q: descriptionText
+        ? `¿Qué es "${termText}"?`
+        : termText || 'Nueva Pregunta', // Añadir fallback
+      a: descriptionText || '',
+    };
+
+    update((s) => {
+      const newCards = [...s.cards, newCard];
+      // Guardamos inmediatamente para que el usuario vea el cambio
+      saveCardsToEditor(newCards);
+      return { ...s, cards: newCards };
+    });
+  } catch (error) {
+    const editorState = get(editorStore);
+    errorService.reportError(error, {
+      operation: 'prefillAndAddCard',
+      selectedNodePos: editorState.selectedNodePos,
+    });
+    // Opcional: Notificar al usuario que algo falló.
+    // toast.error('No se pudo autocompletar la tarjeta.');
+  }
+}
+
 /**
  * Guarda las tarjetas (desde la copia local en el store) de vuelta en el
  * nodo de Tiptap correspondiente.
  */
-function saveCardsToEditor() {
+function saveCardsToEditor(cardsToSave?: DomainCard[]) {
   const editor = get(editorStore).instance;
   const state = get(store);
 
-  if (!editor || state.selectedNodePos === null) {
-    return;
-  }
+  if (!editor || state.selectedNodePos === null) return;
 
-  // Aquí es donde la magia sucede:
-  // Usamos el comando personalizado `setCards` que definimos en nuestra extensión `FlippableListItem`.
+  const cards = cardsToSave || state.cards; // Usar las tarjetas pasadas o las del estado
+
   editor
     .chain()
-    .focus() // Es una buena práctica asegurar que el editor tenga el foco.
-    .setNodeSelection(state.selectedNodePos) // Selecciona el `<li>` en la posición guardada.
-    .setCards(state.cards) // Ejecuta nuestro comando personalizado con los nuevos datos.
+    .focus()
+    .setNodeSelection(state.selectedNodePos)
+    .setCards(cards)
     .run();
 }
 
@@ -98,4 +155,5 @@ export const cardEditorStore = {
   close,
   updateCardsInStore,
   saveCardsToEditor,
+  prefillAndAddCard,
 };
