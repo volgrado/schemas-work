@@ -1,7 +1,17 @@
-// src/lib/services/features/schemaService.ts (VERSIÓN FINAL CON CORRECCIONES DE TIPO)
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { TreeNodeData } from '$lib/types/tree';
 
+/**
+ * Servicio que contiene la lógica de negocio para interpretar y transformar
+ * la estructura de un documento de esquema (ProseMirror/Tiptap).
+ */
+
+/**
+ * Convierte un documento ProseMirror completo a una estructura de datos jerárquica
+ * (TreeNodeData), ideal para ser consumida por componentes de UI como una vista de árbol.
+ * @param doc El nodo raíz del documento ProseMirror (de editor.state.doc).
+ * @returns Un objeto TreeNodeData que representa la jerarquía del esquema, o null si no se puede generar.
+ */
 export function documentToTreeData(
   doc: ProseMirrorNode | null
 ): TreeNodeData | null {
@@ -9,19 +19,21 @@ export function documentToTreeData(
     return null;
   }
 
-  // --- 1. Title Discovery (Looks for H2) ---
+  // --- 1. Descubrimiento del Título (Busca un H1) ---
+  // ✅ ACTUALIZADO: Buscamos un heading de nivel 1 para alinearnos con la salida de la IA.
   let title = 'Esquema (sin título)';
   doc.descendants((node) => {
-    if (node.type.name === 'heading' && node.attrs.level === 2) {
+    if (node.type.name === 'heading' && node.attrs.level === 1) {
+      // <-- Cambio de 2 a 1
       if (node.textContent.trim()) {
         title = node.textContent.trim();
-        return false;
+        return false; // Detenemos la búsqueda una vez encontrado
       }
     }
-    return !title || title === 'Esquema (sin título)';
+    return true;
   });
 
-  // --- 2. Smart List Selection ---
+  // --- 2. Selección Inteligente de la Lista Principal ---
   let mainList: ProseMirrorNode | undefined;
   const topLevelLists: ProseMirrorNode[] = [];
   doc.forEach((node) => {
@@ -49,7 +61,7 @@ export function documentToTreeData(
     return null;
   }
 
-  // --- 3. Tree Generation ---
+  // --- 3. Generación del Árbol ---
   const root: TreeNodeData = {
     id: 'root-title',
     content: title,
@@ -79,6 +91,7 @@ export function documentToTreeData(
       const paragraphForContent = termParagraph || firstParagraphFallback;
 
       if (paragraphForContent) {
+        // La posición se añade a través de la PositionSyncExtension
         const pos = listItem.attrs.pos;
         if (pos === null || pos === undefined) {
           return;
@@ -87,14 +100,12 @@ export function documentToTreeData(
         const content =
           paragraphForContent.textContent.trim() || '(Nodo sin título)';
         const newNode: TreeNodeData = {
-          id: `node-${pos}`,
+          id: `node-${pos}`, // Usamos la posición para un ID estable
           content: content,
           children: [],
         };
         parentArray.push(newNode);
 
-        // ✅ (FIX 1) The check `newNode.children` is crucial here. It proves to
-        // TypeScript that the argument is not undefined before the recursive call.
         if (nestedList && newNode.children) {
           processList(nestedList, newNode.children);
         }
@@ -102,18 +113,48 @@ export function documentToTreeData(
     });
   }
 
-  // ✅ (FIX 2) Re-added the necessary check for `root.children`. This satisfies
-  // the compiler and ensures we don't pass `undefined` to `processList`.
   if (root.children) {
     processList(mainList, root.children);
   }
 
-  if (root.children && root.children.length === 0) {
-    console.log(
-      '[schemaService] The main list is empty. Returning a root node with no children.'
-    );
+  return root;
+}
+
+/**
+ * ⭐ NUEVA FUNCIÓN
+ * Genera una ruta de "migas de pan" (breadcrumb) para un nodo en una posición dada.
+ * Esta ruta se utiliza para dar contexto a la IA al expandir un nodo.
+ * @param doc El documento completo de ProseMirror (obtenido de editor.state.doc).
+ * @param pos La posición del nodo 'listItem' del que queremos la ruta.
+ * @returns Un string como "Tema Principal > Subtema > Concepto Actual".
+ */
+export function getBreadcrumbForPosition(
+  doc: ProseMirrorNode,
+  pos: number
+): string {
+  const path: string[] = [];
+  // `doc.resolve(pos)` nos da acceso a toda la información jerárquica en esa posición.
+  const resolvedPos = doc.resolve(pos);
+
+  // Recorremos el árbol hacia arriba desde la profundidad del nodo actual hasta la raíz.
+  for (let i = resolvedPos.depth; i > 0; i--) {
+    const parentNode = resolvedPos.node(i);
+
+    // Solo nos interesan los 'listItem' en la ruta para construir el breadcrumb.
+    if (parentNode.type.name === 'listItem') {
+      // Por nuestra estructura, el primer hijo de un 'listItem' es el párrafo
+      // que contiene el término o la clave.
+      const termParagraph = parentNode.content.firstChild;
+      if (termParagraph && termParagraph.textContent.trim()) {
+        // Añadimos el texto al PRINCIPIO del array para construir la ruta en el orden correcto.
+        path.unshift(termParagraph.textContent.trim());
+      }
+    }
   }
 
-  console.log('[schemaService] Successfully generated tree data:', root);
-  return root;
+  if (path.length === 0) {
+    return 'Raíz del esquema';
+  }
+
+  return path.join(' > ');
 }

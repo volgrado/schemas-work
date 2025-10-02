@@ -1,9 +1,6 @@
-// src/lib/stores/commandBarStore.ts
-import { writable } from 'svelte/store';
-import type { Command } from '$lib/types/command'; // Asegúrate de tener este tipo de Tarea 1.1
+import { writable, get } from 'svelte/store';
 
 // --- 1. Definir los posibles estados y vistas ---
-
 export type CommandBarView = 'main' | 'list-schemas' | 'ai-actions';
 export type PasswordModalAction = 'export' | 'import';
 export type AiHelperAction =
@@ -12,7 +9,6 @@ export type AiHelperAction =
   | 'expand-node';
 
 // --- 2. Definir la forma completa de nuestro estado ---
-
 export interface CommandBarState {
   isOpen: boolean;
   currentView: CommandBarView;
@@ -20,11 +16,13 @@ export interface CommandBarState {
   passwordModalAction: PasswordModalAction;
   isAiHelperOpen: boolean;
   aiHelperAction: AiHelperAction | null;
-  isDiagnosticModalOpen: boolean; // *** 1. AÑADIR NUEVO ESTADO ***
+  isDiagnosticModalOpen: boolean;
+
+  // ✅ NUEVA PROPIEDAD: Guarda el ID de la carpeta que se está viendo en el explorador.
+  currentParentId: string | null;
 }
 
 // --- 3. Definir el estado inicial ---
-
 const initialState: CommandBarState = {
   isOpen: false,
   currentView: 'main',
@@ -32,11 +30,13 @@ const initialState: CommandBarState = {
   passwordModalAction: 'export',
   isAiHelperOpen: false,
   aiHelperAction: null,
-  isDiagnosticModalOpen: false, // *** 2. INICIALIZAR EL NUEVO ESTADO ***
+  isDiagnosticModalOpen: false,
+
+  // ✅ NUEVA PROPIEDAD: Inicializamos el contexto de la carpeta.
+  currentParentId: null,
 };
 
 // --- 4. Crear el store con la nueva lógica ---
-
 function createCommandBarStore() {
   const { subscribe, set, update } = writable<CommandBarState>(initialState);
 
@@ -44,52 +44,45 @@ function createCommandBarStore() {
     subscribe,
 
     // --- Acciones de Visibilidad Principal ---
-
     open: () => set({ ...initialState, isOpen: true }),
-    close: () => set(initialState), // Resetear todo el estado al cerrar
+    close: () => set(initialState),
     toggle: () =>
       update((state) => {
-        // Si está cerrado, lo abrimos y reseteamos a la vista principal
         if (!state.isOpen) {
           return { ...initialState, isOpen: true };
         }
-        // Si ya está abierto, lo cerramos completamente
         return initialState;
       }),
 
-    // --- NUEVAS ACCIONES PARA GESTIONAR ESTADO INTERNO ---
-
-    /** Cambia la lista de comandos que se muestra en el panel principal. */
+    // --- Acciones para Gestionar Estado Interno ---
     setView: (view: CommandBarView) => {
       update((state) => ({ ...state, currentView: view }));
     },
 
-    /** Abre el modal de contraseña y cierra el panel principal de comandos. */
+    // ✅ NUEVA ACCIÓN: Permite que FileExplorerView actualice el contexto global.
+    setCurrentParentId: (id: string | null) => {
+      update((state) => ({ ...state, currentParentId: id }));
+    },
+
     openPasswordModal: (action: PasswordModalAction) => {
       update((state) => ({
         ...state,
-        isOpen: false, // Ocultamos el panel principal
+        isOpen: false,
         isPasswordModalOpen: true,
         passwordModalAction: action,
       }));
     },
-
-    /** Cierra el modal de contraseña. */
     closePasswordModal: () => {
       update((state) => ({ ...state, isPasswordModalOpen: false }));
     },
-
-    /** Abre el modal de ayuda de IA y cierra el panel principal de comandos. */
     openAiHelper: (action: AiHelperAction) => {
       update((state) => ({
         ...state,
-        isOpen: false, // Ocultamos el panel principal
+        isOpen: false,
         isAiHelperOpen: true,
         aiHelperAction: action,
       }));
     },
-
-    /** Cierra el modal de ayuda de IA. */
     closeAiHelper: () => {
       update((state) => ({
         ...state,
@@ -97,16 +90,13 @@ function createCommandBarStore() {
         aiHelperAction: null,
       }));
     },
-    /** Abre el modal de diagnóstico y cierra el panel principal de comandos. */
     openDiagnosticModal: () => {
       update((state) => ({
         ...state,
-        isOpen: false, // Ocultamos el panel principal para no tener dos superposiciones
+        isOpen: false,
         isDiagnosticModalOpen: true,
       }));
     },
-
-    /** Cierra el modal de diagnóstico. */
     closeDiagnosticModal: () => {
       update((state) => ({ ...state, isDiagnosticModalOpen: false }));
     },
