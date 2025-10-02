@@ -1,4 +1,4 @@
-<!-- src/routes/+page.svelte (VERSIÓN SIMPLE Y ROBUSTA) -->
+<!-- src/routes/+page.svelte (VERSIÓN COMPLETA, DECLARATIVA Y ROBUSTA) -->
 <script lang="ts">
   // --- Svelte Core y Entorno ---
   import { onMount } from 'svelte';
@@ -29,67 +29,57 @@
   import * as directoryService from '$lib/services/core/directoryService';
   import * as schemaService from '$lib/services/features/schemaService';
 
-  import { debounce } from '$lib/utils/debounce';
-
+  // --- PROPS Y ESTADO LOCAL ---
   let { data }: { data: { showWelcome: boolean } } = $props();
-  const docState = documentStore;
 
   let showWelcome = $state(data.showWelcome);
   let isRevealingContent = $state(!data.showWelcome);
   let currentView = $state<'editor' | 'tree'>('editor');
-  let treeData: TreeNodeData | null = $state(null);
-  let selectedNodeId: string | null = $state(null);
   let nodeToFocus: number | null = $state(null);
-  let hasNodeSelected = $state(false);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
-  const selectedPos = $derived(get(editorStore).selectedNodePos);
+  // --- ESTADO DERIVADO REACTIVO (EL NUEVO "CEREBRO" DE LA PÁGINA) ---
 
-  $effect(() => {
-    hasNodeSelected = selectedPos !== null;
-    selectedNodeId = selectedPos !== null ? `node-${selectedPos}` : null;
-  });
+  // 1. Derivamos de forma reactiva el contenido del documento del editor.
+  //    Svelte recalculará `editorDoc` AUTOMÁTICAMENTE cuando `$editorStore.instance` cambie (de null a un objeto Editor).
+  const editorDoc = $derived(
+    ($editorStore.contentVersion, $editorStore.instance?.state.doc ?? null)
+  );
 
-  // Efecto que se suscribe al editor y actualiza `treeData` de forma reactiva
-  $effect(() => {
-    const editor = get(editorStore).instance;
-    if (editor && get(documentStore).status === 'ready') {
-      // La función original que hace el trabajo pesado
-      const handleUpdate = () => {
-        treeData = schemaService.documentToTreeData(editor.state.doc);
-      };
+  // 2. Derivamos los datos del árbol (`treeData`) a partir del documento del editor.
+  //    Esta línea es la clave: `treeData` ahora SIEMPRE estará sincronizado con el contenido del editor.
+  //    No se necesitan listeners manuales (`.on('update')`).
+  let treeData: TreeNodeData | null = $derived(
+    schemaService.documentToTreeData(editorDoc)
+  );
 
-      // **AQUÍ ESTÁ LA MAGIA: Creamos una versión "debounced" de nuestra función**
-      const debouncedHandleUpdate = debounce(handleUpdate, 300); // 300ms de retraso
+  // 3. Derivamos el ID del nodo seleccionado y si existe una selección.
+  //    Estas variables ahora son 100% reactivas al estado del `editorStore`.
+  let selectedNodeId = $derived(
+    $editorStore.selectedNodePos !== null
+      ? `node-${$editorStore.selectedNodePos}`
+      : 'root-title' // ID de fallback para el nodo raíz
+  );
+  let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
-      // Nos suscribimos al evento del editor usando la versión debounced
-      editor.on('update', debouncedHandleUpdate);
+  // --- EFECTOS SECUNDARIOS Y CICLO DE VIDA ---
 
-      // Hacemos una llamada inicial INMEDIATA para que el árbol se cargue la primera vez
-      handleUpdate();
-
-      // La función de limpieza se desuscribe de la versión debounced
-      return () => editor.off('update', debouncedHandleUpdate);
-    } else {
-      treeData = null;
-    }
-  });
-
-  // Efecto que actualiza el nodo seleccionado para pasarlo al árbol
-  $effect(() => {
-    const pos = get(editorStore).selectedNodePos;
-    hasNodeSelected = pos !== null;
-    selectedNodeId = pos !== null ? `node-${pos}` : null;
-  });
-
-  // Efecto para la carga inicial del documento
+  // Efecto para la carga inicial del documento cuando se omite la bienvenida.
   $effect(() => {
     if (!showWelcome) {
       loadInitialDocument();
     }
   });
 
-  // --- Manejadores de Eventos y Acciones ---
+  // onMount para añadir listeners que no dependen del estado de Svelte.
+  onMount(() => {
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
+
+  // --- MANEJADORES DE EVENTOS Y ACCIONES ---
 
   function handleResize() {
     isMobile = window.innerWidth <= 768;
@@ -110,6 +100,7 @@
   function handleNodeClickInTree(event: CustomEvent<{ id: string }>) {
     const { id } = event.detail;
     if (id === 'root-title') return;
+
     const pos = parseInt(id.replace('node-', ''), 10);
     if (!isNaN(pos)) {
       nodeToFocus = pos;
@@ -118,11 +109,14 @@
   }
 
   function openCardEditor() {
+    // `get()` es correcto aquí porque es una acción puntual disparada por un clic.
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
     if (!editor || pos === null) return;
+
     const node = editor.state.doc.nodeAt(pos);
     if (!node) return;
+
     cardEditorStore.open(pos, node.attrs.cards || []);
   }
 
@@ -131,9 +125,11 @@
   }
 
   async function loadInitialDocument() {
-    if (get(docState).status === 'ready') return;
+    if (get(documentStore).status === 'ready') return;
+
     const allItems = await directoryService.getAllItems();
     const schemas = allItems.filter((item) => item.type === 'schema');
+
     if (schemas.length > 0) {
       const lastActiveId = await directoryService.getLastActiveDocId();
       const lastActiveSchema = schemas.find((s) => s.id === lastActiveId);
@@ -149,14 +145,9 @@
       );
     }
   }
-
-  onMount(() => {
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  });
 </script>
+
+<!-- EL TEMPLATE HTML NO NECESITA CAMBIOS -->
 
 <Toaster position="bottom-center" />
 
@@ -189,24 +180,25 @@
 {/if}
 
 <div class="view-wrapper">
+  <!-- Vista del Editor -->
   <div
     class="view-content"
     style:display={currentView === 'editor' ? 'block' : 'none'}
   >
     <div class="main-content" class:reveal={isRevealingContent}>
       {#if !showWelcome}
-        {#if $docState.status === 'loading' || $docState.status === 'idle'}
-          <div class="status-container"><p>Cargando jardín...</p></div>
-        {:else if $docState.status === 'ready' && $docState.ydoc}
-          {#key $docState.docId}
+        {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
+          <div class="status-container"><p>Cargando esquema...</p></div>
+        {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
+          {#key $documentStore.docId}
             <DocumentView
-              ydoc={$docState.ydoc}
-              initialContent={$docState.initialContent}
+              ydoc={$documentStore.ydoc}
+              initialContent={$documentStore.initialContent}
               focusedNodePos={nodeToFocus}
               on:focusApplied={() => (nodeToFocus = null)}
             />
           {/key}
-        {:else if $docState.status === 'error'}
+        {:else if $documentStore.status === 'error'}
           <div class="status-container">
             <p>Hubo un error al cargar el documento.</p>
           </div>
@@ -215,6 +207,7 @@
     </div>
   </div>
 
+  <!-- Vista del Árbol -->
   <div
     class="view-content"
     style:display={currentView === 'tree' ? 'block' : 'none'}
@@ -227,15 +220,21 @@
           on:nodeClick={handleNodeClickInTree}
         />
       </div>
-    {:else if !showWelcome}
+    {:else if !showWelcome && $documentStore.status === 'ready'}
+      <!-- Mensaje de estado vacío: solo se muestra si no hay bienvenida y el documento está listo -->
       <div class="status-container">
         <p>Tu esquema debe contener una lista para generar la visualización.</p>
+        <span
+          >Empieza a escribir y usa '*' o '-' seguido de un espacio para crear
+          un ítem.</span
+        >
       </div>
     {/if}
   </div>
 </div>
 
 {#if !showWelcome}
+  <!-- Componentes flotantes y controladores -->
   <CommandBar />
   <CardEditorPanel />
   <ReviewController />
@@ -267,9 +266,11 @@
   {/if}
 {/if}
 
+<!-- EL CSS NO NECESITA CAMBIOS -->
 <style>
   .status-container {
     display: flex;
+    flex-direction: column; /* Para que el span se ponga debajo */
     justify-content: center;
     align-items: center;
     min-height: 100vh;
@@ -278,45 +279,42 @@
     padding: 0 var(--space-lg);
     text-align: center;
   }
-
+  .status-container span {
+    margin-top: var(--space-sm);
+    font-style: normal;
+    font-size: 0.9rem;
+  }
   .view-wrapper,
   .view-content {
     width: 100%;
     height: 100%;
   }
-
   .view-wrapper {
     position: relative;
     width: 100%;
     height: 100vh;
   }
-
   .view-content {
     position: absolute;
     inset: 0;
   }
-
   .tree-view-content {
     width: 100%;
     height: 100%;
     opacity: 0;
   }
-
   .main-content,
   :global(.app-header) {
     opacity: 0;
     will-change: transform, opacity;
   }
-
   .main-content.reveal,
   .tree-view-content.reveal {
     animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
-
   :global(.app-header.reveal) {
     animation: fadeInUp 0.6s cubic-bezier(0.25, 1, 0.5, 1) 0.2s forwards;
   }
-
   @keyframes fadeInUp {
     from {
       opacity: 0;

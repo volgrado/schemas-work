@@ -1,43 +1,55 @@
-// src/lib/services/features/schemaService.ts
+// src/lib/services/features/schemaService.ts (VERSIÓN FINAL CON CORRECCIONES DE TIPO)
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { TreeNodeData } from '$lib/types/tree';
 
 export function documentToTreeData(
   doc: ProseMirrorNode | null
 ): TreeNodeData | null {
-  console.log('--- [schemaService] Running documentToTreeData ---');
-
   if (!doc || doc.childCount === 0) {
-    console.log('[schemaService] Returning null: Document is empty.');
     return null;
   }
 
-  // Imprime la estructura completa del documento para depuración
-  console.log('[schemaService] Document JSON structure:', doc.toJSON());
-
+  // --- 1. Title Discovery (Looks for H2) ---
   let title = 'Esquema (sin título)';
-  let mainList: ProseMirrorNode | undefined;
-
-  doc.forEach((node) => {
-    if (node.type.name === 'heading' && node.attrs.level === 1) {
+  doc.descendants((node) => {
+    if (node.type.name === 'heading' && node.attrs.level === 2) {
       if (node.textContent.trim()) {
         title = node.textContent.trim();
-        console.log(`[schemaService] Found title: "${title}"`);
+        return false;
       }
     }
-    if (!mainList && node.type.name === 'bulletList') {
-      mainList = node;
-      console.log('[schemaService] Found main bulletList.');
+    return !title || title === 'Esquema (sin título)';
+  });
+
+  // --- 2. Smart List Selection ---
+  let mainList: ProseMirrorNode | undefined;
+  const topLevelLists: ProseMirrorNode[] = [];
+  doc.forEach((node) => {
+    if (node.type.name === 'bulletList') {
+      topLevelLists.push(node);
     }
   });
 
-  if (!mainList) {
-    console.error(
-      '[schemaService] ERROR: Returning null because no top-level bulletList was found.'
+  if (topLevelLists.length > 0) {
+    mainList = topLevelLists.reduce((prev, current) =>
+      prev.childCount > current.childCount ? prev : current
     );
+  } else {
+    doc.descendants((node) => {
+      if (mainList) return false;
+      if (node.type.name === 'bulletList') {
+        mainList = node;
+        return false;
+      }
+      return true;
+    });
+  }
+
+  if (!mainList) {
     return null;
   }
 
+  // --- 3. Tree Generation ---
   const root: TreeNodeData = {
     id: 'root-title',
     content: title,
@@ -48,46 +60,32 @@ export function documentToTreeData(
     listNode.forEach((listItem) => {
       if (listItem.type.name !== 'listItem') return;
 
-      // --- LÓGICA REFACTORIZADA Y ROBUSTA ---
-
       let termParagraph: ProseMirrorNode | undefined;
       let nestedList: ProseMirrorNode | undefined;
+      let firstParagraphFallback: ProseMirrorNode | undefined;
 
-      // 1. Buscamos explícitamente el párrafo con role="term"
       listItem.forEach((child) => {
-        if (child.type.name === 'paragraph' && child.attrs.role === 'term') {
-          termParagraph = child;
+        if (child.type.name === 'paragraph') {
+          if (child.attrs.role === 'term') {
+            termParagraph = child;
+          } else if (!firstParagraphFallback) {
+            firstParagraphFallback = child;
+          }
         } else if (child.type.name === 'bulletList') {
           nestedList = child;
         }
       });
 
-      // 2. Si no encontramos un párrafo de "término", intentamos con el primer párrafo como fallback.
-      //    Esto da resiliencia si la extensión de roles falla o el contenido es antiguo.
-      if (!termParagraph) {
-        termParagraph =
-          listItem.firstChild?.type.name === 'paragraph'
-            ? listItem.firstChild
-            : undefined;
-      }
+      const paragraphForContent = termParagraph || firstParagraphFallback;
 
-      // --- FIN DE LA LÓGICA REFACTORIZADA ---
-
-      // Solo creamos un nodo en el árbol si encontramos un párrafo de término.
-      if (termParagraph) {
+      if (paragraphForContent) {
         const pos = listItem.attrs.pos;
-
         if (pos === null || pos === undefined) {
-          console.warn(
-            'Omitiendo listItem sin un atributo "pos" válido.',
-            listItem
-          );
           return;
         }
 
-        // Usamos `textContent` que ignora el formato, pero si el texto está vacío, ponemos un placeholder.
-        const content = termParagraph.textContent.trim() || '(Nodo sin título)';
-
+        const content =
+          paragraphForContent.textContent.trim() || '(Nodo sin título)';
         const newNode: TreeNodeData = {
           id: `node-${pos}`,
           content: content,
@@ -95,6 +93,8 @@ export function documentToTreeData(
         };
         parentArray.push(newNode);
 
+        // ✅ (FIX 1) The check `newNode.children` is crucial here. It proves to
+        // TypeScript that the argument is not undefined before the recursive call.
         if (nestedList && newNode.children) {
           processList(nestedList, newNode.children);
         }
@@ -102,8 +102,16 @@ export function documentToTreeData(
     });
   }
 
+  // ✅ (FIX 2) Re-added the necessary check for `root.children`. This satisfies
+  // the compiler and ensures we don't pass `undefined` to `processList`.
   if (root.children) {
     processList(mainList, root.children);
+  }
+
+  if (root.children && root.children.length === 0) {
+    console.log(
+      '[schemaService] The main list is empty. Returning a root node with no children.'
+    );
   }
 
   console.log('[schemaService] Successfully generated tree data:', root);

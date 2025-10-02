@@ -13,6 +13,7 @@ export interface EditorStoreState {
   instance: Editor | null;
   /** La posición de inicio del nodo `listItem` actualmente seleccionado. `null` si no hay selección. */
   selectedNodePos: number | null;
+  contentVersion: number;
 }
 
 /**
@@ -22,6 +23,7 @@ export interface EditorStoreState {
 const initialState: EditorStoreState = {
   instance: null,
   selectedNodePos: null,
+  contentVersion: 0,
 };
 
 /**

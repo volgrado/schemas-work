@@ -11,7 +11,6 @@
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
   import Text from '@tiptap/extension-text';
-  import History from '@tiptap/extension-history';
   import Heading from '@tiptap/extension-heading';
   import Bold from '@tiptap/extension-bold';
   import Italic from '@tiptap/extension-italic';
@@ -73,6 +72,7 @@
   });
 
   onMount(() => {
+    console.log('onMount INICIADO. El elemento es:', element);
     editor = new Editor({
       element: element,
       extensions: [
@@ -81,7 +81,6 @@
         ListItem,
         BulletList,
         Text,
-        History,
         Heading.configure({ levels: [1, 2, 3] }),
         Bold,
         Italic,
@@ -119,6 +118,7 @@
         },
       },
       onUpdate({ editor }) {
+        console.log('Tiptap onUpdate: ¡Algo ha cambiado!', editor.getJSON());
         const { selection } = editor.state;
         const listItemNode = findParentNode(
           (node) => node.type.name === 'listItem'
@@ -128,12 +128,11 @@
         const currentSelectedPos = get(editorStore).selectedNodePos;
         const newSelectedPos = listItemNode ? listItemNode.pos : null;
 
-        if (currentSelectedPos !== newSelectedPos) {
-          editorStore.update((s) => ({
-            ...s,
-            selectedNodePos: newSelectedPos,
-          }));
-        }
+        editorStore.update((s) => ({
+          ...s,
+          selectedNodePos: newSelectedPos,
+          contentVersion: s.contentVersion + 1,
+        }));
       },
     });
 
@@ -143,13 +142,19 @@
     }
 
     editorStore.update((s) => ({ ...s, instance: editor }));
+    console.log('onMount COMPLETADO. Instancia del editor creada:', editor);
   });
 
   onDestroy(() => {
     if (editor) {
       editor.destroy();
     }
-    editorStore.set({ instance: null, selectedNodePos: null });
+    // ✅ CORRECCIÓN: Añadimos `contentVersion: 0` para cumplir con el tipo EditorStoreState.
+    editorStore.set({
+      instance: null,
+      selectedNodePos: null,
+      contentVersion: 0,
+    });
   });
 </script>
 
