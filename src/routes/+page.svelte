@@ -38,27 +38,43 @@
   let nodeToFocus: number | null = $state(null);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
-  // --- ESTADO DERIVADO REACTIVO (EL NUEVO "CEREBRO" DE LA PÁGINA) ---
+  // --- ESTADO DERIVADO REACTIVO (CON REACTIVIDAD EXPLÍCITA) ---
 
-  // 1. Derivamos de forma reactiva el contenido del documento del editor.
-  //    Svelte recalculará `editorDoc` AUTOMÁTICAMENTE cuando `$editorStore.instance` cambie (de null a un objeto Editor).
-  const editorDoc = $derived(
-    ($editorStore.contentVersion, $editorStore.instance?.state.doc ?? null)
-  );
+  // Creamos una variable de estado que contendrá los datos del árbol.
+  let treeData = $state<TreeNodeData | null>(null);
 
-  // 2. Derivamos los datos del árbol (`treeData`) a partir del documento del editor.
-  //    Esta línea es la clave: `treeData` ahora SIEMPRE estará sincronizado con el contenido del editor.
-  //    No se necesitan listeners manuales (`.on('update')`).
-  let treeData: TreeNodeData | null = $derived(
-    schemaService.documentToTreeData(editorDoc)
-  );
+  // Un `$effect` que escucha los cambios en `contentVersion` y recalcula `treeData`.
+  $effect(() => {
+    // 1. Dependencia explícita: Svelte re-ejecutará este bloque cuando `contentVersion` cambie.
+    const version = $editorStore.contentVersion;
+    console.log(
+      `[page.svelte] $effect triggered by contentVersion change: ${version}`
+    );
 
-  // 3. Derivamos el ID del nodo seleccionado y si existe una selección.
-  //    Estas variables ahora son 100% reactivas al estado del `editorStore`.
+    // 2. Obtenemos el `doc` más reciente del store.
+    const currentDoc = $editorStore.doc;
+
+    // 3. Si hay un documento, recalculamos el árbol.
+    if (currentDoc) {
+      console.log('[page.svelte] Recalculando treeData...');
+      const newTreeData = schemaService.documentToTreeData(currentDoc);
+      treeData = newTreeData;
+    } else {
+      // 4. Si no hay documento, nos aseguramos de que el árbol esté vacío.
+      treeData = null;
+    }
+  });
+
+  $effect(() => {
+    // Este efecto depende de `treeData`. Se ejecutará cada vez que `treeData` sea reasignado.
+    console.log('[page.svelte] La prop treeData ha cambiado:', treeData);
+  });
+
+  // Las otras derivaciones son simples y pueden quedarse como `$derived`.
   let selectedNodeId = $derived(
     $editorStore.selectedNodePos !== null
       ? `node-${$editorStore.selectedNodePos}`
-      : 'root-title' // ID de fallback para el nodo raíz
+      : 'root-title'
   );
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
@@ -109,7 +125,6 @@
   }
 
   function openCardEditor() {
-    // `get()` es correcto aquí porque es una acción puntual disparada por un clic.
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
     if (!editor || pos === null) return;
@@ -146,6 +161,14 @@
     }
   }
 </script>
+
+<svelte:head>
+  {#if $documentStore.metadata?.title}
+    <title>{$documentStore.metadata.title} - Schemas.work</title>
+  {:else}
+    <title>Schemas.work</title>
+  {/if}
+</svelte:head>
 
 <!-- EL TEMPLATE HTML NO NECESITA CAMBIOS -->
 

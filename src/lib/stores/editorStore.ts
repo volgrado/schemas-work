@@ -2,6 +2,7 @@
 
 import { writable } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from 'prosemirror-model'; // Importamos el tipo
 
 /**
  * Define la estructura del estado que este store gestionará.
@@ -9,21 +10,17 @@ import type { Editor } from '@tiptap/core';
  * y a la información contextual relevante, como el nodo seleccionado.
  */
 export interface EditorStoreState {
-  /** La instancia activa del editor Tiptap. Será `null` si el editor no ha sido montado. */
   instance: Editor | null;
-  /** La posición de inicio del nodo `listItem` actualmente seleccionado. `null` si no hay selección. */
   selectedNodePos: number | null;
   contentVersion: number;
+  doc: ProseMirrorNode | null; // ✅ AÑADIMOS EL NODO DEL DOCUMENTO
 }
 
-/**
- * El estado inicial del store. El editor no existe al principio,
- * y no hay ningún nodo seleccionado.
- */
 const initialState: EditorStoreState = {
   instance: null,
   selectedNodePos: null,
   contentVersion: 0,
+  doc: null, // ✅ VALOR INICIAL
 };
 
 /**

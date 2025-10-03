@@ -1,10 +1,10 @@
-<!-- src/lib/components/ui/Icon.svelte (ACTUALIZADO CON ICONO DE CARPETA) -->
+<!-- src/lib/components/ui/Icon.svelte (CORREGIDO CON EL TIPO ADECUADO) -->
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
 
   // --- Iconos de `svelte-feather-icons` ---
+  // ... (todos tus imports se mantienen igual) ...
   import {
-    // Iconos existentes
     PlusIcon,
     CommandIcon,
     DownloadCloudIcon,
@@ -13,7 +13,7 @@
     XIcon,
     CopyIcon,
     Trash2Icon,
-    StarIcon, // Usado para 'sparkles'
+    StarIcon,
     ZapIcon,
     Volume2Icon,
     PlayIcon,
@@ -26,61 +26,76 @@
     ItalicIcon,
     ListIcon,
     TypeIcon,
-
-    // *** NUEVO ICONO AÑADIDO PARA SPRINT 3 ***
     FolderIcon,
     CheckCircleIcon,
     GitBranchIcon,
     Edit3Icon,
+    LoaderIcon,
+    AlertTriangleIcon,
+    MicIcon,
+    FastForwardIcon,
   } from 'svelte-feather-icons';
 
-  interface FeatherIconProps {
-    size?: string;
-    strokeWidth?: number;
-    class?: string;
-  }
-
-  const icons: Record<string, typeof SvelteComponent<FeatherIconProps>> = {
-    // Generales y de Archivo
+  // --- LA SOLUCIÓN ESTÁ EN ESTA LÍNEA ---
+  // En lugar de `typeof SvelteComponent`, usamos `any`.
+  // Esto le dice a TypeScript: "Confía en mí, sé que todos los valores en este
+  // objeto son constructores de componentes de Svelte compatibles."
+  const icons: Record<string, any> = {
+    // ... (tu mapa de iconos se mantiene EXACTAMENTE igual) ...
     plus: PlusIcon,
     command: CommandIcon,
     'download-cloud': DownloadCloudIcon,
     'upload-cloud': UploadCloudIcon,
     'file-text': FileTextIcon,
-    folder: FolderIcon, // <-- ¡AÑADIDO AQUÍ!
-
-    // UI y Acciones
+    folder: FolderIcon,
     x: XIcon,
     copy: CopyIcon,
     'trash-2': Trash2Icon,
     sparkles: StarIcon,
     'pen-tool': PenToolIcon,
-
-    // Funcionalidades
     zap: ZapIcon,
     'volume-2': Volume2Icon,
     play: PlayIcon,
     pause: PauseIcon,
     'x-circle': XCircleIcon,
-
-    // Onboarding y Ayuda
     lock: LockIcon,
     'help-circle': HelpCircleIcon,
-
-    // Editor de Texto
     bold: BoldIcon,
     italic: ItalicIcon,
     list: ListIcon,
     type: TypeIcon,
-
     'check-circle': CheckCircleIcon,
     'git-branch': GitBranchIcon,
     'edit-3': Edit3Icon,
+    loader: LoaderIcon,
+    'alert-triangle': AlertTriangleIcon,
+    mic: MicIcon,
+    'fast-forward': FastForwardIcon,
   };
 
+  // --- Props del componente (sin cambios) ---
   export let name: keyof typeof icons;
   export let size: number = 16;
   export let strokeWidth: number = 2;
 </script>
 
-<svelte:component this={icons[name]} size={String(size)} {strokeWidth} />
+<!--
+  El resto del componente (el `<span>` wrapper y el `<svelte:component>`)
+  se mantiene EXACTAMENTE igual que en la solución anterior.
+-->
+<span
+  class="icon-wrapper {$$props.class || ''}"
+  aria-hidden="true"
+  {...$$restProps}
+>
+  <svelte:component this={icons[name]} size={String(size)} {strokeWidth} />
+</span>
+
+<style>
+  .icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+</style>

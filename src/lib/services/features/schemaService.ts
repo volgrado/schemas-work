@@ -23,7 +23,7 @@ export function documentToTreeData(
   // ✅ ACTUALIZADO: Buscamos un heading de nivel 1 para alinearnos con la salida de la IA.
   let title = 'Esquema (sin título)';
   doc.descendants((node) => {
-    if (node.type.name === 'heading' && node.attrs.level === 1) {
+    if (node.type.name === 'heading' && node.attrs.level === 2) {
       // <-- Cambio de 2 a 1
       if (node.textContent.trim()) {
         title = node.textContent.trim();

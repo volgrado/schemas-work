@@ -30,6 +30,10 @@
   let gEl = $state<SVGGElement | undefined>();
   let height = $state(0);
 
+  // ✅ NUEVO: Un Set para mantener el estado de los nodos expandidos.
+  // La raíz ('root-title') siempre está expandida por defecto.
+  let expandedNodeIds = $state<Set<string>>(new Set(['root-title']));
+
   // --- Constantes de Layout ---
   const nodeWidth = 140;
   const nodeHeight = 40;
@@ -38,7 +42,7 @@
   // --- Interfaz de Tipo Personalizada ---
   interface HierarchyPointNodeWithCustomData
     extends d3.HierarchyPointNode<TreeNodeData> {
-    _children?: d3.HierarchyNode<TreeNodeData>[]; // `_children` almacena nodos antes del layout
+    _children?: d3.HierarchyNode<TreeNodeData>[];
     x0?: number;
     y0?: number;
   }
@@ -73,72 +77,83 @@
       .attr('class', 'node')
       .attr('transform', `translate(${source.y0 ?? 0},${source.x0 ?? 0})`)
       .attr('opacity', 0)
-      .on('click', (event, d) => {
+      .on('click', (event: MouseEvent, d: HierarchyPointNodeWithCustomData) => {
+        const nodeId = d.data.id;
         if (d.children) {
           d._children = d.children;
           d.children = undefined;
+          expandedNodeIds.delete(nodeId);
         } else {
-          // ✅ LA SOLUCIÓN DEFINITIVA:
-          // Hacemos una aserción de tipo para decirle a TypeScript que, aunque `_children`
-          // contiene `HierarchyNode[]`, lo estamos asignando a `children` justo antes de
-          // llamar a `update()`, que los convertirá en `HierarchyPointNode[]`.
-          // Esto alinea el código con la forma en que D3 funciona dinámicamente.
           d.children = d._children as d3.HierarchyPointNode<TreeNodeData>[];
           d._children = undefined;
+          expandedNodeIds.add(nodeId);
         }
         update(d, root);
-      })
-      // ... (El resto de tus manejadores no cambian)
-      .on('dblclick', (event, d) => {
-        event.stopPropagation();
-        dispatch('nodeClick', { id: d.data.id });
-      })
-      .on('mouseover', (event, d) => {
-        const allNodes = g.selectAll<
-          SVGGElement,
-          HierarchyPointNodeWithCustomData
-        >('g.node');
-        const allLinks = g.selectAll<
-          SVGPathElement,
-          d3.HierarchyPointLink<TreeNodeData>
-        >('path.link');
-        allNodes.classed('is-dimmed', true);
-        allLinks.classed('is-dimmed', true);
+      }) // <-- ¡SIN PUNTO Y COMA! La cadena continúa.
 
-        const ancestors = d.ancestors();
-        const descendants = d.descendants();
-        const ancestorIds = new Set(ancestors.map((n) => n.data.id));
-        const descendantIds = new Set(descendants.map((n) => n.data.id));
+      .on(
+        'dblclick',
+        (event: MouseEvent, d: HierarchyPointNodeWithCustomData) => {
+          event.stopPropagation();
+          dispatch('nodeClick', { id: d.data.id });
+        }
+      )
 
-        allNodes
-          .filter((n) => ancestorIds.has(n.data.id))
-          .classed('is-dimmed', false)
-          .classed('is-ancestor', true);
-        allNodes
-          .filter((n) => descendantIds.has(n.data.id))
-          .classed('is-dimmed', false)
-          .classed('is-descendant', true);
-        allNodes
-          .filter((n) => n.data.id === d.data.id)
-          .classed('is-ancestor', false);
+      .on(
+        'mouseover',
+        (event: MouseEvent, d: HierarchyPointNodeWithCustomData) => {
+          const allNodes = g.selectAll<
+            SVGGElement,
+            HierarchyPointNodeWithCustomData
+          >('g.node');
+          const allLinks = g.selectAll<
+            SVGPathElement,
+            d3.HierarchyPointLink<TreeNodeData>
+          >('path.link');
 
-        allLinks
-          .filter(
-            (l) =>
-              ancestorIds.has(l.source.data.id) &&
-              ancestorIds.has(l.target.data.id)
-          )
-          .classed('is-dimmed', false)
-          .classed('is-ancestor', true);
-        allLinks
-          .filter(
-            (l) =>
-              descendantIds.has(l.source.data.id) &&
-              descendantIds.has(l.target.data.id)
-          )
-          .classed('is-dimmed', false)
-          .classed('is-descendant', true);
-      })
+          allNodes.classed('is-dimmed', true);
+          allLinks.classed('is-dimmed', true);
+
+          const ancestors = d.ancestors();
+          const descendants = d.descendants();
+
+          const ancestorIds = new Set(ancestors.map((n) => n.data.id));
+          const descendantIds = new Set(descendants.map((n) => n.data.id));
+
+          allNodes
+            .filter((n) => ancestorIds.has(n.data.id))
+            .classed('is-dimmed', false)
+            .classed('is-ancestor', true);
+
+          allNodes
+            .filter((n) => descendantIds.has(n.data.id))
+            .classed('is-dimmed', false)
+            .classed('is-descendant', true);
+
+          allNodes
+            .filter((n) => n.data.id === d.data.id)
+            .classed('is-ancestor', false);
+
+          allLinks
+            .filter(
+              (l) =>
+                ancestorIds.has(l.source.data.id) &&
+                ancestorIds.has(l.target.data.id)
+            )
+            .classed('is-dimmed', false)
+            .classed('is-ancestor', true);
+
+          allLinks
+            .filter(
+              (l) =>
+                descendantIds.has(l.source.data.id) &&
+                descendantIds.has(l.target.data.id)
+            )
+            .classed('is-dimmed', false)
+            .classed('is-descendant', true);
+        }
+      )
+
       .on('mouseout', () => {
         g.selectAll('.is-dimmed, .is-ancestor, .is-descendant').classed(
           'is-dimmed is-ancestor is-descendant',
@@ -168,6 +183,7 @@
 
     const nodeUpdate = node.merge(nodeEnter);
     nodeUpdate.classed('is-selected', (d) => d.data.id === selectedNodeId);
+    nodeUpdate.select('div.node-label').html((d) => d.data.content);
     nodeUpdate
       .select<SVGCircleElement>('.indicator')
       .attr('opacity', (d) => (d.children || d._children ? 1 : 0))
@@ -274,9 +290,11 @@
     rootWithCoords.x0 = height / 2;
     rootWithCoords.y0 = 0;
 
+    // ✅ CORRECCIÓN: Usamos `expandedNodeIds` para preservar el estado de expansión.
     root.descendants().forEach((d) => {
       const node = d as HierarchyPointNodeWithCustomData;
-      if (node.depth > 0 && node.children) {
+      // Colapsamos un nodo si tiene hijos y NO está en la lista de expandidos.
+      if (node.children && !expandedNodeIds.has(node.data.id)) {
         node._children = node.children;
         node.children = undefined;
       }

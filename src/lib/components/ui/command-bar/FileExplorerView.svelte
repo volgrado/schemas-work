@@ -158,9 +158,6 @@
         title: trimmedTitle,
       });
       toast.success(`'${oldTitle}' renombrado a '${trimmedTitle}'.`);
-      if (item.type === 'schema' && get(documentStore).docId === item.id) {
-        documentStore.updateActiveDocumentMetadata({ title: trimmedTitle });
-      }
     } catch (e) {
       toast.error('No se pudo renombrar el ítem.');
       items[originalIndex].title = oldTitle;

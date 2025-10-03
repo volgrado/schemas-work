@@ -1,39 +1,111 @@
-// src/lib/services/core/directoryService.ts
-
+import { writable } from 'svelte/store';
 import { v4 as uuidv4 } from 'uuid';
 import type { SchemaMetadata } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
 
+// --- Constantes ---
 const DIRECTORY_STORAGE_KEY = 'schemas-work-directory';
 const LAST_ACTIVE_DOC_KEY = 'schemas-work-last-active';
 
+// ========================================================================
+// ARQUITECTURA DE EVENTOS Y SINCRONIZACIÓN
+// ========================================================================
+
 /**
- * Obtiene la lista completa de todos los ítems (esquemas y carpetas).
- * Es la fuente de verdad para todas las demás funciones de listado.
- * @returns {Promise<SchemaMetadata[]>} Una promesa que se resuelve con el array completo de metadatos.
+ * Razonamiento: Para lograr una arquitectura reactiva y desacoplada, necesitamos un
+ * canal de comunicación para notificar a la aplicación cuando el directorio cambia.
+ * Un store de Svelte (`writable`) es perfecto para esto. Otros módulos (como `documentStore`
+ * o `FileExplorer`) pueden suscribirse a este store para reaccionar a los cambios
+ * sin estar directamente acoplados a este servicio.
+ */
+export const directoryEvents = writable<{
+  type: 'created' | 'updated' | 'deleted';
+  item: SchemaMetadata; // Enviamos el ítem completo para dar contexto al suscriptor.
+} | null>(null);
+
+/**
+ * Razonamiento: `localStorage` no notifica a la pestaña que origina un cambio. Para
+ * unificar la lógica y asegurar que tanto la pestaña activa como las pestañas en
+ * segundo plano reaccionen de la misma manera, centralizamos TODA la emisión de eventos
+ * en el listener del evento `storage`. Este listener se convierte en la única fuente
+ * de verdad para los eventos del directorio. Disparamos manualmente este evento en
+ * `saveDirectory` para "engañar" a la pestaña activa y hacerla pasar por este mismo flujo.
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    // Solo reaccionamos a los cambios en nuestra clave específica.
+    if (event.key === DIRECTORY_STORAGE_KEY) {
+      console.log('[directoryService] Evento de storage procesado.');
+
+      // Parseamos el estado anterior y el nuevo para compararlos.
+      try {
+        const oldItems: SchemaMetadata[] = event.oldValue
+          ? JSON.parse(event.oldValue)
+          : [];
+        const newItems: SchemaMetadata[] = event.newValue
+          ? JSON.parse(event.newValue)
+          : [];
+
+        const oldIds = new Set(oldItems.map((i) => i.id));
+        const newIds = new Set(newItems.map((i) => i.id));
+
+        // Lógica de "diffing" (comparación) para determinar qué ha cambiado:
+
+        // 1. Detectar creaciones y actualizaciones
+        for (const newItem of newItems) {
+          const oldItem = oldItems.find((i) => i.id === newItem.id);
+          if (!oldItem) {
+            // Si el ítem no existía antes, es una CREACIÓN.
+            directoryEvents.set({ type: 'created', item: newItem });
+          } else if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+            // Si existía pero su contenido ha cambiado, es una ACTUALIZACIÓN.
+            directoryEvents.set({ type: 'updated', item: newItem });
+          }
+        }
+
+        // 2. Detectar eliminaciones
+        for (const oldItem of oldItems) {
+          if (!newIds.has(oldItem.id)) {
+            // Si un ítem existía antes pero ya no, es una ELIMINACIÓN.
+            directoryEvents.set({ type: 'deleted', item: oldItem });
+          }
+        }
+      } catch (error) {
+        errorService.reportError(error, {
+          operation: 'storageEventListener',
+          description:
+            'Fallo al parsear datos antiguos/nuevos del evento de storage.',
+        });
+      }
+    }
+  });
+}
+
+// ========================================================================
+// API PÚBLICA DEL SERVICIO
+// ========================================================================
+
+/**
+ * Obtiene la lista completa de todos los ítems. Es la base para las demás funciones.
+ * Incluye manejo de errores por si los datos en localStorage están corruptos.
  */
 export async function getAllItems(): Promise<SchemaMetadata[]> {
   if (typeof window === 'undefined') return [];
   const storedDirectory = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-
-  // *** NUEVO: Bloque try...catch para el parseo ***
   try {
     return storedDirectory ? JSON.parse(storedDirectory) : [];
   } catch (error) {
     errorService.reportError(error, {
       operation: 'getAllItems',
       description:
-        'Failed to parse directory from localStorage. Data might be corrupt.',
+        'Fallo al parsear el directorio desde localStorage. Datos corruptos.',
     });
-    // Devuelve un estado seguro (array vacío) para evitar que la aplicación se bloquee.
-    return [];
+    return []; // Devolver un estado seguro.
   }
 }
 
 /**
  * Obtiene los ítems que son hijos directos de un padre específico.
- * @param {string | null} parentId - El ID de la carpeta padre. `null` para la raíz.
- * @returns {Promise<SchemaMetadata[]>} La lista de ítems en esa ubicación.
  */
 export async function listItemsByParentId(
   parentId: string | null
@@ -44,8 +116,6 @@ export async function listItemsByParentId(
 
 /**
  * Obtiene los metadatos de un ítem específico por su ID.
- * @param {string} id - El ID del ítem a buscar.
- * @returns {Promise<SchemaMetadata | undefined>}
  */
 export async function getItemById(
   id: string
@@ -55,9 +125,8 @@ export async function getItemById(
 }
 
 /**
- * Crea los metadatos para un nuevo esquema en una ubicación específica.
- * @param {string} title - El título inicial.
- * @param {string | null} parentId - El ID de la carpeta padre, o `null` para la raíz.
+ * Crea los metadatos para un nuevo esquema y persiste el cambio.
+ * Delega la notificación del evento a `saveDirectory`.
  */
 export async function createSchema(
   title: string,
@@ -65,7 +134,6 @@ export async function createSchema(
 ): Promise<SchemaMetadata> {
   const allItems = await getAllItems();
   const now = Date.now();
-
   const newSchema: SchemaMetadata = {
     id: uuidv4(),
     title,
@@ -74,16 +142,14 @@ export async function createSchema(
     type: 'schema',
     parentId,
   };
-
   const updatedItems = [...allItems, newSchema];
   await saveDirectory(updatedItems);
   return newSchema;
 }
 
 /**
- * Crea los metadatos para una nueva carpeta en una ubicación específica.
- * @param {string} title - El título de la carpeta.
- * @param {string | null} parentId - El ID de la carpeta padre, o `null` para la raíz.
+ * Crea los metadatos para una nueva carpeta y persiste el cambio.
+ * Delega la notificación del evento a `saveDirectory`.
  */
 export async function createFolder(
   title: string,
@@ -91,7 +157,6 @@ export async function createFolder(
 ): Promise<SchemaMetadata> {
   const allItems = await getAllItems();
   const now = Date.now();
-
   const newFolder: SchemaMetadata = {
     id: uuidv4(),
     title,
@@ -100,16 +165,14 @@ export async function createFolder(
     type: 'folder',
     parentId,
   };
-
   const updatedItems = [...allItems, newFolder];
   await saveDirectory(updatedItems);
   return newFolder;
 }
 
 /**
- * Actualiza los metadatos de un ítem existente.
- * @param {string} id - El ID del ítem a actualizar.
- * @param {Partial<Omit<SchemaMetadata, 'id'>>} updates - Un objeto con los campos a actualizar.
+ * Actualiza los metadatos de un ítem existente y persiste el cambio.
+ * Delega la notificación del evento a `saveDirectory`.
  */
 export async function updateItemMetadata(
   id: string,
@@ -119,14 +182,13 @@ export async function updateItemMetadata(
   const itemIndex = allItems.findIndex((s) => s.id === id);
 
   if (itemIndex === -1) {
-    // *** NUEVO: Reportar error si el ítem no se encuentra ***
-    const error = new Error(`Item not found for update: ${id}`);
+    const error = new Error(`Ítem no encontrado para actualizar: ${id}`);
     errorService.reportError(error, {
       operation: 'updateItemMetadata',
       itemId: id,
-      updates: updates,
+      updates,
     });
-    throw error; // Relanzamos el error para que el llamador sepa que la operación falló.
+    throw error;
   }
 
   const updatedItem = {
@@ -134,15 +196,14 @@ export async function updateItemMetadata(
     ...updates,
     updatedAt: Date.now(),
   };
-
   allItems[itemIndex] = updatedItem;
   await saveDirectory(allItems);
   return updatedItem;
 }
 
 /**
- * Elimina un ítem (esquema o carpeta). Si es una carpeta, elimina todo su contenido recursivamente.
- * @param {string} itemId - El ID del ítem a eliminar.
+ * Elimina un ítem (y sus hijos si es una carpeta) y persiste el cambio.
+ * Delega la notificación del evento a `saveDirectory`.
  */
 export async function deleteItem(itemId: string): Promise<void> {
   let allItems = await getAllItems();
@@ -172,7 +233,6 @@ export async function deleteItem(itemId: string): Promise<void> {
         new Promise<void>((resolve, reject) => {
           const request = window.indexedDB.deleteDatabase(id);
           request.onsuccess = () => resolve();
-          // *** NUEVO: Reportar error en onerror y onblocked ***
           request.onerror = (event) => {
             errorService.reportError(request.error || event, {
               operation: 'deleteItem.indexedDB.deleteDatabase',
@@ -200,37 +260,64 @@ export async function deleteItem(itemId: string): Promise<void> {
   );
   await saveDirectory(updatedItems);
 
-  // *** NUEVO: Envolver Promise.all en un try...catch para capturar fallos de borrado de DB ***
   try {
     await Promise.all(dbDeletionPromises);
   } catch (error) {
-    // El error ya se reportó dentro de la promesa, aquí solo lo relanzamos
-    // para que el llamador (CommandBar) sepa que algo falló.
-    // El toast.error del CommandBar se encargará del feedback al usuario.
     throw error;
   }
 }
 
-// --- Funciones de utilidad ---
+// ========================================================================
+// FUNCIONES DE UTILIDAD Y BAJO NIVEL
+// ========================================================================
 
+/**
+ * Obtiene el ID del último documento activo desde localStorage.
+ */
 export async function getLastActiveDocId(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(LAST_ACTIVE_DOC_KEY);
 }
 
+/**
+ * Guarda el ID del último documento activo en localStorage.
+ */
 export async function setLastActiveDocId(id: string): Promise<void> {
   if (typeof window === 'undefined') return;
   localStorage.setItem(LAST_ACTIVE_DOC_KEY, id);
 }
 
 /**
- * Guarda un directorio completo de metadatos en localStorage.
- * Esta es una operación de bajo nivel, usada principalmente por la función de importación.
- * @param {SchemaMetadata[]} items - El array completo de metadatos a guardar.
+ * Guarda un directorio completo en localStorage y notifica a TODAS las pestañas
+ * (incluida la actual) sobre el cambio disparando un evento `storage`.
+ * Esta es ahora la ÚNICA función que interactúa directamente con localStorage para escritura.
+ *
+ * Razonamiento: Al centralizar la escritura y la notificación en esta función de bajo nivel,
+ * nos aseguramos de que cada cambio, sin importar su origen, active el flujo reactivo
+ * de manera consistente. Esto elimina la necesidad de emitir eventos manualmente en cada
+ * función de alto nivel (create, update, delete), simplificando el código y reduciendo errores.
  */
 export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify(items));
+
+  const oldValue = localStorage.getItem(DIRECTORY_STORAGE_KEY);
+  const newValue = JSON.stringify(items);
+
+  // Evitamos disparar eventos si nada ha cambiado realmente.
+  if (oldValue === newValue) return;
+
+  localStorage.setItem(DIRECTORY_STORAGE_KEY, newValue);
+
+  // Disparamos el evento `storage` manualmente. El navegador solo hace esto
+  // para otras pestañas, pero al hacerlo nosotros, forzamos que el listener
+  // de esta misma pestaña también se active, unificando el flujo de eventos.
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key: DIRECTORY_STORAGE_KEY,
+      oldValue: oldValue,
+      newValue: newValue,
+    })
+  );
 }
 
 /**

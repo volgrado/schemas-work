@@ -1,6 +1,6 @@
-<!-- src/lib/components/editor/DocumentView.svelte (VERSIÓN REACTIVA Y DESACOPLADA) -->
+<!-- src/lib/components/editor/DocumentView.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import { onMount, createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
 
   // --- Tiptap Core ---
@@ -29,6 +29,7 @@
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
   import { documentStore } from '$lib/stores/documentStore';
+  import { debounce } from '$lib/utils/debounce';
 
   // --- Componentes de UI ---
   import BubbleMenu from './BubbleMenu.svelte';
@@ -41,30 +42,52 @@
   }: {
     ydoc: Y.Doc;
     initialContent?: object | null;
-    focusedNodePos?: number | null; // Prop para controlar el foco desde fuera
+    focusedNodePos?: number | null;
   } = $props();
 
   const dispatch = createEventDispatcher<{ focusApplied: void }>();
 
   let element: HTMLDivElement;
-  let editor: Editor;
+  let editor = $state<Editor | null>(null);
 
-  // --- EFECTO REACTIVO para manejar las solicitudes de foco ---
+  const syncTitleWithStore = debounce((editorInstance: Editor) => {
+    if (!editorInstance || editorInstance.isDestroyed) return;
+
+    const firstNode = editorInstance.state.doc.firstChild;
+
+    // ✅ CORRECCIÓN: Ahora comprobamos el tipo Y el nivel del heading.
+    // Buscamos explícitamente un `h2` como primer nodo.
+    if (
+      firstNode &&
+      firstNode.type.name === 'heading' &&
+      firstNode.attrs.level === 2
+    ) {
+      const newTitle = firstNode.textContent.trim() || 'Esquema sin título'; // Usamos un fallback
+
+      const currentTitleInStore = get(documentStore).metadata?.title;
+
+      if (newTitle !== currentTitleInStore) {
+        documentStore.updateTitle(newTitle);
+      }
+    } else {
+      // (Opcional) Si el primer nodo NO es un h2, podríamos considerar que el título está vacío.
+      // Esto previene que el título se quede "pegado" si el usuario borra el h2.
+      const currentTitleInStore = get(documentStore).metadata?.title;
+      if (currentTitleInStore !== 'Esquema sin título') {
+        documentStore.updateTitle('Esquema sin título');
+      }
+    }
+  }, 750);
+
   $effect(() => {
-    // Solo actuar si se nos pide enfocar un nodo y el editor está listo.
     if (focusedNodePos !== null && editor && editor.isEditable) {
-      // Comprobamos si ya estamos en el nodo correcto para evitar bucles.
       const currentSelection = editor.state.selection;
       const parentListItem = findParentNode(
         (node) => node.type.name === 'listItem'
       )(currentSelection);
-
       if (!parentListItem || parentListItem.pos !== focusedNodePos) {
         editor.chain().focus().setNodeSelection(focusedNodePos).run();
       }
-
-      // Notificamos al padre que hemos completado la acción, para que pueda resetear la prop.
-      // Usamos tick() para asegurar que se despacha después de la actualización del DOM.
       import('svelte').then(({ tick }) =>
         tick().then(() => dispatch('focusApplied'))
       );
@@ -72,8 +95,7 @@
   });
 
   onMount(() => {
-    console.log('onMount INICIADO. El elemento es:', element);
-    editor = new Editor({
+    const editorInstance = new Editor({
       element: element,
       extensions: [
         Document,
@@ -117,44 +139,54 @@
           class: 'prose',
         },
       },
-      onUpdate({ editor }) {
-        console.log('Tiptap onUpdate: ¡Algo ha cambiado!', editor.getJSON());
-        const { selection } = editor.state;
+      onUpdate({ editor: updatedEditor }) {
+        syncTitleWithStore(updatedEditor);
+
+        const { selection } = updatedEditor.state; // Solo necesitamos `selection` aquí
         const listItemNode = findParentNode(
           (node) => node.type.name === 'listItem'
         )(selection);
-
-        // Actualizamos el store global con la posición del nodo seleccionado actualmente.
-        const currentSelectedPos = get(editorStore).selectedNodePos;
         const newSelectedPos = listItemNode ? listItemNode.pos : null;
 
         editorStore.update((s) => ({
           ...s,
+          // ✅ CORRECCIÓN: Usamos la referencia directa al doc del editor actualizado
+          doc: updatedEditor.state.doc,
           selectedNodePos: newSelectedPos,
           contentVersion: s.contentVersion + 1,
         }));
       },
+      // onSelectionUpdate puede seguir siendo una optimización, pero la mantenemos fiel a tu original
+      // para evitar confusiones. Si todo está en onUpdate, también funciona.
     });
 
+    editor = editorInstance;
+
+    // Sincronización inicial al cargar
+    syncTitleWithStore(editor);
+
+    // Manejo del contenido inicial
     if (initialContent) {
-      editor.commands.setContent(initialContent);
+      editor.commands.setContent(initialContent, { emitUpdate: false });
       documentStore.clearInitialContent();
     }
 
+    // ✅ 2. MÉTODO CORRECTO PARA PUBLICAR LA INSTANCIA (fiel a tu código)
     editorStore.update((s) => ({ ...s, instance: editor }));
-    console.log('onMount COMPLETADO. Instancia del editor creada:', editor);
-  });
 
-  onDestroy(() => {
-    if (editor) {
-      editor.destroy();
-    }
-    // ✅ CORRECCIÓN: Añadimos `contentVersion: 0` para cumplir con el tipo EditorStoreState.
-    editorStore.set({
-      instance: null,
-      selectedNodePos: null,
-      contentVersion: 0,
-    });
+    // ✅ 3. FUNCIÓN DE LIMPIEZA FIEL A TU LÓGICA `onDestroy`
+    return () => {
+      if (editor && !editor.isDestroyed) {
+        editor.destroy();
+      }
+      // Reseteamos el store a un estado completo y conocido.
+      editorStore.set({
+        instance: null,
+        selectedNodePos: null,
+        contentVersion: 0,
+        doc: null, // <-- AÑADIR ESTA LÍNEA
+      });
+    };
   });
 </script>
 
