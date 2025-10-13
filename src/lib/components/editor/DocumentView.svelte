@@ -194,18 +194,54 @@
   <BubbleMenu {editor} />
 {/if}
 
-<div bind:this={element}></div>
+<!-- CAMBIO: Envolver el editor en un contenedor para el layout -->
+<div class="document-layout-container">
+  <div bind:this={element}></div>
+</div>
 
 <style>
+  /* NUEVO: Contenedor para alinear el documento */
+  .document-layout-container {
+    width: 100%;
+    max-width: 960px; /* Alineado con el header */
+    margin: 0 auto;
+    padding: var(--space-xxl) var(--space-md) 50vh var(--space-md);
+  }
+
   :global(.prose) {
     font-family: var(--font-main);
     color: var(--color-text);
     max-width: 720px;
     margin: 0 auto;
-    padding: var(--space-xxl) var(--space-md);
-    padding-bottom: 50vh;
+    /* CAMBIO: Padding ahora está dentro de la "hoja" */
+    padding: var(--space-xl) var(--space-xxl);
     min-height: 100vh;
     outline: none;
+    background-color: var(--color-background);
+
+    /* CAMBIO: Estilos para crear el efecto "hoja de papel" */
+    border-radius: var(--space-sm);
+    border: 1px solid var(--color-gray-100);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(.prose) {
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  /* Ajuste para pantallas pequeñas */
+  @media (max-width: 960px) {
+    .document-layout-container {
+      padding: var(--space-xl) 0 50vh 0;
+    }
+    :global(.prose) {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
   }
 
   :global(.prose p),
@@ -215,7 +251,7 @@
 
   :global(.prose h1) {
     font-size: 2.25rem;
-    margin-top: var(--space-xl);
+    margin-top: 0; /* Ajustado porque el padding superior ya da espacio */
     margin-bottom: var(--space-md);
   }
 

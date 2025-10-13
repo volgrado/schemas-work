@@ -20,6 +20,7 @@
   import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
   import SchemaTree from '$lib/components/views/SchemaTree.svelte';
   import type { TreeNodeData } from '$lib/components/views/SchemaTree.svelte';
+  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte'; // Importar el canvas
 
   // --- Stores y Servicios ---
   import { documentStore } from '$lib/stores/documentStore';
@@ -170,8 +171,6 @@
   {/if}
 </svelte:head>
 
-<!-- EL TEMPLATE HTML NO NECESITA CAMBIOS -->
-
 <Toaster position="bottom-center" />
 
 {#if !showWelcome}
@@ -203,6 +202,13 @@
 {/if}
 
 <div class="view-wrapper">
+  <!-- CAMBIO 1: Añadir el canvas de fondo para la vista de editor -->
+  {#if !showWelcome && currentView === 'editor'}
+    <div class="editor-background-canvas">
+      <OrganicCanvas />
+    </div>
+  {/if}
+
   <!-- Vista del Editor -->
   <div
     class="view-content"
@@ -289,8 +295,23 @@
   {/if}
 {/if}
 
-<!-- EL CSS NO NECESITA CAMBIOS -->
 <style>
+  /* CAMBIO 2: Añadir estilos para el canvas de fondo */
+  .editor-background-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1; /* Detrás de todo el contenido */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  /* Se mostrará solo en pantallas anchas */
+  @media (min-width: 1200px) {
+    .editor-background-canvas {
+      opacity: 1;
+    }
+  }
+
   .status-container {
     display: flex;
     flex-direction: column; /* Para que el span se ponga debajo */

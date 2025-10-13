@@ -23,6 +23,7 @@
 :root {
   /* Paleta de Colores Minimalista */
   --color-background: #ffffff;
+  --color-page-background: #f8f8f8; /* NUEVA: Para el fondo de la página */
   --color-text: #111111;
   --color-accent: #d9534f; /* Rojo/coral para acentos */
   --color-gray-100: #f2f2f2; /* Gris muy claro para fondos sutiles, bordes, hovers */
@@ -50,7 +51,9 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-main);
-  background-color: var(--color-background);
+  background-color: var(
+    --color-page-background
+  ); /* CAMBIO: Usar el nuevo color */
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -87,6 +90,7 @@ body {
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: #1c1c1e;
+    --color-page-background: #161618; /* NUEVA: Variante oscura */
     --color-text: rgba(255, 255, 255, 0.9);
     --color-accent: #ff6347; /* Tomato */
     --color-gray-100: #2c2c2e;

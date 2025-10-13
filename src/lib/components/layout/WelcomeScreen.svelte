@@ -18,7 +18,9 @@
 
   <div class="content-panel">
     <header class="header">
-      <h1 class="title">Schemas.Work</h1>
+      <h1 class="title">
+        Schemas<span class="accent-word">.Work</span>
+      </h1>
       <!-- CAMBIO: Subtítulo más evocador que alude a la conexión y crecimiento de ideas. -->
       <p class="subtitle">
         Donde tus ideas echan raíces, se conectan y florecen.
@@ -91,23 +93,19 @@
     height: 100%;
     display: grid;
     place-items: center;
-    /* SOLUCIÓN: Aumentamos el padding lateral para dar más margen. */
     padding: var(--space-lg);
     box-sizing: border-box; /* Asegura que el padding se incluya en el tamaño total */
-    overflow: hidden;
+    overflow-y: auto; /* CORRECCIÓN: Permite el scroll vertical si el contenido es demasiado alto */
   }
 
   .content-panel {
     position: relative;
     z-index: 2;
     width: 100%;
-    /* CAMBIO: Aumentamos el max-width para acomodar más texto cómodamente. */
     max-width: 640px;
     display: flex;
     flex-direction: column;
-    gap: var(
-      --space-xl
-    ); /* Reducimos el gap para una apariencia más compacta */
+    gap: var(--space-xl);
     animation: fadeIn 1s ease-out forwards;
   }
 
@@ -135,17 +133,20 @@
     margin: 0;
   }
 
+  .accent-word {
+    color: var(--color-accent);
+  }
+
   .subtitle {
     font-size: 1.25rem;
     color: var(--color-gray-500);
     margin-top: var(--space-sm);
     font-weight: 400;
-    max-width: 450px; /* Evita que el subtítulo sea demasiado ancho */
+    max-width: 450px;
     margin-left: auto;
     margin-right: auto;
   }
 
-  /* CAMBIO: La parrilla ahora es de 2x2 en pantallas más grandes para ser más escaneable. */
   .features-grid {
     display: grid;
     gap: var(--space-xl);
@@ -168,10 +169,9 @@
     gap: var(--space-md);
   }
 
-  /* CAMBIO: Se añade un color de acento al icono para mayor dinamismo. */
   .feature :global(svg) {
     color: var(--color-accent);
-    flex-shrink: 0; /* Evita que el icono se encoja */
+    flex-shrink: 0;
   }
 
   .feature-title {
@@ -186,11 +186,10 @@
 
   .feature-text p {
     margin: 0;
-    line-height: 1.6; /* Un poco menos de espacio entre líneas */
+    line-height: 1.6;
     color: var(--color-text);
-    /* SOLUCIÓN: Permite que las palabras largas se rompan para evitar el desbordamiento. */
     overflow-wrap: break-word;
-    word-wrap: break-word; /* fallback para navegadores antiguos */
+    word-wrap: break-word;
   }
 
   .cta-support-text {
@@ -208,12 +207,11 @@
     }
   }
 
-  /* NUEVO: Media query para pantallas extra pequeñas para mejorar la legibilidad. */
   @media (max-width: 480px) {
     .feature {
-      flex-direction: column; /* Apila el icono y el texto verticalmente */
-      align-items: center; /* Los centra horizontalmente */
-      text-align: center; /* Centra el contenido del texto */
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
       gap: var(--space-sm);
     }
 

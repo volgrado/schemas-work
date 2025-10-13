@@ -75,9 +75,7 @@ export class BrowserTTSService implements TTSService {
       setTimeout(() => {
         clearInterval(pollInterval);
         if (!this.isInitialized) {
-          reject(
-            new Error('Timeout: Could not load browser voices.'),
-          );
+          reject(new Error('Timeout: Could not load browser voices.'));
         }
       }, 3000);
     });
@@ -91,13 +89,12 @@ export class BrowserTTSService implements TTSService {
     if (!this.isInitialized) {
       return [];
     }
-    return this.voices
-      .filter((v) => !v.localService)
-      .map((voice) => ({
-        id: voice.voiceURI,
-        name: `${voice.name} (${voice.lang})`,
-        lang: voice.lang,
-      }));
+    // CAMBIO: Eliminamos el filtro `!v.localService` para incluir las voces del sistema.
+    return this.voices.map((voice) => ({
+      id: voice.voiceURI,
+      name: `${voice.name} (${voice.lang})`,
+      lang: voice.lang,
+    }));
   }
 
   /**
@@ -134,7 +131,7 @@ export class BrowserTTSService implements TTSService {
       this.currentUtterance = utterance;
 
       const selectedVoice = this.voices.find(
-        (v) => v.voiceURI === options.voiceId,
+        (v) => v.voiceURI === options.voiceId
       );
       if (selectedVoice) {
         utterance.voice = selectedVoice;
@@ -216,12 +213,12 @@ export class BrowserTTSService implements TTSService {
 
       let cutPoint = remainingText.lastIndexOf(
         '.',
-        BrowserTTSService.MAX_TEXT_LENGTH,
+        BrowserTTSService.MAX_TEXT_LENGTH
       );
       if (cutPoint === -1) {
         cutPoint = remainingText.lastIndexOf(
           ' ',
-          BrowserTTSService.MAX_TEXT_LENGTH,
+          BrowserTTSService.MAX_TEXT_LENGTH
         );
       }
       if (cutPoint === -1) {
@@ -244,7 +241,7 @@ export class BrowserTTSService implements TTSService {
 
       if (!this.synthesis.speaking && !this.synthesis.paused) {
         console.warn(
-          'Watchdog: Speech synthesis stopped unexpectedly. Restarting.',
+          'Watchdog: Speech synthesis stopped unexpectedly. Restarting.'
         );
         this.cancel();
         clearInterval(watchdogInterval);

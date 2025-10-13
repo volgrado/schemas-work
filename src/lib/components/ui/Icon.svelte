@@ -3,7 +3,6 @@
   import type { SvelteComponent } from 'svelte';
 
   // --- Iconos de `svelte-feather-icons` ---
-  // ... (todos tus imports se mantienen igual) ...
   import {
     PlusIcon,
     CommandIcon,
@@ -34,14 +33,11 @@
     AlertTriangleIcon,
     MicIcon,
     FastForwardIcon,
+    SkipBackIcon,
+    SkipForwardIcon,
   } from 'svelte-feather-icons';
 
-  // --- LA SOLUCIÓN ESTÁ EN ESTA LÍNEA ---
-  // En lugar de `typeof SvelteComponent`, usamos `any`.
-  // Esto le dice a TypeScript: "Confía en mí, sé que todos los valores en este
-  // objeto son constructores de componentes de Svelte compatibles."
   const icons: Record<string, any> = {
-    // ... (tu mapa de iconos se mantiene EXACTAMENTE igual) ...
     plus: PlusIcon,
     command: CommandIcon,
     'download-cloud': DownloadCloudIcon,
@@ -71,18 +67,16 @@
     'alert-triangle': AlertTriangleIcon,
     mic: MicIcon,
     'fast-forward': FastForwardIcon,
+    // REMEDIATION: New icons for navigation controls
+    'skip-back': SkipBackIcon,
+    'skip-forward': SkipForwardIcon,
   };
 
-  // --- Props del componente (sin cambios) ---
   export let name: keyof typeof icons;
   export let size: number = 16;
   export let strokeWidth: number = 2;
 </script>
 
-<!--
-  El resto del componente (el `<span>` wrapper y el `<svelte:component>`)
-  se mantiene EXACTAMENTE igual que en la solución anterior.
--->
 <span
   class="icon-wrapper {$$props.class || ''}"
   aria-hidden="true"
