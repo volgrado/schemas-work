@@ -85,9 +85,11 @@ if (typeof window !== 'undefined') {
  * Includes error handling in case the data in localStorage is corrupted.
  * @returns {Promise<SchemaMetadata[]>} A promise that resolves to the list of all items.
  */
-export async function getAllItems(): Promise<SchemaMetadata[]> {
+export async function getAllItems(
+  storage = localStorage,
+): Promise<SchemaMetadata[]> {
   if (typeof window === 'undefined') return [];
-  const storedDirectory = localStorage.getItem(DIRECTORY_STORAGE_KEY);
+  const storedDirectory = storage.getItem(DIRECTORY_STORAGE_KEY);
   try {
     return storedDirectory ? JSON.parse(storedDirectory) : [];
   } catch (error) {
@@ -282,9 +284,11 @@ export async function deleteItem(itemId: string): Promise<void> {
  * Gets the ID of the last active document from localStorage.
  * @returns {Promise<string | null>} A promise that resolves to the last active document ID or null.
  */
-export async function getLastActiveDocId(): Promise<string | null> {
+export async function getLastActiveDocId(
+  storage = localStorage,
+): Promise<string | null> {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(LAST_ACTIVE_DOC_KEY);
+  return storage.getItem(LAST_ACTIVE_DOC_KEY);
 }
 
 /**
@@ -292,9 +296,12 @@ export async function getLastActiveDocId(): Promise<string | null> {
  * @param {string} id - The ID of the document to set as last active.
  * @returns {Promise<void>} A promise that resolves when the ID has been saved.
  */
-export async function setLastActiveDocId(id: string): Promise<void> {
+export async function setLastActiveDocId(
+  id: string,
+  storage = localStorage,
+): Promise<void> {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(LAST_ACTIVE_DOC_KEY, id);
+  storage.setItem(LAST_ACTIVE_DOC_KEY, id);
 }
 
 /**
@@ -309,16 +316,19 @@ export async function setLastActiveDocId(id: string): Promise<void> {
  * @param {SchemaMetadata[]} items - The array of items to save.
  * @returns {Promise<void>} A promise that resolves when the directory has been saved.
  */
-export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
+export async function saveDirectory(
+  items: SchemaMetadata[],
+  storage = localStorage,
+): Promise<void> {
   if (typeof window === 'undefined') return;
 
-  const oldValue = localStorage.getItem(DIRECTORY_STORAGE_KEY);
+  const oldValue = storage.getItem(DIRECTORY_STORAGE_KEY);
   const newValue = JSON.stringify(items);
 
   // Avoid dispatching events if nothing has actually changed.
   if (oldValue === newValue) return;
 
-  localStorage.setItem(DIRECTORY_STORAGE_KEY, newValue);
+  storage.setItem(DIRECTORY_STORAGE_KEY, newValue);
 
   // Manually dispatch the `storage` event. The browser only does this for other tabs,
   // but by doing it ourselves, we force the listener in this same tab to also activate,
@@ -336,7 +346,7 @@ export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
  * Completely clears the metadata directory from localStorage.
  * @returns {Promise<void>} A promise that resolves when the directory has been cleared.
  */
-export async function clearDirectory(): Promise<void> {
+export async function clearDirectory(storage = localStorage): Promise<void> {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(DIRECTORY_STORAGE_KEY);
+  storage.removeItem(DIRECTORY_STORAGE_KEY);
 }

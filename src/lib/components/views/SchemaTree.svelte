@@ -1,6 +1,5 @@
 <!-- src/lib/components/views/SchemaTree.svelte -->
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
   import { createEventDispatcher } from 'svelte';
   import { createD3Tree } from '$lib/services/features/d3TreeService';
   import type { TreeNodeData } from '$lib/types/tree';
@@ -22,7 +21,7 @@
     dispatch('nodeClick', { id });
   }
 
-  afterUpdate(() => {
+  $effect(() => {
     if (svgEl && treeData) {
       createD3Tree({
         svgEl,
