@@ -1,4 +1,4 @@
-<!-- src/lib/components/layout/WelcomeScreen.svelte (SOLUCIÓN FINAL DE ESTILOS) -->
+<!-- src/lib/components/layout/WelcomeScreen.svelte (VERSIÓN MEJORADA Y COMPLETA) -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import Button from '$lib/components/ui/Button.svelte';
@@ -19,18 +19,43 @@
   <div class="content-panel">
     <header class="header">
       <h1 class="title">Schemas.Work</h1>
-      <p class="subtitle">Un jardín para cultivar tus ideas.</p>
+      <!-- CAMBIO: Subtítulo más evocador que alude a la conexión y crecimiento de ideas. -->
+      <p class="subtitle">
+        Donde tus ideas echan raíces, se conectan y florecen.
+      </p>
     </header>
 
+    <!-- CAMBIO: La parrilla de características ha sido reescrita y expandida para cubrir más funcionalidades clave. -->
     <main class="features-grid">
       <div class="feature">
         <Icon name="sparkles" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Piensa. Estructura. Aprende.</h2>
+          <h2 class="feature-title">Estructura con IA</h2>
           <p>
-            Transforma texto en bruto en esquemas claros con ayuda de la IA, y
-            convierte esos esquemas en conocimiento profundo con tarjetas de
-            estudio interactivas.
+            Transforma texto en bruto en esquemas jerárquicos y expande tus
+            nodos con nuevas ideas usando el asistente de IA.
+          </p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <Icon name="git-branch" size={24} />
+        <div class="feature-text">
+          <h2 class="feature-title">Visualiza tus Conexiones</h2>
+          <p>
+            Explora tu conocimiento como un árbol de ideas interactivo,
+            revelando la estructura profunda de tus esquemas de un vistazo.
+          </p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <Icon name="zap" size={24} />
+        <div class="feature-text">
+          <h2 class="feature-title">Aprende de Verdad</h2>
+          <p>
+            Genera tarjetas de estudio y memoriza conceptos clave con un sistema
+            de repetición espaciada (SRS) integrado.
           </p>
         </div>
       </div>
@@ -38,10 +63,11 @@
       <div class="feature">
         <Icon name="lock" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Tu Conocimiento es Tuyo. Siempre.</h2>
+          <h2 class="feature-title">Tu Conocimiento es Tuyo</h2>
           <p>
-            Esta aplicación funciona 100% en tu navegador. Tus datos nunca salen
-            de tu dispositivo. Son encriptados por ti y solo accesibles para ti.
+            Funciona 100% en tu navegador, sin servidores. Realiza copias de
+            seguridad de todo tu trabajo con encriptación protegida por tu
+            propia contraseña.
           </p>
         </div>
       </div>
@@ -51,37 +77,37 @@
       <Button on:click={handleStart} size="lg" variant="primary">
         Comenzar a Cultivar
       </Button>
+      <!-- CAMBIO: Texto de apoyo que crea una transición suave a la aplicación. -->
+      <p class="cta-support-text">
+        Tu primer lienzo, "Mi Primer Esquema", te está esperando.
+      </p>
     </footer>
   </div>
 </div>
 
 <style>
-  /* *** LA CORRECCIÓN FINAL *** */
-  /* WelcomeContainer ahora es un contenedor transparente que ocupa el 100% de su padre (Animator) */
   .welcome-container {
-    /* Eliminamos position, inset, z-index y background-color */
     width: 100%;
     height: 100%;
-
-    /* Mantenemos la lógica de centrado */
     display: grid;
     place-items: center;
-    padding: var(--space-md) max(var(--space-md), env(safe-area-inset-right))
-      var(--space-md) max(var(--space-md), env(safe-area-inset-left));
-
-    /* Mantenemos el overflow para que el canvas no se desborde */
+    /* SOLUCIÓN: Aumentamos el padding lateral para dar más margen. */
+    padding: var(--space-lg);
+    box-sizing: border-box; /* Asegura que el padding se incluya en el tamaño total */
     overflow: hidden;
   }
 
-  /* El resto de los estilos no necesitan cambios, ya que son relativos al .welcome-container */
   .content-panel {
     position: relative;
-    z-index: 2; /* Se apila sobre el OrganicCanvas */
+    z-index: 2;
     width: 100%;
-    max-width: 580px;
+    /* CAMBIO: Aumentamos el max-width para acomodar más texto cómodamente. */
+    max-width: 640px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-xxl);
+    gap: var(
+      --space-xl
+    ); /* Reducimos el gap para una apariencia más compacta */
     animation: fadeIn 1s ease-out forwards;
   }
 
@@ -114,12 +140,25 @@
     color: var(--color-gray-500);
     margin-top: var(--space-sm);
     font-weight: 400;
+    max-width: 450px; /* Evita que el subtítulo sea demasiado ancho */
+    margin-left: auto;
+    margin-right: auto;
   }
 
+  /* CAMBIO: La parrilla ahora es de 2x2 en pantallas más grandes para ser más escaneable. */
   .features-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: var(--space-xl);
+  }
+
+  @media (min-width: 640px) {
+    .features-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-lg) var(--space-xl);
+    }
+    .content-panel {
+      gap: var(--space-xxl);
+    }
   }
 
   .feature {
@@ -129,16 +168,35 @@
     gap: var(--space-md);
   }
 
+  /* CAMBIO: Se añade un color de acento al icono para mayor dinamismo. */
+  .feature :global(svg) {
+    color: var(--color-accent);
+    flex-shrink: 0; /* Evita que el icono se encoja */
+  }
+
   .feature-title {
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0 0 var(--space-xs) 0;
   }
 
+  .feature-text {
+    min-width: 0;
+  }
+
   .feature-text p {
     margin: 0;
-    line-height: 1.7;
+    line-height: 1.6; /* Un poco menos de espacio entre líneas */
     color: var(--color-text);
+    /* SOLUCIÓN: Permite que las palabras largas se rompan para evitar el desbordamiento. */
+    overflow-wrap: break-word;
+    word-wrap: break-word; /* fallback para navegadores antiguos */
+  }
+
+  .cta-support-text {
+    font-size: 0.85rem;
+    color: var(--color-gray-500);
+    margin-top: var(--space-sm);
   }
 
   @media (max-width: 640px) {
@@ -150,7 +208,24 @@
     }
   }
 
-  /* La animación de salida sigue funcionando porque es controlada por la clase global */
+  /* NUEVO: Media query para pantallas extra pequeñas para mejorar la legibilidad. */
+  @media (max-width: 480px) {
+    .feature {
+      flex-direction: column; /* Apila el icono y el texto verticalmente */
+      align-items: center; /* Los centra horizontalmente */
+      text-align: center; /* Centra el contenido del texto */
+      gap: var(--space-sm);
+    }
+
+    .title {
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+    }
+  }
+
   :global(.exiting) .content-panel {
     will-change: opacity, transform;
     animation: fadeOutUp 0.7s ease-in forwards;
