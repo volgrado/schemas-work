@@ -4,40 +4,40 @@ import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 /**
- * Este servicio abstrae la capa de persistencia del contenido de los documentos.
- * Su principal responsabilidad es configurar y proporcionar el "proveedor"
- * que conecta un documento colaborativo (Y.Doc) con el almacenamiento
- * local del navegador (IndexedDB).
+ * This service abstracts the persistence layer for document content.
+ * Its main responsibility is to configure and provide the "provider"
+ * that connects a collaborative document (Y.Doc) with the browser's
+ * local storage (IndexedDB).
  *
- * Encapsular esta lógica aquí permite cambiar el backend de persistencia
- * en el futuro (ej. a y-webrtc o un servidor central) sin alterar
- * los stores o componentes de la aplicación.
+ * Encapsulating this logic here allows for changing the persistence backend
+ * in the future (e.g., to y-webrtc or a central server) without altering
+ * the application's stores or components.
  */
 
 /**
- * Crea y devuelve un proveedor de persistencia para un documento Y.js específico.
+ * Creates and returns a persistence provider for a specific Y.js document.
  *
- * @param {string} docId - El identificador único del documento que se quiere persistir.
- *        Este `docId` se usará como el nombre de la base de datos en IndexedDB,
- *        aislando el contenido de cada documento.
- * @returns Un objeto que contiene el documento Y.js (`Y.Doc`) y el proveedor de
- *          persistencia (`IndexeddbPersistence`).
+ * @param {string} docId - The unique identifier of the document to be persisted.
+ *        This `docId` will be used as the database name in IndexedDB,
+ *        isolating the content of each document.
+ * @returns {{ ydoc: Y.Doc; provider: IndexeddbPersistence }} An object containing the Y.js document (`Y.Doc`) and the
+ *          persistence provider (`IndexeddbPersistence`).
  */
 export function getDocumentProvider(docId: string): {
   ydoc: Y.Doc;
   provider: IndexeddbPersistence;
 } {
-  // 1. Se crea una instancia vacía de Y.Doc. Este es el contenedor
-  //    de nuestro documento colaborativo en memoria.
+  // 1. An empty instance of Y.Doc is created. This is the container
+  //    for our collaborative document in memory.
   const ydoc = new Y.Doc();
 
-  // 2. Se instancia el proveedor de persistencia. En el momento de la creación,
-  //    `y-indexeddb` automáticamente intenta cargar cualquier dato existente
-  //    desde la base de datos IndexedDB con el nombre `docId` y lo sincroniza
-  //    con nuestro `ydoc`.
+  // 2. The persistence provider is instantiated. At the time of creation,
+  //    `y-indexeddb` automatically attempts to load any existing data
+  //    from the IndexedDB database with the name `docId` and synchronizes it
+  //    with our `ydoc`.
   //
-  //    A partir de este momento, cualquier cambio realizado en `ydoc` se
-  //    guardará automáticamente en IndexedDB.
+  //    From this moment on, any changes made to `ydoc` will be
+  //    automatically saved to IndexedDB.
   const provider = new IndexeddbPersistence(docId, ydoc);
 
   return {

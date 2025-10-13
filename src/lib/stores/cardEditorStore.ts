@@ -6,16 +6,16 @@ import { editorStore } from './editorStore';
 import * as errorService from '$lib/services/core/errorService';
 
 /**
- * Define la estructura del estado para el editor de tarjetas.
+ * Defines the state structure for the card editor.
  */
 export interface CardEditorState {
   isOpen: boolean;
-  selectedNodePos: number | null; // La posición de inicio del `<li>` en el documento Tiptap.
-  cards: DomainCard[]; // Una copia en memoria de las tarjetas que se están editando.
+  selectedNodePos: number | null; // The starting position of the `<li>` in the Tiptap document.
+  cards: DomainCard[]; // An in-memory copy of the cards being edited.
 }
 
 /**
- * El estado inicial del store cuando el panel está cerrado.
+ * The initial state of the store when the panel is closed.
  */
 const initialState: CardEditorState = {
   isOpen: false,
@@ -23,36 +23,36 @@ const initialState: CardEditorState = {
   cards: [],
 };
 
-// --- Creación del Store ---
+// --- Store Creation ---
 const store = writable<CardEditorState>(initialState);
 const { subscribe, update } = store;
 
-// --- Acciones (La API pública de nuestro store) ---
+// --- Actions (The public API of our store) ---
 
 /**
- * Abre el panel para editar las tarjetas de un nodo específico.
- * Es llamado por `DocumentView` cuando el usuario hace clic en un `listItem`.
- * @param {number} pos - La posición de inicio del nodo en el documento.
- * @param {DomainCard[]} cards - Las tarjetas actuales de ese nodo.
+ * Opens the panel to edit the cards of a specific node.
+ * It is called by `DocumentView` when the user clicks on a `listItem`.
+ * @param {number} pos - The starting position of the node in the document.
+ * @param {DomainCard[]} cards - The current cards of that node.
  */
 function open(pos: number, cards: DomainCard[]) {
   update((state) => ({
     ...state,
     isOpen: true,
     selectedNodePos: pos,
-    // ¡CRÍTICO! Creamos una copia profunda de las tarjetas. Esto desacopla el estado
-    // del store del estado real del documento, permitiendo al usuario editar
-    // libremente y solo guardar los cambios cuando esté listo.
+    // CRITICAL! We create a deep copy of the cards. This decouples the state
+    // of the store from the actual state of the document, allowing the user to edit
+    // freely and only save the changes when ready.
     cards: cards.map((card) => ({ ...card })),
   }));
 }
 
 /**
- * Cierra el panel de edición y resetea el estado a sus valores iniciales.
+ * Closes the editing panel and resets the state to its initial values.
  */
 function close() {
   update((state) => {
-    // Solo reseteamos si el panel ya está abierto para evitar renders innecesarios.
+    // We only reset if the panel is already open to avoid unnecessary renders.
     if (state.isOpen) {
       return initialState;
     }
@@ -60,34 +60,36 @@ function close() {
   });
 }
 
+/**
+ * Prefills a new card with content from the selected editor node and adds it to the list.
+ * It extracts text from elements with 'term' and 'description' roles within the node.
+ */
 function prefillAndAddCard() {
-  // *** 2. ENVOLVER EN try...catch ***
   try {
     const editor = get(editorStore).instance;
     const state = get(store);
 
     if (!editor || state.selectedNodePos === null) {
-      // No es un error, simplemente no hay nada que hacer.
+      // Not an error, just nothing to do.
       return;
     }
 
     const node = editor.state.doc.nodeAt(state.selectedNodePos);
 
-    // *** NUEVO: Comprobación explícita del nodo ***
     if (!node) {
       throw new Error(
-        `Could not find node at position ${state.selectedNodePos} to prefill card.`
+        `Could not find node at position ${state.selectedNodePos} to prefill card.`,
       );
     }
 
     let termText = '';
     let descriptionText = '';
 
-    // Esta lógica de recorrer los hijos es segura,
-    // pero la mantenemos dentro del try...catch por si acaso.
+    // This logic of iterating through the children is safe,
+    // but we keep it inside the try...catch just in case.
     node.forEach((childNode) => {
       if (childNode.attrs.role === 'term') {
-        // Asumiendo que usamos roles
+        // Assuming we use roles
         termText = childNode.textContent;
       } else if (childNode.attrs.role === 'description') {
         descriptionText = childNode.textContent;
@@ -96,14 +98,14 @@ function prefillAndAddCard() {
 
     const newCard: DomainCard = {
       q: descriptionText
-        ? `¿Qué es "${termText}"?`
-        : termText || 'Nueva Pregunta', // Añadir fallback
+        ? `What is "${termText}"?`
+        : termText || 'New Question', // Add fallback
       a: descriptionText || '',
     };
 
     update((s) => {
       const newCards = [...s.cards, newCard];
-      // Guardamos inmediatamente para que el usuario vea el cambio
+      // We save immediately so the user sees the change
       saveCardsToEditor(newCards);
       return { ...s, cards: newCards };
     });
@@ -113,14 +115,15 @@ function prefillAndAddCard() {
       operation: 'prefillAndAddCard',
       selectedNodePos: editorState.selectedNodePos,
     });
-    // Opcional: Notificar al usuario que algo falló.
-    // toast.error('No se pudo autocompletar la tarjeta.');
+    // Optional: Notify the user that something failed.
+    // toast.error('Could not autocomplete the card.');
   }
 }
 
 /**
- * Guarda las tarjetas (desde la copia local en el store) de vuelta en el
- * nodo de Tiptap correspondiente.
+ * Saves the cards (from the local copy in the store) back to the
+ * corresponding Tiptap node.
+ * @param {DomainCard[]} [cardsToSave] - Optional array of cards to save. If not provided, cards from the store are used.
  */
 function saveCardsToEditor(cardsToSave?: DomainCard[]) {
   const editor = get(editorStore).instance;
@@ -128,7 +131,7 @@ function saveCardsToEditor(cardsToSave?: DomainCard[]) {
 
   if (!editor || state.selectedNodePos === null) return;
 
-  const cards = cardsToSave || state.cards; // Usar las tarjetas pasadas o las del estado
+  const cards = cardsToSave || state.cards; // Use the passed cards or the ones from the state
 
   editor
     .chain()
@@ -139,16 +142,16 @@ function saveCardsToEditor(cardsToSave?: DomainCard[]) {
 }
 
 /**
- * Actualiza el array de tarjetas en el estado del store.
- * Esta función es llamada por la UI (`CardEditorPanel`) mientras el usuario edita,
- * típicamente en un evento `on:blur`.
- * @param {DomainCard[]} newCards - El nuevo array de tarjetas.
+ * Updates the array of cards in the store's state.
+ * This function is called by the UI (`CardEditorPanel`) while the user edits,
+ * typically on an `on:blur` event.
+ * @param {DomainCard[]} newCards - The new array of cards.
  */
 function updateCardsInStore(newCards: DomainCard[]) {
   update((state) => ({ ...state, cards: newCards }));
 }
 
-// --- Exportación del Store Público ---
+// --- Public Store Export ---
 export const cardEditorStore = {
   subscribe,
   open,

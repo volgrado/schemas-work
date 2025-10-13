@@ -1,24 +1,24 @@
 // src/lib/utils/debounce.ts
 
 /**
- * Crea una versión "debounced" de una función. La función debounced solo se ejecutará
- * después de que haya pasado un cierto tiempo `delay` sin que haya sido llamada de nuevo.
+ * Creates a debounced version of a function. The debounced function will only
+ * be executed after a certain time `delay` has passed without it being called again.
  *
- * @param func La función a la que se le aplicará el debounce.
- * @param delay El tiempo de espera en milisegundos.
- * @returns Una nueva función con el comportamiento de debounce.
+ * @param func The function to be debounced.
+ * @param delay The waiting time in milliseconds.
+ * @returns A new function with the debounce behavior.
  */
 export function debounce<T extends (...args: any[]) => void>(
   func: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: number | undefined;
 
   return function (this: any, ...args: Parameters<T>) {
-    // Si se llama de nuevo, se cancela el temporizador anterior.
+    // If called again, the previous timer is canceled.
     clearTimeout(timeoutId);
 
-    // Se establece un nuevo temporizador.
+    // A new timer is set.
     timeoutId = window.setTimeout(() => {
       func.apply(this, args);
     }, delay);

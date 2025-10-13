@@ -1,89 +1,82 @@
 // src/lib/services/core/errorService.ts
 
 /**
- * @file Servicio centralizado para la captura, almacenamiento y gestión de errores.
- * Funciona como una "caja negra" en el navegador del usuario, guardando un historial
- * de problemas que pueden ser reportados voluntariamente para diagnóstico.
+ * @file Centralized service for capturing, storing, and managing errors.
+ * It functions as a "black box" in the user's browser, saving a history
+ * of issues that can be voluntarily reported for diagnostics.
  */
-
-// --- Tipos y Constantes ---
 
 /**
- * Define la estructura de una única entrada en el registro de errores.
+ * Defines the structure of a single entry in the error log.
  */
 export interface ErrorLog {
-  /** La fecha y hora en formato ISO en que se registró el error. */
+  /** The ISO-formatted date and time when the error was logged. */
   timestamp: string;
-  /** El mensaje principal del error. */
+  /** The main message of the error. */
   message: string;
-  /** El stack trace del error, si está disponible. */
+  /** The error's stack trace, if available. */
   stack?: string;
-  /** Un objeto con información contextual adicional sobre dónde/cuándo ocurrió el error. */
+  /** An object with additional contextual information about where/when the error occurred. */
   context?: Record<string, any>;
 }
 
-/** La clave utilizada para almacenar los logs de errores en localStorage. */
+/** The key used to store error logs in localStorage. */
 const ERROR_LOGS_STORAGE_KEY = 'schemas-work-error-logs';
 
-/** El número máximo de registros de error que se mantendrán en el historial. */
+/** The maximum number of error records to keep in the history. */
 const MAX_LOGS = 50;
 
-// --- API del Servicio ---
-
 /**
- * Obtiene todos los registros de error almacenados localmente.
- * @returns {ErrorLog[]} Un array de registros de error, del más reciente al más antiguo.
+ * Retrieves all locally stored error logs.
+ * @returns {ErrorLog[]} An array of error logs, from most recent to oldest.
  */
 export function getLogs(): ErrorLog[] {
   try {
     const storedLogs = localStorage.getItem(ERROR_LOGS_STORAGE_KEY);
     return storedLogs ? JSON.parse(storedLogs) : [];
   } catch (e) {
-    // Si los logs están corruptos, los limpiamos y devolvemos un array vacío.
-    console.error('Error al parsear los logs de error almacenados:', e);
+    // If the logs are corrupted, clear them and return an empty array.
+    console.error('Error parsing stored error logs:', e);
     clearLogs();
     return [];
   }
 }
 
 /**
- * Registra un nuevo error en el historial persistente.
- * Esta es la función principal del servicio.
- * @param {Error | any} error - El objeto de error capturado.
- * @param {Record<string, any>} [context] - Datos contextuales adicionales para ayudar en la depuración.
+ * Logs a new error to the persistent history.
+ * This is the main function of the service.
+ * @param {Error | any} error - The captured error object.
+ * @param {Record<string, any>} [context] - Additional contextual data to aid in debugging.
  */
 export function reportError(
   error: Error | any,
-  context?: Record<string, any>
+  context?: Record<string, any>,
 ): void {
-  // 1. Crear un nuevo ErrorLog
+  // 1. Create a new ErrorLog
   const newLog: ErrorLog = {
     timestamp: new Date().toISOString(),
-    message: error?.message || 'Error desconocido',
+    message: error?.message || 'Unknown error',
     stack: error?.stack,
     context,
   };
 
-  // 2. Obtener los logs existentes
+  // 2. Get existing logs
   const existingLogs = getLogs();
 
-  // 3. Añadir el nuevo log al principio del array
+  // 3. Add the new log to the beginning of the array
   const updatedLogs = [newLog, ...existingLogs];
 
-  // 4. Limitar el array a MAX_LOGS
+  // 4. Limit the array to MAX_LOGS
   const trimmedLogs = updatedLogs.slice(0, MAX_LOGS);
 
-  // 5. Guardar el array actualizado en localStorage
+  // 5. Save the updated array to localStorage
   try {
     localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
   } catch (e) {
-    console.error(
-      'No se pudieron guardar los logs de error en localStorage:',
-      e
-    );
+    console.error('Could not save error logs to localStorage:', e);
   }
 
-  // 6. Opcional: Loguear en consola durante el desarrollo para facilitar la depuración
+  // 6. Optional: Log to console during development for easier debugging
   if (import.meta.env.DEV) {
     console.error('[Error Service Reported]:', newLog.message, {
       logEntry: newLog,
@@ -93,15 +86,12 @@ export function reportError(
 }
 
 /**
- * Elimina todos los registros de error del almacenamiento local.
+ * Deletes all error logs from local storage.
  */
 export function clearLogs(): void {
   try {
     localStorage.removeItem(ERROR_LOGS_STORAGE_KEY);
   } catch (e) {
-    console.error(
-      'No se pudieron limpiar los logs de error de localStorage:',
-      e
-    );
+    console.error('Could not clear error logs from localStorage:', e);
   }
 }

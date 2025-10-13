@@ -1,33 +1,65 @@
-# sv
+# SchemaScribe
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SchemaScribe is a modern, offline-first, and privacy-focused knowledge management tool designed to help you build and visualize complex schemas and conceptual frameworks. It leverages a powerful text editor and AI-driven features to streamline the process of learning, brainstorming, and documenting.
 
-## Creating a project
+## Core Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+-   **Offline-First:** All your data is stored locally in your browser using IndexedDB. You can use the application without an internet connection.
+-   **Privacy-Focused:** Your data never leaves your browser. All AI processing is done on the client-side.
+-   **Rich Text Editor:** A powerful editor based on Tiptap that allows you to structure your knowledge in a hierarchical way.
+-   **AI-Powered Assistance:**
+    -   **Create Schema from Text:** Automatically generate a structured schema from unstructured text.
+    -   **Expand Nodes:** Let the AI expand on a concept with relevant sub-points.
+    -   **Generate Flashcards:** Instantly create study cards from your notes.
+-   **Spaced Repetition System (SRS):** A built-in review system to help you remember what you've learned.
+-   **Secure Vault:** Export and import your entire knowledge base with password-based encryption.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Tech Stack
 
-# create a new project in my-app
-npx sv create my-app
-```
+-   **SvelteKit:** A framework for building robust Svelte apps.
+-   **Tiptap:** A headless, framework-agnostic rich text editor.
+-   **Y.js:** A CRDT implementation for collaborative editing (used here for state management).
+-   **IndexedDB:** For local, persistent storage.
+-   **Lucide Icons:** For a clean and consistent look and feel.
 
-## Developing
+## Getting Started
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Prerequisites
+
+-   [Node.js](https://nodejs.org/) (v16 or higher)
+-   [npm](https://www.npmjs.com/) (or `pnpm` or `yarn`)
+
+### Installation
+
+1.  **Clone the repository:**
+
+    ```sh
+    git clone https://github.com/your-username/schemascribe.git
+    cd schemascribe
+    ```
+
+2.  **Install dependencies:**
+
+    ```sh
+    npm install
+    ```
+
+### Running the Development Server
+
+Once you've installed the dependencies, you can start the development server:
 
 ```sh
 npm run dev
 
-# or start the server and open the app in a new browser tab
+# Or to open the app in a new browser tab automatically
 npm run dev -- --open
 ```
 
-## Building
+The application will be available at `http://localhost:5173`.
 
-To create a production version of your app:
+## Building for Production
+
+To create a production-ready version of the app:
 
 ```sh
 npm run build
@@ -35,4 +67,4 @@ npm run build
 
 You can preview the production build with `npm run preview`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+> **Note:** To deploy your app, you may need to install a SvelteKit [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.

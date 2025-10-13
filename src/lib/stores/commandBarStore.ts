@@ -1,14 +1,27 @@
 import { writable, get } from 'svelte/store';
 
 // --- 1. Definir los posibles estados y vistas ---
+/**
+ * Defines the possible views within the command bar.
+ */
 export type CommandBarView = 'main' | 'list-schemas' | 'ai-actions';
+
+/**
+ * Defines the actions that can trigger the password modal.
+ */
 export type PasswordModalAction = 'export' | 'import';
+
+/**
+ * Defines the available AI-powered helper actions.
+ */
 export type AiHelperAction =
   | 'create-schema-from-text'
   | 'generate-flashcards'
   | 'expand-node';
 
-// --- 2. Definir la forma completa de nuestro estado ---
+/**
+ * Represents the complete state of the command bar and its related modals.
+ */
 export interface CommandBarState {
   isOpen: boolean;
   currentView: CommandBarView;
@@ -17,12 +30,13 @@ export interface CommandBarState {
   isAiHelperOpen: boolean;
   aiHelperAction: AiHelperAction | null;
   isDiagnosticModalOpen: boolean;
-
-  // ✅ NUEVA PROPIEDAD: Guarda el ID de la carpeta que se está viendo en el explorador.
+  /** The ID of the folder currently being viewed in the file explorer. */
   currentParentId: string | null;
 }
 
-// --- 3. Definir el estado inicial ---
+/**
+ * The initial state for the command bar store.
+ */
 const initialState: CommandBarState = {
   isOpen: false,
   currentView: 'main',
@@ -31,21 +45,25 @@ const initialState: CommandBarState = {
   isAiHelperOpen: false,
   aiHelperAction: null,
   isDiagnosticModalOpen: false,
-
-  // ✅ NUEVA PROPIEDAD: Inicializamos el contexto de la carpeta.
   currentParentId: null,
 };
 
-// --- 4. Crear el store con la nueva lógica ---
+/**
+ * Creates and manages the command bar's state.
+ * @returns A store object with methods to manipulate the command bar state.
+ */
 function createCommandBarStore() {
   const { subscribe, set, update } = writable<CommandBarState>(initialState);
 
   return {
     subscribe,
 
-    // --- Acciones de Visibilidad Principal ---
+    // --- Main Visibility Actions ---
+    /** Opens the command bar to the main view. */
     open: () => set({ ...initialState, isOpen: true }),
+    /** Closes the command bar and all related modals, resetting the state. */
     close: () => set(initialState),
+    /** Toggles the visibility of the command bar. */
     toggle: () =>
       update((state) => {
         if (!state.isOpen) {
@@ -54,16 +72,27 @@ function createCommandBarStore() {
         return initialState;
       }),
 
-    // --- Acciones para Gestionar Estado Interno ---
+    // --- Internal State Management Actions ---
+    /**
+     * Sets the current view of the command bar.
+     * @param {CommandBarView} view - The view to display.
+     */
     setView: (view: CommandBarView) => {
       update((state) => ({ ...state, currentView: view }));
     },
 
-    // ✅ NUEVA ACCIÓN: Permite que FileExplorerView actualice el contexto global.
+    /**
+     * Allows FileExplorerView to update the global context.
+     * @param {string | null} id - The ID of the current parent folder.
+     */
     setCurrentParentId: (id: string | null) => {
       update((state) => ({ ...state, currentParentId: id }));
     },
 
+    /**
+     * Opens the password modal for a specific action.
+     * @param {PasswordModalAction} action - The action requiring a password.
+     */
     openPasswordModal: (action: PasswordModalAction) => {
       update((state) => ({
         ...state,
@@ -72,9 +101,15 @@ function createCommandBarStore() {
         passwordModalAction: action,
       }));
     },
+    /** Closes the password modal. */
     closePasswordModal: () => {
       update((state) => ({ ...state, isPasswordModalOpen: false }));
     },
+
+    /**
+     * Opens the AI helper for a specific action.
+     * @param {AiHelperAction} action - The AI action to perform.
+     */
     openAiHelper: (action: AiHelperAction) => {
       update((state) => ({
         ...state,
@@ -83,6 +118,7 @@ function createCommandBarStore() {
         aiHelperAction: action,
       }));
     },
+    /** Closes the AI helper. */
     closeAiHelper: () => {
       update((state) => ({
         ...state,
@@ -90,6 +126,8 @@ function createCommandBarStore() {
         aiHelperAction: null,
       }));
     },
+
+    /** Opens the diagnostic data modal. */
     openDiagnosticModal: () => {
       update((state) => ({
         ...state,
@@ -97,11 +135,14 @@ function createCommandBarStore() {
         isDiagnosticModalOpen: true,
       }));
     },
+    /** Closes the diagnostic data modal. */
     closeDiagnosticModal: () => {
       update((state) => ({ ...state, isDiagnosticModalOpen: false }));
     },
   };
 }
 
-// Creamos y exportamos la instancia del store.
+/**
+ * The exported command bar store instance.
+ */
 export const commandBarStore = createCommandBarStore();

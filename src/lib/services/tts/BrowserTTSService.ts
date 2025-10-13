@@ -1,14 +1,14 @@
 import type { TTSService, TTSVoice, TTSSpeakOptions } from './tts.service';
 
 /**
- * Una implementación robusta y de vanguardia del TTSService que utiliza
- * la API nativa `window.speechSynthesis`.
+ * A robust and state-of-the-art implementation of the TTSService that uses
+ * the native `window.speechSynthesis` API.
  *
- * Características clave:
- * - Manejo robusto de la carga de voces con polling y timeouts como fallback.
- * - Mecanismo de "watchdog" para evitar que la síntesis de voz se congele.
- * - Segmentación automática de texto largo para mejorar la fiabilidad en todos los navegadores.
- * - Gestión de estado interno para prevenir comportamientos erráticos.
+ * Key features:
+ * - Robust handling of voice loading with polling and timeouts as fallbacks.
+ * - "Watchdog" mechanism to prevent the speech synthesis from freezing.
+ * - Automatic segmentation of long text to improve reliability across all browsers.
+ * - Internal state management to prevent erratic behavior.
  */
 export class BrowserTTSService implements TTSService {
   private synthesis: SpeechSynthesis;
@@ -16,30 +16,28 @@ export class BrowserTTSService implements TTSService {
   private isInitialized = false;
   private currentUtterance: SpeechSynthesisUtterance | null = null;
 
-  // Constante para la segmentación de texto
-  private static readonly MAX_TEXT_LENGTH = 150; // Caracteres. Un valor conservador funciona mejor.
+  private static readonly MAX_TEXT_LENGTH = 150; // Characters. A conservative value works best.
 
   constructor() {
-    // Asegurarse de que `speechSynthesis` existe
     if (typeof window === 'undefined' || !window.speechSynthesis) {
-      // En un entorno de servidor (SSR) o un navegador sin soporte, creamos un 'dummy'
+      // In a server environment (SSR) or a browser without support, we create a dummy
       this.synthesis = {} as SpeechSynthesis;
-      console.warn('SpeechSynthesis API no está disponible.');
+      console.warn('SpeechSynthesis API is not available.');
     } else {
       this.synthesis = window.speechSynthesis;
     }
   }
 
   /**
-   * Inicializa el servicio cargando las voces disponibles.
-   * Utiliza una estrategia de polling como fallback si el evento 'voiceschanged' no se dispara,
-   * un problema común en varios navegadores.
+   * Initializes the service by loading the available voices.
+   * It uses a polling strategy as a fallback if the 'voiceschanged' event does not fire,
+   * a common issue in several browsers.
+   * @returns {Promise<void>} A promise that resolves when the service is initialized.
    */
   public initialize(): Promise<void> {
     if (this.isInitialized) {
       return Promise.resolve();
     }
-    // Si estamos en el servidor o la API no existe, no hacemos nada.
     if (!this.synthesis.getVoices) {
       return Promise.resolve();
     }
@@ -55,21 +53,18 @@ export class BrowserTTSService implements TTSService {
         return false;
       };
 
-      // Intento inmediato
       if (loadVoices()) {
         resolve();
         return;
       }
 
-      // Fallback 1: El evento oficial
       this.synthesis.onvoiceschanged = () => {
         if (loadVoices()) {
           resolve();
-          this.synthesis.onvoiceschanged = null; // Limpiamos el listener
+          this.synthesis.onvoiceschanged = null;
         }
       };
 
-      // Fallback 2: Polling
       const pollInterval = setInterval(() => {
         if (loadVoices()) {
           clearInterval(pollInterval);
@@ -77,26 +72,27 @@ export class BrowserTTSService implements TTSService {
         }
       }, 100);
 
-      // Fallback 3: Timeout de seguridad
       setTimeout(() => {
         clearInterval(pollInterval);
         if (!this.isInitialized) {
           reject(
-            new Error('Timeout: No se pudieron cargar las voces del navegador.')
+            new Error('Timeout: Could not load browser voices.'),
           );
         }
-      }, 3000); // 3 segundos es un tiempo razonable
+      }, 3000);
     });
   }
 
+  /**
+   * Gets the list of available voices.
+   * @returns {TTSVoice[]} An array of available voices.
+   */
   public getVoices(): TTSVoice[] {
     if (!this.isInitialized) {
-      // No es un error grave, puede ocurrir si se llama prematuramente.
-      // Devolver un array vacío es un comportamiento seguro.
       return [];
     }
     return this.voices
-      .filter((v) => !v.localService) // Filtramos voces locales de baja calidad si es posible
+      .filter((v) => !v.localService)
       .map((voice) => ({
         id: voice.voiceURI,
         name: `${voice.name} (${voice.lang})`,
@@ -105,12 +101,14 @@ export class BrowserTTSService implements TTSService {
   }
 
   /**
-   * Inicia la locución. Segmenta el texto si es demasiado largo
-   * y limpia cualquier estado anterior para evitar bloqueos.
+   * Starts the speech. Segments the text if it is too long
+   * and clears any previous state to avoid blockages.
+   * @param {string} text - The text to speak.
+   * @param {TTSSpeakOptions} options - The options for speaking.
    */
   public speak(text: string, options: TTSSpeakOptions): void {
     if (!this.isInitialized) {
-      options.onError(new Error('El servicio TTS no ha sido inicializado.'));
+      options.onError(new Error('TTS service has not been initialized.'));
       return;
     }
     if (this.synthesis.speaking) {
@@ -136,7 +134,7 @@ export class BrowserTTSService implements TTSService {
       this.currentUtterance = utterance;
 
       const selectedVoice = this.voices.find(
-        (v) => v.voiceURI === options.voiceId
+        (v) => v.voiceURI === options.voiceId,
       );
       if (selectedVoice) {
         utterance.voice = selectedVoice;
@@ -166,7 +164,7 @@ export class BrowserTTSService implements TTSService {
 
       utterance.onend = () => {
         chunkIndex++;
-        speakChunk(); // Llamada recursiva para el siguiente fragmento
+        speakChunk();
       };
 
       this.synthesis.speak(utterance);
@@ -176,18 +174,27 @@ export class BrowserTTSService implements TTSService {
     this.startWatchdog();
   }
 
+  /**
+   * Pauses the current speech.
+   */
   public pause(): void {
     if (this.synthesis.speaking) {
       this.synthesis.pause();
     }
   }
 
+  /**
+   * Resumes the paused speech.
+   */
   public resume(): void {
     if (this.synthesis.paused) {
       this.synthesis.resume();
     }
   }
 
+  /**
+   * Cancels the current speech.
+   */
   public cancel(): void {
     this.currentUtterance = null;
     this.synthesis.cancel();
@@ -209,12 +216,12 @@ export class BrowserTTSService implements TTSService {
 
       let cutPoint = remainingText.lastIndexOf(
         '.',
-        BrowserTTSService.MAX_TEXT_LENGTH
+        BrowserTTSService.MAX_TEXT_LENGTH,
       );
       if (cutPoint === -1) {
         cutPoint = remainingText.lastIndexOf(
           ' ',
-          BrowserTTSService.MAX_TEXT_LENGTH
+          BrowserTTSService.MAX_TEXT_LENGTH,
         );
       }
       if (cutPoint === -1) {
@@ -237,7 +244,7 @@ export class BrowserTTSService implements TTSService {
 
       if (!this.synthesis.speaking && !this.synthesis.paused) {
         console.warn(
-          'Watchdog: La síntesis de voz se detuvo inesperadamente. Reiniciando.'
+          'Watchdog: Speech synthesis stopped unexpectedly. Restarting.',
         );
         this.cancel();
         clearInterval(watchdogInterval);

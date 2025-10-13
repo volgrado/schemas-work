@@ -4,28 +4,27 @@ import type { Identity } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
 
 /**
- * Este servicio gestiona la identidad criptográfica del usuario, que es
- * la base para la soberanía de sus datos. La identidad se genera una vez
- * y se almacena localmente en el navegador, nunca se transmite a un servidor.
+ * This service manages the user's cryptographic identity, which is
+ * the foundation for their data sovereignty. The identity is generated once
+ * and stored locally in the browser, never transmitted to a server.
  */
 
 const IDENTITY_STORAGE_KEY = 'schemas-work-identity';
 
 /**
- * Obtiene la identidad criptográfica del usuario desde localStorage.
- * Si no existe, genera una nueva, la guarda y la devuelve.
+ * Retrieves the user's cryptographic identity from localStorage.
+ * If it doesn't exist, it generates a new one, saves it, and returns it.
  *
- * Utiliza la Web Crypto API, el estándar moderno y seguro para operaciones
- * criptográficas en el navegador.
+ * It uses the Web Crypto API, the modern and secure standard for cryptographic
+ * operations in the browser.
  *
- * @returns {Promise<Identity>} Una promesa que se resuelve con la identidad del usuario.
+ * @returns {Promise<Identity>} A promise that resolves with the user's identity.
  */
 export async function getOrCreateIdentity(): Promise<Identity> {
   if (typeof window === 'undefined') {
     return { publicKey: '', privateKey: '' };
   }
 
-  // *** 2. ENVOLVER TODA LA LÓGICA EN try...catch ***
   try {
     const storedIdentity = localStorage.getItem(IDENTITY_STORAGE_KEY);
 
@@ -37,24 +36,24 @@ export async function getOrCreateIdentity(): Promise<Identity> {
           operation: 'getOrCreateIdentity.parse',
           description: 'Stored identity is corrupt. Generating a new one.',
         });
-        // Si el parseo falla, continuamos para generar una nueva identidad.
+        // If parsing fails, continue to generate a new identity.
       }
     }
 
-    // --- Generar una nueva identidad ---
+    // --- Generate a new identity ---
     const keyPair = await window.crypto.subtle.generateKey(
       { name: 'Ed25519' },
       true,
-      ['sign', 'verify']
+      ['sign', 'verify'],
     );
 
     const publicKeyJwk = await window.crypto.subtle.exportKey(
       'jwk',
-      keyPair.publicKey
+      keyPair.publicKey,
     );
     const privateKeyJwk = await window.crypto.subtle.exportKey(
       'jwk',
-      keyPair.privateKey
+      keyPair.privateKey,
     );
 
     const newIdentity: Identity = {
@@ -71,9 +70,9 @@ export async function getOrCreateIdentity(): Promise<Identity> {
       description: 'Failed during cryptographic key generation or export.',
     });
 
-    // En caso de un error criptográfico grave, devolvemos una identidad vacía
-    // para evitar que la aplicación se bloquee, aunque algunas funcionalidades
-    // futuras podrían no funcionar.
+    // In case of a serious cryptographic error, return an empty identity
+    // to prevent the application from crashing, although some future
+    // functionalities might not work.
     return { publicKey: '', privateKey: '' };
   }
 }

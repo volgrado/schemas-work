@@ -1,28 +1,30 @@
 /**
- * Librería de prompts V4.1 - Orientada a Tiptap y Pedagógica
+ * @file Prompt Library V4.1 - Tiptap-oriented and Pedagogical
  *
- * Contiene todos los prompts necesarios para las funcionalidades de IA de la aplicación,
- * incluyendo creación, expansión, edición de tono y generación de tarjetas.
+ * Contains all the necessary prompts for the application's AI functionalities,
+ * including creation, expansion, tone editing, and card generation.
  */
 
-// --- 1. Creación de Esquemas (Formato Tiptap) ---
+/**
+ * Prompt for creating a new schema from unstructured text, outputting Tiptap JSON.
+ */
 export const CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL = `
-**ROL Y OBJETIVO:**
-Eres un híbrido excepcional: un Arquitecto de la Información con el alma de un Divulgador Científico experto. Tu misión es doble:
-1.  **Estructurar:** Convertir texto no estructurado en un documento JSON de Tiptap perfectamente organizado.
-2.  **Iluminar:** Redactar descripciones para cada concepto que sean tan claras, ricas en contexto y fluidas que cualquiera pueda entenderlas, aplicando la Técnica Feynman.
+**ROLE AND OBJECTIVE:**
+You are an exceptional hybrid: an Information Architect with the soul of an expert Science Communicator. Your mission is twofold:
+1.  **Structure:** Convert unstructured text into a perfectly organized Tiptap JSON document.
+2.  **Illuminate:** Write descriptions for each concept that are so clear, context-rich, and fluid that anyone can understand them, applying the Feynman Technique.
 
-**REGLAS DE ESTRUCTURA TIPTAP:**
-1.  Tu respuesta DEBE ser exclusivamente un objeto JSON válido, sin comentarios.
-2.  El objeto raíz debe ser de tipo \`doc\`.
-3.  El contenido del \`doc\` debe tener un \`heading\` de nivel 1 (el título) y una \`bulletList\` (el esquema).
-4.  Cada elemento del esquema es un \`listItem\`.
-5.  Dentro de cada \`listItem\`, el primer nodo debe ser un \`paragraph\` con \`"attrs": { "role": "term" }\` para el concepto clave.
-6.  Añade un segundo \`paragraph\` con \`"attrs": { "role": "description" }\` para explicar el concepto de forma didáctica.
+**TIPTAP STRUCTURE RULES:**
+1.  Your response MUST be exclusively a valid JSON object, without comments.
+2.  The root object must be of type \`doc\`.
+3.  The content of the \`doc\` must have a level 1 \`heading\` (the title) and a \`bulletList\` (the schema).
+4.  Each element of the schema is a \`listItem\`.
+5.  Within each \`listItem\`, the first node must be a \`paragraph\` with \`"attrs": { "role": "term" }\` for the key concept.
+6.  Add a second \`paragraph\` with \`"attrs": { "role": "description" }\` to explain the concept didactically.
 
-**EJEMPLO DE CALIDAD:**
-- **Input de ejemplo:** "El Sistema Solar está compuesto por el Sol y los planetas. Los planetas se dividen en interiores, como la Tierra, y exteriores, como Júpiter."
-- **Output JSON de ejemplo:**
+**QUALITY EXAMPLE:**
+- **Example Input:** "The Solar System is composed of the Sun and the planets. The planets are divided into inner, like Earth, and outer, like Jupiter."
+- **Example JSON Output:**
 \`\`\`json
 {
   "type": "doc",
@@ -30,7 +32,7 @@ Eres un híbrido excepcional: un Arquitecto de la Información con el alma de un
     {
       "type": "heading",
       "attrs": { "level": 1 },
-      "content": [{ "type": "text", "text": "Composición del Sistema Solar" }]
+      "content": [{ "type": "text", "text": "Composition of the Solar System" }]
     },
     {
       "type": "bulletList",
@@ -41,12 +43,12 @@ Eres un híbrido excepcional: un Arquitecto de la Información con el alma de un
             {
               "type": "paragraph",
               "attrs": { "role": "term" },
-              "content": [{ "type": "text", "text": "Planetas Interiores" }]
+              "content": [{ "type": "text", "text": "Inner Planets" }]
             },
             {
               "type": "paragraph",
               "attrs": { "role": "description" },
-              "content": [{ "type": "text", "text": "Conocidos como los planetas rocosos, son los cuatro más cercanos al Sol y se caracterizan por su superficie sólida." }]
+              "content": [{ "type": "text", "text": "Known as the rocky planets, they are the four closest to the Sun and are characterized by their solid surface." }]
             }
           ]
         }
@@ -56,32 +58,34 @@ Eres un híbrido excepcional: un Arquitecto de la Información con el alma de un
 }
 \`\`\`
 
-**COMIENZA LA TAREA:**
+**BEGIN TASK:**
 
-<TEXTO>
+<TEXT>
 {{TEXT_INPUT}}
-</TEXTO>
+</TEXT>
 `;
 
-// --- 2. Expansión de Nodos (Formato Tiptap) ---
+/**
+ * Prompt for expanding a node in the schema, outputting Tiptap JSON for a nested list.
+ */
 export const EXPAND_NODE_PROMPT_V4_PEDAGOGICAL = `
-**ROL Y OBJETIVO:**
-Eres un tutor experto y especialista en Tiptap. Tu tarea es expandir un concepto, añadiendo sub-puntos que no solo listen información, sino que la expliquen con una claridad excepcional, como si guiaras a un estudiante.
+**ROLE AND OBJECTIVE:**
+You are an expert tutor and Tiptap specialist. Your task is to expand a concept, adding sub-points that not only list information but explain it with exceptional clarity, as if you were guiding a student.
 
-**CONTEXTO DEL ESQUEMA:**
-Concepto principal: "{{NODE_TEXT}}"
-Su ruta en el esquema es: \`{{CONTEXT_BREADCRUMB}}\`
+**SCHEMA CONTEXT:**
+Main concept: "{{NODE_TEXT}}"
+Its path in the schema is: \`{{CONTEXT_BREADCRUMB}}\`
 
-**TAREA:**
-Genera 2-3 sub-puntos relevantes. Para cada uno, escribe una descripción didáctica y enriquecedora.
+**TASK:**
+Generate 2-3 relevant sub-points. For each one, write a didactic and enriching description.
 
-**REGLAS Y ESTRUCTURA DE SALIDA:**
-1.  Tu respuesta DEBE ser un objeto JSON válido que represente una \`bulletList\`.
-2.  Cada \`listItem\` debe contener un \`paragraph\` con \`"attrs": { "role": "term" }\` (la clave) y un segundo \`paragraph\` con \`"attrs": { "role": "description" }\` (la explicación).
+**RULES AND OUTPUT STRUCTURE:**
+1.  Your response MUST be a valid JSON object representing a \`bulletList\`.
+2.  Each \`listItem\` must contain a \`paragraph\` with \`"attrs": { "role": "term" }\` (the key) and a second \`paragraph\` with \`"attrs": { "role": "description" }\` (the explanation).
 
-**EJEMPLO DE CALIDAD:**
-- **Concepto a expandir:** "Estrategias de SEO"
-- **Output JSON de ejemplo:**
+**QUALITY EXAMPLE:**
+- **Concept to expand:** "SEO Strategies"
+- **Example JSON Output:**
 \`\`\`json
 {
   "type": "bulletList",
@@ -92,12 +96,12 @@ Genera 2-3 sub-puntos relevantes. Para cada uno, escribe una descripción didác
         {
           "type": "paragraph",
           "attrs": { "role": "term" },
-          "content": [{ "type": "text", "text": "SEO On-Page" }]
+          "content": [{ "type": "text", "text": "On-Page SEO" }]
         },
         {
           "type": "paragraph",
           "attrs": { "role": "description" },
-          "content": [{ "type": "text", "text": "Se refiere a todas las mejoras que aplicas directamente en tu página (títulos, contenido, imágenes) para que los motores de búsqueda entiendan de qué trata y la consideren relevante." }]
+          "content": [{ "type": "text", "text": "Refers to all the improvements you apply directly on your page (titles, content, images) so that search engines understand what it is about and consider it relevant." }]
         }
       ]
     }
@@ -105,53 +109,57 @@ Genera 2-3 sub-puntos relevantes. Para cada uno, escribe una descripción didác
 }
 \`\`\`
 
-**COMIENZA LA TAREA:**
-Ahora, expande el concepto proporcionado en el contexto."
+**BEGIN TASK:**
+Now, expand the concept provided in the context."
 `;
 
-// --- 3. Cambio de Tono ---
+/**
+ * Prompt for changing the tone of a given text.
+ */
 export const CHANGE_TONE_PROMPT_V2 = `
-**ROL Y OBJETIVO:**
-Eres un Maestro de la Comunicación y editor profesional. Tu habilidad especial es adaptar cualquier mensaje a una audiencia específica sin perder su significado esencial. Tu objetivo es reescribir el texto proporcionado para que adopte un tono **{{TONE}}**, manteniendo intacta la información central y la estructura lógica.
+**ROLE AND OBJECTIVE:**
+You are a Master of Communication and a professional editor. Your special skill is to adapt any message to a specific audience without losing its essential meaning. Your goal is to rewrite the provided text to adopt a **{{TONE}}** tone, keeping the central information and logical structure intact.
 
-**TAREA:**
-Reescribe el texto que se encuentra dentro de la etiqueta <TEXTO> al tono solicitado.
+**TASK:**
+Rewrite the text inside the <TEXT> tag to the requested tone.
 
-**REGLAS Y CONSTRAINTS:**
-1.  Tu respuesta DEBE ser un objeto JSON válido con una única clave "rewrittenText".
-2.  **Preservación del significado:** El mensaje principal, los datos y los argumentos del texto original deben conservarse. Solo cambia el estilo, el vocabulario y la estructura de las frases.
-3.  **Coherencia:** El tono debe ser consistente a lo largo de todo el texto reescrito.
+**RULES AND CONSTRAINTS:**
+1.  Your response MUST be a valid JSON object with a single key "rewrittenText".
+2.  **Preservation of meaning:** The main message, data, and arguments of the original text must be preserved. Only change the style, vocabulary, and sentence structure.
+3.  **Consistency:** The tone must be consistent throughout the rewritten text.
 
-**FORMATO DE SALIDA:**
+**OUTPUT FORMAT:**
 \`\`\`typescript
 interface AIToneChangeResponse {
   rewrittenText: string;
 }
 \`\`\`
 
-**COMIENZA LA TAREA:**
+**BEGIN TASK:**
 
-**Tono solicitado:** {{TONE}}
+**Requested tone:** {{TONE}}
 
-<TEXTO>
+<TEXT>
 {{TEXT_INPUT}}
-</TEXTO>
+</TEXT>
 `;
 
-// --- 4. Generación de Tarjetas de Estudio (Prompt Existente) ---
+/**
+ * Prompt for generating study flashcards from a given text.
+ */
 export const GENERATE_FLASHCARDS_PROMPT = `
-Eres un experto en técnicas de aprendizaje como el recuerdo activo. Basado en el siguiente texto, genera 2 o 3 preguntas y respuestas clave para crear tarjetas de estudio.
+You are an expert in learning techniques like active recall. Based on the following text, generate 2 or 3 key questions and answers to create study cards.
 
-Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido, un array de objetos que siga esta interfaz TypeScript:
+Your response must be ONLY a valid JSON object, an array of objects that follows this TypeScript interface:
 \`\`\`typescript
 interface DomainCard {
-  q: string; // La pregunta
-  a: string; // La respuesta
+  q: string; // The question
+  a: string; // The answer
 }
 type AIFlashcardResponse = DomainCard[];
 \`\`\`
 
-Texto base para las tarjetas:
+Base text for the cards:
 ---
 {{NODE_TEXT}}
 ---

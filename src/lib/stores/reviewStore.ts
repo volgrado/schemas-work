@@ -9,13 +9,22 @@ import { toast } from 'svelte-sonner';
 import * as reviewService from '$lib/services/features/reviewService';
 
 // ... (Interfaz, estado inicial, suscripción al editor, etc. sin cambios)
+/**
+ * Represents the state of a review session.
+ */
 export interface ReviewState {
+  /** Indicates if a review session is currently active. */
   isReviewing: boolean;
+  /** The list of document nodes to be reviewed. */
   nodesToReview: { pos: number; node: ProseMirrorNode; cards: DomainCard[] }[];
+  /** The index of the current node being reviewed. */
   currentNodeIndex: number;
+  /** Indicates if the answer for the current card is shown. */
   isAnswerShown: boolean;
+  /** The set of decorations to highlight the current review node. */
   decorationSet: DecorationSet;
 }
+
 const initialState: ReviewState = {
   isReviewing: false,
   nodesToReview: [],
@@ -23,8 +32,10 @@ const initialState: ReviewState = {
   isAnswerShown: false,
   decorationSet: DecorationSet.empty,
 };
+
 const store = writable<ReviewState>(initialState);
 const { subscribe, update, set } = store;
+
 let unsubscribeFromEditor: (() => void) | null = null;
 editorStore.subscribe(($editorStore) => {
   if (unsubscribeFromEditor) {
@@ -36,7 +47,9 @@ editorStore.subscribe(($editorStore) => {
     const handleTransaction = () => {
       const state = get(store);
       if (state.isReviewing) {
-        console.warn('Cambio en documento durante repaso. Finalizando sesión.');
+        console.warn(
+          'Document changed during review. Ending session.',
+        );
         finishReview();
       }
     };
@@ -48,15 +61,15 @@ editorStore.subscribe(($editorStore) => {
 });
 
 /**
- * Inicia una sesión de repaso.
- * Primero busca tarjetas pendientes. Si no hay, ofrece un repaso adicional
- * con las tarjetas más difíciles.
+ * Starts a review session.
+ * It first looks for due cards. If none are found, it offers an additional
+ * review with the most difficult cards.
  */
 function startReview() {
   const editor = get(editorStore).instance;
   if (!editor) return;
 
-  // --- CAMINO A: Repaso Normal (Tarjetas Pendientes) ---
+  // --- Path A: Normal Review (Due Cards) ---
   const now = Date.now();
   const dueNodes: ReviewState['nodesToReview'] = [];
   editor.state.doc.descendants((node, pos) => {
@@ -73,24 +86,24 @@ function startReview() {
   });
 
   if (dueNodes.length > 0) {
-    // Si encontramos tarjetas pendientes, iniciamos la sesión normal
-    startReviewSession(dueNodes, 'Repaso Programado');
+    // If we find due cards, start the normal session
+    startReviewSession(dueNodes, 'Scheduled Review');
     return;
   }
 
-  // --- CAMINO B: Ofrecer Repaso Adicional ---
-  toast.success('¡Todo repasado por hoy!', {
+  // --- Path B: Offer Additional Review ---
+  toast.success('All reviewed for today!', {
     description:
-      '¿Quieres hacer un repaso adicional con tus tarjetas más difíciles?',
+      'Do you want to do an additional review with your most difficult cards?',
     action: {
-      label: 'Repasar 5 tarjetas',
+      label: 'Review 5 cards',
       onClick: () => startAdditionalReview(),
     },
   });
 }
 
 /**
- * Inicia una sesión de repaso adicional con las tarjetas más difíciles.
+ * Starts an additional review session with the most difficult cards.
  */
 function startAdditionalReview() {
   const editor = get(editorStore).instance;
@@ -108,31 +121,31 @@ function startAdditionalReview() {
   });
 
   if (allNodesWithCards.length === 0) {
-    toast.info('No hay tarjetas en este documento para un repaso adicional.');
+    toast.info('There are no cards in this document for an additional review.');
     return;
   }
 
-  // Ordenamos las tarjetas por su factor de facilidad (easeFactor), de menor a mayor.
-  // Las tarjetas sin `easeFactor` (nuevas) se consideran de dificultad media (2.5).
+  // We sort the cards by their ease factor, from lowest to highest.
+  // Cards without an `easeFactor` (new) are considered medium difficulty (2.5).
   const sortedNodes = allNodesWithCards.sort((a, b) => {
     const easeA = a.cards[0].easeFactor ?? 2.5;
     const easeB = b.cards[0].easeFactor ?? 2.5;
     return easeA - easeB;
   });
 
-  // Cogemos las 5 más difíciles (o menos si no hay tantas)
+  // We take the 5 most difficult (or fewer if there aren't that many)
   const weakestNodes = sortedNodes.slice(0, 5);
 
-  startReviewSession(weakestNodes, 'Repaso Adicional');
+  startReviewSession(weakestNodes, 'Additional Review');
 }
 
 /**
- * Función auxiliar que realmente inicia la sesión de repaso en la UI.
- * @param nodes La lista de nodos a repasar.
- * @param type El tipo de repaso, para feedback al usuario.
+ * Helper function that actually starts the review session in the UI.
+ * @param {ReviewState['nodesToReview']} nodes - The list of nodes to review.
+ * @param {string} type - The type of review, for user feedback.
  */
 function startReviewSession(nodes: ReviewState['nodesToReview'], type: string) {
-  toast.info(`${type} iniciado con ${nodes.length} tarjetas.`);
+  toast.info(`${type} started with ${nodes.length} cards.`);
   update((state) => ({
     ...state,
     isReviewing: true,
@@ -143,10 +156,17 @@ function startReviewSession(nodes: ReviewState['nodesToReview'], type: string) {
   highlightCurrentNode();
 }
 
-// --- El resto de las funciones (showAnswer, submitReview, etc.) no necesitan cambios ---
+/**
+ * Shows the answer for the current card.
+ */
 function showAnswer() {
   update((state) => ({ ...state, isAnswerShown: true }));
 }
+
+/**
+ * Submits the user's quality assessment for the current card and moves to the next.
+ * @param {0 | 3 | 5} quality - The user's rating of how well they knew the answer.
+ */
 function submitReview(quality: 0 | 3 | 5) {
   const editor = get(editorStore).instance;
   const state = get(store);
@@ -164,14 +184,14 @@ function submitReview(quality: 0 | 3 | 5) {
   const reviewedNode = newNodesToReview.splice(state.currentNodeIndex, 1)[0];
   if (quality < 3) {
     newNodesToReview.push(reviewedNode);
-    toast.info('Esta tarjeta volverá a aparecer en esta sesión.');
+    toast.info('This card will appear again in this session.');
   }
   if (
     newNodesToReview.length === 0 ||
     state.currentNodeIndex >= newNodesToReview.length
   ) {
-    toast.success('¡Repaso completado!', {
-      description: `Has estudiado ${state.nodesToReview.length} tarjetas.`,
+    toast.success('Review complete!', {
+      description: `You have studied ${state.nodesToReview.length} cards.`,
     });
     finishReview();
   } else {
@@ -183,9 +203,17 @@ function submitReview(quality: 0 | 3 | 5) {
     highlightCurrentNode();
   }
 }
+
+/**
+ * Finishes the current review session and resets the store.
+ */
 function finishReview() {
   set(initialState);
 }
+
+/**
+ * Highlights the current node being reviewed in the editor.
+ */
 function highlightCurrentNode() {
   const editor = get(editorStore).instance;
   const state = get(store);
@@ -201,13 +229,17 @@ function highlightCurrentNode() {
   const decoration = Decoration.node(
     currentNodeInfo.pos,
     currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-    { class: 'is-current-review-node' }
+    { class: 'is-current-review-node' },
   );
   update((s) => ({
     ...s,
     decorationSet: DecorationSet.create(editor.state.doc, [decoration]),
   }));
 }
+
+/**
+ * The public API for the review store.
+ */
 export const reviewStore = {
   subscribe,
   startReview,

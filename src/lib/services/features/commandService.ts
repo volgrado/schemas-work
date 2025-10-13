@@ -1,28 +1,24 @@
 // src/lib/services/features/commandService.ts
 
 /**
- * @file Este servicio es el corazón de la CommandBar.
- * Centraliza la definición de todos los comandos disponibles en la aplicación,
- * desacoplando la lógica de negocio de la capa de presentación (el componente Svelte).
+ * @file This service is the heart of the CommandBar.
+ * It centralizes the definition of all available commands in the application,
+ * decoupling the business logic from the presentation layer (the Svelte component).
  *
- * RESPONSABILIDADES:
- * 1.  Definir la estructura de un comando a través de la interfaz `Command`.
- * 2.  Importar los stores y servicios necesarios para ejecutar las acciones.
- * 3.  Proporcionar funciones que devuelven listas de comandos (`getCommands`, `getAiCommands`)
- *     basándose en el estado actual de la aplicación (ej. si hay un nodo seleccionado).
+ * RESPONSIBILITIES:
+ * 1. Define the structure of a command through the `Command` interface.
+ * 2. Import the necessary stores and services to execute the actions.
+ * 3. Provide functions that return lists of commands (`getCommands`, `getAiCommands`)
+ *    based on the current state of the application (e.g., if a node is selected).
  *
- * BENEFICIOS DE ESTA ARQUITECTURA:
- * -   **Testeabilidad:** Cada `action` puede ser probada unitariamente sin renderizar la UI.
- * -   **Mantenibilidad:** Añadir o modificar comandos se hace en un único lugar.
- * -   **Claridad:** El componente `CommandBar.svelte` se vuelve un "componente tonto"
- *     enfocado únicamente en renderizar y delegar eventos.
+ * BENEFITS OF THIS ARCHITECTURE:
+ * - **Testability:** Each `action` can be unit-tested without rendering the UI.
+ * - **Maintainability:** Adding or modifying commands is done in a single place.
+ * - **Clarity:** The `CommandBar.svelte` component becomes a "dumb component"
+ *   focused solely on rendering and delegating events.
  */
 
-// --- Tipos ---
-// Asumimos que Tarea 1.1 ya se ha completado y este tipo existe.
 import type { Command } from '$lib/types/command';
-
-// --- Stores (para ejecutar acciones y comprobar estado) ---
 import { get } from 'svelte/store';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { documentStore } from '$lib/stores/documentStore';
@@ -31,34 +27,34 @@ import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
 
 /**
- * Devuelve la lista de comandos para la vista principal de la CommandBar.
- * @returns {Command[]} Un array de comandos principales.
+ * Returns the list of commands for the main view of the CommandBar.
+ * @returns {Command[]} An array of main commands.
  */
 export function getCommands(): Command[] {
   return [
     {
       id: 'new-schema',
-      label: 'Nuevo Esquema',
+      label: 'New Schema',
       icon: 'plus',
       action: () => {
-        // Por defecto, se crea en la raíz. El usuario puede moverlo después.
-        documentStore.createNewDocument('Nuevo Esquema', undefined, null);
+        // By default, it is created at the root. The user can move it later.
+        documentStore.createNewDocument('New Schema', undefined, null);
         commandBarStore.close();
       },
     },
     {
       id: 'switch-schema',
-      label: 'Explorar Esquemas...',
+      label: 'Explore Schemas...',
       icon: 'folder',
       action: () => {
-        // En lugar de manejar la lógica de la UI aquí, le decimos al store
-        // que cambie su vista interna. El componente reaccionará a esto.
+        // Instead of handling UI logic here, we tell the store
+        // to change its internal view. The component will react to this.
         commandBarStore.setView('list-schemas');
       },
     },
     {
       id: 'ai-submenu',
-      label: 'Asistente de IA...',
+      label: 'AI Assistant...',
       icon: 'sparkles',
       action: () => {
         commandBarStore.setView('ai-actions');
@@ -66,39 +62,39 @@ export function getCommands(): Command[] {
     },
     {
       id: 'start-review',
-      label: 'Iniciar Repaso',
+      label: 'Start Review',
       icon: 'zap',
       action: () => {
         reviewStore.startReview();
         commandBarStore.close();
       },
-      // El comando se deshabilita si ya hay un repaso en curso.
+      // The command is disabled if a review is already in progress.
       isEnabled: () => !get(reviewStore).isReviewing,
     },
     {
       id: 'read-aloud',
-      label: 'Leer Esquema',
+      label: 'Read Schema',
       icon: 'volume-2',
       action: () => {
         ttsStore.startReading();
         commandBarStore.close();
       },
-      // El comando se deshabilita si ya se está leyendo en voz alta.
-      isEnabled: () => !get(ttsStore).isPlaying,
+      // The command is disabled if it is already reading aloud.
+      isEnabled: () => get(ttsStore).status !== 'playing',
     },
     {
       id: 'export-vault',
-      label: 'Exportar Bóveda',
+      label: 'Export Vault',
       icon: 'download-cloud',
       action: () => {
-        // El comando no gestiona el modal directamente.
-        // Delega en el store la apertura del modal con la acción correcta.
+        // The command does not manage the modal directly.
+        // It delegates to the store the opening of the modal with the correct action.
         commandBarStore.openPasswordModal('export');
       },
     },
     {
       id: 'import-vault',
-      label: 'Importar Bóveda',
+      label: 'Import Vault',
       icon: 'upload-cloud',
       action: () => {
         commandBarStore.openPasswordModal('import');
@@ -106,7 +102,7 @@ export function getCommands(): Command[] {
     },
     {
       id: 'report-problem',
-      label: 'Diagnóstico y Reporte de Errores',
+      label: 'Diagnostics and Error Report',
       icon: 'help-circle',
       action: () => {
         commandBarStore.openDiagnosticModal();
@@ -114,27 +110,28 @@ export function getCommands(): Command[] {
     },
   ];
 }
+
 /**
- * Devuelve la lista de comandos para el sub-menú de "Asistente de IA".
- * @returns {Command[]} Un array de comandos de IA.
+ * Returns the list of commands for the "AI Assistant" sub-menu.
+ * @returns {Command[]} An array of AI commands.
  */
 export function getAiCommands(): Command[] {
-  // La comprobación de `isEnabled` se basa en el estado actual del `editorStore`.
+  // The `isEnabled` check is based on the current state of the `editorStore`.
   const isNodeSelected = get(editorStore).selectedNodePos !== null;
 
   return [
     {
       id: 'create-schema-from-text',
-      label: 'Crear Esquema desde Texto...',
+      label: 'Create Schema from Text...',
       icon: 'sparkles',
       action: () => {
-        // De nuevo, delegamos en el store la apertura del modal de ayuda de IA.
+        // Again, we delegate to the store the opening of the AI helper modal.
         commandBarStore.openAiHelper('create-schema-from-text');
       },
     },
     {
       id: 'generate-flashcards',
-      label: 'Generar Tarjetas de Estudio',
+      label: 'Generate Study Cards',
       icon: 'zap',
       action: () => {
         commandBarStore.openAiHelper('generate-flashcards');
@@ -143,7 +140,7 @@ export function getAiCommands(): Command[] {
     },
     {
       id: 'expand-node',
-      label: 'Expandir este nodo',
+      label: 'Expand this node',
       icon: 'plus',
       action: () => {
         commandBarStore.openAiHelper('expand-node');

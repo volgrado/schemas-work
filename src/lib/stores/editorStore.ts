@@ -5,32 +5,39 @@ import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model'; // Importamos el tipo
 
 /**
- * Define la estructura del estado que este store gestionará.
- * Sirve como un punto de acceso global a la instancia del editor
- * y a la información contextual relevante, como el nodo seleccionado.
+ * Defines the structure of the state that this store will manage.
+ * It serves as a global access point to the editor instance
+ * and relevant contextual information, such as the selected node.
  */
 export interface EditorStoreState {
+  /** The Tiptap editor instance. */
   instance: Editor | null;
+  /** The position of the currently selected node. */
   selectedNodePos: number | null;
+  /** A version number that increments with each content change. */
   contentVersion: number;
-  doc: ProseMirrorNode | null; // ✅ AÑADIMOS EL NODO DEL DOCUMENTO
+  /** The ProseMirror document node. */
+  doc: ProseMirrorNode | null;
 }
 
+/**
+ * The initial state for the editor store.
+ */
 const initialState: EditorStoreState = {
   instance: null,
   selectedNodePos: null,
   contentVersion: 0,
-  doc: null, // ✅ VALOR INICIAL
+  doc: null,
 };
 
 /**
- * Un store `writable` que contiene el estado global del editor.
+ * A `writable` store that holds the global state of the editor.
  *
- * El componente `DocumentView` es responsable de establecer `instance`
- * cuando se monta el editor y de actualizar `selectedNodePos` cuando
- * cambia la selección del usuario.
+ * The `DocumentView` component is responsible for setting the `instance`
+ * when the editor is mounted and for updating `selectedNodePos` when
+ * the user's selection changes.
  *
- * Otros componentes y servicios (CommandBar, reviewStore, ttsStore)
- * se suscriben a este store para leer el estado y actuar en consecuencia.
+ * Other components and services (CommandBar, reviewStore, ttsStore)
+ * subscribe to this store to read the state and act accordingly.
  */
 export const editorStore = writable<EditorStoreState>(initialState);

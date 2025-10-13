@@ -1,47 +1,47 @@
 // src/lib/types/iconName.ts
 
 /**
- * Define un tipo estricto para todos los nombres de iconos válidos en la aplicación.
+ * Defines a strict type for all valid icon names in the application.
  *
- * Este tipo se deriva directamente de las claves del diccionario `icons` en el
- * componente `Icon.svelte`. Utilizar este tipo en lugar de un `string` genérico
- * proporciona varias ventajas:
+ * This type is directly derived from the keys of the `icons` dictionary in the
+ * `Icon.svelte` component. Using this type instead of a generic `string`
+ * provides several advantages:
  *
- * 1.  **Autocompletado:** El editor de código (VS Code) te sugerirá nombres de iconos válidos
- *     cuando uses un componente que espere esta prop.
- * 2.  **Seguridad de Tipos:** TypeScript lanzará un error en tiempo de compilación si
- *     intentas usar un nombre de icono que no existe, previniendo iconos rotos
- *     en producción.
- * 3.  **Mantenibilidad:** Si añades un nuevo icono a `Icon.svelte`, solo necesitas
- *     añadirlo aquí para que esté disponible de forma segura en toda la aplicación.
+ * 1.  **Autocomplete:** The code editor (VS Code) will suggest valid icon names
+ *     when you use a component that expects this prop.
+ * 2.  **Type Safety:** TypeScript will throw a compile-time error if
+ *     you try to use an icon name that does not exist, preventing broken icons
+ *     in production.
+ * 3.  **Maintainability:** If you add a new icon to `Icon.svelte`, you only need
+ *     to add it here to make it safely available throughout the application.
  */
 export type IconName =
-  // Generales y de Archivo
+  // General and File
   | 'plus'
   | 'command'
   | 'download-cloud'
   | 'upload-cloud'
   | 'file-text'
-  | 'folder' // <-- ¡AÑADIR ESTA LÍNEA!
+  | 'folder'
   | 'check-circle'
-  | 'git-branch' // <-- AÑADIR
-  | 'edit-3' // <-- AÑADIR
-  // UI y Acciones
+  | 'git-branch'
+  | 'edit-3'
+  // UI and Actions
   | 'x'
   | 'copy'
   | 'trash-2'
   | 'sparkles'
   | 'pen-tool'
-  // Funcionalidades
+  // Functionalities
   | 'zap'
   | 'volume-2'
   | 'play'
   | 'pause'
   | 'x-circle'
-  // Onboarding y Ayuda
+  // Onboarding and Help
   | 'lock'
   | 'help-circle'
-  // Editor de Texto
+  // Text Editor
   | 'bold'
   | 'italic'
   | 'list'

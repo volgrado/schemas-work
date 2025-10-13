@@ -2,16 +2,25 @@
 import { writable } from 'svelte/store';
 import type { CommandItem } from '$lib/editor/slashCommands';
 
-// 1. Definimos la "forma" de nuestro estado
+/**
+ * Defines the shape of the state for the slash command menu.
+ */
 interface SlashMenuState {
+  /** Indicates whether the menu is open. */
   isOpen: boolean;
+  /** The list of command items to display. */
   items: CommandItem[];
+  /** The index of the currently selected item. */
   selectedIndex: number;
+  /** A function that returns the DOMRect of the cursor position. */
   clientRect: (() => DOMRect | null) | null;
+  /** The function to execute when a command is selected. */
   commandToExecute: ((item: CommandItem) => void) | null;
 }
 
-// 2. Definimos el estado inicial
+/**
+ * The initial state for the slash menu.
+ */
 const initialState: SlashMenuState = {
   isOpen: false,
   items: [],
@@ -20,18 +29,26 @@ const initialState: SlashMenuState = {
   commandToExecute: null,
 };
 
-// 3. Creamos la función que devuelve nuestro custom store
+/**
+ * Creates a custom store for managing the state of the slash command menu.
+ * @returns A store object with methods to manage the slash menu.
+ */
 function createSlashMenuStore() {
   const { subscribe, update, set } = writable<SlashMenuState>(initialState);
 
   return {
-    subscribe, // Exponemos 'subscribe' para que se pueda usar el prefijo '$' en componentes
+    subscribe,
 
-    // Acciones para modificar el estado
+    /**
+     * Opens the slash menu with a list of items and a command to execute.
+     * @param {CommandItem[]} items - The command items to display.
+     * @param {(() => DOMRect | null) | null} clientRect - A function to get the cursor's position.
+     * @param {(item: CommandItem) => void} command - The function to call when an item is selected.
+     */
     open: (
       items: CommandItem[],
       clientRect: (() => DOMRect | null) | null,
-      command: (item: CommandItem) => void
+      command: (item: CommandItem) => void,
     ) => {
       update((state) => ({
         ...state,
@@ -43,20 +60,30 @@ function createSlashMenuStore() {
       }));
     },
 
+    /**
+     * Closes the slash menu and resets its state.
+     */
     close: () => {
-      set(initialState); // set() es más simple para un reseteo completo
+      set(initialState);
     },
 
+    /**
+     * Updates the list of items in the menu.
+     * @param {CommandItem[]} newItems - The new list of command items.
+     */
     updateItems: (newItems: CommandItem[]) => {
       update((state) => ({
         ...state,
         items: newItems,
-        // Reseteamos el índice si la lista cambia y el índice actual queda fuera de rango
         selectedIndex:
           state.selectedIndex >= newItems.length ? 0 : state.selectedIndex,
       }));
     },
 
+    /**
+     * Moves the selection up or down the list.
+     * @param {1 | -1} direction - The direction to move (-1 for up, 1 for down).
+     */
     moveSelection: (direction: 1 | -1) => {
       update((state) => {
         if (state.items.length === 0) return state;
@@ -67,28 +94,36 @@ function createSlashMenuStore() {
       });
     },
 
-    // El comando se ejecuta y luego se cierra el menú
+    /**
+     * Executes the currently selected command and closes the menu.
+     */
     triggerCommand: () => {
       update((state) => {
         const item = state.items[state.selectedIndex];
         if (item && state.commandToExecute) {
           state.commandToExecute(item);
         }
-        return initialState; // Cerramos el menú después de ejecutar
+        return initialState; // Close the menu after execution
       });
     },
 
+    /**
+     * Executes a command by its index and closes the menu.
+     * @param {number} index - The index of the command to trigger.
+     */
     triggerCommandByIndex: (index: number) => {
       update((state) => {
         const item = state.items[index];
         if (item && state.commandToExecute) {
           state.commandToExecute(item);
         }
-        return initialState; // Cerramos el menú después de ejecutar
+        return initialState; // Close the menu after execution
       });
     },
   };
 }
 
-// 4. Exportamos la instancia del store
+/**
+ * The exported instance of the slash menu store.
+ */
 export const slashMenuStore = createSlashMenuStore();

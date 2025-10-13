@@ -1,89 +1,80 @@
 // src/lib/types/index.ts
 
 /**
- * Este archivo centraliza todas las definiciones de tipos y interfaces
- * personalizadas para la aplicación, proporcionando una única fuente de
- * verdad para las estructuras de datos.
+ * This file centralizes all custom type and interface definitions
+ * for the application, providing a single source of
+ * truth for data structures.
  */
-
-// --- Identidad y Seguridad ---
 
 /**
- * Representa la identidad criptográfica única del usuario, generada y
- * almacenada localmente en su navegador. Se utiliza para futuras
- * funcionalidades de firma y colaboración.
+ * Represents the user's unique cryptographic identity, generated and
+ * stored locally in their browser. It is used for future
+ * signing and collaboration functionalities.
  */
 export interface Identity {
-  /** La clave pública en formato JSON Web Key (JWK) stringified. */
+  /** The public key in stringified JSON Web Key (JWK) format. */
   publicKey: string;
-  /** La clave privada en formato JSON Web Key (JWK) stringified. */
+  /** The private key in stringified JSON Web Key (JWK) format. */
   privateKey: string;
 }
 
-// --- Estructura de Datos de Documentos ---
-
 /**
- * Representa los metadatos de un esquema (documento) en el directorio del usuario.
- * No contiene el contenido del documento, solo la información para listarlo y gestionarlo.
+ * Represents the metadata of a schema (document) in the user's directory.
+ * It does not contain the document's content, only the information for listing and managing it.
  */
 export interface SchemaMetadata {
-  /** Identificador único universal (UUID v4) del documento. */
+  /** Universal unique identifier (UUID v4) of the document. */
   id: string;
-  /** Título del esquema, editable por el usuario. */
+  /** Title of the schema, editable by the user. */
   title: string;
-  /** Timestamp (en milisegundos) de la creación del esquema. */
+  /** Timestamp (in milliseconds) of the schema's creation. */
   createdAt: number;
-  /** Timestamp (en milisegundos) de la última modificación. */
+  /** Timestamp (in milliseconds) of the last modification. */
   updatedAt: number;
-  /** Distingue entre un documento y un contenedor. */
+  /** Distinguishes between a document and a container. */
   type: 'schema' | 'folder';
-  /** El ID del padre. Si es `null`, está en la raíz. */
+  /** The ID of the parent. If `null`, it is at the root. */
   parentId: string | null;
 }
 
 /**
- * Representa la estructura completa de la bóveda de un usuario.
- * Este es el objeto que se encripta y se exporta/importa.
+ * Represents the complete structure of a user's vault.
+ * This is the object that is encrypted and exported/imported.
  */
 export interface Vault {
-  /** La lista de todos los metadatos de los esquemas. */
+  /** The list of all schema metadata. */
   schemas: SchemaMetadata[];
   /**
-   * Un diccionario que mapea el ID de un esquema a su contenido completo.
-   * El contenido se almacena como un "update" de Y.js codificado en Base64,
-   * lo que permite capturar todo el estado del documento de forma eficiente.
+   * A dictionary that maps a schema's ID to its full content.
+   * The content is stored as a Base64 encoded Y.js "update",
+   * which allows capturing the entire state of the document efficiently.
    */
   content: Record<string, string>;
 }
 
-// --- Funcionalidades de Aprendizaje ---
-
 /**
- * Representa una única tarjeta de estudio (pregunta y respuesta)
- * asociada a un nodo del esquema, con datos para la repetición espaciada.
+ * Represents a single study card (question and answer)
+ * associated with a schema node, with data for spaced repetition.
  */
 export interface DomainCard {
-  /** El texto de la pregunta (Question). */
+  /** The text of the question. */
   q: string;
-  /** El texto de la respuesta (Answer). */
+  /** The text of the answer. */
   a: string;
 
-  // --- NUEVOS CAMPOS PARA SRS (Spaced Repetition System) ---
-  /** Factor de facilidad (Ease Factor). Empieza en 2.5. Un número más bajo significa que la tarjeta es más difícil. */
+  /** Ease Factor. Starts at 2.5. A lower number means the card is more difficult. */
   easeFactor?: number;
-  /** El intervalo en días hasta la próxima revisión. */
+  /** The interval in days until the next review. */
   interval?: number;
-  /** El número de veces que se ha repasado correctamente la tarjeta. */
+  /** The number of times the card has been correctly reviewed. */
   repetitions?: number;
-  /** La fecha (en formato timestamp de milisegundos) en la que esta tarjeta debe ser repasada. */
+  /** The date (in millisecond timestamp format) when this card should be reviewed. */
   dueDate?: number;
 }
 
-// --- Interacción con IA ---
-
 /**
- * Representa un único nodo en la estructura jerárquica devuelta por la IA.
- * Es una estructura recursiva.
+ * Represents a single node in the hierarchical structure returned by the AI.
+ * It is a recursive structure.
  */
 export interface AISchemaNode {
   content: string;
@@ -91,8 +82,8 @@ export interface AISchemaNode {
 }
 
 /**
- * La estructura completa del objeto JSON que esperamos que la IA devuelva
- * al procesar texto no estructurado.
+ * The complete structure of the JSON object that we expect the AI to return
+ * when processing unstructured text.
  */
 export interface AISchemaResponse {
   title: string;

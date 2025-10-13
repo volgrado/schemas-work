@@ -4,21 +4,21 @@ import * as Y from 'yjs';
 import type { Editor } from '@tiptap/core';
 
 /**
- * Este servicio está destinado a contener funciones de utilidad que operan
- * sobre el contenido de un documento Y.js (Y.Doc) o una instancia del editor
- * de Tiptap ya cargados.
+ * This service is intended to contain utility functions that operate
+ * on the content of a loaded Y.js document (Y.Doc) or a Tiptap editor
+ * instance.
  *
- * A diferencia de otros servicios, no gestiona el estado ni la persistencia,
- * sino que proporciona herramientas para manipular o consultar el contenido
- * del documento activo.
+ * Unlike other services, it does not manage state or persistence,
+ * but rather provides tools for manipulating or querying the content
+ * of the active document.
  *
- * EJEMPLOS DE FUTURAS FUNCIONES QUE PODRÍAN VIVIR AQUÍ:
+ * EXAMPLES OF FUTURE FUNCTIONS THAT COULD LIVE HERE:
  * - `getDocumentWordCount(ydoc: Y.Doc): number`
  * - `findAndReplaceInDoc(ydoc: Y.Doc, find: string, replace: string): void`
  * - `getAllCardsFromDoc(editor: Editor): DomainCard[]`
  *
- * Actualmente, se mantiene como un placeholder para una futura expansión,
- * asegurando una arquitectura limpia y organizada.
+ * Currently, it is maintained as a placeholder for future expansion,
+ * ensuring a clean and organized architecture.
  */
 
-// (No hay implementaciones en esta fase del proyecto)
+// (No implementations in this phase of the project)

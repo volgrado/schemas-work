@@ -1,39 +1,43 @@
 import type { DomainCard } from '$lib/types';
 
-// Calidad de la respuesta del usuario (0=fallo, 3=dudoso, 5=perfecto)
+/**
+ * The quality of the user's response (0=fail, 3=hesitant, 5=perfect).
+ */
 type ReviewQuality = 0 | 1 | 2 | 3 | 4 | 5;
 
-// Un día en milisegundos
+/**
+ * One day in milliseconds.
+ */
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Calcula el siguiente estado de una tarjeta de estudio basándose en la calidad de la respuesta.
- * Implementa una versión del algoritmo SM-2.
- * @param card La tarjeta que se está repasando.
- * @param quality La calidad de la respuesta del usuario (0-5).
- * @returns La tarjeta con sus datos de revisión actualizados.
+ * Calculates the next state of a study card based on the quality of the response.
+ * Implements a version of the SM-2 algorithm.
+ * @param {DomainCard} card The card being reviewed.
+ * @param {ReviewQuality} quality The quality of the user's response (0-5).
+ * @returns {DomainCard} The card with its review data updated.
  */
 export function calculateNextReview(
   card: DomainCard,
-  quality: ReviewQuality
+  quality: ReviewQuality,
 ): DomainCard {
-  // 1. Proporcionar valores por defecto para tarjetas nuevas
+  // 1. Provide default values for new cards
   const easeFactor = card.easeFactor ?? 2.5;
   const interval = card.interval ?? 0;
   const repetitions = card.repetitions ?? 0;
 
-  // 2. Si la respuesta es incorrecta (calidad < 3), se reinicia el progreso
+  // 2. If the answer is incorrect (quality < 3), reset progress
   if (quality < 3) {
     return {
       ...card,
       repetitions: 0,
       interval: 1,
-      easeFactor: Math.max(1.3, easeFactor - 0.2), // Reducimos la facilidad pero no por debajo de 1.3
+      easeFactor: Math.max(1.3, easeFactor - 0.2), // Reduce ease but not below 1.3
       dueDate: Date.now() + ONE_DAY_MS,
     };
   }
 
-  // 3. Si la respuesta es correcta (calidad >= 3)
+  // 3. If the answer is correct (quality >= 3)
   let newInterval: number;
   let newRepetitions: number;
 
@@ -48,16 +52,16 @@ export function calculateNextReview(
     newRepetitions = repetitions + 1;
   }
 
-  // 4. Calcular el nuevo factor de facilidad
+  // 4. Calculate the new ease factor
   const newEaseFactor =
     easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
 
-  // 5. Devolver la tarjeta actualizada
+  // 5. Return the updated card
   return {
     ...card,
     repetitions: newRepetitions,
     interval: newInterval,
-    easeFactor: Math.max(1.3, newEaseFactor), // La facilidad nunca baja de 1.3
+    easeFactor: Math.max(1.3, newEaseFactor), // Ease factor never goes below 1.3
     dueDate: Date.now() + newInterval * ONE_DAY_MS,
   };
 }
