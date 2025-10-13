@@ -3,7 +3,11 @@
   import type { HierarchyPointNodeWithCustomData } from './tree-layout';
   import { nodeWidth, nodeHeight } from './tree-layout';
 
-  let { node, selectedNodeId }: { node: HierarchyPointNodeWithCustomData; selectedNodeId: string | null } = $props();
+  let {
+    node,
+    selectedNodeId,
+  }: { node: HierarchyPointNodeWithCustomData; selectedNodeId: string | null } =
+    $props();
 </script>
 
 <g class="node" transform="translate({node.y}, {node.x})">

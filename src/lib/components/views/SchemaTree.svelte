@@ -42,7 +42,8 @@
       {#each nodes as node (node.data.id)}
         <g
           on:click={() => schemaTreeStore.toggleNode(node.data.id)}
-          on:dblclick|stopPropagation={() => dispatch('nodeClick', { id: node.data.id })}
+          on:dblclick|stopPropagation={() =>
+            dispatch('nodeClick', { id: node.data.id })}
         >
           <Node {node} {selectedNodeId} />
         </g>
