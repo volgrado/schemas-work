@@ -1,37 +1,30 @@
-<!-- src/lib/components/features/TTSController.svelte (REFACTORED FOR EXPLICIT REACTIVITY) -->
+<!-- src/lib/components/features/TTSController.svelte (REFACTORIZADO PARA ROBUSTEZ) -->
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { ttsStore } from '$lib/stores/ttsStore';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import { get } from 'svelte/store'; // Importar 'get'
 
-  // REFACTORED: Use $derived for each piece of state to ensure explicit reactivity.
-  let status = $derived($ttsStore.status);
-  let error = $derived($ttsStore.error);
-  let nodesToRead = $derived($ttsStore.nodesToRead);
-  let currentNodeIndex = $derived($ttsStore.currentNodeIndex);
-  let availableVoices = $derived($ttsStore.availableVoices);
-  let selectedVoiceId = $derived($ttsStore.selectedVoiceId);
-  let rate = $derived($ttsStore.rate);
+  // Derivamos el progreso y el título con sentencias reactivas '$:' para mayor claridad y fiabilidad.
+  $: currentTitle =
+    ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
+    $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
+      ? ($ttsStore.nodesToRead[$ttsStore.currentNodeIndex].title ?? '...')
+      : '...';
 
-  // MODIFIED: This now derives the TITLE of the current node for display.
-  let currentTitle = $derived(
-    status === 'playing' || status === 'paused'
-      ? (nodesToRead[currentNodeIndex]?.title ?? '...')
-      : '...'
-  );
+  $: progress =
+    $ttsStore.nodesToRead.length > 0
+      ? (($ttsStore.currentNodeIndex + 1) / $ttsStore.nodesToRead.length) * 100
+      : 0;
 
-  let progress = $derived(
-    nodesToRead.length > 0
-      ? ((currentNodeIndex + 1) / nodesToRead.length) * 100
-      : 0
-  );
-
+  // Los manejadores ahora leen el estado más reciente directamente del store.
   function handleTogglePause() {
-    if (status === 'paused') {
+    const currentStatus = get(ttsStore).status;
+    if (currentStatus === 'paused') {
       ttsStore.resumeReading();
-    } else if (status === 'playing') {
+    } else if (currentStatus === 'playing') {
       ttsStore.pauseReading();
     }
   }
@@ -47,39 +40,41 @@
   }
 </script>
 
-{#if status !== 'idle'}
+{#if $ttsStore.status !== 'idle'}
   <div
     class="panel"
     transition:fly={{ y: 20, duration: 300, easing: quintOut }}
     aria-live="polite"
   >
-    {#if status === 'playing' || status === 'paused'}
+    {#if $ttsStore.status === 'playing' || $ttsStore.status === 'paused'}
       <div class="progress-container">
         <div class="progress-bar" style="width: {progress}%"></div>
       </div>
     {/if}
 
     <div class="content-wrapper">
-      {#if status === 'initializing'}
+      {#if $ttsStore.status === 'initializing'}
         <div class="status-view">
           <Icon name="loader" size={20} class="spinner" />
           <span class="status-text">Inicializando motor de audio...</span>
         </div>
-      {:else if status === 'error'}
+      {:else if $ttsStore.status === 'error'}
         <div class="status-view error">
           <Icon name="alert-triangle" size={20} />
-          <span class="status-text">{error || 'Ha ocurrido un error'}</span>
+          <span class="status-text"
+            >{$ttsStore.error || 'Ha ocurrido un error'}</span
+          >
           <Button onclick={ttsStore.stopReading} variant="ghost" size="sm"
             >Cerrar</Button
           >
         </div>
-      {:else if status === 'playing' || status === 'paused'}
+      {:else if $ttsStore.status === 'playing' || $ttsStore.status === 'paused'}
         <div class="controls-view">
           <div class="main-controls">
-            <!-- MODIFIED: Display the `currentTitle` instead of the full text -->
             <p class="current-text" title={currentTitle}>
               <span class="progress-indicator">
-                {currentNodeIndex + 1} / {nodesToRead.length}
+                {$ttsStore.currentNodeIndex + 1} / {$ttsStore.nodesToRead
+                  .length}
               </span>
               {currentTitle}
             </p>
@@ -88,19 +83,23 @@
                 onclick={ttsStore.previousNode}
                 variant="ghost"
                 size="md"
-                disabled={currentNodeIndex === 0}
+                disabled={$ttsStore.currentNodeIndex === 0}
                 aria-label="Nodo anterior"
               >
                 <Icon name="skip-back" size={18} />
               </Button>
               <Button onclick={handleTogglePause} variant="secondary" size="md">
-                <Icon name={status === 'paused' ? 'play' : 'pause'} size={18} />
+                <Icon
+                  name={$ttsStore.status === 'paused' ? 'play' : 'pause'}
+                  size={18}
+                />
               </Button>
               <Button
                 onclick={ttsStore.nextNode}
                 variant="ghost"
                 size="md"
-                disabled={currentNodeIndex >= nodesToRead.length - 1}
+                disabled={$ttsStore.currentNodeIndex >=
+                  $ttsStore.nodesToRead.length - 1}
                 aria-label="Siguiente nodo"
               >
                 <Icon name="skip-forward" size={18} />
@@ -123,18 +122,18 @@
               <select
                 id="voice-select"
                 class="ui-select"
-                value={selectedVoiceId}
+                value={$ttsStore.selectedVoiceId}
                 onchange={onVoiceChange}
-                disabled={availableVoices.length === 0}
+                disabled={$ttsStore.availableVoices.length === 0}
               >
-                {#each availableVoices as voice (voice.id)}
+                {#each $ttsStore.availableVoices as voice (voice.id)}
                   <option value={voice.id}>{voice.name}</option>
                 {/each}
               </select>
             </div>
             <div class="setting-item">
               <label for="rate-slider">
-                <Icon name="fast-forward" size={14} /> Velocidad ({rate.toFixed(
+                <Icon name="fast-forward" size={14} /> Velocidad ({$ttsStore.rate.toFixed(
                   1
                 )}x)
               </label>
@@ -144,7 +143,7 @@
                 min="0.5"
                 max="2"
                 step="0.1"
-                value={rate}
+                value={$ttsStore.rate}
                 oninput={onRateChange}
               />
             </div>

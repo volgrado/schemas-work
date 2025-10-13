@@ -1,3 +1,5 @@
+// src/lib/services/tts/BrowserTTSService.ts
+
 import type { TTSService, TTSVoice, TTSSpeakOptions } from './tts.service';
 
 /**
@@ -89,7 +91,6 @@ export class BrowserTTSService implements TTSService {
     if (!this.isInitialized) {
       return [];
     }
-    // CAMBIO: Eliminamos el filtro `!v.localService` para incluir las voces del sistema.
     return this.voices.map((voice) => ({
       id: voice.voiceURI,
       name: `${voice.name} (${voice.lang})`,
@@ -142,18 +143,32 @@ export class BrowserTTSService implements TTSService {
       utterance.onerror = (event) => options.onError(event);
 
       if (options.onBoundary) {
-        const baseCharIndex = chunks.slice(0, chunkIndex).join('').length;
+        // Calculate the character offset of all previous chunks.
+        const baseCharIndex = chunks
+          .slice(0, chunkIndex)
+          .reduce((acc, c) => acc + c.length, 0);
+
         utterance.onboundary = (event) => {
           if (options.onBoundary) {
+            // The event object is read-only. We must create a new event-like object.
+            // We pass all original properties and override charIndex.
             const adjustedEvent = new SpeechSynthesisEvent('boundary', {
               bubbles: event.bubbles,
               cancelable: event.cancelable,
               composed: event.composed,
-              charIndex: baseCharIndex + event.charIndex,
+              charIndex: baseCharIndex + event.charIndex, // The adjusted index
               elapsedTime: event.elapsedTime,
               name: event.name,
               utterance: event.utterance,
             });
+
+            // The 'charLength' property is not part of the constructor, so we add it manually.
+            // We use a type assertion as this is a known property of the boundary event in practice.
+            Object.defineProperty(adjustedEvent, 'charLength', {
+              value: (event as any).charLength,
+              writable: false,
+            });
+
             options.onBoundary(adjustedEvent);
           }
         };
@@ -229,7 +244,7 @@ export class BrowserTTSService implements TTSService {
       remainingText = remainingText.substring(cutPoint + 1).trim();
     }
 
-    return chunks;
+    return chunks.filter((chunk) => chunk.length > 0);
   }
 
   private startWatchdog(): void {
@@ -241,7 +256,7 @@ export class BrowserTTSService implements TTSService {
 
       if (!this.synthesis.speaking && !this.synthesis.paused) {
         console.warn(
-          'Watchdog: Speech synthesis stopped unexpectedly. Restarting.'
+          'Watchdog: Speech synthesis stopped unexpectedly. Cancelling.'
         );
         this.cancel();
         clearInterval(watchdogInterval);

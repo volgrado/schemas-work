@@ -2,60 +2,109 @@
 
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { get } from 'svelte/store';
-import { reviewStore } from '$lib/stores/reviewStore';
-import { ttsStore } from '$lib/stores/ttsStore';
-import type { DecorationSet } from 'prosemirror-view';
+import type { EditorState } from 'prosemirror-state';
+import { DecorationSet } from 'prosemirror-view';
+import { reviewStore, type ReviewState } from '$lib/stores/reviewStore';
+import { ttsStore, type TTSState } from '$lib/stores/ttsStore';
+import type { Unsubscriber } from 'svelte/store';
 
-// Es una buena práctica darle una clave única a los plugins de ProseMirror
-// para evitar colisiones y facilitar su depuración.
 export const DYNAMIC_HIGHLIGHTER_PLUGIN_KEY = new PluginKey(
   'dynamicHighlighter'
 );
 
+interface HighlighterState {
+  reviewDecorations: DecorationSet;
+  ttsDecorations: DecorationSet;
+}
+
 /**
- * Extensión de Tiptap que aplica decoraciones dinámicas (clases CSS)
- * al contenido del editor en respuesta a estados globales de la aplicación,
- * como el modo de repaso o el modo de lectura en voz alta.
+ * A robust Tiptap extension that applies dynamic decorations (CSS classes)
+ * to the editor content in response to external Svelte stores.
  *
- * No introduce nuevos nodos o marcas, sino que enriquece visualmente
- * la experiencia del usuario de forma contextual.
+ * This version uses a stateful ProseMirror plugin that subscribes to stores,
+ * providing a more efficient and stable integration between Tiptap and Svelte's
+ * reactive system.
  */
 export const DynamicHighlighter = Extension.create({
   name: 'dynamicHighlighter',
 
-  /**
-   * `addProseMirrorPlugins` es el hook de Tiptap que nos permite inyectar
-   * la lógica de bajo nivel de ProseMirror.
-   *
-   * Este plugin observará los stores de Svelte y devolverá el `DecorationSet`
-   * apropiado para que ProseMirror lo renderice.
-   */
   addProseMirrorPlugins() {
+    const extensionThis = this;
+
     return [
-      new Plugin({
+      new Plugin<HighlighterState>({
         key: DYNAMIC_HIGHLIGHTER_PLUGIN_KEY,
+
+        // The plugin's internal state, which holds the latest decorations.
+        state: {
+          init: (): HighlighterState => {
+            return {
+              reviewDecorations: DecorationSet.empty,
+              ttsDecorations: DecorationSet.empty,
+            };
+          },
+          apply(tr, value): HighlighterState {
+            const meta = tr.getMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY);
+            if (meta) {
+              return { ...value, ...meta };
+            }
+            return value;
+          },
+        },
+
+        // The view portion of the plugin connects to the outside world.
+        view() {
+          let reviewUnsubscriber: Unsubscriber;
+          let ttsUnsubscriber: Unsubscriber;
+
+          const handleReviewUpdate = (state: ReviewState) => {
+            const { view } = extensionThis.editor;
+            if (view.isDestroyed) return;
+
+            const tr = view.state.tr.setMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY, {
+              reviewDecorations: state.decorationSet,
+            });
+            view.dispatch(tr);
+          };
+
+          const handleTtsUpdate = (state: TTSState) => {
+            const { view } = extensionThis.editor;
+            if (view.isDestroyed) return;
+
+            const tr = view.state.tr.setMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY, {
+              ttsDecorations: state.decorationSet,
+            });
+            view.dispatch(tr);
+          };
+
+          // Subscribe to stores when the view is created.
+          reviewUnsubscriber = reviewStore.subscribe(handleReviewUpdate);
+          ttsUnsubscriber = ttsStore.subscribe(handleTtsUpdate);
+
+          return {
+            // Unsubscribe when the view is destroyed.
+            destroy() {
+              reviewUnsubscriber();
+              ttsUnsubscriber();
+            },
+          };
+        },
+
+        // Props are used to expose the plugin's state to ProseMirror's rendering.
         props: {
-          /**
-           * La propiedad `decorations` es una función que ProseMirror llama
-           * cada vez que el estado del editor necesita ser redibujado.
-           * Debe devolver un `DecorationSet` o `null`.
-           */
-          decorations(): DecorationSet | null {
-            const reviewState = get(reviewStore);
-            const ttsState = get(ttsStore);
+          decorations(state: EditorState) {
+            const pluginState = this.getState(state);
+            if (!pluginState) return null;
 
-            // Priorizamos el estado de repaso. Si está activo, usamos sus decoraciones.
-            if (reviewState.isReviewing) {
-              return reviewState.decorationSet;
+            const { reviewDecorations, ttsDecorations } = pluginState;
+
+            // Prioritize review decorations, then TTS, then apply to the document.
+            if (reviewDecorations && reviewDecorations.find().length > 0) {
+              return reviewDecorations;
             }
-
-            // Si no, comprobamos el estado de lectura.
-            if (ttsState.isPlaying) {
-              return ttsState.decorationSet;
+            if (ttsDecorations && ttsDecorations.find().length > 0) {
+              return ttsDecorations;
             }
-
-            // Si ningún modo está activo, no aplicamos ninguna decoración.
             return null;
           },
         },

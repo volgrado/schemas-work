@@ -27,6 +27,7 @@
   import { editorStore } from '$lib/stores/editorStore';
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
   import { commandBarStore } from '$lib/stores/commandBarStore';
+  import { ttsStore } from '$lib/stores/ttsStore'; // Importar ttsStore
   import * as directoryService from '$lib/services/core/directoryService';
   import * as schemaService from '$lib/services/features/schemaService';
 
@@ -71,12 +72,18 @@
     console.log('[page.svelte] La prop treeData ha cambiado:', treeData);
   });
 
-  // Las otras derivaciones son simples y pueden quedarse como `$derived`.
+  // *** LÓGICA DE RESALTADO SINCRONIZADO ***
+  // El nodo seleccionado en el árbol ahora depende tanto de la selección del usuario
+  // como del estado del lector de voz (TTS), dando prioridad al TTS.
   let selectedNodeId = $derived(
-    $editorStore.selectedNodePos !== null
-      ? `node-${$editorStore.selectedNodePos}`
-      : 'root-title'
+    ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
+      $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
+      ? `node-${$ttsStore.nodesToRead[$ttsStore.currentNodeIndex].pos}`
+      : $editorStore.selectedNodePos !== null
+        ? `node-${$editorStore.selectedNodePos}`
+        : 'root-title'
   );
+
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
   // --- EFECTOS SECUNDARIOS Y CICLO DE VIDA ---
@@ -171,7 +178,7 @@
   {/if}
 </svelte:head>
 
-<Toaster position="bottom-center" />
+<Toaster position="bottom-center" theme="system" />
 
 {#if !showWelcome}
   <AppHeader
@@ -202,19 +209,22 @@
 {/if}
 
 <div class="view-wrapper">
-  <!-- CAMBIO 1: Añadir el canvas de fondo para la vista de editor -->
   {#if !showWelcome && currentView === 'editor'}
     <div class="editor-background-canvas">
       <OrganicCanvas />
     </div>
   {/if}
 
-  <!-- Vista del Editor -->
   <div
     class="view-content"
     style:display={currentView === 'editor' ? 'block' : 'none'}
   >
-    <div class="main-content" class:reveal={isRevealingContent}>
+    <div
+      class="main-content"
+      class:reveal={isRevealingContent}
+      class:is-reading-aloud={$ttsStore.status === 'playing' ||
+        $ttsStore.status === 'paused'}
+    >
       {#if !showWelcome}
         {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
           <div class="status-container"><p>Cargando esquema...</p></div>
@@ -236,7 +246,6 @@
     </div>
   </div>
 
-  <!-- Vista del Árbol -->
   <div
     class="view-content"
     style:display={currentView === 'tree' ? 'block' : 'none'}
@@ -250,7 +259,6 @@
         />
       </div>
     {:else if !showWelcome && $documentStore.status === 'ready'}
-      <!-- Mensaje de estado vacío: solo se muestra si no hay bienvenida y el documento está listo -->
       <div class="status-container">
         <p>Tu esquema debe contener una lista para generar la visualización.</p>
         <span
@@ -263,7 +271,6 @@
 </div>
 
 {#if !showWelcome}
-  <!-- Componentes flotantes y controladores -->
   <CommandBar />
   <CardEditorPanel />
   <ReviewController />
@@ -296,16 +303,14 @@
 {/if}
 
 <style>
-  /* CAMBIO 2: Añadir estilos para el canvas de fondo */
   .editor-background-canvas {
     position: fixed;
     inset: 0;
-    z-index: -1; /* Detrás de todo el contenido */
+    z-index: -1;
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
   }
 
-  /* Se mostrará solo en pantallas anchas */
   @media (min-width: 1200px) {
     .editor-background-canvas {
       opacity: 1;
@@ -314,7 +319,7 @@
 
   .status-container {
     display: flex;
-    flex-direction: column; /* Para que el span se ponga debajo */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
