@@ -8,7 +8,7 @@ import {
   decryptData,
   uint8ArrayToBase64,
   base64ToUint8Array,
-} from '$lib/utils/crypto';
+} from '$lib/utils/cryptoUtils';
 import type { Vault, SchemaMetadata } from '$lib/types';
 import { toast } from 'svelte-sonner';
 import * as errorService from '$lib/services/core/errorService';

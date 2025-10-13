@@ -1,4 +1,4 @@
-// src/lib/utils/crypto.ts
+// src/lib/utils/cryptoUtils.ts
 
 /**
  * Este módulo encapsula las operaciones criptográficas utilizando la

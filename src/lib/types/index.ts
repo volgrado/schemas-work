@@ -1,100 +1,69 @@
 // src/lib/types/index.ts
 
 /**
- * Este archivo centraliza todas las definiciones de tipos y interfaces
- * personalizadas para la aplicación, proporcionando una única fuente de
- * verdad para las estructuras de datos.
+ * @file Este archivo actúa como el punto de entrada principal para los tipos de dominio
+ * de la aplicación. Su propósito es re-exportar los tipos definidos en otros
+ * archivos dentro de este directorio.
+ *
+ * BENEFICIOS:
+ * - **Importaciones más limpias:** En lugar de `import { X } from '$lib/types/x'`,
+ *   se puede usar `import { X } from '$lib/types'`.
+ * - **Centralización:** Proporciona una visión clara de todos los tipos de dominio
+ *   disponibles en la aplicación.
+ * - **Mantenibilidad:** Facilita la refactorización y el movimiento de tipos sin
+ *   romper las importaciones en toda la base de código.
  */
 
-// --- Identidad y Seguridad ---
+// --- Exportaciones de Tipos de Dominio ---
+
+export * from './command';
+export * from './iconName';
+export * from './tree';
+
+// --- Tipos de Datos Principales (Anteriormente en `index.ts` en la raíz) ---
 
 /**
- * Representa la identidad criptográfica única del usuario, generada y
- * almacenada localmente en su navegador. Se utiliza para futuras
- * funcionalidades de firma y colaboración.
+ * Representa la identidad criptográfica única de un usuario, generada y
+ * almacenada localmente en el navegador.
  */
 export interface Identity {
-  /** La clave pública en formato JSON Web Key (JWK) stringified. */
   publicKey: string;
-  /** La clave privada en formato JSON Web Key (JWK) stringified. */
   privateKey: string;
 }
 
-// --- Estructura de Datos de Documentos ---
-
 /**
- * Representa los metadatos de un esquema (documento) en el directorio del usuario.
- * No contiene el contenido del documento, solo la información para listarlo y gestionarlo.
+ * Representa los metadatos de un ítem en el directorio de trabajo del usuario.
+ * Puede ser un esquema o una carpeta.
  */
 export interface SchemaMetadata {
-  /** Identificador único universal (UUID v4) del documento. */
-  id: string;
-  /** Título del esquema, editable por el usuario. */
+  id: string; // UUID v4
   title: string;
-  /** Timestamp (en milisegundos) de la creación del esquema. */
-  createdAt: number;
-  /** Timestamp (en milisegundos) de la última modificación. */
-  updatedAt: number;
-  /** Distingue entre un documento y un contenedor. */
+  createdAt: number; // Timestamp Unix
+  updatedAt: number; // Timestamp Unix
   type: 'schema' | 'folder';
-  /** El ID del padre. Si es `null`, está en la raíz. */
-  parentId: string | null;
+  parentId: string | null; // ID de la carpeta padre, o null si está en la raíz
 }
 
 /**
- * Representa la estructura completa de la bóveda de un usuario.
- * Este es el objeto que se encripta y se exporta/importa.
- */
-export interface Vault {
-  /** La lista de todos los metadatos de los esquemas. */
-  schemas: SchemaMetadata[];
-  /**
-   * Un diccionario que mapea el ID de un esquema a su contenido completo.
-   * El contenido se almacena como un "update" de Y.js codificado en Base64,
-   * lo que permite capturar todo el estado del documento de forma eficiente.
-   */
-  content: Record<string, string>;
-}
-
-// --- Funcionalidades de Aprendizaje ---
-
-/**
- * Representa una única tarjeta de estudio (pregunta y respuesta)
- * asociada a un nodo del esquema, con datos para la repetición espaciada.
+ * Representa una tarjeta de estudio individual, a menudo asociada a un nodo
+ * de un esquema para técnicas de repaso espaciado.
  */
 export interface DomainCard {
-  /** El texto de la pregunta (Question). */
-  q: string;
-  /** El texto de la respuesta (Answer). */
-  a: string;
+  q: string; // Pregunta
+  a: string; // Respuesta
 
-  // --- NUEVOS CAMPOS PARA SRS (Spaced Repetition System) ---
-  /** Factor de facilidad (Ease Factor). Empieza en 2.5. Un número más bajo significa que la tarjeta es más difícil. */
-  easeFactor?: number;
-  /** El intervalo en días hasta la próxima revisión. */
-  interval?: number;
-  /** El número de veces que se ha repasado correctamente la tarjeta. */
-  repetitions?: number;
-  /** La fecha (en formato timestamp de milisegundos) en la que esta tarjeta debe ser repasada. */
-  dueDate?: number;
-}
-
-// --- Interacción con IA ---
-
-/**
- * Representa un único nodo en la estructura jerárquica devuelta por la IA.
- * Es una estructura recursiva.
- */
-export interface AISchemaNode {
-  content: string;
-  children?: AISchemaNode[];
+  // --- Propiedades para Repaso Espaciado (Algoritmo SM-2) ---
+  repetitions?: number; // Número de veces que la tarjeta se ha repasado correctamente
+  easeFactor?: number; // Un multiplicador que ajusta la dificultad (>= 1.3)
+  interval?: number; // El número de días hasta el próximo repaso
+  dueDate?: number; // La fecha del próximo repaso en formato de timestamp Unix
 }
 
 /**
- * La estructura completa del objeto JSON que esperamos que la IA devuelva
- * al procesar texto no estructurado.
+ * Representa la estructura de la "bóveda" completa del usuario, que se utiliza
+ * para exportar e importar todos los datos de la aplicación.
  */
-export interface AISchemaResponse {
-  title: string;
-  nodes: AISchemaNode[];
+export interface Vault {
+  schemas: SchemaMetadata[]; // La estructura completa del directorio
+  content: Record<string, string>; // Un mapa del ID del esquema a su contenido (en Base64)
 }
