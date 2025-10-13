@@ -4,8 +4,8 @@ import { Decoration, DecorationSet } from 'prosemirror-view';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { TTSService, TTSVoice } from '$lib/services/tts/tts.service';
 import { BrowserTTSService } from '$lib/services/tts/BrowserTTSService';
+import { CSS_CLASSES } from '$lib/constants';
 
-// --- Estado: Define la estructura de datos del store ---
 /**
  * Defines the possible statuses for the Text-to-Speech (TTS) service.
  */
@@ -155,12 +155,12 @@ function handleWordBoundary(event: SpeechSynthesisEvent) {
   to += currentNodeInfo.pos + 1;
 
   const wordDecoration = Decoration.inline(from, to, {
-    class: 'is-current-tts-word',
+    class: CSS_CLASSES.IS_CURRENT_TTS_WORD,
   });
   const nodeDecoration = Decoration.node(
     currentNodeInfo.pos,
     currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-    { class: 'is-current-tts-node' },
+    { class: CSS_CLASSES.IS_CURRENT_TTS_NODE },
   );
 
   const newDecorationSet = DecorationSet.create(editor.state.doc, [
@@ -187,7 +187,7 @@ function highlightCurrentNode() {
   const nodeDecoration = Decoration.node(
     currentNodeInfo.pos,
     currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-    { class: 'is-current-tts-node' },
+    { class: CSS_CLASSES.IS_CURRENT_TTS_NODE },
   );
 
   const newDecorationSet = DecorationSet.create(editor.state.doc, [

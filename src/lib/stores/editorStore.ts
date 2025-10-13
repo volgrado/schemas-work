@@ -1,6 +1,6 @@
 // src/lib/stores/editorStore.ts
 
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model'; // Importamos el tipo
 
@@ -41,3 +41,11 @@ const initialState: EditorStoreState = {
  * subscribe to this store to read the state and act accordingly.
  */
 export const editorStore = writable<EditorStoreState>(initialState);
+
+/**
+ * A derived store that returns `true` if a node is currently selected in the editor.
+ */
+export const isNodeSelected = derived(
+  editorStore,
+  ($editorStore) => $editorStore.selectedNodePos !== null,
+);

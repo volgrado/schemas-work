@@ -71,7 +71,7 @@ export function documentToTreeData(
       let nestedList: ProseMirrorNode | undefined;
       let firstParagraphFallback: ProseMirrorNode | undefined;
 
-      listItem.forEach((child) => {
+      listItem.content.forEach((child) => {
         if (child.type.name === 'paragraph') {
           if (child.attrs.role === 'term') {
             termParagraph = child;

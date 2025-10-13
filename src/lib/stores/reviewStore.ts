@@ -7,8 +7,8 @@ import { Decoration, DecorationSet } from 'prosemirror-view';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import { toast } from 'svelte-sonner';
 import * as reviewService from '$lib/services/features/reviewService';
+import { CSS_CLASSES } from '$lib/constants';
 
-// ... (Interfaz, estado inicial, suscripción al editor, etc. sin cambios)
 /**
  * Represents the state of a review session.
  */
@@ -229,7 +229,7 @@ function highlightCurrentNode() {
   const decoration = Decoration.node(
     currentNodeInfo.pos,
     currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-    { class: 'is-current-review-node' },
+    { class: CSS_CLASSES.IS_CURRENT_REVIEW_NODE },
   );
   update((s) => ({
     ...s,

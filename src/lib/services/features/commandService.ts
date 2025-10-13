@@ -22,7 +22,7 @@ import type { Command } from '$lib/types/command';
 import { get } from 'svelte/store';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { documentStore } from '$lib/stores/documentStore';
-import { editorStore } from '$lib/stores/editorStore';
+import { editorStore, isNodeSelected } from '$lib/stores/editorStore';
 import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
 
@@ -116,9 +116,6 @@ export function getCommands(): Command[] {
  * @returns {Command[]} An array of AI commands.
  */
 export function getAiCommands(): Command[] {
-  // The `isEnabled` check is based on the current state of the `editorStore`.
-  const isNodeSelected = get(editorStore).selectedNodePos !== null;
-
   return [
     {
       id: 'create-schema-from-text',
@@ -136,7 +133,7 @@ export function getAiCommands(): Command[] {
       action: () => {
         commandBarStore.openAiHelper('generate-flashcards');
       },
-      isEnabled: () => isNodeSelected,
+      isEnabled: () => get(isNodeSelected),
     },
     {
       id: 'expand-node',
@@ -145,7 +142,7 @@ export function getAiCommands(): Command[] {
       action: () => {
         commandBarStore.openAiHelper('expand-node');
       },
-      isEnabled: () => isNodeSelected,
+      isEnabled: () => get(isNodeSelected),
     },
   ];
 }

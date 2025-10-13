@@ -1,0 +1,18 @@
+export const CSS_CLASSES = {
+  TREE_CONTAINER: 'tree-container',
+  TREE_SVG: 'tree-svg',
+  CONTENT_GROUP: 'content-group',
+  LINK: 'link',
+  NODE: 'node',
+  NODE_LABEL: 'node-label',
+  INDICATOR: 'indicator',
+  IS_COLLAPSED: 'is-collapsed',
+  HAS_CHILDREN: 'has-children',
+  IS_SELECTED: 'is-selected',
+  IS_DIMMED: 'is-dimmed',
+  IS_ANCESTOR: 'is-ancestor',
+  IS_DESCENDANT: 'is-descendant',
+  IS_CURRENT_REVIEW_NODE: 'is-current-review-node',
+  IS_CURRENT_TTS_NODE: 'is-current-tts-node',
+  IS_CURRENT_TTS_WORD: 'is-current-tts-word',
+};
