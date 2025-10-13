@@ -29,7 +29,6 @@
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
   import { documentStore } from '$lib/stores/documentStore';
-  import { debounce } from '$lib/utils/debounce';
 
   // --- Componentes de UI ---
   import BubbleMenu from './BubbleMenu.svelte';
@@ -49,35 +48,6 @@
 
   let element: HTMLDivElement;
   let editor = $state<Editor | null>(null);
-
-  const syncTitleWithStore = debounce((editorInstance: Editor) => {
-    if (!editorInstance || editorInstance.isDestroyed) return;
-
-    const firstNode = editorInstance.state.doc.firstChild;
-
-    // ✅ CORRECCIÓN: Ahora comprobamos el tipo Y el nivel del heading.
-    // Buscamos explícitamente un `h2` como primer nodo.
-    if (
-      firstNode &&
-      firstNode.type.name === 'heading' &&
-      firstNode.attrs.level === 2
-    ) {
-      const newTitle = firstNode.textContent.trim() || 'Esquema sin título'; // Usamos un fallback
-
-      const currentTitleInStore = get(documentStore).metadata?.title;
-
-      if (newTitle !== currentTitleInStore) {
-        documentStore.updateTitle(newTitle);
-      }
-    } else {
-      // (Opcional) Si el primer nodo NO es un h2, podríamos considerar que el título está vacío.
-      // Esto previene que el título se quede "pegado" si el usuario borra el h2.
-      const currentTitleInStore = get(documentStore).metadata?.title;
-      if (currentTitleInStore !== 'Esquema sin título') {
-        documentStore.updateTitle('Esquema sin título');
-      }
-    }
-  }, 750);
 
   $effect(() => {
     if (focusedNodePos !== null && editor && editor.isEditable) {
@@ -140,9 +110,9 @@
         },
       },
       onUpdate({ editor: updatedEditor }) {
-        syncTitleWithStore(updatedEditor);
+        documentStore.syncTitleFromEditor(updatedEditor);
 
-        const { selection } = updatedEditor.state; // Solo necesitamos `selection` aquí
+        const { selection } = updatedEditor.state;
         const listItemNode = findParentNode(
           (node) => node.type.name === 'listItem'
         )(selection);
@@ -150,20 +120,16 @@
 
         editorStore.update((s) => ({
           ...s,
-          // ✅ CORRECCIÓN: Usamos la referencia directa al doc del editor actualizado
           doc: updatedEditor.state.doc,
           selectedNodePos: newSelectedPos,
           contentVersion: s.contentVersion + 1,
         }));
       },
-      // onSelectionUpdate puede seguir siendo una optimización, pero la mantenemos fiel a tu original
-      // para evitar confusiones. Si todo está en onUpdate, también funciona.
     });
 
     editor = editorInstance;
 
-    // Sincronización inicial al cargar
-    syncTitleWithStore(editor);
+    documentStore.syncTitleFromEditor(editor);
 
     // Manejo del contenido inicial
     if (initialContent) {

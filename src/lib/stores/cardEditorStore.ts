@@ -3,7 +3,8 @@
 import { writable, get } from 'svelte/store';
 import type { DomainCard } from '$lib/types';
 import { editorStore } from './editorStore';
-import * as errorService from '$lib/services/core/errorService';
+// ✅ NUEVO: Importamos el servicio que contiene la lógica de negocio.
+import * as cardService from '$lib/services/features/cardService';
 
 /**
  * Define la estructura del estado para el editor de tarjetas.
@@ -60,62 +61,14 @@ function close() {
   });
 }
 
+/**
+ * ✅ REFACTORIZADO: Esta función ahora actúa como un simple "despachador".
+ * Toda la lógica de negocio compleja ha sido movida a `cardService.ts`.
+ * El store ahora solo se preocupa de invocar el servicio correcto.
+ */
 function prefillAndAddCard() {
-  // *** 2. ENVOLVER EN try...catch ***
-  try {
-    const editor = get(editorStore).instance;
-    const state = get(store);
-
-    if (!editor || state.selectedNodePos === null) {
-      // No es un error, simplemente no hay nada que hacer.
-      return;
-    }
-
-    const node = editor.state.doc.nodeAt(state.selectedNodePos);
-
-    // *** NUEVO: Comprobación explícita del nodo ***
-    if (!node) {
-      throw new Error(
-        `Could not find node at position ${state.selectedNodePos} to prefill card.`
-      );
-    }
-
-    let termText = '';
-    let descriptionText = '';
-
-    // Esta lógica de recorrer los hijos es segura,
-    // pero la mantenemos dentro del try...catch por si acaso.
-    node.forEach((childNode) => {
-      if (childNode.attrs.role === 'term') {
-        // Asumiendo que usamos roles
-        termText = childNode.textContent;
-      } else if (childNode.attrs.role === 'description') {
-        descriptionText = childNode.textContent;
-      }
-    });
-
-    const newCard: DomainCard = {
-      q: descriptionText
-        ? `¿Qué es "${termText}"?`
-        : termText || 'Nueva Pregunta', // Añadir fallback
-      a: descriptionText || '',
-    };
-
-    update((s) => {
-      const newCards = [...s.cards, newCard];
-      // Guardamos inmediatamente para que el usuario vea el cambio
-      saveCardsToEditor(newCards);
-      return { ...s, cards: newCards };
-    });
-  } catch (error) {
-    const editorState = get(editorStore);
-    errorService.reportError(error, {
-      operation: 'prefillAndAddCard',
-      selectedNodePos: editorState.selectedNodePos,
-    });
-    // Opcional: Notificar al usuario que algo falló.
-    // toast.error('No se pudo autocompletar la tarjeta.');
-  }
+  // Simplemente llama a la función del servicio, que se encargará de todo.
+  cardService.prefillAndAddCard();
 }
 
 /**

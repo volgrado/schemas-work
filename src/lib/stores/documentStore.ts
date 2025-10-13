@@ -15,6 +15,7 @@ import * as errorService from '$lib/services/core/errorService';
 import * as schemaService from '$lib/services/features/schemaService';
 
 import type { TreeNodeData } from '$lib/types/tree';
+import { debounce } from '$lib/utils/debounce';
 
 export interface DocumentStoreState {
   docId: string | null;
@@ -44,7 +45,6 @@ function cleanup() {
   if (currentState.provider) {
     currentState.provider.destroy();
   }
-  schemaTreeData.set(null); // Limpiamos el árbol al cambiar de documento
   set(initialState);
 }
 
@@ -169,34 +169,29 @@ async function updateTitle(newTitle: string) {
   }
 }
 
-// --- LÓGICA DE SINCRONIZACIÓN DEL ÁRBOL (REFACTORIZADA) ---
+const syncTitleFromEditor = debounce((editorInstance: Editor) => {
+  if (!editorInstance || editorInstance.isDestroyed) return;
 
-// --- LÓGICA DE CONVERSIÓN ELIMINADA ---
-// Las funciones `convertTiptapToTree` y `generateTreeFromJSON` han sido borradas de este archivo.
-// Toda esa lógica ahora reside de forma centralizada en `schemaService.ts`.
+  const firstNode = editorInstance.state.doc.firstChild;
 
-/**
- * El store reactivo que contendrá los datos para el componente SchemaTree.
- */
-export const schemaTreeData = writable<TreeNodeData | null>(null);
+  if (
+    firstNode &&
+    firstNode.type.name === 'heading' &&
+    firstNode.attrs.level === 2
+  ) {
+    const newTitle = firstNode.textContent.trim() || 'Esquema sin título';
+    const currentTitleInStore = get(_documentStore).metadata?.title;
 
-/**
- * ✅ REFACTORIZADO: Esta función ahora delega la lógica de conversión al `schemaService`.
- * Su única responsabilidad es actuar como "puente" entre el editor y el store del árbol.
- */
-export function syncTreeWithDocument(editor: Editor) {
-  if (!editor || editor.isDestroyed) {
-    schemaTreeData.set(null); // Resetea el árbol si no hay editor
-    return;
+    if (newTitle !== currentTitleInStore) {
+      updateTitle(newTitle);
+    }
+  } else {
+    const currentTitleInStore = get(_documentStore).metadata?.title;
+    if (currentTitleInStore !== 'Esquema sin título') {
+      updateTitle('Esquema sin título');
+    }
   }
-
-  // 1. Obtiene el nodo del documento del editor
-  const docNode = editor.state.doc;
-  // 2. Llama al servicio centralizado para hacer la conversión
-  const newTreeData = schemaService.documentToTreeData(docNode);
-  // 3. Actualiza el store con el resultado
-  schemaTreeData.set(newTreeData);
-}
+}, 750);
 
 /**
  * ✅ NUEVO: Suscripción reactiva a los eventos del directorio.
@@ -256,4 +251,5 @@ export const documentStore = {
   createNewDocument,
   clearInitialContent,
   updateTitle,
+  syncTitleFromEditor,
 };
