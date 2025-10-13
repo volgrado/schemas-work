@@ -66,7 +66,8 @@
     /* Mantenemos la lógica de centrado */
     display: grid;
     place-items: center;
-    padding: var(--space-md);
+    padding: var(--space-md) max(var(--space-md), env(safe-area-inset-right))
+      var(--space-md) max(var(--space-md), env(safe-area-inset-left));
 
     /* Mantenemos el overflow para que el canvas no se desborde */
     overflow: hidden;
