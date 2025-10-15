@@ -1,13 +1,10 @@
 // src/app.d.ts
 
-// *** AÑADE ESTO ***
 // Importamos los tipos de los comandos que vamos a añadir
 import type { Commands as BoldCommands } from '@tiptap/extension-bold';
 import type { Commands as ItalicCommands } from '@tiptap/extension-italic';
 import type { Commands as HeadingCommands } from '@tiptap/extension-heading';
 import type { Commands as BulletListCommands } from '@tiptap/extension-bullet-list';
-// Importamos los tipos de nuestro comando personalizado también
-import type { DomainCard } from '$lib/types';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -21,7 +18,6 @@ declare global {
   }
 }
 
-// *** AÑADE ESTE BLOQUE COMPLETO ***
 // Aquí es donde ampliamos el módulo de Tiptap
 declare module '@tiptap/core' {
   // Le decimos a TypeScript que la interfaz 'Commands' ahora también incluye
@@ -31,21 +27,13 @@ declare module '@tiptap/core' {
       ItalicCommands<ReturnType>,
       HeadingCommands<ReturnType>,
       BulletListCommands<ReturnType> {
-    // También declaramos nuestro comando personalizado de FlippableListItem aquí
-    // para mantener todos los tipos de comandos en un solo lugar.
-    listItem: {
-      setCards: (cards: DomainCard[]) => ReturnType;
-    };
+    // ELIMINADO: Ya no gestionamos las tarjetas directamente en el nodo.
     schemaNode: {
       /**
        * Divide un `schemaNode` actual, asegurando que el nuevo nodo
        * también tenga la estructura `schemaTerm`.
        */
       splitSchemaNode: () => ReturnType;
-      /**
-       * Establece las tarjetas de estudio para el `schemaNode` actual.
-       */
-      setCards: (cards: import('$lib/types').DomainCard[]) => ReturnType;
     };
   }
 }

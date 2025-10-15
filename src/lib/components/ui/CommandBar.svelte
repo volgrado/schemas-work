@@ -7,13 +7,13 @@
    *
    * Responsabilidades del Shell:
    * 1.  **Orquestar Vistas:** Renderiza el componente de vista activo (`MainView`, `AiView`, etc.)
-   *     basado en el estado del `commandBarStore`. No contiene la lógica de esas vistas.
+   * basado en el estado del `commandBarStore`. No contiene la lógica de esas vistas.
    * 2.  **Gestionar Modales:** Es el "dueño" de todos los modales que se superponen a la aplicación
-   *     (IA, Contraseña, Diagnóstico), incluyendo su configuración y lógica de envío.
+   * (IA, Contraseña, Diagnóstico), incluyendo su configuración y lógica de envío.
    * 3.  **Manejar Eventos Globales:** Captura eventos de teclado globales (como Ctrl+K y Escape)
-   *     para controlar la visibilidad y navegación de la barra de comandos.
+   * para controlar la visibilidad y navegación de la barra de comandos.
    * 4.  **Proveer Estilos Compartidos:** Define los estilos base para el panel, overlay y
-   *     elementos comunes como `.action-button` para asegurar una apariencia consistente.
+   * elementos comunes como `.action-button` para asegurar una apariencia consistente.
    */
 
   // --- Svelte Core y UI ---
@@ -43,7 +43,9 @@
   import * as Prompts from '$lib/services/ai/prompts';
   import * as aiSchemas from '$lib/schemas/aiSchemas';
   import * as schemaService from '$lib/services/features/schemaService';
-  import type { DomainCard } from '$lib/types';
+  import * as cardService from '$lib/services/features/cardService';
+  import * as errorService from '$lib/services/core/errorService';
+  import type { Card } from '$lib/types';
 
   const state = commandBarStore;
 
@@ -84,9 +86,6 @@
             const title =
               data.content?.[0]?.content?.[0]?.text || 'Nuevo Esquema';
 
-            // ✅ ESTE ES EL CAMBIO CLAVE
-            // Leemos la propiedad correcta del store, que ahora sí existe
-            // y es mantenida por FileExplorerView.
             const parentId = get(state).currentParentId;
 
             documentStore.createNewDocument(title, data, parentId);
@@ -123,6 +122,7 @@
           },
         };
         break;
+
       case 'generate-flashcards':
         if (!node) {
           toast.error('Para generar tarjetas, primero selecciona un nodo.');
@@ -130,23 +130,25 @@
         }
         helperConfig = {
           title: 'Asistente: Generar Tarjetas de Estudio',
-          prompt: Prompts.GENERATE_FLASHCARDS_PROMPT.replace(
+          prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT.replace(
             '{{NODE_TEXT}}',
             node.textContent
           ),
           validationSchema: aiSchemas.FlashcardResponseSchema,
-          onApply: (data: DomainCard[]) => {
-            if (!editor || currentPos === null) return;
-            const existingCards = node.attrs.cards || [];
-            editor
-              .chain()
-              .focus()
-              .setNodeSelection(currentPos)
-              .setCards([...existingCards, ...data])
-              .run();
-            toast.success(
-              `${data.length} nuevas tarjetas de estudio generadas.`
-            );
+          onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
+            if (!node?.attrs.nodeId) {
+              toast.error('No se puede generar tarjetas para un nodo sin ID.');
+              return;
+            }
+            try {
+              await cardService.addCards(node.attrs.nodeId, data);
+              toast.success(`${data.length} nuevas tarjetas generadas con IA.`);
+            } catch (err) {
+              errorService.reportError(err, {
+                operation: 'aiGenerateCards.onApply',
+              });
+              toast.error('No se pudieron guardar las tarjetas generadas.');
+            }
           },
         };
         break;

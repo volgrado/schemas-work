@@ -6,86 +6,110 @@
  * truth for data structures.
  */
 
+// --- Core Data Structures ---
+
 /**
  * Represents the user's unique cryptographic identity, generated and
- * stored locally in their browser. It is used for future
- * signing and collaboration functionalities.
+ * stored locally in their browser.
  */
 export interface Identity {
-  /** The public key in stringified JSON Web Key (JWK) format. */
   publicKey: string;
-  /** The private key in stringified JSON Web Key (JWK) format. */
   privateKey: string;
 }
 
 /**
  * Represents the metadata of a schema (document) in the user's directory.
- * It does not contain the document's content, only the information for listing and managing it.
  */
 export interface SchemaMetadata {
-  /** Universal unique identifier (UUID v4) of the document. */
   id: string;
-  /** Title of the schema, editable by the user. */
   title: string;
-  /** Timestamp (in milliseconds) of the schema's creation. */
   createdAt: number;
-  /** Timestamp (in milliseconds) of the last modification. */
   updatedAt: number;
-  /** Distinguishes between a document and a container. */
   type: 'schema' | 'folder';
-  /** The ID of the parent. If `null`, it is at the root. */
   parentId: string | null;
 }
 
 /**
- * Represents the complete structure of a user's vault.
- * This is the object that is encrypted and exported/imported.
+ * Represents the complete structure of a user's vault for export/import.
  */
 export interface Vault {
-  /** The list of all schema metadata. */
   schemas: SchemaMetadata[];
-  /**
-   * A dictionary that maps a schema's ID to its full content.
-   * The content is stored as a Base64 encoded Y.js "update",
-   * which allows capturing the entire state of the document efficiently.
-   */
   content: Record<string, string>;
 }
 
-/**
- * Represents a single study card (question and answer)
- * associated with a schema node, with data for spaced repetition.
- */
-export interface DomainCard {
-  /** The text of the question. */
-  q: string;
-  /** The text of the answer. */
-  a: string;
+// --- Card and Review System Types ---
 
-  /** Ease Factor. Starts at 2.5. A lower number means the card is more difficult. */
-  easeFactor?: number;
-  /** The interval in days until the next review. */
-  interval?: number;
-  /** The number of times the card has been correctly reviewed. */
-  repetitions?: number;
-  /** The date (in millisecond timestamp format) when this card should be reviewed. */
-  dueDate?: number;
+/**
+ * The quality of the user's response for a card review.
+ * Follows the SM-2 algorithm scale where:
+ * 0: "Again" - Complete failure to recall.
+ * 3: "Good" - Correct response recalled with some hesitation.
+ * 5: "Easy" - Correct response recalled with perfect ease.
+ * We use a simplified 0, 3, 5 scale for the UI.
+ */
+export type ReviewQuality = 0 | 3 | 5;
+
+/**
+ * The data structure for the Spaced Repetition System (SRS) algorithm.
+ * Attached to every card.
+ */
+export interface SrsData {
+  easeFactor: number;
+  interval: number; // in days
+  repetitions: number;
+  dueDate: number; // timestamp
 }
 
 /**
- * Represents a single node in the hierarchical structure returned by the AI.
- * It is a recursive structure.
+ * The union of all possible card types, used for type discrimination.
  */
-export interface AISchemaNode {
+export type CardType = 'basic' | 'input' | 'sequencing'; // 'audio' removed for now
+
+// --- Individual Card Type Definitions ---
+
+interface CardBase {
+  id: string;
+  nodeId: string;
+  srs: SrsData;
+}
+
+export interface BasicCard extends CardBase {
+  type: 'basic';
+  content: {
+    question: string;
+    answer: string;
+  };
+}
+
+export interface InputCard extends CardBase {
+  type: 'input';
+  content: {
+    prompt: string;
+    expected: string;
+  };
+}
+
+export interface SequencingCard extends CardBase {
+  type: 'sequencing';
+  content: {
+    prompt: string;
+    items: string[];
+  };
+}
+
+/**
+ * A discriminated union of all possible card types.
+ * The `type` property is the discriminant.
+ */
+export type Card = BasicCard | InputCard | SequencingCard;
+
+// --- Tree Visualization Types ---
+
+/**
+ * Defines the hierarchical data structure used for the D3 tree visualization.
+ */
+export interface TreeNodeData {
+  id: string;
   content: string;
-  children?: AISchemaNode[];
-}
-
-/**
- * The complete structure of the JSON object that we expect the AI to return
- * when processing unstructured text.
- */
-export interface AISchemaResponse {
-  title: string;
-  nodes: AISchemaNode[];
+  children?: TreeNodeData[];
 }

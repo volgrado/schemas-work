@@ -18,7 +18,7 @@ export const tiptapNodeSchema: z.ZodType<any> = z.lazy(() =>
     content: z.array(tiptapNodeSchema).optional(),
     marks: z.array(z.any()).optional(),
     text: z.string().optional(),
-  }),
+  })
 );
 
 /**
@@ -47,13 +47,46 @@ export const ChangeToneAiResponseSchema = z.object({
   rewrittenText: z.string().min(1, 'The rewritten text cannot be empty.'),
 });
 
+// --- NUEVOS ESQUEMAS PARA TARJETAS POLIMÓRFICAS ---
+
+const basicCardContentSchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+});
+const basicCardSchema = z.object({
+  type: z.literal('basic'),
+  content: basicCardContentSchema,
+});
+
+const inputCardContentSchema = z.object({
+  prompt: z.string().min(1),
+  expected: z.string().min(1),
+});
+const inputCardSchema = z.object({
+  type: z.literal('input'),
+  content: inputCardContentSchema,
+});
+
+const sequencingCardContentSchema = z.object({
+  prompt: z.string().min(1),
+  items: z
+    .array(z.string())
+    .min(2, 'Sequencing card must have at least 2 items.'),
+});
+const sequencingCardSchema = z.object({
+  type: z.literal('sequencing'),
+  content: sequencingCardContentSchema,
+});
+
 /**
  * Validator for the "Generate Flashcards" response.
- * Expects an array of objects, each with a question ('q') and an answer ('a').
+ * Expects an array of objects, each being a valid Card type.
+ * Uses a discriminated union to validate against the different card structures.
  */
 export const FlashcardResponseSchema = z.array(
-  z.object({
-    q: z.string().min(1, 'The card question cannot be empty.'),
-    a: z.string().min(1, 'The card answer cannot be empty.'),
-  }),
+  z.discriminatedUnion('type', [
+    basicCardSchema,
+    inputCardSchema,
+    sequencingCardSchema,
+  ])
 );

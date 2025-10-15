@@ -1,17 +1,21 @@
 // src/lib/stores/cardEditorStore.ts
 
 import { writable, get } from 'svelte/store';
-import type { DomainCard } from '$lib/types';
+import type { Card, CardType, SrsData } from '$lib/types';
 import { editorStore } from './editorStore';
 import * as errorService from '$lib/services/core/errorService';
+import * as cardService from '$lib/services/features/cardService';
+import { toast } from 'svelte-sonner';
+import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 /**
  * Defines the state structure for the card editor.
  */
 export interface CardEditorState {
   isOpen: boolean;
-  selectedNodePos: number | null; // The starting position of the `<li>` in the Tiptap document.
-  cards: DomainCard[]; // An in-memory copy of the cards being edited.
+  nodeId: string | null;
+  cards: Card[];
+  isLoading: boolean;
 }
 
 /**
@@ -19,32 +23,47 @@ export interface CardEditorState {
  */
 const initialState: CardEditorState = {
   isOpen: false,
-  selectedNodePos: null,
+  nodeId: null,
   cards: [],
+  isLoading: false,
 };
 
 // --- Store Creation ---
 const store = writable<CardEditorState>(initialState);
-const { subscribe, update } = store;
+const { subscribe, update, set } = store;
 
 // --- Actions (The public API of our store) ---
 
 /**
  * Opens the panel to edit the cards of a specific node.
- * It is called by `DocumentView` when the user clicks on a `listItem`.
- * @param {number} pos - The starting position of the node in the document.
- * @param {DomainCard[]} cards - The current cards of that node.
+ * It fetches the cards from the cardService.
+ * @param {string} nodeId - The unique ID of the node.
  */
-function open(pos: number, cards: DomainCard[]) {
+async function open(nodeId: string) {
+  // Set loading state immediately
   update((state) => ({
     ...state,
     isOpen: true,
-    selectedNodePos: pos,
-    // CRITICAL! We create a deep copy of the cards. This decouples the state
-    // of the store from the actual state of the document, allowing the user to edit
-    // freely and only save the changes when ready.
-    cards: cards.map((card) => ({ ...card })),
+    isLoading: true,
+    nodeId: nodeId,
+    cards: [],
   }));
+
+  try {
+    const cards = await cardService.getCardsByNodeId(nodeId);
+    update((state) => ({
+      ...state,
+      cards: cards,
+      isLoading: false, // Finish loading
+    }));
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.open',
+      nodeId,
+    });
+    toast.error('Could not load cards for this node.');
+    update((state) => ({ ...state, isLoading: false })); // Finish loading on error
+  }
 }
 
 /**
@@ -52,7 +71,6 @@ function open(pos: number, cards: DomainCard[]) {
  */
 function close() {
   update((state) => {
-    // We only reset if the panel is already open to avoid unnecessary renders.
     if (state.isOpen) {
       return initialState;
     }
@@ -61,94 +79,121 @@ function close() {
 }
 
 /**
- * Prefills a new card with content from the selected editor node and adds it to the list.
- * It extracts text from elements with 'term' and 'description' roles within the node.
+ * Creates a new, empty card of a specific type and adds it to the database.
+ * @param {CardType} type - The type of card to create.
  */
-function prefillAndAddCard() {
+async function addCard(type: CardType) {
+  const state = get(store);
+  if (!state.nodeId) return;
+
+  const editorState = get(editorStore);
+  const node =
+    editorState.instance && state.nodeId
+      ? findNodeById(editorState.instance.state.doc, state.nodeId)
+      : null;
+
+  let newCardData: Omit<Card, 'id' | 'nodeId'>;
+
+  const defaultSrs: SrsData = {
+    easeFactor: 2.5,
+    interval: 0,
+    repetitions: 0,
+    dueDate: Date.now(),
+  };
+
+  switch (type) {
+    case 'input':
+      newCardData = {
+        type: 'input',
+        content: {
+          prompt: node?.textContent || 'New Input Card',
+          expected: '',
+        },
+        srs: defaultSrs,
+      };
+      break;
+    case 'sequencing':
+      newCardData = {
+        type: 'sequencing',
+        content: { prompt: node?.textContent || 'Order the items:', items: [] },
+        srs: defaultSrs,
+      };
+      break;
+    case 'basic':
+    default:
+      newCardData = {
+        type: 'basic',
+        content: { question: node?.textContent || 'New Question', answer: '' },
+        srs: defaultSrs,
+      };
+      break;
+  }
+
   try {
-    const editor = get(editorStore).instance;
-    const state = get(store);
-
-    if (!editor || state.selectedNodePos === null) {
-      // Not an error, just nothing to do.
-      return;
-    }
-
-    const node = editor.state.doc.nodeAt(state.selectedNodePos);
-
-    if (!node) {
-      throw new Error(
-        `Could not find node at position ${state.selectedNodePos} to prefill card.`,
-      );
-    }
-
-    let termText = '';
-    let descriptionText = '';
-
-    // This logic of iterating through the children is safe,
-    // but we keep it inside the try...catch just in case.
-    node.forEach((childNode) => {
-      if (childNode.attrs.role === 'term') {
-        // Assuming we use roles
-        termText = childNode.textContent;
-      } else if (childNode.attrs.role === 'description') {
-        descriptionText = childNode.textContent;
-      }
-    });
-
-    const newCard: DomainCard = {
-      q: descriptionText
-        ? `What is "${termText}"?`
-        : termText || 'New Question', // Add fallback
-      a: descriptionText || '',
-    };
-
-    update((s) => {
-      const newCards = [...s.cards, newCard];
-      // We save immediately so the user sees the change
-      saveCardsToEditor(newCards);
-      return { ...s, cards: newCards };
-    });
-  } catch (error) {
-    const editorState = get(editorStore);
-    errorService.reportError(error, {
-      operation: 'prefillAndAddCard',
-      selectedNodePos: editorState.selectedNodePos,
-    });
-    // Optional: Notify the user that something failed.
-    // toast.error('Could not autocomplete the card.');
+    const newCard = await cardService.addCard(state.nodeId, newCardData);
+    update((s) => ({ ...s, cards: [...s.cards, newCard] }));
+  } catch (err) {
+    errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
+    toast.error('Failed to create the new card.');
   }
 }
 
 /**
- * Saves the cards (from the local copy in the store) back to the
- * corresponding Tiptap node.
- * @param {DomainCard[]} [cardsToSave] - Optional array of cards to save. If not provided, cards from the store are used.
+ * Updates an existing card in the store and persists it to the database.
+ * @param {Card} updatedCard - The card with the new data.
  */
-function saveCardsToEditor(cardsToSave?: DomainCard[]) {
-  const editor = get(editorStore).instance;
-  const state = get(store);
+async function updateCard(updatedCard: Card) {
+  // Optimistic UI update
+  update((s) => ({
+    ...s,
+    cards: s.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
+  }));
 
-  if (!editor || state.selectedNodePos === null) return;
-
-  const cards = cardsToSave || state.cards; // Use the passed cards or the ones from the state
-
-  editor
-    .chain()
-    .focus()
-    .setNodeSelection(state.selectedNodePos)
-    .setCards(cards)
-    .run();
+  try {
+    await cardService.updateCard(updatedCard);
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.updateCard',
+      cardId: updatedCard.id,
+    });
+    toast.error('Failed to save card changes.');
+    // Optional: Implement rollback logic here if needed
+  }
 }
 
 /**
- * Updates the array of cards in the store's state.
- * This function is called by the UI (`CardEditorPanel`) while the user edits,
- * typically on an `on:blur` event.
- * @param {DomainCard[]} newCards - The new array of cards.
+ * Deletes a card from the store and the database.
+ * @param {string} cardId - The ID of the card to delete.
  */
-function updateCardsInStore(newCards: DomainCard[]) {
-  update((state) => ({ ...state, cards: newCards }));
+async function deleteCard(cardId: string) {
+  // Optimistic UI update
+  update((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== cardId) }));
+
+  try {
+    await cardService.deleteCard(cardId);
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.deleteCard',
+      cardId,
+    });
+    toast.error('Failed to delete the card.');
+    // Optional: Implement rollback logic here if needed
+  }
+}
+
+// Helper to find a Tiptap node by our custom nodeId attribute
+function findNodeById(
+  doc: ProseMirrorNode,
+  id: string
+): ProseMirrorNode | null {
+  let foundNode: ProseMirrorNode | null = null;
+  doc.descendants((node: ProseMirrorNode, pos: number) => {
+    if (node.attrs.nodeId === id) {
+      foundNode = node;
+      return false; // stop searching
+    }
+  });
+  return foundNode;
 }
 
 // --- Public Store Export ---
@@ -156,7 +201,7 @@ export const cardEditorStore = {
   subscribe,
   open,
   close,
-  updateCardsInStore,
-  saveCardsToEditor,
-  prefillAndAddCard,
+  addCard,
+  updateCard,
+  deleteCard,
 };

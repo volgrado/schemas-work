@@ -30,6 +30,7 @@
   import { ttsStore } from '$lib/stores/ttsStore'; // Importar ttsStore
   import * as directoryService from '$lib/services/core/directoryService';
   import * as schemaService from '$lib/services/features/schemaService';
+  import { reviewStore } from '$lib/stores/reviewStore';
 
   // --- PROPS Y ESTADO LOCAL ---
   let { data }: { data: { showWelcome: boolean } } = $props();
@@ -37,7 +38,7 @@
   let showWelcome = $state(data.showWelcome);
   let isRevealingContent = $state(!data.showWelcome);
   let currentView = $state<'editor' | 'tree'>('editor');
-  let nodeToFocus: number | null = $state(null);
+  let nodeToFocus = $state<number | null>(null);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
   // --- ESTADO DERIVADO REACTIVO (CON REACTIVIDAD EXPLÍCITA) ---
@@ -49,27 +50,18 @@
   $effect(() => {
     // 1. Dependencia explícita: Svelte re-ejecutará este bloque cuando `contentVersion` cambie.
     const version = $editorStore.contentVersion;
-    console.log(
-      `[page.svelte] $effect triggered by contentVersion change: ${version}`
-    );
 
     // 2. Obtenemos el `doc` más reciente del store.
     const currentDoc = $editorStore.doc;
 
     // 3. Si hay un documento, recalculamos el árbol.
     if (currentDoc) {
-      console.log('[page.svelte] Recalculando treeData...');
       const newTreeData = schemaService.documentToTreeData(currentDoc);
       treeData = newTreeData;
     } else {
       // 4. Si no hay documento, nos aseguramos de que el árbol esté vacío.
       treeData = null;
     }
-  });
-
-  $effect(() => {
-    // Este efecto depende de `treeData`. Se ejecutará cada vez que `treeData` sea reasignado.
-    console.log('[page.svelte] La prop treeData ha cambiado:', treeData);
   });
 
   // *** LÓGICA DE RESALTADO SINCRONIZADO ***
@@ -88,15 +80,13 @@
 
   // --- EFECTOS SECUNDARIOS Y CICLO DE VIDA ---
 
-  // Efecto para la carga inicial del documento cuando se omite la bienvenida.
-  $effect(() => {
+  onMount(() => {
+    // CORRECCIÓN: La carga inicial se mueve a onMount para garantizar que el entorno
+    // del navegador esté completamente listo, evitando condiciones de carrera con IndexedDB.
     if (!showWelcome) {
       loadInitialDocument();
     }
-  });
 
-  // onMount para añadir listeners que no dependen del estado de Svelte.
-  onMount(() => {
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -113,6 +103,8 @@
     localStorage.setItem('schemas-work-has-seen-welcome', 'true');
     showWelcome = false;
     isRevealingContent = true;
+    // La carga del documento se dispara aquí después de la animación de bienvenida.
+    await loadInitialDocument();
   }
 
   function handleShowWelcome() {
@@ -140,7 +132,10 @@
     const node = editor.state.doc.nodeAt(pos);
     if (!node) return;
 
-    cardEditorStore.open(pos, node.attrs.cards || []);
+    const nodeId = node.attrs.nodeId;
+    if (!nodeId) return;
+
+    cardEditorStore.open(nodeId);
   }
 
   function openCommandBar() {
@@ -189,7 +184,7 @@
       <Button
         variant="secondary"
         size="sm"
-        on:click={() =>
+        onclick={() =>
           (currentView = currentView === 'editor' ? 'tree' : 'editor')}
         aria-label={currentView === 'editor'
           ? 'Cambiar a vista de árbol'
@@ -208,7 +203,7 @@
   <WelcomeAnimator on:animationComplete={onAnimationComplete} />
 {/if}
 
-<div class="view-wrapper">
+<div class="view-wrapper" class:is-reviewing={$reviewStore.isReviewing}>
   {#if !showWelcome && currentView === 'editor'}
     <div class="editor-background-canvas">
       <OrganicCanvas />
@@ -303,6 +298,14 @@
 {/if}
 
 <style>
+  .view-wrapper.is-reviewing .main-content,
+  .view-wrapper.is-reviewing .tree-view-content,
+  :global(.app-header) {
+    /* Oculta el contenido principal durante el modo de repaso inmersivo */
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .editor-background-canvas {
     position: fixed;
     inset: 0;
@@ -342,6 +345,7 @@
     position: relative;
     width: 100%;
     height: 100vh;
+    transition: opacity 0.3s ease; /* Transición para el modo inmersivo */
   }
   .view-content {
     position: absolute;
@@ -356,6 +360,7 @@
   :global(.app-header) {
     opacity: 0;
     will-change: transform, opacity;
+    transition: opacity 0.3s ease; /* Transición para el modo inmersivo */
   }
   .main-content.reveal,
   .tree-view-content.reveal {

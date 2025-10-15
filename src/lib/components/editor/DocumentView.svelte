@@ -25,6 +25,7 @@
   import { DynamicHighlighter } from '$lib/editor/extensions/DynamicHighlighter';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
   import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
+  import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
 
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
@@ -109,6 +110,7 @@
         RoleExtension,
         SmartEnter,
         PositionSyncExtension,
+        NodeIdExtension, // <<< AÑADIDO: La nueva extensión para IDs únicos
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             if (node.type.name === 'heading' && node.attrs.level === 1) {

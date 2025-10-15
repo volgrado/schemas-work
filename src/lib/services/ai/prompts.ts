@@ -1,9 +1,11 @@
 /**
- * @file Prompt Library V4.1 - Tiptap-oriented and Pedagogical
+ * @file Prompt Library V5.0 - Multi-Card & BYOK Focused
  *
  * Contains all the necessary prompts for the application's AI functionalities,
- * including creation, expansion, tone editing, and card generation.
+ * including schema creation and advanced, multi-format card generation.
+ * This version is optimized for a "Bring Your Own Key" (BYOK) workflow.
  */
+import type { Card, CardType } from '$lib/types';
 
 /**
  * Prompt for creating a new schema from unstructured text, outputting Tiptap JSON.
@@ -114,53 +116,115 @@ Now, expand the concept provided in the context."
 `;
 
 /**
- * Prompt for changing the tone of a given text.
+ * V2: Generates a variety of study cards from a given text.
+ * Instructs the AI to create different card types for a richer learning experience.
  */
-export const CHANGE_TONE_PROMPT_V2 = `
-**ROLE AND OBJECTIVE:**
-You are a Master of Communication and a professional editor. Your special skill is to adapt any message to a specific audience without losing its essential meaning. Your goal is to rewrite the provided text to adopt a **{{TONE}}** tone, keeping the central information and logical structure intact.
+export const GENERATE_FLASHCARDS_V2_PROMPT = `
+You are an expert in learning science and active recall. Based on the following text, generate 2-3 key study cards using different formats.
 
-**TASK:**
-Rewrite the text inside the <TEXT> tag to the requested tone.
-
-**RULES AND CONSTRAINTS:**
-1.  Your response MUST be a valid JSON object with a single key "rewrittenText".
-2.  **Preservation of meaning:** The main message, data, and arguments of the original text must be preserved. Only change the style, vocabulary, and sentence structure.
-3.  **Consistency:** The tone must be consistent throughout the rewritten text.
-
-**OUTPUT FORMAT:**
+Your response must be ONLY a valid JSON object, an array of card objects that follow this TypeScript interface:
 \`\`\`typescript
-interface AIToneChangeResponse {
-  rewrittenText: string;
+type Card = BasicCard | InputCard | SequencingCard;
+
+interface BasicCard {
+  type: 'basic';
+  content: {
+    question: string;
+    answer: string;
+  };
+}
+
+interface InputCard {
+  type: 'input';
+  content: {
+    prompt: string; // e.g., "The capital of France is {{...}}"
+    expected: string; // e.g., "Paris"
+  };
+}
+
+interface SequencingCard {
+  type: 'sequencing';
+  content: {
+    prompt: string; // e.g., "Order the planets from the sun:"
+    items: string[]; // e.g., ["Mercury", "Venus", "Earth", "Mars"]
+  };
 }
 \`\`\`
 
-**BEGIN TASK:**
-
-**Requested tone:** {{TONE}}
-
-<TEXT>
-{{TEXT_INPUT}}
-</TEXT>
-`;
-
-/**
- * Prompt for generating study flashcards from a given text.
- */
-export const GENERATE_FLASHCARDS_PROMPT = `
-You are an expert in learning techniques like active recall. Based on the following text, generate 2 or 3 key questions and answers to create study cards.
-
-Your response must be ONLY a valid JSON object, an array of objects that follows this TypeScript interface:
-\`\`\`typescript
-interface DomainCard {
-  q: string; // The question
-  a: string; // The answer
-}
-type AIFlashcardResponse = DomainCard[];
-\`\`\`
+**RULES:**
+1.  Vary the card types. Create at least one 'basic' and one 'input' or 'sequencing' card if possible.
+2.  For 'input' cards, the prompt MUST include "{{...}}" where the answer should go.
+3.  For 'sequencing' cards, the 'items' array MUST be in the correct order.
 
 Base text for the cards:
 ---
 {{NODE_TEXT}}
 ---
 `;
+
+/**
+ * Generates a prompt for creating a single, specific type of card.
+ * @param type The type of card to create.
+ * @param text The source text for the card.
+ * @returns A formatted prompt string.
+ */
+export function getSpecificCardPrompt(type: CardType, text: string): string {
+  switch (type) {
+    case 'input':
+      return `Based on the text below, create ONE study card where the user must type the answer.
+Your response MUST be ONLY a valid JSON object following this interface:
+\`\`\`typescript
+interface InputCard {
+  type: 'input';
+  content: {
+    prompt: string; // "The main idea is {{...}}"
+    expected: string;
+  };
+}
+\`\`\`
+RULES: The 'prompt' MUST include "{{...}}" as a placeholder.
+
+TEXT:
+---
+${text}
+---`;
+
+    case 'sequencing':
+      return `Based on the text below, create ONE study card where the user must order a sequence of items.
+Your response MUST be ONLY a valid JSON object following this interface:
+\`\`\`typescript
+interface SequencingCard {
+  type: 'sequencing';
+  content: {
+    prompt: string; // "Order the steps:"
+    items: string[]; // ["Step 1", "Step 2", "Step 3"]
+  };
+}
+\`\`\`
+RULES: The 'items' array must contain the items in the CORRECT order.
+
+TEXT:
+---
+${text}
+---`;
+
+    case 'basic':
+    default:
+      return `Based on the text below, create ONE basic question and answer study card.
+Your response MUST be ONLY a valid JSON object following this interface:
+\`\`\`typescript
+interface BasicCard {
+  type: 'basic';
+  content: {
+    question: string;
+    answer: string;
+  };
+}
+\`\`\`
+
+TEXT:
+---
+${text}
+---`;
+  }
+}
