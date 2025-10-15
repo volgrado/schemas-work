@@ -22,8 +22,10 @@ export const SlashCommandExtension = Extension.create<
         allowedPrefixes: null,
 
         items: ({ query }) => {
-          return getCommands().filter((item) =>
-            item.title.toLowerCase().startsWith(query.toLowerCase())
+          return getCommands().filter(
+            (item) =>
+              item.title.toLowerCase().startsWith(query.toLowerCase()) ||
+              item.description.toLowerCase().includes(query.toLowerCase())
           );
         },
 
@@ -34,18 +36,16 @@ export const SlashCommandExtension = Extension.create<
         render: () => {
           return {
             onStart: (props: SuggestionProps<CommandItem>) => {
-              // --- CORRECCIÓN FINAL AQUÍ ---
-              // Usamos `?? null` para asegurar que si props.clientRect es `undefined` o `null`,
-              // pasamos `null` a nuestro store. Si es una función, la pasamos tal cual.
               slashMenuStore.open(
                 props.items,
                 props.clientRect ?? null,
-                props.command
+                props.command,
+                props.query
               );
             },
 
             onUpdate: (props: SuggestionProps<CommandItem>) => {
-              slashMenuStore.updateItems(props.items);
+              slashMenuStore.updateItems(props.items, props.query);
             },
 
             onKeyDown: (props: SuggestionKeyDownProps): boolean => {
@@ -55,6 +55,14 @@ export const SlashCommandExtension = Extension.create<
               }
               if (props.event.key === 'ArrowDown') {
                 slashMenuStore.moveSelection(1);
+                return true;
+              }
+              if (props.event.key === 'ArrowLeft') {
+                slashMenuStore.moveGroup(-1);
+                return true;
+              }
+              if (props.event.key === 'ArrowRight') {
+                slashMenuStore.moveGroup(1);
                 return true;
               }
               if (props.event.key === 'Enter') {

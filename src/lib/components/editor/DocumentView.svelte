@@ -18,6 +18,8 @@
   import Paragraph from '@tiptap/extension-paragraph';
   import ListItem from '@tiptap/extension-list-item';
   import BulletList from '@tiptap/extension-bullet-list';
+  import OrderedList from '@tiptap/extension-ordered-list';
+  import HorizontalRule from '@tiptap/extension-horizontal-rule';
 
   // --- Tiptap Extensions (Personalizadas) ---
   import { RoleExtension } from '$lib/editor/extensions/RoleExtension';
@@ -31,9 +33,6 @@
   import { editorStore } from '$lib/stores/editorStore';
   import { documentStore } from '$lib/stores/documentStore';
   import { debounce } from '$lib/utils/debounce';
-
-  // --- Componentes de UI ---
-  import BubbleMenu from './BubbleMenu.svelte';
 
   // --- Props y Eventos ---
   let {
@@ -56,14 +55,12 @@
 
     const firstNode = editorInstance.state.doc.firstChild;
 
-    // ✅ CORRECCIÓN: Ahora comprobamos el tipo Y el nivel del heading.
-    // Buscamos explícitamente un `h2` como primer nodo.
     if (
       firstNode &&
       firstNode.type.name === 'heading' &&
-      firstNode.attrs.level === 2
+      firstNode.attrs.level === 1
     ) {
-      const newTitle = firstNode.textContent.trim() || 'Esquema sin título'; // Usamos un fallback
+      const newTitle = firstNode.textContent.trim() || 'Esquema sin título';
 
       const currentTitleInStore = get(documentStore).metadata?.title;
 
@@ -71,8 +68,6 @@
         documentStore.updateTitle(newTitle);
       }
     } else {
-      // (Opcional) Si el primer nodo NO es un h2, podríamos considerar que el título está vacío.
-      // Esto previene que el título se quede "pegado" si el usuario borra el h2.
       const currentTitleInStore = get(documentStore).metadata?.title;
       if (currentTitleInStore !== 'Esquema sin título') {
         documentStore.updateTitle('Esquema sin título');
@@ -103,6 +98,8 @@
         Paragraph,
         ListItem,
         BulletList,
+        OrderedList,
+        HorizontalRule,
         Text,
         Heading.configure({ levels: [1, 2, 3] }),
         Bold,
@@ -110,7 +107,7 @@
         RoleExtension,
         SmartEnter,
         PositionSyncExtension,
-        NodeIdExtension, // <<< AÑADIDO: La nueva extensión para IDs únicos
+        NodeIdExtension,
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             if (node.type.name === 'heading' && node.attrs.level === 1) {
@@ -119,7 +116,7 @@
             if (node.type.name === 'paragraph' && !node.textContent) {
               const parent = editor.state.doc.resolve(pos).parent;
               if (parent.firstChild === node) {
-                return 'Escribe un término... (usa Tab para anidar)';
+                return 'Escribe un término... (usa / para comandos)';
               }
             }
             if (
@@ -144,7 +141,7 @@
       onUpdate({ editor: updatedEditor }) {
         syncTitleWithStore(updatedEditor);
 
-        const { selection } = updatedEditor.state; // Solo necesitamos `selection` aquí
+        const { selection } = updatedEditor.state;
         const listItemNode = findParentNode(
           (node) => node.type.name === 'listItem'
         )(selection);
@@ -152,57 +149,43 @@
 
         editorStore.update((s) => ({
           ...s,
-          // ✅ CORRECCIÓN: Usamos la referencia directa al doc del editor actualizado
           doc: updatedEditor.state.doc,
           selectedNodePos: newSelectedPos,
           contentVersion: s.contentVersion + 1,
         }));
       },
-      // onSelectionUpdate puede seguir siendo una optimización, pero la mantenemos fiel a tu original
-      // para evitar confusiones. Si todo está en onUpdate, también funciona.
     });
 
     editor = editorInstance;
 
-    // Sincronización inicial al cargar
     syncTitleWithStore(editor);
 
-    // Manejo del contenido inicial
     if (initialContent) {
       editor.commands.setContent(initialContent, { emitUpdate: false });
       documentStore.clearInitialContent();
     }
 
-    // ✅ 2. MÉTODO CORRECTO PARA PUBLICAR LA INSTANCIA (fiel a tu código)
     editorStore.update((s) => ({ ...s, instance: editor }));
 
-    // ✅ 3. FUNCIÓN DE LIMPIEZA FIEL A TU LÓGICA `onDestroy`
     return () => {
       if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
-      // Reseteamos el store a un estado completo y conocido.
       editorStore.set({
         instance: null,
         selectedNodePos: null,
         contentVersion: 0,
-        doc: null, // <-- AÑADIR ESTA LÍNEA
+        doc: null,
       });
     };
   });
 </script>
 
-{#if editor}
-  <BubbleMenu {editor} />
-{/if}
-
-<!-- CAMBIO: Envolver el editor en un contenedor para el layout -->
 <div class="document-layout-container">
   <div bind:this={element}></div>
 </div>
 
 <style>
-  /* NUEVO: Contenedor para alinear el documento */
   .document-layout-container {
     width: 100%;
     max-width: 960px; /* Alineado con el header */
@@ -215,13 +198,10 @@
     color: var(--color-text);
     max-width: 720px;
     margin: 0 auto;
-    /* CAMBIO: Padding ahora está dentro de la "hoja" */
     padding: var(--space-xl) var(--space-xxl);
     min-height: 100vh;
     outline: none;
     background-color: var(--color-background);
-
-    /* CAMBIO: Estilos para crear el efecto "hoja de papel" */
     border-radius: var(--space-sm);
     border: 1px solid var(--color-gray-100);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -234,7 +214,6 @@
     }
   }
 
-  /* Ajuste para pantallas pequeñas */
   @media (max-width: 960px) {
     .document-layout-container {
       padding: var(--space-xl) 0 50vh 0;
@@ -253,7 +232,7 @@
 
   :global(.prose h1) {
     font-size: 2.25rem;
-    margin-top: 0; /* Ajustado porque el padding superior ya da espacio */
+    margin-top: 0;
     margin-bottom: var(--space-md);
   }
 
@@ -261,6 +240,18 @@
     font-size: 1.5rem;
     margin-top: var(--space-lg);
     margin-bottom: var(--space-sm);
+  }
+
+  :global(.prose h3) {
+    font-size: 1.25rem;
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+  }
+
+  :global(.prose hr) {
+    border: none;
+    border-top: 1px solid var(--color-gray-200);
+    margin: var(--space-lg) 0;
   }
 
   :global(.prose .is-empty::before) {

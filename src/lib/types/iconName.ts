@@ -37,4 +37,6 @@ export type IconName =
   | 'bold'
   | 'italic'
   | 'list'
-  | 'type';
+  | 'type'
+  // NEW
+  | 'minus'; // For Horizontal Rule

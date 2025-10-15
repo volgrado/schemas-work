@@ -13,22 +13,40 @@ import type { TreeNodeData } from '$lib/types/tree';
  * @returns {TreeNodeData | null} A TreeNodeData object representing the schema hierarchy, or null if it cannot be generated.
  */
 export function documentToTreeData(
-  doc: ProseMirrorNode | null,
+  doc: ProseMirrorNode | null
 ): TreeNodeData | null {
   if (!doc || doc.childCount === 0) {
     return null;
   }
 
   let title = 'Schema (untitled)';
+  let titleFound = false;
+
+  // First pass: Look for an H1
   doc.descendants((node) => {
-    if (node.type.name === 'heading' && node.attrs.level === 2) {
+    if (node.type.name === 'heading' && node.attrs.level === 1) {
       if (node.textContent.trim()) {
         title = node.textContent.trim();
-        return false; // Stop searching once found
+        titleFound = true;
+        return false; // Stop searching
       }
     }
-    return true;
+    return !titleFound;
   });
+
+  // Second pass (fallback): If no H1 was found, look for an H2
+  if (!titleFound) {
+    doc.descendants((node) => {
+      if (node.type.name === 'heading' && node.attrs.level === 2) {
+        if (node.textContent.trim()) {
+          title = node.textContent.trim();
+          titleFound = true;
+          return false; // Stop searching
+        }
+      }
+      return !titleFound;
+    });
+  }
 
   let mainList: ProseMirrorNode | undefined;
   const topLevelLists: ProseMirrorNode[] = [];
@@ -40,7 +58,7 @@ export function documentToTreeData(
 
   if (topLevelLists.length > 0) {
     mainList = topLevelLists.reduce((prev, current) =>
-      prev.childCount > current.childCount ? prev : current,
+      prev.childCount > current.childCount ? prev : current
     );
   } else {
     doc.descendants((node) => {
@@ -123,7 +141,7 @@ export function documentToTreeData(
  */
 export function getBreadcrumbForPosition(
   doc: ProseMirrorNode,
-  pos: number,
+  pos: number
 ): string {
   const path: string[] = [];
   const resolvedPos = doc.resolve(pos);

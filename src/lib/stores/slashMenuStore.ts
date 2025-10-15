@@ -6,27 +6,27 @@ import type { CommandItem } from '$lib/editor/slashCommands';
  * Defines the shape of the state for the slash command menu.
  */
 interface SlashMenuState {
-  /** Indicates whether the menu is open. */
   isOpen: boolean;
-  /** The list of command items to display. */
-  items: CommandItem[];
-  /** The index of the currently selected item. */
+  allItems: CommandItem[];
+  filteredItems: CommandItem[];
+  groups: string[];
+  activeGroupIndex: number;
   selectedIndex: number;
-  /** A function that returns the DOMRect of the cursor position. */
   clientRect: (() => DOMRect | null) | null;
-  /** The function to execute when a command is selected. */
   commandToExecute: ((item: CommandItem) => void) | null;
+  query: string;
 }
 
-/**
- * The initial state for the slash menu.
- */
 const initialState: SlashMenuState = {
   isOpen: false,
-  items: [],
+  allItems: [],
+  filteredItems: [],
+  groups: [],
+  activeGroupIndex: 0,
   selectedIndex: 0,
   clientRect: null,
   commandToExecute: null,
+  query: '',
 };
 
 /**
@@ -36,94 +36,102 @@ const initialState: SlashMenuState = {
 function createSlashMenuStore() {
   const { subscribe, update, set } = writable<SlashMenuState>(initialState);
 
+  const filterAndSetItems = (state: SlashMenuState): SlashMenuState => {
+    const activeGroup = state.groups[state.activeGroupIndex];
+    const filteredItems = state.allItems.filter(
+      (item) => item.group === activeGroup
+    );
+    return { ...state, filteredItems, selectedIndex: 0 };
+  };
+
   return {
     subscribe,
 
-    /**
-     * Opens the slash menu with a list of items and a command to execute.
-     * @param {CommandItem[]} items - The command items to display.
-     * @param {(() => DOMRect | null) | null} clientRect - A function to get the cursor's position.
-     * @param {(item: CommandItem) => void} command - The function to call when an item is selected.
-     */
     open: (
       items: CommandItem[],
       clientRect: (() => DOMRect | null) | null,
       command: (item: CommandItem) => void,
+      query: string
     ) => {
-      update((state) => ({
-        ...state,
+      const groups = [...new Set(items.map((item) => item.group))];
+      const newState = filterAndSetItems({
+        ...initialState,
         isOpen: true,
-        items,
+        allItems: items,
+        groups,
+        activeGroupIndex: 0,
         clientRect,
         commandToExecute: command,
-        selectedIndex: 0,
-      }));
+        query,
+      });
+      set(newState);
     },
 
-    /**
-     * Closes the slash menu and resets its state.
-     */
-    close: () => {
-      set(initialState);
+    close: () => set(initialState),
+
+    updateItems: (newItems: CommandItem[], query: string) => {
+      update((state) => {
+        const groups = [...new Set(newItems.map((item) => item.group))];
+        const activeGroupIndex =
+          state.activeGroupIndex >= groups.length ? 0 : state.activeGroupIndex;
+        const newState = filterAndSetItems({
+          ...state,
+          allItems: newItems,
+          groups,
+          activeGroupIndex,
+          query,
+        });
+        return newState;
+      });
     },
 
-    /**
-     * Updates the list of items in the menu.
-     * @param {CommandItem[]} newItems - The new list of command items.
-     */
-    updateItems: (newItems: CommandItem[]) => {
-      update((state) => ({
-        ...state,
-        items: newItems,
-        selectedIndex:
-          state.selectedIndex >= newItems.length ? 0 : state.selectedIndex,
-      }));
-    },
-
-    /**
-     * Moves the selection up or down the list.
-     * @param {1 | -1} direction - The direction to move (-1 for up, 1 for down).
-     */
     moveSelection: (direction: 1 | -1) => {
       update((state) => {
-        if (state.items.length === 0) return state;
+        if (state.filteredItems.length === 0) return state;
         const newIndex =
-          (state.selectedIndex + state.items.length + direction) %
-          state.items.length;
+          (state.selectedIndex + state.filteredItems.length + direction) %
+          state.filteredItems.length;
         return { ...state, selectedIndex: newIndex };
       });
     },
 
-    /**
-     * Executes the currently selected command and closes the menu.
-     */
-    triggerCommand: () => {
+    moveGroup: (direction: 1 | -1) => {
       update((state) => {
-        const item = state.items[state.selectedIndex];
-        if (item && state.commandToExecute) {
-          state.commandToExecute(item);
-        }
-        return initialState; // Close the menu after execution
+        if (state.groups.length <= 1) return state;
+        const newIndex =
+          (state.activeGroupIndex + state.groups.length + direction) %
+          state.groups.length;
+        return filterAndSetItems({ ...state, activeGroupIndex: newIndex });
       });
     },
 
-    /**
-     * Executes a command by its index and closes the menu.
-     * @param {number} index - The index of the command to trigger.
-     */
-    triggerCommandByIndex: (index: number) => {
+    setActiveGroup: (index: number) => {
       update((state) => {
-        const item = state.items[index];
+        if (index === state.activeGroupIndex) return state;
+        return filterAndSetItems({ ...state, activeGroupIndex: index });
+      });
+    },
+
+    triggerCommand: () => {
+      update((state) => {
+        const item = state.filteredItems[state.selectedIndex];
         if (item && state.commandToExecute) {
           state.commandToExecute(item);
         }
-        return initialState; // Close the menu after execution
+        return initialState;
+      });
+    },
+
+    triggerCommandByIndex: (index: number) => {
+      update((state) => {
+        const item = state.filteredItems[index];
+        if (item && state.commandToExecute) {
+          state.commandToExecute(item);
+        }
+        return initialState;
       });
     },
   };
 }
 
-/**
- * The exported instance of the slash menu store.
- */
 export const slashMenuStore = createSlashMenuStore();

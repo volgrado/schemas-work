@@ -10,6 +10,7 @@ import { toast } from 'svelte-sonner';
 import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
 import type { Unsubscriber } from 'svelte/store';
+import type { Editor } from '@tiptap/core';
 
 // --- Types ---
 
@@ -67,6 +68,98 @@ const store = writable<TTSState>(initialState);
 const { subscribe, update, set } = store;
 let unsubscribeFromEditor: Unsubscriber | null = null;
 
+// --- Helper Function ---
+
+/**
+ * Scans the editor document and extracts all readable nodes (headings and list items)
+ * in the order they appear.
+ * @param editor The Tiptap editor instance.
+ * @returns An array of readable nodes.
+ */
+function getReadableNodes(editor: Editor): ReadableNode[] {
+  const nodes: ReadableNode[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    // Process Headings (h1, h2, h3, etc.)
+    if (node.type.name === 'heading' && node.textContent.trim()) {
+      const text = node.textContent.trim();
+      const wordMap: WordSegment[] = [];
+      const words = text.match(/\S+/g) || [];
+      let currentIndex = 0;
+      const textStartPos = pos + 1;
+
+      words.forEach((word) => {
+        const wordIndex = text.indexOf(word, currentIndex);
+        if (wordIndex !== -1) {
+          wordMap.push({
+            word,
+            from: textStartPos + wordIndex,
+            to: textStartPos + wordIndex + word.length,
+          });
+          currentIndex = wordIndex + word.length;
+        }
+      });
+
+      nodes.push({
+        pos,
+        node,
+        title: text,
+        textToSpeak: text,
+        wordMap,
+      });
+      // Don't descend into heading's children (just text nodes)
+      return false;
+    }
+
+    // Process ListItems
+    if (node.type.name === 'listItem' && node.textContent.trim()) {
+      const wordMap: WordSegment[] = [];
+      let title = '';
+      let fullText = '';
+
+      node.forEach((child, offset) => {
+        if (child.type.name === 'paragraph' && child.textContent.trim()) {
+          const paragraphText = child.textContent;
+          const paragraphStartPos = pos + 1 + offset;
+
+          if (!title) {
+            title = paragraphText.trim();
+          }
+
+          const words = paragraphText.match(/\S+/g) || [];
+          let currentIndex = 0;
+          words.forEach((word) => {
+            const wordIndex = paragraphText.indexOf(word, currentIndex);
+            if (wordIndex !== -1) {
+              wordMap.push({
+                word,
+                from: paragraphStartPos + wordIndex,
+                to: paragraphStartPos + wordIndex + word.length,
+              });
+              currentIndex = wordIndex + word.length;
+            }
+          });
+
+          fullText += paragraphText.trim() + '. ';
+        }
+      });
+
+      if (wordMap.length > 0) {
+        nodes.push({
+          pos,
+          node,
+          title,
+          textToSpeak: fullText.trim(),
+          wordMap,
+        });
+      }
+      // Don't descend into listItem's children (nested lists will be found by the main loop)
+      return false;
+    }
+    return true;
+  });
+  return nodes;
+}
+
 // --- Actions ---
 
 async function startReading() {
@@ -83,52 +176,7 @@ async function startReading() {
     const editor = get(editorStore).instance;
     if (!editor) throw new Error('Editor not available.');
 
-    const nodes: ReadableNode[] = [];
-    editor.state.doc.descendants((node, pos) => {
-      if (node.type.name === 'listItem' && node.textContent.trim()) {
-        const wordMap: WordSegment[] = [];
-        let title = '';
-        let fullText = '';
-
-        node.forEach((child, offset) => {
-          if (child.type.name === 'paragraph' && child.textContent.trim()) {
-            const paragraphText = child.textContent;
-            const paragraphStartPos = pos + 1 + offset;
-
-            if (!title) {
-              title = paragraphText.trim();
-            }
-
-            // Split paragraph into words and create the map
-            const words = paragraphText.match(/\S+/g) || [];
-            let currentIndex = 0;
-            words.forEach((word) => {
-              const wordIndex = paragraphText.indexOf(word, currentIndex);
-              if (wordIndex !== -1) {
-                wordMap.push({
-                  word,
-                  from: paragraphStartPos + wordIndex,
-                  to: paragraphStartPos + wordIndex + word.length,
-                });
-                currentIndex = wordIndex + word.length;
-              }
-            });
-
-            fullText += paragraphText.trim() + '. ';
-          }
-        });
-
-        if (wordMap.length > 0) {
-          nodes.push({
-            pos,
-            node,
-            title,
-            textToSpeak: fullText.trim(),
-            wordMap,
-          });
-        }
-      }
-    });
+    const nodes = getReadableNodes(editor);
 
     if (nodes.length === 0) {
       toast.info('No readable content found in this document.');
@@ -145,6 +193,52 @@ async function startReading() {
       ...s,
       status: 'error',
       error: e.message || 'Could not start reading.',
+    }));
+  }
+}
+
+async function startReadingFromNode(nodeId: string) {
+  const currentStatus = get(store).status;
+  if (['playing', 'paused', 'initializing'].includes(currentStatus)) {
+    return;
+  }
+  update((s) => ({ ...s, status: 'initializing', error: null }));
+
+  try {
+    if (get(store).availableVoices.length === 0) await initialize();
+    if (get(store).status === 'error') return;
+
+    const editor = get(editorStore).instance;
+    if (!editor) throw new Error('Editor not available.');
+
+    const nodes = getReadableNodes(editor);
+
+    if (nodes.length === 0) {
+      toast.info('No readable content found in this document.');
+      set({ ...get(store), status: 'idle' });
+      return;
+    }
+
+    const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
+
+    if (startIndex === -1) {
+      toast.error('Could not find the selected node to start reading from.');
+      set({ ...get(store), status: 'idle' });
+      return;
+    }
+
+    ttsService.cancel();
+    update((s) => ({ ...s, nodesToRead: nodes, currentNodeIndex: startIndex }));
+    speakNodeAtIndex(startIndex);
+  } catch (e: any) {
+    errorService.reportError(e, {
+      operation: 'ttsStore.startReadingFromNode',
+      nodeId,
+    });
+    update((s) => ({
+      ...s,
+      status: 'error',
+      error: e.message || 'Could not start reading from the selected node.',
     }));
   }
 }
@@ -210,7 +304,6 @@ function handleWordBoundary(
   const currentNodeInfo = state.nodesToRead[state.currentNodeIndex];
   if (!currentNodeInfo) return;
 
-  // Find which word index we are on
   const spokenText = fullText.substring(0, event.charIndex);
   const wordIndex = (spokenText.match(/\S+/g) || []).length;
 
@@ -389,6 +482,7 @@ export const ttsStore = {
   subscribe,
   initialize,
   startReading,
+  startReadingFromNode,
   stopReading: () => stopReading(true),
   pauseReading,
   resumeReading,

@@ -35,6 +35,7 @@
     FastForwardIcon,
     SkipBackIcon,
     SkipForwardIcon,
+    MinusIcon, // <-- AÑADIDO
   } from 'svelte-feather-icons';
 
   const icons: Record<string, any> = {
@@ -70,6 +71,7 @@
     // REMEDIATION: New icons for navigation controls
     'skip-back': SkipBackIcon,
     'skip-forward': SkipForwardIcon,
+    minus: MinusIcon, // <-- AÑADIDO
   };
 
   export let name: keyof typeof icons;

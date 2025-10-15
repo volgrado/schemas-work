@@ -136,12 +136,11 @@ body {
   background-color: var(--color-accent);
   color: #ffffff;
 }
-@media (prefers-color-scheme: dark) {
-  ::selection,
-  ::-moz-selection {
-    color: var(--color-background);
-  }
-}
+/*
+  FIX: The dark mode override for selection color was removed.
+  The default `color: #ffffff` provides good contrast against the
+  accent color in both light and dark themes, solving the invisibility issue.
+*/
 
 /* 6. COMPONENTS
    ========================================================================== */
@@ -152,6 +151,22 @@ body {
  * -------------------------------------------------------------------------- */
 .prose {
   caret-color: var(--color-accent);
+}
+
+/* FIX: Explicitly style selection within the editor for higher specificity. */
+.prose ::selection {
+  background-color: var(--color-accent);
+  color: #ffffff !important; /* Use !important to override any conflicting styles */
+}
+.prose ::-moz-selection {
+  background-color: var(--color-accent);
+  color: #ffffff !important;
+}
+
+/* FIX: Add styles for Tiptap's selection decoration class. */
+.prose .selection {
+  background-color: hsl(var(--color-accent-hsl) / 0.3);
+  border-radius: 3px;
 }
 
 :global(.prose p[data-role='term']),
@@ -277,6 +292,9 @@ body {
 }
 .is-reviewing .prose .is-current-review-node {
   opacity: 1;
+  /* ADDED: Apply consistent background highlight */
+  background-color: hsl(var(--color-accent-hsl) / 0.1);
+  border-radius: var(--space-sm);
 }
 
 /* --- Read Aloud Mode State --- */
@@ -292,10 +310,17 @@ body {
 }
 
 .is-current-tts-node {
-  background-color: hsl(var(--color-accent-hsl, 16 84% 53%) / 0.1);
+  background-color: hsl(var(--color-accent-hsl) / 0.1);
   border-radius: var(--space-sm);
 }
 .is-current-tts-word {
-  background-color: hsl(var(--color-accent-hsl, 16 84% 53%) / 0.25);
+  background-color: hsl(var(--color-accent-hsl) / 0.25);
   border-radius: 4px;
+}
+
+/* ADDED: Style for Tiptap/ProseMirror's default node selection */
+.prose .ProseMirror-selectednode {
+  background-color: hsl(var(--color-accent-hsl) / 0.1);
+  border-radius: var(--space-sm);
+  outline: 2px solid var(--color-accent);
 }
