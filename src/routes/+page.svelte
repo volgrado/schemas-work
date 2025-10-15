@@ -1,4 +1,4 @@
-<!-- src/routes/+page.svelte (VERSIÓN COMPLETA, DECLARATIVA Y ROBUSTA) -->
+<!-- src/routes/+page.svelte (VERSIÓN COMPLETA, CORREGIDA Y ROBUSTA) -->
 <script lang="ts">
   // --- Svelte Core y Entorno ---
   import { onMount } from 'svelte';
@@ -298,10 +298,21 @@
 {/if}
 
 <style>
+  /*
+	  CORRECCIÓN: Se han separado las reglas. El selector `:global(.app-header)`
+	  ya no está agrupado con una coma, lo que causaba que siempre tuviera
+	  `pointer-events: none`. Ahora, el encabezado solo se ocultará cuando
+	  el modo de repaso esté activo.
+	*/
   .view-wrapper.is-reviewing .main-content,
-  .view-wrapper.is-reviewing .tree-view-content,
-  :global(.app-header) {
+  .view-wrapper.is-reviewing .tree-view-content {
     /* Oculta el contenido principal durante el modo de repaso inmersivo */
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* AÑADIDO: Regla específica para ocultar el header durante el repaso */
+  .view-wrapper.is-reviewing + :global(.app-header) {
     opacity: 0;
     pointer-events: none;
   }
