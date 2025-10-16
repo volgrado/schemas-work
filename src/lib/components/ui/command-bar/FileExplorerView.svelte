@@ -24,10 +24,11 @@
   let error = $state<string | null>(null);
   let isProcessingAction = $state(false);
   let editingItemId = $state<string | null>(null);
-  let isCreatingFolder = $state(false);
-  let newFolderName = $state('');
-  let isCreatingSchema = $state(false);
-  let newSchemaName = $state('');
+
+  // --- Estado de Creación Unificado ---
+  let itemBeingCreated = $state<'schema' | 'folder' | null>(null);
+  let newItemName = $state('');
+
   let draggedItemId = $state<string | null>(null);
   let dropTargetId = $state<string | null>(null);
   let contextMenu = $state<{
@@ -39,10 +40,9 @@
   // --- ESTADO PARA LA ANIMACIÓN DE ERROR ---
   let inputError = $state(false);
 
-  // Referencias al DOM (la advertencia 'non_reactive_update' es un falso positivo aquí)
+  // Referencias al DOM
   let renameInput: HTMLInputElement;
-  let newFolderInput: HTMLInputElement;
-  let newSchemaInput: HTMLInputElement;
+  let newItemInput: HTMLInputElement;
 
   // --- Efectos ---
   $effect(() => {
@@ -80,87 +80,53 @@
     }
   }
 
-  // --- Lógica de Creación ---
-  async function startCreatingSchema() {
+  // --- Lógica de Creación Unificada ---
+  async function startCreatingItem(type: 'schema' | 'folder') {
     if (isProcessingAction) return;
-    isCreatingSchema = true;
+    itemBeingCreated = type;
     await tick();
-    newSchemaInput?.focus();
+    newItemInput?.focus();
   }
 
-  async function commitNewSchema() {
-    const schemaName = newSchemaName.trim();
-    if (!schemaName) {
-      isCreatingSchema = false;
-      newSchemaName = '';
+  async function commitNewItem() {
+    const name = newItemName.trim();
+    const type = itemBeingCreated;
+
+    // Resetea el estado de la UI inmediatamente para una respuesta más rápida
+    itemBeingCreated = null;
+    newItemName = '';
+
+    if (!name || !type || isProcessingAction) {
       return;
     }
-    if (isProcessingAction) return;
 
     isProcessingAction = true;
     try {
-      await documentStore.createNewDocument(
-        schemaName,
-        undefined,
-        currentParentId
-      );
-      toast.success(`Esquema "${schemaName}" creado.`);
-      commandBarStore.close();
-
-      isCreatingSchema = false;
-      newSchemaName = '';
-    } catch (e: any) {
-      toast.error(e.message || 'No se pudo crear el esquema.');
-      errorService.reportError(e, { operation: 'commitNewSchema', schemaName });
-
-      isProcessingAction = false;
-      inputError = true;
-      await tick();
-      newSchemaInput?.focus();
-      newSchemaInput?.select();
-      setTimeout(() => (inputError = false), 500);
-    } finally {
-      if (isCreatingSchema !== true) {
-        isProcessingAction = false;
+      if (type === 'folder') {
+        await directoryService.createFolder(name, currentParentId);
+        toast.success(`Carpeta "${name}" creada.`);
+        await fetchItemsForParent(currentParentId); // Refresca la lista
+      } else {
+        // type === 'schema'
+        await documentStore.createNewDocument(name, undefined, currentParentId);
+        toast.success(`Esquema "${name}" creado.`);
+        commandBarStore.close(); // Cierra para abrir el nuevo esquema
       }
-    }
-  }
-
-  async function startCreatingFolder() {
-    if (isProcessingAction) return;
-    isCreatingFolder = true;
-    await tick();
-    newFolderInput?.focus();
-  }
-
-  async function commitNewFolder() {
-    const folderName = newFolderName.trim();
-    if (!folderName) {
-      isCreatingFolder = false;
-      newFolderName = '';
-      return;
-    }
-    if (isProcessingAction) return;
-
-    isProcessingAction = true;
-    try {
-      await directoryService.createFolder(folderName, currentParentId);
-      toast.success(`Carpeta "${folderName}" creada.`);
-      isCreatingFolder = false;
-      newFolderName = '';
-      await fetchItemsForParent(currentParentId);
     } catch (e: any) {
-      toast.error(e.message || 'No se pudo crear la carpeta.');
-      errorService.reportError(e, { operation: 'commitNewFolder', folderName });
+      toast.error(e.message || `No se pudo crear el ${type}.`);
+      errorService.reportError(e, { operation: 'commitNewItem', name, type });
 
-      isProcessingAction = false;
+      // Reabre el input para corrección en caso de error
+      itemBeingCreated = type;
+      newItemName = name;
       inputError = true;
       await tick();
-      newFolderInput?.focus();
-      newFolderInput?.select();
+      newItemInput?.focus();
+      newItemInput?.select();
       setTimeout(() => (inputError = false), 500);
     } finally {
-      if (isCreatingFolder !== true) {
+      // Solo finaliza el estado de procesamiento si no estamos en un reintento por error
+      if (itemBeingCreated === null) {
         isProcessingAction = false;
       }
     }
@@ -402,7 +368,7 @@
   </div>
   <div class="header-actions">
     <Button
-      onclick={startCreatingSchema}
+      onclick={() => startCreatingItem('schema')}
       size="sm"
       variant="secondary"
       disabled={isProcessingAction}
@@ -411,7 +377,7 @@
       <span>Nuevo Esquema</span>
     </Button>
     <Button
-      onclick={startCreatingFolder}
+      onclick={() => startCreatingItem('folder')}
       size="sm"
       variant="secondary"
       disabled={isProcessingAction}
@@ -424,13 +390,13 @@
 
 <div class="action-list list-view" role="list" ondragleave={handleDragLeave}>
   {#if isLoading}
-    <div class="state-message" transition:fade>
-      <Icon name="loader" size={24} class="spinner" />
+    <div class="state-message is-loading" transition:fade>
+      <Icon name="loader" size={24} />
       <span>Cargando...</span>
     </div>
   {:else if error}
     <div class="state-message error" transition:fade>{error}</div>
-  {:else if items.length === 0 && !isCreatingFolder && !isCreatingSchema}
+  {:else if items.length === 0 && !itemBeingCreated}
     <div class="state-message empty-state" transition:fade|local>
       <Icon name="folder" size={32} />
       <h3>Carpeta Vacía</h3>
@@ -438,43 +404,27 @@
     </div>
   {/if}
 
-  {#if isCreatingSchema}
+  {#if itemBeingCreated}
     <div class="schema-item editing" transition:slide|local>
       <div class="schema-edit-wrapper">
-        <Icon name="file-text" size={18} />
-        <input
-          type="text"
-          class="rename-input"
-          class:input-error={inputError}
-          placeholder="Nombre del esquema..."
-          bind:value={newSchemaName}
-          bind:this={newSchemaInput}
-          onblur={commitNewSchema}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') commitNewSchema();
-            if (e.key === 'Escape') isCreatingSchema = false;
-          }}
-          disabled={isProcessingAction}
+        <Icon
+          name={itemBeingCreated === 'folder' ? 'folder' : 'file-text'}
+          size={18}
         />
-      </div>
-    </div>
-  {/if}
-
-  {#if isCreatingFolder}
-    <div class="schema-item editing" transition:slide|local>
-      <div class="schema-edit-wrapper">
-        <Icon name="folder" size={18} />
         <input
           type="text"
           class="rename-input"
           class:input-error={inputError}
-          placeholder="Nombre de la carpeta..."
-          bind:value={newFolderName}
-          bind:this={newFolderInput}
-          onblur={commitNewFolder}
+          placeholder={`Nombre del ${itemBeingCreated}...`}
+          bind:value={newItemName}
+          bind:this={newItemInput}
+          onblur={commitNewItem}
           onkeydown={(e) => {
-            if (e.key === 'Enter') commitNewFolder();
-            if (e.key === 'Escape') isCreatingFolder = false;
+            if (e.key === 'Enter') commitNewItem();
+            if (e.key === 'Escape') {
+              itemBeingCreated = null;
+              newItemName = '';
+            }
           }}
           disabled={isProcessingAction}
         />
@@ -800,7 +750,7 @@
       transform: rotate(360deg);
     }
   }
-  .spinner {
+  .is-loading :global(.icon-wrapper) {
     animation: spin 1s linear infinite;
   }
 

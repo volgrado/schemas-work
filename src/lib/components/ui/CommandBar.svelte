@@ -49,6 +49,75 @@
 
   const state = commandBarStore;
 
+  // --- REFACTORIZACIÓN: Mapa de configuración para el Asistente de IA ---
+  // Se abstrae la lógica de configuración fuera del componente.
+  const aiHelperConfigs = {
+    'create-schema-from-text': {
+      title: 'Asistente: Crear Esquema desde Texto',
+      prompt: Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
+        '{{TEXT_INPUT}}',
+        'Pega aquí tu texto para convertirlo en un esquema auto-explicativo...'
+      ),
+      validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
+      onApply: (data: any) => {
+        const title = data.content?.[0]?.content?.[0]?.text || 'Nuevo Esquema';
+        const parentId = get(state).currentParentId;
+        documentStore.createNewDocument(title, data, parentId);
+        toast.success(`Esquema "${title}" creado con IA.`);
+      },
+    },
+    'expand-node': {
+      title: 'Asistente: Expandir Nodo',
+      prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL, // Prompt base
+      validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
+      onApply: (data: any) => {
+        const editorState = get(editorStore);
+        const editor = editorState.instance;
+        const currentPos = editorState.selectedNodePos;
+        const node =
+          editor && currentPos !== null
+            ? editor.state.doc.nodeAt(currentPos)
+            : null;
+        if (editor && node && currentPos !== null) {
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(currentPos + node.nodeSize - 1, data)
+            .run();
+          toast.success(`Nodo expandido con nuevas ideas.`);
+        }
+      },
+    },
+    'generate-flashcards': {
+      title: 'Asistente: Generar Tarjetas de Estudio',
+      prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Prompt base
+      validationSchema: aiSchemas.FlashcardResponseSchema,
+      onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
+        const editorState = get(editorStore);
+        const editor = editorState.instance;
+        const currentPos = editorState.selectedNodePos;
+        const node =
+          editor && currentPos !== null
+            ? editor.state.doc.nodeAt(currentPos)
+            : null;
+
+        if (!node?.attrs.nodeId) {
+          toast.error('No se puede generar tarjetas para un nodo sin ID.');
+          return;
+        }
+        try {
+          await cardService.addCards(node.attrs.nodeId, data);
+          toast.success(`${data.length} nuevas tarjetas generadas con IA.`);
+        } catch (err) {
+          errorService.reportError(err, {
+            operation: 'aiGenerateCards.onApply',
+          });
+          toast.error('No se pudieron guardar las tarjetas generadas.');
+        }
+      },
+    },
+  };
+
   // --- Estado y Lógica que PERMANECEN en el Shell ---
   let passwordInput = '';
   let helperConfig = {
@@ -64,7 +133,14 @@
     }
   }
 
+  // --- REFACTORIZACIÓN: Función de configuración simplificada ---
   function configureAiHelper(actionId: AiHelperAction) {
+    const config = aiHelperConfigs[actionId];
+    if (!config) return;
+
+    // Clonamos la configuración para no mutar el objeto original
+    let finalConfig = { ...config };
+
     const editorState = get(editorStore);
     const editor = editorState.instance;
     const currentPos = editorState.selectedNodePos;
@@ -73,86 +149,33 @@
         ? editor.state.doc.nodeAt(currentPos)
         : null;
 
-    switch (actionId) {
-      case 'create-schema-from-text':
-        helperConfig = {
-          title: 'Asistente: Crear Esquema desde Texto',
-          prompt: Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
-            '{{TEXT_INPUT}}',
-            'Pega aquí tu texto para convertirlo en un esquema auto-explicativo...'
-          ),
-          validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
-          onApply: (data: any) => {
-            const title =
-              data.content?.[0]?.content?.[0]?.text || 'Nuevo Esquema';
-
-            const parentId = get(state).currentParentId;
-
-            documentStore.createNewDocument(title, data, parentId);
-            toast.success(`Esquema "${title}" creado con IA.`);
-          },
-        };
-        break;
-
-      case 'expand-node':
-        if (!node || !editor || currentPos === null) {
-          toast.error(
-            'Para expandir, primero selecciona un nodo en el esquema.'
-          );
-          return;
-        }
-        const breadcrumb = schemaService.getBreadcrumbForPosition(
-          editor.state.doc,
-          currentPos
-        );
-        helperConfig = {
-          title: 'Asistente: Expandir Nodo',
-          prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL.replaceAll(
-            '{{NODE_TEXT}}',
-            node.textContent
-          ).replace('{{CONTEXT_BREADCRUMB}}', breadcrumb),
-          validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
-          onApply: (data: any) => {
-            editor
-              .chain()
-              .focus()
-              .insertContentAt(currentPos + node.nodeSize - 1, data)
-              .run();
-            toast.success(`Nodo expandido con nuevas ideas.`);
-          },
-        };
-        break;
-
-      case 'generate-flashcards':
-        if (!node) {
-          toast.error('Para generar tarjetas, primero selecciona un nodo.');
-          return;
-        }
-        helperConfig = {
-          title: 'Asistente: Generar Tarjetas de Estudio',
-          prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT.replace(
-            '{{NODE_TEXT}}',
-            node.textContent
-          ),
-          validationSchema: aiSchemas.FlashcardResponseSchema,
-          onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
-            if (!node?.attrs.nodeId) {
-              toast.error('No se puede generar tarjetas para un nodo sin ID.');
-              return;
-            }
-            try {
-              await cardService.addCards(node.attrs.nodeId, data);
-              toast.success(`${data.length} nuevas tarjetas generadas con IA.`);
-            } catch (err) {
-              errorService.reportError(err, {
-                operation: 'aiGenerateCards.onApply',
-              });
-              toast.error('No se pudieron guardar las tarjetas generadas.');
-            }
-          },
-        };
-        break;
+    // Lógica dinámica que depende del estado del editor
+    if (actionId === 'expand-node') {
+      if (!node || !editor || currentPos === null) {
+        toast.error('Para expandir, primero selecciona un nodo en el esquema.');
+        commandBarStore.closeAiHelper();
+        return;
+      }
+      const breadcrumb = schemaService.getBreadcrumbForPosition(
+        editor.state.doc,
+        currentPos
+      );
+      finalConfig.prompt = config.prompt
+        .replaceAll('{{NODE_TEXT}}', node.textContent)
+        .replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
+    } else if (actionId === 'generate-flashcards') {
+      if (!node) {
+        toast.error('Para generar tarjetas, primero selecciona un nodo.');
+        commandBarStore.closeAiHelper();
+        return;
+      }
+      finalConfig.prompt = config.prompt.replace(
+        '{{NODE_TEXT}}',
+        node.textContent
+      );
     }
+
+    helperConfig = finalConfig;
   }
 
   async function handlePasswordSubmit() {
