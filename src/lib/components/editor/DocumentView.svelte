@@ -28,6 +28,7 @@
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
   import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
+  import { CardIndicatorExtension } from '$lib/editor/extensions/CardIndicatorExtension'; // *** 1. IMPORTAMOS LA NUEVA EXTENSIÓN ***
 
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
@@ -108,6 +109,7 @@
         SmartEnter,
         PositionSyncExtension,
         NodeIdExtension,
+        CardIndicatorExtension, // *** 2. AÑADIMOS LA EXTENSIÓN AL EDITOR ***
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             if (node.type.name === 'heading' && node.attrs.level === 1) {

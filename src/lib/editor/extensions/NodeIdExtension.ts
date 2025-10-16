@@ -36,6 +36,31 @@ export const NodeIdExtension = Extension.create({
     ];
   },
 
+  // *** INICIO DE LA SOLUCIÓN: onCreate Hook ***
+  // Se ejecuta una sola vez cuando el editor es creado.
+  onCreate() {
+    const { tr } = this.editor.state;
+    let modified = false;
+
+    // Recorremos el documento inicial.
+    this.editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'listItem' && !node.attrs.nodeId) {
+        // Si un 'listItem' no tiene ID, se lo asignamos inmediatamente.
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          nodeId: uuidv4(),
+        });
+        modified = true;
+      }
+    });
+
+    // Si hemos modificado algo, aplicamos la transacción.
+    if (modified) {
+      this.editor.view.dispatch(tr);
+    }
+  },
+  // *** FIN DE LA SOLUCIÓN ***
+
   /**
    * We add a ProseMirror plugin to automatically assign an ID to any `listItem` that doesn't have one.
    * This is a "self-healing" mechanism that guarantees data integrity.
