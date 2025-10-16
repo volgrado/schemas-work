@@ -1,61 +1,50 @@
 <script lang="ts">
-  /**
-   * FileExplorerView.svelte (Versión de Vanguardia - Svelte 5 Runes)
-   *
-   * Este componente es el explorador de archivos para la CommandBar. Ha sido refactorizado
-   * para usar exclusivamente Svelte 5 Runes ($state, $effect, $derived) para una reactividad
-   * más predecible, un código más limpio y un rendimiento óptimo.
-   *
-   * Principios Implementados:
-   * - Reactividad con Runes: Todo el estado local que cambia y afecta a la UI usa `$state`.
-   * - Sincronización con Stores: Usa `$derived` para reaccionar a cambios en stores externos.
-   * - Lógica de Efectos: `$effect` se usa para ejecutar lógica (como fetching de datos)
-   *   cuando el estado relevante cambia.
-   * - Robustez Empresarial: Manejo de errores, estados de carga y bloqueo de UI durante
-   *   operaciones para prevenir race conditions.
-   * - Accesibilidad (A11y): Usa elementos semánticos (<button>) para interacciones.
-   * - Sintaxis Moderna: Utiliza la nueva sintaxis de eventos (onclick, onblur, etc.).
-   */
-
+  // --- Svelte Core y UI ---
   import { get } from 'svelte/store';
   import { tick } from 'svelte';
+  import { fade, fly, slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
   import { toast } from 'svelte-sonner';
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
+
+  // --- Stores y Servicios ---
   import { commandBarStore } from '$lib/stores/commandBarStore';
   import { documentStore } from '$lib/stores/documentStore';
   import * as directoryService from '$lib/services/core/directoryService';
   import * as errorService from '$lib/services/core/errorService';
   import type { SchemaMetadata } from '$lib/types';
 
-  // --- Estado ---
-  const commandBar = commandBarStore;
-  const storeState = $derived(get(commandBar));
-
+  // --- Estado Reactivo (Svelte 5 Runes) ---
   let items = $state<SchemaMetadata[]>([]);
   let currentParentId = $state<string | null>(null);
   let breadcrumbs = $state<SchemaMetadata[]>([]);
-
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let isOperating = $state(false);
-
+  let isProcessingAction = $state(false);
   let editingItemId = $state<string | null>(null);
   let isCreatingFolder = $state(false);
   let newFolderName = $state('');
+  let isCreatingSchema = $state(false);
+  let newSchemaName = $state('');
+  let draggedItemId = $state<string | null>(null);
+  let dropTargetId = $state<string | null>(null);
+  let contextMenu = $state<{
+    x: number;
+    y: number;
+    item: SchemaMetadata;
+  } | null>(null);
 
+  // Referencias al DOM
   let renameInput: HTMLInputElement;
   let newFolderInput: HTMLInputElement;
+  let newSchemaInput: HTMLInputElement;
 
-  // --- Lógica Reactiva (Efectos) ---
+  // --- Efectos ---
   $effect(() => {
-    if (storeState.currentView === 'list-schemas' && storeState.isOpen) {
-      fetchItemsForParent(currentParentId);
-    }
-  });
-
-  $effect(() => {
-    commandBar.setCurrentParentId(currentParentId);
+    commandBarStore.setCurrentParentId(currentParentId);
+    fetchItemsForParent(currentParentId);
   });
 
   // --- Lógica de Datos ---
@@ -70,7 +59,7 @@
         return a.title.localeCompare(b.title);
       });
     } catch (e) {
-      error = 'No se pudieron cargar los esquemas. Inténtalo de nuevo.';
+      error = 'No se pudieron cargar los esquemas.';
       errorService.reportError(e, {
         operation: 'fetchItemsForParent',
         parentId,
@@ -81,26 +70,34 @@
     }
   }
 
-  // --- Manejadores de Eventos de UI ---
-  function handleItemClick(item: SchemaMetadata) {
-    if (isOperating || editingItemId === item.id) return;
-    if (item.type === 'folder') {
-      currentParentId = item.id;
-      breadcrumbs = [...breadcrumbs, item];
-    } else {
-      documentStore.loadDocument(item.id);
-      commandBar.close();
+  // --- Manejadores de Interacción ---
+  async function startCreatingSchema() {
+    if (isProcessingAction) return;
+    isCreatingSchema = true;
+    await tick();
+    newSchemaInput?.focus();
+  }
+
+  async function commitNewSchema() {
+    const schemaName = newSchemaName.trim() || 'Nuevo Esquema';
+    isCreatingSchema = false;
+    newSchemaName = '';
+    if (isProcessingAction) return;
+    try {
+      await documentStore.createNewDocument(
+        schemaName,
+        undefined,
+        currentParentId
+      );
+      commandBarStore.close();
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo crear el esquema.');
+      errorService.reportError(e, { operation: 'commitNewSchema', schemaName });
     }
   }
 
-  function navigateToBreadcrumb(folderId: string | null, index: number) {
-    if (isOperating) return;
-    currentParentId = folderId;
-    breadcrumbs = breadcrumbs.slice(0, index);
-  }
-
   async function startCreatingFolder() {
-    if (isOperating) return;
+    if (isProcessingAction) return;
     isCreatingFolder = true;
     await tick();
     newFolderInput?.focus();
@@ -108,29 +105,42 @@
 
   async function commitNewFolder() {
     const folderName = newFolderName.trim();
-    if (!folderName || isOperating) {
-      isCreatingFolder = false;
-      newFolderName = '';
-      return;
-    }
-
-    isOperating = true;
+    isCreatingFolder = false;
+    newFolderName = '';
+    if (!folderName || isProcessingAction) return;
+    isProcessingAction = true;
     try {
       await directoryService.createFolder(folderName, currentParentId);
       await fetchItemsForParent(currentParentId);
       toast.success(`Carpeta "${folderName}" creada.`);
-    } catch (e) {
-      toast.error('No se pudo crear la carpeta.');
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo crear la carpeta.');
       errorService.reportError(e, { operation: 'commitNewFolder', folderName });
     } finally {
-      isOperating = false;
-      isCreatingFolder = false;
-      newFolderName = '';
+      isProcessingAction = false;
     }
   }
 
+  function handleItemClick(item: SchemaMetadata) {
+    if (isProcessingAction || editingItemId === item.id) return;
+    if (item.type === 'folder') {
+      breadcrumbs = [...breadcrumbs, item];
+      currentParentId = item.id;
+    } else {
+      documentStore.loadDocument(item.id);
+      commandBarStore.close();
+    }
+  }
+
+  function navigateToBreadcrumb(folderId: string | null, index: number) {
+    if (isProcessingAction) return;
+    currentParentId = folderId;
+    breadcrumbs = breadcrumbs.slice(0, index);
+  }
+
   async function startEditing(item: SchemaMetadata) {
-    if (isOperating) return;
+    contextMenu = null;
+    if (isProcessingAction) return;
     editingItemId = item.id;
     await tick();
     renameInput?.focus();
@@ -141,63 +151,51 @@
     const oldTitle = item.title;
     const trimmedTitle = newTitle.trim();
     editingItemId = null;
-
     if (!trimmedTitle || trimmedTitle === oldTitle) return;
-
-    isOperating = true;
-    const originalIndex = items.findIndex((i) => i.id === item.id);
-    if (originalIndex === -1) {
-      isOperating = false;
-      return;
-    }
-
-    items[originalIndex].title = trimmedTitle;
-
+    isProcessingAction = true;
+    const itemIndex = items.findIndex((i) => i.id === item.id);
+    if (itemIndex !== -1) items[itemIndex].title = trimmedTitle;
     try {
       await directoryService.updateItemMetadata(item.id, {
         title: trimmedTitle,
       });
       toast.success(`'${oldTitle}' renombrado a '${trimmedTitle}'.`);
-    } catch (e) {
-      toast.error('No se pudo renombrar el ítem.');
-      items[originalIndex].title = oldTitle;
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo renombrar el ítem.');
+      if (itemIndex !== -1) items[itemIndex].title = oldTitle;
       errorService.reportError(e, {
         operation: 'commitRename',
         itemId: item.id,
       });
     } finally {
-      isOperating = false;
+      isProcessingAction = false;
     }
   }
 
-  async function handleRenameKeyDown(
-    event: KeyboardEvent,
-    item: SchemaMetadata
-  ) {
+  function handleRenameKeyDown(event: KeyboardEvent, item: SchemaMetadata) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      await commitRename(item, (event.target as HTMLInputElement).value);
+      commitRename(item, (event.target as HTMLInputElement).value);
     } else if (event.key === 'Escape') {
       editingItemId = null;
     }
   }
 
   function handleDeleteItem(item: SchemaMetadata) {
-    if (isOperating) return;
+    contextMenu = null;
+    if (isProcessingAction) return;
     const itemType = item.type === 'folder' ? 'La carpeta' : 'El esquema';
     toast.warning(`¿Eliminar "${item.title}"?`, {
       description: `${itemType} y todo su contenido se eliminarán permanentemente.`,
       action: {
         label: 'Eliminar',
         onClick: async () => {
-          isOperating = true;
+          isProcessingAction = true;
           try {
-            const isDeletingActiveDoc = get(documentStore).docId === item.id;
             await directoryService.deleteItem(item.id);
             await fetchItemsForParent(currentParentId);
             toast.success('Ítem eliminado.');
-
-            if (isDeletingActiveDoc) {
+            if (get(documentStore).docId === item.id) {
               const allSchemas = (await directoryService.getAllItems()).filter(
                 (i) => i.type === 'schema'
               );
@@ -211,61 +209,205 @@
                 );
               }
             }
-          } catch (e) {
-            toast.error('No se pudo eliminar el ítem.');
+          } catch (e: any) {
+            toast.error(e.message || 'No se pudo eliminar el ítem.');
             errorService.reportError(e, {
               operation: 'handleDeleteItem',
               itemId: item.id,
             });
           } finally {
-            isOperating = false;
+            isProcessingAction = false;
           }
         },
       },
     });
   }
+
+  function handleDragStart(item: SchemaMetadata, event: DragEvent) {
+    if (!event.dataTransfer) return;
+    event.dataTransfer.effectAllowed = 'move';
+    draggedItemId = item.id;
+  }
+
+  function handleDragOver(item: SchemaMetadata, event: DragEvent) {
+    event.preventDefault();
+    if (item.type !== 'folder' || item.id === draggedItemId) return;
+    const draggedItem = items.find((i) => i.id === draggedItemId);
+    if (draggedItem?.type === 'folder') {
+      let parentId: string | null = item.id;
+      while (parentId != null) {
+        if (parentId === draggedItemId) return;
+        const parent = items.find((i: SchemaMetadata) => i.id === parentId);
+        parentId = parent ? parent.parentId : null;
+      }
+    }
+    dropTargetId = item.id;
+  }
+
+  function handleDragLeave() {
+    dropTargetId = null;
+  }
+
+  async function handleDrop(targetFolderId: string | null) {
+    if (draggedItemId === null || draggedItemId === targetFolderId) {
+      resetDragState();
+      return;
+    }
+    isProcessingAction = true;
+    const movedItem = items.find((i) => i.id === draggedItemId);
+    items = items.filter((i) => i.id !== draggedItemId);
+    try {
+      await directoryService.moveItem(draggedItemId, targetFolderId);
+      toast.success(`"${movedItem?.title}" movido.`);
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo mover el ítem.');
+      await fetchItemsForParent(currentParentId);
+    } finally {
+      resetDragState();
+      isProcessingAction = false;
+    }
+  }
+
+  function resetDragState() {
+    draggedItemId = null;
+    dropTargetId = null;
+  }
+
+  function openContextMenu(event: MouseEvent, item: SchemaMetadata) {
+    event.preventDefault();
+    contextMenu = { x: event.clientX, y: event.clientY, item };
+  }
 </script>
 
-<header class="list-header">
+{#if contextMenu}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    onClose={() => (contextMenu = null)}
+  >
+    <button
+      onclick={() => {
+        if (!contextMenu) return;
+        handleItemClick(contextMenu.item);
+      }}
+    >
+      <Icon name="folder" size={16} />
+      <span>Abrir</span>
+    </button>
+    <hr />
+    <button
+      onclick={() => {
+        if (!contextMenu) return;
+        startEditing(contextMenu.item);
+      }}
+    >
+      <Icon name="edit-3" size={16} />
+      <span>Renombrar</span>
+    </button>
+    <button
+      onclick={() => {
+        if (!contextMenu) return;
+        handleDeleteItem(contextMenu.item);
+      }}
+    >
+      <Icon name="trash-2" size={16} />
+      <span>Eliminar</span>
+    </button>
+  </ContextMenu>
+{/if}
+
+<header
+  class="list-header"
+  role="group"
+  aria-label="Zona para soltar en la raíz"
+  ondragover={(e) => e.preventDefault()}
+  ondrop={(e) => {
+    e.preventDefault();
+    handleDrop(null);
+  }}
+  ondragleave={handleDragLeave}
+  class:drop-target={dropTargetId === null && draggedItemId !== null}
+>
   <div class="breadcrumbs">
-    <button onclick={() => navigateToBreadcrumb(null, 0)} disabled={isOperating}
-      >Raíz</button
+    <button
+      onclick={() => navigateToBreadcrumb(null, 0)}
+      disabled={isProcessingAction}>Raíz</button
     >
     {#each breadcrumbs as crumb, i (crumb.id)}
       <span>/</span>
       <button
         onclick={() => navigateToBreadcrumb(crumb.id, i + 1)}
-        disabled={isOperating}>{crumb.title}</button
+        disabled={isProcessingAction}>{crumb.title}</button
       >
     {/each}
   </div>
-  <Button
-    onclick={startCreatingFolder}
-    size="sm"
-    variant="secondary"
-    disabled={isOperating}
-  >
-    <Icon name="plus" size={14} /> Nueva Carpeta
-  </Button>
+  <div class="header-actions">
+    <Button
+      onclick={startCreatingSchema}
+      size="sm"
+      variant="secondary"
+      disabled={isProcessingAction}
+    >
+      <Icon name="plus" size={14} />
+      <span>Nuevo Esquema</span>
+    </Button>
+    <Button
+      onclick={startCreatingFolder}
+      size="sm"
+      variant="secondary"
+      disabled={isProcessingAction}
+    >
+      <Icon name="folder" size={14} />
+      <span>Nueva Carpeta</span>
+    </Button>
+  </div>
 </header>
 
-<div class="action-list list-view">
+<div class="action-list list-view" role="list" ondragleave={handleDragLeave}>
   {#if isLoading}
-    <div class="empty-state-list">Cargando...</div>
+    <div class="state-message" transition:fade>
+      <Icon name="loader" size={24} class="spinner" />
+      <span>Cargando...</span>
+    </div>
   {:else if error}
-    <div class="error-state-list">{error}</div>
-  {:else if items.length === 0 && !isCreatingFolder}
-    <div class="empty-state-list">Esta carpeta está vacía.</div>
+    <div class="state-message error" transition:fade>{error}</div>
+  {:else if items.length === 0 && !isCreatingFolder && !isCreatingSchema}
+    <div class="state-message empty-state" transition:fade|local>
+      <Icon name="folder" size={32} />
+      <h3>Carpeta Vacía</h3>
+      <p>Crea un nuevo esquema o carpeta para empezar.</p>
+    </div>
   {/if}
 
-  {#if isCreatingFolder}
-    <div class="schema-item editing">
+  {#if isCreatingSchema}
+    <div class="schema-item editing" transition:slide|local>
       <div class="schema-edit-wrapper">
-        <Icon name="folder-plus" size={18} />
+        <Icon name="file-text" size={18} />
         <input
           type="text"
           class="rename-input"
-          placeholder="Nombre de la nueva carpeta..."
+          placeholder="Nombre del esquema..."
+          bind:value={newSchemaName}
+          bind:this={newSchemaInput}
+          onblur={commitNewSchema}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') commitNewSchema();
+            if (e.key === 'Escape') isCreatingSchema = false;
+          }}
+          disabled={isProcessingAction}
+        />
+      </div>
+    </div>
+  {/if}
+
+  {#if isCreatingFolder}
+    <div class="schema-item editing" transition:slide|local>
+      <div class="schema-edit-wrapper">
+        <Icon name="folder" size={18} />
+        <input
+          type="text"
+          class="rename-input"
+          placeholder="Nombre de la carpeta..."
           bind:value={newFolderName}
           bind:this={newFolderInput}
           onblur={commitNewFolder}
@@ -273,68 +415,95 @@
             if (e.key === 'Enter') commitNewFolder();
             if (e.key === 'Escape') isCreatingFolder = false;
           }}
-          disabled={isOperating}
+          disabled={isProcessingAction}
         />
       </div>
     </div>
   {/if}
 
-  {#each items as item (item.id)}
-    <button
-      type="button"
-      class="schema-item"
-      onclick={() => handleItemClick(item)}
-      disabled={isOperating || !!editingItemId}
-      aria-label={`Abrir ${item.type === 'folder' ? 'carpeta' : 'esquema'} ${item.title}`}
+  {#each items as item, i (item.id)}
+    <div
+      role="listitem"
+      in:fly|local={{ y: 10, duration: 200, delay: i * 20, easing: quintOut }}
+      out:fade|local={{ duration: 100 }}
+      draggable="true"
+      ondragstart={(e) => handleDragStart(item, e)}
+      ondragend={resetDragState}
+      ondragover={(e) => handleDragOver(item, e)}
+      ondrop={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        handleDrop(item.id);
+      }}
+      class:is-dragging={draggedItemId === item.id}
+      oncontextmenu={(e) => openContextMenu(e, item)}
     >
-      {#if editingItemId === item.id}
-        <div class="schema-edit-wrapper">
-          <Icon
-            name={item.type === 'folder' ? 'folder' : 'file-text'}
-            size={18}
-          />
-          <input
-            type="text"
-            class="rename-input"
-            value={item.title}
-            bind:this={renameInput}
-            onblur={(e) => commitRename(item, e.currentTarget.value)}
-            onkeydown={(e) => handleRenameKeyDown(e, item)}
-            onclick={(event) => event.stopPropagation()}
-            disabled={isOperating}
-            aria-label={`Nuevo nombre para ${item.title}`}
-          />
-        </div>
-      {:else}
-        <div class="item-main-content">
-          <Icon
-            name={item.type === 'folder' ? 'folder' : 'file-text'}
-            size={18}
-          />
-          <span>{item.title}</span>
-        </div>
-        <div class="schema-actions">
-          <button
-            class="icon-button"
-            onclick={(event) => {
-              event.stopPropagation();
-              startEditing(item);
+      <div
+        class="schema-item"
+        class:disabled={isProcessingAction || !!editingItemId}
+        class:drop-target={dropTargetId === item.id}
+      >
+        {#if editingItemId === item.id}
+          <div class="schema-edit-wrapper">
+            <Icon
+              name={item.type === 'folder' ? 'folder' : 'file-text'}
+              size={18}
+            />
+            <input
+              type="text"
+              class="rename-input"
+              value={item.title}
+              bind:this={renameInput}
+              onblur={(e) => commitRename(item, e.currentTarget.value)}
+              onkeydown={(e) => handleRenameKeyDown(e, item)}
+              onclick={(event) => event.stopPropagation()}
+              disabled={isProcessingAction}
+              aria-label={`Nuevo nombre para ${item.title}`}
+            />
+          </div>
+        {:else}
+          <div
+            class="item-main-content"
+            role="button"
+            tabindex="0"
+            onclick={() => handleItemClick(item)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleItemClick(item);
             }}
-            disabled={isOperating}
-            aria-label="Renombrar"><Icon name="pen-tool" size={16} /></button
           >
-          <button
-            class="icon-button"
-            onclick={(event) => {
-              event.stopPropagation();
-              handleDeleteItem(item);
-            }}
-            disabled={isOperating}
-            aria-label="Eliminar"><Icon name="trash-2" size={16} /></button
-          >
-        </div>
-      {/if}
-    </button>
+            <Icon
+              name={item.type === 'folder' ? 'folder' : 'file-text'}
+              size={18}
+            />
+            <span>{item.title}</span>
+          </div>
+          <div class="schema-actions">
+            <button
+              class="icon-button"
+              onclick={(e) => {
+                e.stopPropagation();
+                startEditing(item);
+              }}
+              disabled={isProcessingAction}
+              aria-label="Renombrar"
+            >
+              <Icon name="edit-3" size={16} />
+            </button>
+            <button
+              class="icon-button"
+              onclick={(e) => {
+                e.stopPropagation();
+                handleDeleteItem(item);
+              }}
+              disabled={isProcessingAction}
+              aria-label="Eliminar"
+            >
+              <Icon name="trash-2" size={16} />
+            </button>
+          </div>
+        {/if}
+      </div>
+    </div>
   {/each}
 </div>
 
@@ -343,7 +512,7 @@
   <button
     class="action-button"
     onclick={() => commandBarStore.setView('main')}
-    disabled={isOperating}
+    disabled={isProcessingAction}
   >
     <Icon name="x" size={18} />
     <span>Volver al menú principal</span>
@@ -351,6 +520,28 @@
 </footer>
 
 <style>
+  /* --- ESTILOS PARA SCROLLBARS --- */
+  :global(.panel .action-list.list-view) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  :global(.panel .action-list.list-view::-webkit-scrollbar) {
+    width: 6px;
+  }
+  :global(.panel .action-list.list-view::-webkit-scrollbar-thumb) {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(.panel .action-list.list-view) {
+      scrollbar-color: var(--scrollbar-thumb-dark) transparent;
+    }
+    :global(.panel .action-list.list-view::-webkit-scrollbar-thumb) {
+      background-color: var(--scrollbar-thumb-dark);
+    }
+  }
+
+  /* --- CONTENEDORES PRINCIPALES --- */
   .list-header,
   .panel-footer {
     flex-shrink: 0;
@@ -364,6 +555,20 @@
     border-bottom: 1px solid var(--panel-border-light);
     margin-bottom: var(--space-xs);
     padding-bottom: var(--space-sm);
+    transition: background-color 0.2s;
+  }
+
+  .action-list.list-view {
+    position: relative;
+    min-height: 250px;
+    overflow-y: auto;
+  }
+
+  /* --- CABECERA Y BREADCRUMBS --- */
+  .header-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-shrink: 0;
   }
 
   .breadcrumbs {
@@ -374,6 +579,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .breadcrumbs button {
@@ -397,31 +603,23 @@
     color: var(--color-gray-500);
   }
 
+  /* --- ESTILOS DE ÍTEMS DE LA LISTA --- */
   .schema-item {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    font: inherit;
-    text-align: left;
-    width: 100%;
-    cursor: pointer;
+    color: var(--color-text);
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-radius: 8px;
-    transition: background-color 0.2s ease;
-    outline: none;
+    transition: background-color 0.2s;
   }
-  .schema-item:disabled {
+
+  .schema-item.disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
-  .schema-item:not(:disabled):focus-visible {
-    background-color: var(--btn-hover-bg);
-    box-shadow: 0 0 0 2px var(--color-accent);
-  }
-  .schema-item:not(:disabled):hover {
+
+  .schema-item:not(.disabled):hover,
+  .schema-item:has(.item-main-content:focus-visible) {
     background-color: var(--btn-hover-bg);
   }
 
@@ -432,6 +630,13 @@
     padding: 12px 14px;
     flex-grow: 1;
     min-width: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .item-main-content:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-accent);
   }
 
   .item-main-content span {
@@ -440,6 +645,7 @@
     text-overflow: ellipsis;
   }
 
+  /* --- ACCIONES HOVER Y EDICIÓN --- */
   .schema-actions {
     display: flex;
     align-items: center;
@@ -449,7 +655,14 @@
     transition: opacity 0.2s ease;
   }
 
-  .schema-item:not(:disabled):hover .schema-actions,
+  /* Oculta acciones hover en pantallas táctiles */
+  @media (pointer: coarse) {
+    .schema-actions {
+      display: none;
+    }
+  }
+
+  .schema-item:not(.disabled):hover .schema-actions,
   .schema-item:focus-within .schema-actions {
     opacity: 1;
   }
@@ -469,7 +682,7 @@
   }
 
   .icon-button:hover:not(:disabled) {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--btn-hover-bg);
     color: var(--color-text);
   }
 
@@ -499,52 +712,80 @@
     caret-color: var(--color-accent);
   }
 
-  .empty-state-list {
-    text-align: center;
-    padding: var(--space-lg);
+  /* --- MENSAJES DE ESTADO (CARGANDO, VACÍO, ERROR) --- */
+  .state-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
     color: var(--color-gray-500);
-    font-style: italic;
+    width: 100%;
+    padding: var(--space-xl);
+    box-sizing: border-box;
   }
 
-  .error-state-list {
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  .state-message.empty-state h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .state-message.empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+    max-width: 200px;
     text-align: center;
-    padding: var(--space-lg);
+  }
+  .state-message.error {
     color: var(--color-danger);
   }
 
+  /* --- ESTILOS DE DRAG & DROP --- */
+  .is-dragging {
+    opacity: 0.5;
+  }
+
+  .drop-target {
+    background-color: hsl(var(--color-accent-hsl) / 0.2) !important;
+    outline: 2px dashed var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  /* --- FOOTER Y MODO OSCURO --- */
+  .separator {
+    border: none;
+    height: 1px;
+    background-color: var(--panel-border-light);
+    margin: 4px 0;
+  }
+
   @media (prefers-color-scheme: dark) {
-    .list-header {
-      border-bottom-color: var(--panel-border-dark);
+    .list-header,
+    .separator {
+      border-color: var(--panel-border-dark);
     }
-
-    .breadcrumbs button,
-    .breadcrumbs span,
-    .empty-state-list {
-      color: var(--color-gray-500);
-    }
-
     .breadcrumbs button:hover:not(:disabled) {
-      color: white; /* O tu variable de texto principal en modo oscuro */
       background-color: var(--btn-hover-bg-dark);
     }
-
-    .schema-item:not(:disabled):hover,
-    .schema-item:not(:disabled):focus-visible,
-    .editing {
+    .schema-item:not(.disabled):hover,
+    .schema-item:has(.item-main-content:focus-visible) {
       background-color: var(--btn-hover-bg-dark);
     }
-
-    .rename-input {
-      color: white; /* O tu variable de texto principal */
-    }
-
-    .icon-button {
-      color: var(--color-gray-500);
-    }
-
     .icon-button:hover:not(:disabled) {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
+      background-color: var(--btn-hover-bg-dark);
     }
   }
 </style>

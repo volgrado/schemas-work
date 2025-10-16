@@ -9,13 +9,13 @@
  * 1. Define the structure of a command through the `Command` interface.
  * 2. Import the necessary stores and services to execute the actions.
  * 3. Provide functions that return lists of commands (`getCommands`, `getAiCommands`)
- *    based on the current state of the application (e.g., if a node is selected).
+ * based on the current state of the application (e.g., if a node is selected).
  *
  * BENEFITS OF THIS ARCHITECTURE:
  * - **Testability:** Each `action` can be unit-tested without rendering the UI.
  * - **Maintainability:** Adding or modifying commands is done in a single place.
  * - **Clarity:** The `CommandBar.svelte` component becomes a "dumb component"
- *   focused solely on rendering and delegating events.
+ * focused solely on rendering and delegating events.
  */
 
 import type { Command } from '$lib/types/command';
@@ -37,8 +37,12 @@ export function getCommands(): Command[] {
       label: 'New Schema',
       icon: 'plus',
       action: () => {
-        // By default, it is created at the root. The user can move it later.
-        documentStore.createNewDocument('New Schema', undefined, null);
+        // --- ✨ MEJORA CLAVE ---
+        // Ahora obtenemos el ID de la carpeta actual desde el store.
+        // Si el usuario está en la raíz, será `null`, creando el archivo en la raíz.
+        // Si está dentro de una carpeta, usará el ID de esa carpeta.
+        const parentId = get(commandBarStore).currentParentId;
+        documentStore.createNewDocument('New Schema', undefined, parentId);
         commandBarStore.close();
       },
     },
