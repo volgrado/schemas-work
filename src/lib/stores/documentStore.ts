@@ -47,13 +47,28 @@ async function loadDocument(docId: string) {
   update((state) => ({ ...state, status: 'loading' }));
 
   try {
-    const metadata = await directoryService.getItemById(docId);
-    if (!metadata || metadata.type !== 'schema') {
-      throw new Error(`Item is not a valid document: ${docId}`);
-    }
+    // *** INICIO DE LA SOLUCIÓN ***
+    // 1. Creamos una promesa que representa un tiempo de espera mínimo.
+    const MIN_LOADING_TIME = 300; // 300ms
+    const minDelay = new Promise((resolve) =>
+      setTimeout(resolve, MIN_LOADING_TIME)
+    );
 
-    const { ydoc, provider } = getDocumentProvider(docId);
-    await provider.whenSynced;
+    // 2. Creamos una promesa para la carga real de los datos.
+    const loadData = async () => {
+      const metadata = await directoryService.getItemById(docId);
+      if (!metadata || metadata.type !== 'schema') {
+        throw new Error(`Item is not a valid document: ${docId}`);
+      }
+      const { ydoc, provider } = getDocumentProvider(docId);
+      await provider.whenSynced;
+      return { metadata, ydoc, provider };
+    };
+
+    // 3. Esperamos a que tanto la carga como el tiempo mínimo se completen.
+    const [loadedData] = await Promise.all([loadData(), minDelay]);
+    const { metadata, ydoc, provider } = loadedData;
+    // *** FIN DE LA SOLUCIÓN ***
 
     set({
       docId,

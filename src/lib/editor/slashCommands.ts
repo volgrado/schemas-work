@@ -174,22 +174,32 @@ export const getCommands = (): CommandItem[] => [
       }
     },
   },
+  // *** INICIO DE LA SOLUCIÓN: Comando Robusto ***
   {
     title: 'Editar Tarjetas',
     description: 'Abrir el editor de tarjetas para este nodo.',
     group: 'Utilidades',
     icon: 'edit-3',
     command: ({ editor, range }) => {
+      // 1. Limpiamos el comando "/" del editor.
       editor.chain().focus().deleteRange(range).run();
       const state = get(editorStore);
+
+      // 2. Verificamos que un nodo esté realmente seleccionado.
       if (state.selectedNodePos === null) {
         toast.error('Selecciona un nodo para editar sus tarjetas.');
         return;
       }
+
+      // 3. Obtenemos el nodo y verificamos que tenga un ID.
       const node = editor.state.doc.nodeAt(state.selectedNodePos);
       if (node?.attrs.nodeId) {
         cardEditorStore.open(node.attrs.nodeId);
+      } else {
+        // 4. Si no hay ID, informamos al usuario.
+        toast.error('Este nodo no tiene un ID válido para asociar tarjetas.');
       }
     },
   },
+  // *** FIN DE LA SOLUCIÓN ***
 ];

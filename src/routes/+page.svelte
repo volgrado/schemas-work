@@ -87,13 +87,26 @@
       loadInitialDocument();
     }
 
+    // *** INICIO DE LA SOLUCIÓN: Atajo de Teclado ***
+    // Añadimos un listener global para los atajos de teclado.
+    window.addEventListener('keydown', handleGlobalKeydown);
     window.addEventListener('resize', handleResize);
     return () => {
+      window.removeEventListener('keydown', handleGlobalKeydown);
       window.removeEventListener('resize', handleResize);
     };
   });
 
   // --- MANEJADORES DE EVENTOS Y ACCIONES ---
+
+  function handleGlobalKeydown(event: KeyboardEvent) {
+    // Comprobamos si se ha pulsado Ctrl+' o Cmd+'
+    if ((event.metaKey || event.ctrlKey) && event.key === "'") {
+      event.preventDefault(); // Evitamos cualquier comportamiento por defecto del navegador.
+      openCardEditor(); // Llamamos a la función para abrir el editor.
+    }
+  }
+  // *** FIN DE LA SOLUCIÓN ***
 
   function handleResize() {
     isMobile = window.innerWidth <= 768;
@@ -127,7 +140,10 @@
   function openCardEditor() {
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
-    if (!editor || pos === null) return;
+    if (!editor || pos === null) {
+      // Si no hay nodo seleccionado, no hacemos nada (o podríamos mostrar un aviso)
+      return;
+    }
 
     const node = editor.state.doc.nodeAt(pos);
     if (!node) return;
@@ -222,7 +238,12 @@
     >
       {#if !showWelcome}
         {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
-          <div class="status-container"><p>Cargando esquema...</p></div>
+          <div class="status-container">
+            <!-- *** INICIO DE LA SOLUCIÓN: Spinner de Carga *** -->
+            <Icon name="loader" size={24} class="spinner" />
+            <p>Cargando esquema...</p>
+            <!-- *** FIN DE LA SOLUCIÓN *** -->
+          </div>
         {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
           {#key $documentStore.docId}
             <DocumentView
@@ -336,11 +357,16 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: var(--space-md); /* Añadido para espaciar el spinner del texto */
     min-height: 100vh;
     font-style: italic;
     color: var(--color-gray-500);
     padding: 0 var(--space-lg);
     text-align: center;
+  }
+  .status-container p {
+    margin: 0; /* Reseteamos el margen del párrafo */
+    font-style: normal; /* El texto ya no será itálico */
   }
   .status-container span {
     margin-top: var(--space-sm);
@@ -390,4 +416,15 @@
       transform: translateY(0);
     }
   }
+
+  /* *** INICIO DE LA SOLUCIÓN: Animación del Spinner *** */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  /* *** FIN DE LA SOLUCIÓN *** */
 </style>

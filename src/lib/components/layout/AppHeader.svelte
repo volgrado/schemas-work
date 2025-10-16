@@ -44,13 +44,22 @@
       <!-- Ocultamos el tooltip en pantallas táctiles pequeñas donde no es útil -->
       <div class="desktop-only-tooltip">
         <HelpTooltip>
+          <!-- *** INICIO DE LA SOLUCIÓN: MEJORA VISUAL DEL TOOLTIP *** -->
           <div class="shortcuts">
-            <strong>Atajos de Teclado:</strong>
-            <span><kbd>Ctrl/Cmd</kbd> + <kbd>K</kbd> &rarr; Menú</span>
-            <span
-              ><kbd>Ctrl/Cmd</kbd> + <kbd>'</kbd> &rarr; Editar Tarjetas</span
-            >
+            <div class="shortcut-item">
+              <span>Menú</span>
+              <div class="keys">
+                <kbd>Ctrl</kbd><span>+</span><kbd>K</kbd>
+              </div>
+            </div>
+            <div class="shortcut-item">
+              <span>Editar Tarjetas</span>
+              <div class="keys">
+                <kbd>Ctrl</kbd><span>+</span><kbd>'</kbd>
+              </div>
+            </div>
           </div>
+          <!-- *** FIN DE LA SOLUCIÓN *** -->
         </HelpTooltip>
       </div>
     </div>
@@ -138,6 +147,41 @@
 
   /* --- Estilos del Tooltip de Ayuda --- */
 
+  /* *** INICIO DE LA SOLUCIÓN: NUEVOS ESTILOS PARA EL TOOLTIP *** */
+  :global(.shortcuts) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-xs);
+  }
+
+  :global(.shortcut-item) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: var(--space-lg);
+  }
+
+  :global(.keys) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  :global(.shortcuts kbd) {
+    font-family: var(--font-main);
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: var(--color-gray-100);
+    color: var(--color-text);
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--color-gray-200);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  }
+  /* *** FIN DE LA SOLUCIÓN *** */
+
   @media (max-width: 768px) {
     .desktop-only-tooltip {
       display: none;
@@ -147,6 +191,11 @@
   @media (prefers-color-scheme: dark) {
     .app-header {
       border-bottom-color: var(--color-gray-100);
+    }
+    :global(.shortcuts kbd) {
+      background-color: var(--color-gray-200);
+      border-color: var(--color-gray-500);
+      color: var(--color-text);
     }
   }
 </style>
