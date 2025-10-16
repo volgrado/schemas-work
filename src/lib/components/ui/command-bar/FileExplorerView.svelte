@@ -36,7 +36,10 @@
     item: SchemaMetadata;
   } | null>(null);
 
-  // Referencias al DOM
+  // --- ESTADO PARA LA ANIMACIÓN DE ERROR ---
+  let inputError = $state(false);
+
+  // Referencias al DOM (la advertencia 'non_reactive_update' es un falso positivo aquí)
   let renameInput: HTMLInputElement;
   let newFolderInput: HTMLInputElement;
   let newSchemaInput: HTMLInputElement;
@@ -49,10 +52,18 @@
 
   // --- Lógica de Datos ---
   async function fetchItemsForParent(parentId: string | null) {
+    const MIN_LOADING_TIME = 300; // 300ms de tiempo mínimo de carga
     isLoading = true;
     error = null;
+
+    const fetchData = directoryService.listItemsByParentId(parentId);
+    const minDelay = new Promise((resolve) =>
+      setTimeout(resolve, MIN_LOADING_TIME)
+    );
+
     try {
-      const fetchedItems = await directoryService.listItemsByParentId(parentId);
+      const [fetchedItems] = await Promise.all([fetchData, minDelay]);
+
       items = fetchedItems.sort((a, b) => {
         if (a.type === 'folder' && b.type === 'schema') return -1;
         if (a.type === 'schema' && b.type === 'folder') return 1;
@@ -70,7 +81,7 @@
     }
   }
 
-  // --- Manejadores de Interacción ---
+  // --- Lógica de Creación ---
   async function startCreatingSchema() {
     if (isProcessingAction) return;
     isCreatingSchema = true;
@@ -79,20 +90,38 @@
   }
 
   async function commitNewSchema() {
-    const schemaName = newSchemaName.trim() || 'Nuevo Esquema';
-    isCreatingSchema = false;
-    newSchemaName = '';
+    const schemaName = newSchemaName.trim();
+    if (!schemaName) {
+      isCreatingSchema = false;
+      newSchemaName = '';
+      return;
+    }
     if (isProcessingAction) return;
+
+    isProcessingAction = true;
     try {
-      await documentStore.createNewDocument(
-        schemaName,
-        undefined,
-        currentParentId
-      );
-      commandBarStore.close();
+      // Llamamos a directoryService para crear solo los metadatos.
+      await directoryService.createSchema(schemaName, currentParentId);
+      toast.success(`Esquema "${schemaName}" creado.`);
+      isCreatingSchema = false;
+      newSchemaName = '';
+      await fetchItemsForParent(currentParentId); // Refresca la lista
     } catch (e: any) {
       toast.error(e.message || 'No se pudo crear el esquema.');
       errorService.reportError(e, { operation: 'commitNewSchema', schemaName });
+
+      // LÓGICA DE REINTENTO
+      isProcessingAction = false;
+      inputError = true;
+      await tick();
+      newSchemaInput?.focus();
+      newSchemaInput?.select();
+      setTimeout(() => (inputError = false), 500); // Resetea la animación
+    } finally {
+      if (isCreatingSchema !== true) {
+        // Solo si no estamos reintentando
+        isProcessingAction = false;
+      }
     }
   }
 
@@ -105,22 +134,39 @@
 
   async function commitNewFolder() {
     const folderName = newFolderName.trim();
-    isCreatingFolder = false;
-    newFolderName = '';
-    if (!folderName || isProcessingAction) return;
+    if (!folderName) {
+      isCreatingFolder = false;
+      newFolderName = '';
+      return;
+    }
+    if (isProcessingAction) return;
+
     isProcessingAction = true;
     try {
       await directoryService.createFolder(folderName, currentParentId);
-      await fetchItemsForParent(currentParentId);
       toast.success(`Carpeta "${folderName}" creada.`);
+      isCreatingFolder = false;
+      newFolderName = '';
+      await fetchItemsForParent(currentParentId);
     } catch (e: any) {
       toast.error(e.message || 'No se pudo crear la carpeta.');
       errorService.reportError(e, { operation: 'commitNewFolder', folderName });
-    } finally {
+
+      // LÓGICA DE REINTENTO
       isProcessingAction = false;
+      inputError = true;
+      await tick();
+      newFolderInput?.focus();
+      newFolderInput?.select();
+      setTimeout(() => (inputError = false), 500);
+    } finally {
+      if (isCreatingFolder !== true) {
+        isProcessingAction = false;
+      }
     }
   }
 
+  // --- Otros Manejadores ---
   function handleItemClick(item: SchemaMetadata) {
     if (isProcessingAction || editingItemId === item.id) return;
     if (item.type === 'folder') {
@@ -230,17 +276,24 @@
   }
 
   function handleDragOver(item: SchemaMetadata, event: DragEvent) {
-    event.preventDefault();
-    if (item.type !== 'folder' || item.id === draggedItemId) return;
+    if (item.id === draggedItemId || item.type !== 'folder') {
+      dropTargetId = null;
+      return;
+    }
+
     const draggedItem = items.find((i) => i.id === draggedItemId);
     if (draggedItem?.type === 'folder') {
       let parentId: string | null = item.id;
       while (parentId != null) {
-        if (parentId === draggedItemId) return;
+        if (parentId === draggedItemId) {
+          dropTargetId = null;
+          return;
+        }
         const parent = items.find((i: SchemaMetadata) => i.id === parentId);
         parentId = parent ? parent.parentId : null;
       }
     }
+    event.preventDefault();
     dropTargetId = item.id;
   }
 
@@ -253,6 +306,12 @@
       resetDragState();
       return;
     }
+    const targetItem = items.find((i) => i.id === targetFolderId);
+    if (targetFolderId !== null && targetItem?.type !== 'folder') {
+      resetDragState();
+      return;
+    }
+
     isProcessingAction = true;
     const movedItem = items.find((i) => i.id === draggedItemId);
     items = items.filter((i) => i.id !== draggedItemId);
@@ -759,9 +818,17 @@
   }
 
   .drop-target {
-    background-color: hsl(var(--color-accent-hsl) / 0.2) !important;
-    outline: 2px dashed var(--color-accent);
-    outline-offset: -2px;
+    background-color: hsl(var(--color-accent-hsl) / 0.15) !important;
+    outline: 1px dashed var(--color-accent);
+    outline-offset: -1px;
+  }
+
+  /* Añadimos una transición para que el feedback visual sea más suave */
+  .list-header,
+  .schema-item {
+    transition:
+      background-color 0.2s ease-in-out,
+      outline 0.2s ease-in-out;
   }
 
   /* --- FOOTER Y MODO OSCURO --- */
@@ -787,5 +854,31 @@
     .icon-button:hover:not(:disabled) {
       background-color: var(--btn-hover-bg-dark);
     }
+  }
+
+  /* --- ✨ ANIMACIÓN DE ERROR PARA INPUTS --- */
+  @keyframes shake {
+    10%,
+    90% {
+      transform: translateX(-1px);
+    }
+    20%,
+    80% {
+      transform: translateX(2px);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translateX(-3px);
+    }
+    40%,
+    60% {
+      transform: translateX(3px);
+    }
+  }
+
+  .rename-input.input-error {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    outline: 1px solid var(--color-danger);
   }
 </style>
