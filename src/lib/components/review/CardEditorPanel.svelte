@@ -17,8 +17,6 @@
   import Button from '$lib/components/ui/Button.svelte';
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
 
-  const cardEditor = cardEditorStore; // Esta variable no se usa, se puede eliminar.
-
   // --- Estado y Variables ---
   let showAddMenu = $state(false);
   let cardElements = new Map<string, HTMLElement>();
@@ -126,7 +124,7 @@
 
   // Auto-scroll y focus para nuevas tarjetas.
   $effect(() => {
-    const newCardId = $cardEditor.lastAddedCardId;
+    const newCardId = $cardEditorStore.lastAddedCardId;
     if (newCardId) {
       const element = cardElements.get(newCardId);
       if (element) {
@@ -141,7 +139,7 @@
   });
 </script>
 
-{#if $cardEditor.isOpen}
+{#if $cardEditorStore.isOpen}
   <button
     class="overlay"
     onclick={handleClose}
@@ -165,12 +163,12 @@
             Repaso" para memorizar conceptos clave.
           </HelpTooltip>
         </div>
-        {#if $cardEditor.status !== 'idle'}
+        {#if $cardEditorStore.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
-            {#if $cardEditor.status === 'saving'}
+            {#if $cardEditorStore.status === 'saving'}
               <Icon name="loader" size={14} class="spinner" />
               <span>Guardando...</span>
-            {:else if $cardEditor.status === 'saved'}
+            {:else if $cardEditorStore.status === 'saved'}
               <Icon name="check-circle" size={14} />
               <span>Guardado</span>
             {/if}
@@ -208,12 +206,12 @@
 
     <div class="editor-content">
       <!-- CAMBIO: Lógica de renderizado actualizada para manejar 'loading', 'loaded', 'error' y 'empty' -->
-      {#if $cardEditor.fetchStatus === 'loading'}
+      {#if $cardEditorStore.fetchStatus === 'loading'}
         <div class="loading-state">
           <Icon name="loader" size={32} class="spinner" />
           <p>Cargando tarjetas...</p>
         </div>
-      {:else if $cardEditor.fetchStatus === 'error'}
+      {:else if $cardEditorStore.fetchStatus === 'error'}
         <div class="empty-state">
           <Icon name="alert-triangle" size={32} />
           <h3>Error al Cargar</h3>
@@ -221,9 +219,9 @@
             No se pudieron cargar las tarjetas. Inténtalo de nuevo más tarde.
           </p>
         </div>
-      {:else if $cardEditor.cards.length > 0}
+      {:else if $cardEditorStore.cards.length > 0}
         <div class="cards-list">
-          {#each $cardEditor.cards as card (card.id)}
+          {#each $cardEditorStore.cards as card (card.id)}
             <div
               class="card-wrapper"
               animate:flip={{ duration: 300 }}
