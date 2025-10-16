@@ -1,33 +1,48 @@
-<!-- src/lib/components/review/CardEditorPanel.svelte (Versión Rediseñada) -->
-
+<!-- src/lib/components/review/CardEditorPanel.svelte (Versión con distinción Cargando/Vacío) -->
 <script lang="ts">
   // --- Svelte Core ---
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { flip } from 'svelte/animate';
+  import { toast } from 'svelte-sonner';
 
   // --- Lógica de la Aplicación ---
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
   import type { Card, CardType } from '$lib/types';
   import { debounce } from '$lib/utils/debounce';
+  import { autosize } from '$lib/actions/autosize';
 
   // --- Componentes de UI ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
 
-  const cardEditor = cardEditorStore;
+  const cardEditor = cardEditorStore; // Esta variable no se usa, se puede eliminar.
 
-  // Variables para la UI
+  // --- Estado y Variables ---
   let showAddMenu = $state(false);
-  let localCards = $derived($cardEditor.cards);
+  let cardElements = new Map<string, HTMLElement>();
+  let draggedItemIndex = $state<number | null>(null);
+  let dropTargetIndex = $state<number | null>(null);
 
+  // Action to register card element in the map and remove it when destroyed
+  function register(node: HTMLElement, id: string) {
+    cardElements.set(id, node);
+    return {
+      destroy() {
+        cardElements.delete(id);
+      },
+    };
+  }
+
+  // --- Funciones de Lógica y Manejadores ---
+
+  // Debounce las actualizaciones para no sobrecargar el store en cada tecleo.
   const debouncedUpdateCard = debounce((card: Card) => {
     cardEditorStore.updateCard(card);
   }, 500);
 
   function handleUpdate(card: Card) {
-    localCards = localCards;
     debouncedUpdateCard(card);
   }
 
@@ -36,13 +51,22 @@
     showAddMenu = false;
   }
 
-  function removeCard(id: string) {
-    cardEditorStore.deleteCard(id);
+  async function removeCard(cardId: string) {
+    const deletedCard = await cardEditorStore.deleteCard(cardId);
+    if (deletedCard) {
+      toast.success('Tarjeta eliminada.', {
+        action: {
+          label: 'Deshacer',
+          onClick: () => cardEditorStore.restoreCard(deletedCard),
+        },
+      });
+    }
   }
 
   function addSequenceItem(card: Card) {
     if (card.type === 'sequencing') {
       card.content.items.push('');
+      card.content.items = card.content.items; // Trigger reactivity
       handleUpdate(card);
     }
   }
@@ -50,6 +74,7 @@
   function removeSequenceItem(card: Card, itemIndex: number) {
     if (card.type === 'sequencing') {
       card.content.items.splice(itemIndex, 1);
+      card.content.items = card.content.items; // Trigger reactivity
       handleUpdate(card);
     }
   }
@@ -57,6 +82,63 @@
   function handleClose() {
     cardEditorStore.close();
   }
+
+  // --- Lógica de Drag and Drop Nativo ---
+  function handleDragStart(index: number, event: DragEvent) {
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    draggedItemIndex = index;
+  }
+
+  function handleDragOver(targetIndex: number, event: DragEvent) {
+    event.preventDefault();
+    if (draggedItemIndex !== targetIndex) {
+      dropTargetIndex = targetIndex;
+    }
+  }
+
+  function handleDrop(targetIndex: number, card: Card) {
+    if (
+      card.type !== 'sequencing' ||
+      draggedItemIndex === null ||
+      draggedItemIndex === targetIndex
+    ) {
+      resetDragState();
+      return;
+    }
+
+    const newItems = [...card.content.items];
+    const [draggedItem] = newItems.splice(draggedItemIndex, 1);
+    newItems.splice(targetIndex, 0, draggedItem);
+
+    card.content.items = newItems;
+    handleUpdate(card);
+    resetDragState();
+  }
+
+  function resetDragState() {
+    draggedItemIndex = null;
+    dropTargetIndex = null;
+  }
+
+  // --- Efectos Reactivos ---
+
+  // Auto-scroll y focus para nuevas tarjetas.
+  $effect(() => {
+    const newCardId = $cardEditor.lastAddedCardId;
+    if (newCardId) {
+      const element = cardElements.get(newCardId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const firstInput = element.querySelector<
+          HTMLInputElement | HTMLTextAreaElement
+        >('input, textarea');
+        firstInput?.focus();
+        cardEditorStore.clearLastAdded(); // Limpiar para que no se repita
+      }
+    }
+  });
 </script>
 
 {#if $cardEditor.isOpen}
@@ -75,26 +157,78 @@
     aria-labelledby="panel-title"
   >
     <header class="header">
-      <div class="header-title">
-        <h3 id="panel-title">Tarjetas de Estudio</h3>
-        <HelpTooltip>
-          Crea preguntas y respuestas para este nodo. Úsalas en el "Modo Repaso"
-          para memorizar conceptos clave.
-        </HelpTooltip>
+      <div class="header-left">
+        <div class="header-title">
+          <h3 id="panel-title">Tarjetas de Estudio</h3>
+          <HelpTooltip>
+            Crea preguntas y respuestas para este nodo. Úsalas en el "Modo
+            Repaso" para memorizar conceptos clave.
+          </HelpTooltip>
+        </div>
+        {#if $cardEditor.status !== 'idle'}
+          <div class="save-status" in:fade={{ duration: 100 }}>
+            {#if $cardEditor.status === 'saving'}
+              <Icon name="loader" size={14} class="spinner" />
+              <span>Guardando...</span>
+            {:else if $cardEditor.status === 'saved'}
+              <Icon name="check-circle" size={14} />
+              <span>Guardado</span>
+            {/if}
+          </div>
+        {/if}
       </div>
-      <Button onclick={handleClose} variant="primary">Hecho</Button>
+
+      <div class="header-actions">
+        <div class="add-card-container">
+          <Button
+            variant="secondary"
+            size="sm"
+            onclick={() => (showAddMenu = !showAddMenu)}
+          >
+            <Icon name="plus" size={16} />
+            Añadir Tarjeta
+          </Button>
+          {#if showAddMenu}
+            <div class="add-menu" transition:fade={{ duration: 100 }}>
+              <button onclick={() => addCard('basic')}
+                ><Icon name="pen-tool" size={16} /> Básica (P/R)</button
+              >
+              <button onclick={() => addCard('input')}
+                ><Icon name="edit-3" size={16} /> Rellenar Hueco</button
+              >
+              <button onclick={() => addCard('sequencing')}
+                ><Icon name="list" size={16} /> Secuencia</button
+              >
+            </div>
+          {/if}
+        </div>
+        <Button onclick={handleClose} variant="primary" size="sm">Hecho</Button>
+      </div>
     </header>
 
     <div class="editor-content">
-      {#if $cardEditor.isLoading}
+      <!-- CAMBIO: Lógica de renderizado actualizada para manejar 'loading', 'loaded', 'error' y 'empty' -->
+      {#if $cardEditor.fetchStatus === 'loading'}
         <div class="loading-state">
-          <Icon name="loader" size={24} />
+          <Icon name="loader" size={32} class="spinner" />
           <p>Cargando tarjetas...</p>
         </div>
-      {:else if localCards.length > 0}
+      {:else if $cardEditor.fetchStatus === 'error'}
+        <div class="empty-state">
+          <Icon name="alert-triangle" size={32} />
+          <h3>Error al Cargar</h3>
+          <p>
+            No se pudieron cargar las tarjetas. Inténtalo de nuevo más tarde.
+          </p>
+        </div>
+      {:else if $cardEditor.cards.length > 0}
         <div class="cards-list">
-          {#each localCards as card (card.id)}
-            <div class="card-wrapper" animate:flip={{ duration: 300 }}>
+          {#each $cardEditor.cards as card (card.id)}
+            <div
+              class="card-wrapper"
+              animate:flip={{ duration: 300 }}
+              use:register={card.id}
+            >
               <div
                 class="card-type-indicator"
                 class:basic={card.type === 'basic'}
@@ -121,8 +255,8 @@
                       id="a-{card.id}"
                       placeholder="Escribe la respuesta..."
                       bind:value={card.content.answer}
-                      rows="2"
                       oninput={() => handleUpdate(card)}
+                      use:autosize
                     ></textarea>
                   </div>
                 {:else if card.type === 'input'}
@@ -133,7 +267,7 @@
                     <input
                       id="p-{card.id}"
                       type="text"
-                      placeholder="Ej: La capital de Francia es &#123;&#123;...&#125;&#125;"
+                      placeholder={'Ej: La capital de Francia es {{...}}'}
                       bind:value={card.content.prompt}
                       oninput={() => handleUpdate(card)}
                     />
@@ -159,9 +293,29 @@
                       oninput={() => handleUpdate(card)}
                     />
                   </div>
-                  <div class="sequence-items">
-                    {#each card.content.items as item, itemIndex}
-                      <div class="sequence-item">
+                  <div
+                    class="sequence-items"
+                    role="listbox"
+                    aria-labelledby="s-{card.id}"
+                  >
+                    {#each card.content.items as item, itemIndex (item + itemIndex)}
+                      <div
+                        class="sequence-item"
+                        role="option"
+                        aria-selected="false"
+                        tabindex="0"
+                        animate:flip={{ duration: 200 }}
+                        draggable="true"
+                        ondragstart={(e) => handleDragStart(itemIndex, e)}
+                        ondragover={(e) => handleDragOver(itemIndex, e)}
+                        ondrop={(e) => {
+                          e.preventDefault();
+                          handleDrop(itemIndex, card);
+                        }}
+                        ondragend={resetDragState}
+                        class:is-dragging={draggedItemIndex === itemIndex}
+                        class:drop-target={dropTargetIndex === itemIndex}
+                      >
                         <span class="drag-handle">::</span>
                         <input
                           type="text"
@@ -178,13 +332,13 @@
                         </button>
                       </div>
                     {/each}
-                    <button
-                      class="add-item-button"
-                      onclick={() => addSequenceItem(card)}
-                    >
-                      <Icon name="plus" size={14} /> Añadir Ítem
-                    </button>
                   </div>
+                  <button
+                    class="add-item-button"
+                    onclick={() => addSequenceItem(card)}
+                  >
+                    <Icon name="plus" size={14} /> Añadir Ítem
+                  </button>
                 {/if}
               </div>
               <button
@@ -198,36 +352,11 @@
           {/each}
         </div>
       {:else}
+        <!-- Este es el estado 'vacío' que ahora se muestra correctamente solo cuando la carga ha terminado y no hay tarjetas -->
         <div class="empty-state">
           <Icon name="pen-tool" size={32} />
           <h3>Sin Tarjetas Aún</h3>
           <p>Crea tu primera tarjeta de estudio para este concepto.</p>
-        </div>
-      {/if}
-
-      {#if !$cardEditor.isLoading}
-        <div class="add-card-container">
-          {#if showAddMenu}
-            <div class="add-menu" transition:fade={{ duration: 100 }}>
-              <button onclick={() => addCard('basic')}
-                ><Icon name="pen-tool" size={16} /> Básica (P/R)</button
-              >
-              <button onclick={() => addCard('input')}
-                ><Icon name="edit-3" size={16} /> Rellenar Hueco</button
-              >
-              <button onclick={() => addCard('sequencing')}
-                ><Icon name="list" size={16} /> Secuencia</button
-              >
-            </div>
-          {/if}
-          <Button
-            variant="primary"
-            size="md"
-            onclick={() => (showAddMenu = !showAddMenu)}
-          >
-            <Icon name="plus" size={16} />
-            Añadir Tarjeta
-          </Button>
         </div>
       {/if}
     </div>
@@ -235,6 +364,7 @@
 {/if}
 
 <style>
+  /* El CSS no necesita cambios. Se mantiene igual que el original. */
   .overlay {
     position: fixed;
     inset: 0;
@@ -269,7 +399,17 @@
     flex-shrink: 0;
     background-color: var(--color-background);
   }
-
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    min-width: 0;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
   .header-title {
     display: flex;
     align-items: center;
@@ -280,6 +420,14 @@
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
+  }
+
+  .save-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
   }
 
   .editor-content {
@@ -296,10 +444,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-xl);
+    padding: var(--space-xl) 0;
     gap: var(--space-md);
     color: var(--color-gray-500);
     text-align: center;
+    min-height: 200px;
   }
 
   .empty-state h3 {
@@ -317,7 +466,7 @@
       transform: rotate(360deg);
     }
   }
-  .loading-state :global(.icon-wrapper) {
+  :global(.spinner) {
     animation: spin 1s linear infinite;
   }
 
@@ -370,7 +519,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
-    padding-left: 80px;
+    padding-top: 1.2rem; /* Space for the indicator */
   }
 
   .field {
@@ -394,9 +543,14 @@
     background-color: var(--color-gray-100);
     border: 1px solid transparent;
     border-radius: var(--space-sm);
+    resize: none;
     transition:
       border-color 0.2s,
       box-shadow 0.2s;
+  }
+  .card-inputs textarea {
+    overflow: hidden;
+    min-height: 40px;
   }
 
   .card-inputs input:focus-visible,
@@ -414,6 +568,7 @@
     border-radius: 50%;
     cursor: pointer;
     align-self: flex-start;
+    margin-top: 1.2rem;
   }
 
   .remove-card-button:hover {
@@ -430,10 +585,26 @@
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    transition:
+      background-color 0.2s,
+      opacity 0.2s,
+      box-shadow 0.2s;
+    border-radius: var(--space-sm);
   }
   .drag-handle {
     cursor: grab;
     color: var(--color-gray-500);
+    padding: 8px 4px;
+  }
+  .sequence-item:active {
+    cursor: grabbing;
+  }
+  .is-dragging {
+    opacity: 0.5;
+  }
+  .drop-target {
+    background-color: hsl(var(--color-accent-hsl) / 0.1);
+    box-shadow: inset 0 0 0 2px var(--color-accent);
   }
 
   .remove-item-button {
@@ -453,13 +624,11 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
+    align-self: flex-start;
   }
 
   .add-card-container {
     position: relative;
-    display: flex;
-    justify-content: center;
-    padding-top: var(--space-md);
   }
 
   .add-menu {
@@ -475,6 +644,7 @@
     gap: 4px;
     width: 200px;
     z-index: 10;
+    right: 0;
   }
 
   .add-menu button {

@@ -9,13 +9,25 @@ import { toast } from 'svelte-sonner';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 /**
+ * Defines the save status of the editor.
+ */
+export type SaveStatus = 'idle' | 'saving' | 'saved';
+
+/**
+ * Defines the data fetching status. // <-- AÑADIDO: Nuevo tipo de estado
+ */
+export type FetchStatus = 'idle' | 'loading' | 'loaded' | 'error';
+
+/**
  * Defines the state structure for the card editor.
  */
 export interface CardEditorState {
   isOpen: boolean;
   nodeId: string | null;
   cards: Card[];
-  isLoading: boolean;
+  fetchStatus: FetchStatus; // <-- CAMBIO: Reemplaza a isLoading
+  status: SaveStatus;
+  lastAddedCardId: string | null; // For auto-focus/scroll
 }
 
 /**
@@ -25,7 +37,9 @@ const initialState: CardEditorState = {
   isOpen: false,
   nodeId: null,
   cards: [],
-  isLoading: false,
+  fetchStatus: 'idle', // <-- CAMBIO: Reemplaza a isLoading
+  status: 'idle',
+  lastAddedCardId: null,
 };
 
 // --- Store Creation ---
@@ -44,9 +58,10 @@ async function open(nodeId: string) {
   update((state) => ({
     ...state,
     isOpen: true,
-    isLoading: true,
+    fetchStatus: 'loading', // <-- CAMBIO
     nodeId: nodeId,
     cards: [],
+    status: 'idle',
   }));
 
   try {
@@ -54,7 +69,7 @@ async function open(nodeId: string) {
     update((state) => ({
       ...state,
       cards: cards,
-      isLoading: false, // Finish loading
+      fetchStatus: 'loaded', // <-- CAMBIO
     }));
   } catch (err) {
     errorService.reportError(err, {
@@ -62,7 +77,7 @@ async function open(nodeId: string) {
       nodeId,
     });
     toast.error('Could not load cards for this node.');
-    update((state) => ({ ...state, isLoading: false })); // Finish loading on error
+    update((state) => ({ ...state, fetchStatus: 'error' })); // <-- CAMBIO
   }
 }
 
@@ -70,6 +85,7 @@ async function open(nodeId: string) {
  * Closes the editing panel and resets the state to its initial values.
  */
 function close() {
+  // Esta función ya es correcta porque resetea al estado inicial actualizado.
   update((state) => {
     if (state.isOpen) {
       return initialState;
@@ -85,6 +101,9 @@ function close() {
 async function addCard(type: CardType) {
   const state = get(store);
   if (!state.nodeId) return;
+
+  // Reset last added card ID before creating a new one
+  update((s) => ({ ...s, lastAddedCardId: null }));
 
   const editorState = get(editorStore);
   const node =
@@ -106,7 +125,9 @@ async function addCard(type: CardType) {
       newCardData = {
         type: 'input',
         content: {
-          prompt: node?.textContent || 'New Input Card',
+          prompt: node?.textContent
+            ? `Regarding "${node.textContent}", ...`
+            : 'Fill in the blank',
           expected: '',
         },
         srs: defaultSrs,
@@ -115,7 +136,7 @@ async function addCard(type: CardType) {
     case 'sequencing':
       newCardData = {
         type: 'sequencing',
-        content: { prompt: node?.textContent || 'Order the items:', items: [] },
+        content: { prompt: 'Order the following items:', items: ['', ''] }, // Start with two empty items
         srs: defaultSrs,
       };
       break;
@@ -131,7 +152,12 @@ async function addCard(type: CardType) {
 
   try {
     const newCard = await cardService.addCard(state.nodeId, newCardData);
-    update((s) => ({ ...s, cards: [...s.cards, newCard] }));
+    // Set the ID of the newly added card for the UI to react to
+    update((s) => ({
+      ...s,
+      cards: [...s.cards, newCard],
+      lastAddedCardId: newCard.id,
+    }));
   } catch (err) {
     errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
     toast.error('Failed to create the new card.');
@@ -143,51 +169,81 @@ async function addCard(type: CardType) {
  * @param {Card} updatedCard - The card with the new data.
  */
 async function updateCard(updatedCard: Card) {
-  // Optimistic UI update
   update((s) => ({
     ...s,
+    status: 'saving',
     cards: s.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
   }));
 
   try {
     await cardService.updateCard(updatedCard);
+    // Use a timeout to show "Saved" for a moment
+    setTimeout(() => {
+      update((s) => (s.status === 'saving' ? { ...s, status: 'saved' } : s));
+    }, 1000);
   } catch (err) {
     errorService.reportError(err, {
       operation: 'cardEditorStore.updateCard',
       cardId: updatedCard.id,
     });
     toast.error('Failed to save card changes.');
-    // Optional: Implement rollback logic here if needed
+    update((s) => ({ ...s, status: 'idle' }));
   }
 }
 
 /**
  * Deletes a card from the store and the database.
  * @param {string} cardId - The ID of the card to delete.
+ * @returns {Promise<Card | undefined>} The deleted card data for potential undo action.
  */
-async function deleteCard(cardId: string) {
+async function deleteCard(cardId: string): Promise<Card | undefined> {
+  const cardToDelete = get(store).cards.find((c) => c.id === cardId);
+  if (!cardToDelete) return;
+
   // Optimistic UI update
   update((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== cardId) }));
 
   try {
     await cardService.deleteCard(cardId);
+    return cardToDelete;
   } catch (err) {
     errorService.reportError(err, {
       operation: 'cardEditorStore.deleteCard',
       cardId,
     });
     toast.error('Failed to delete the card.');
-    // Optional: Implement rollback logic here if needed
+    // Rollback UI on failure
+    update((s) => ({ ...s, cards: [...s.cards, cardToDelete] }));
+  }
+}
+
+/**
+ * Restores a deleted card. Used for the "Undo" action.
+ * @param {Card} cardToRestore - The card object to add back.
+ */
+async function restoreCard(cardToRestore: Card) {
+  try {
+    // The `addCard` service method expects a specific type, so we recreate it.
+    // A more robust service might have a dedicated `restore` or `addWithId` method.
+    await cardService.updateCard(cardToRestore); // Using updateCard as a way to re-insert
+    update((s) => ({ ...s, cards: [...s.cards, cardToRestore] }));
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.restoreCard',
+      cardId: cardToRestore.id,
+    });
+    toast.error('Failed to restore the card.');
   }
 }
 
 // Helper to find a Tiptap node by our custom nodeId attribute
 function findNodeById(
-  doc: ProseMirrorNode,
+  doc: ProseMirrorNode | null,
   id: string
 ): ProseMirrorNode | null {
+  if (!doc) return null;
   let foundNode: ProseMirrorNode | null = null;
-  doc.descendants((node: ProseMirrorNode, pos: number) => {
+  doc.descendants((node: ProseMirrorNode) => {
     if (node.attrs.nodeId === id) {
       foundNode = node;
       return false; // stop searching
@@ -204,4 +260,6 @@ export const cardEditorStore = {
   addCard,
   updateCard,
   deleteCard,
+  restoreCard,
+  clearLastAdded: () => update((s) => ({ ...s, lastAddedCardId: null })),
 };
