@@ -39,6 +39,10 @@
   // --- ESTADO PARA LA ANIMACIÓN DE ERROR ---
   let inputError = $state(false);
 
+  // --- ✨ MEJORA: ESTADO PARA EL MENÚ DESPLEGABLE "NUEVO" ---
+  let showNewMenu = $state<boolean>(false);
+  let newButtonElement = $state<HTMLButtonElement | undefined>();
+
   // Referencias al DOM (la advertencia 'non_reactive_update' es un falso positivo aquí)
   let renameInput: HTMLInputElement;
   let newFolderInput: HTMLInputElement;
@@ -63,7 +67,6 @@
 
     try {
       const [fetchedItems] = await Promise.all([fetchData, minDelay]);
-
       items = fetchedItems.sort((a, b) => {
         if (a.type === 'folder' && b.type === 'schema') return -1;
         if (a.type === 'schema' && b.type === 'folder') return 1;
@@ -208,7 +211,7 @@
       toast.success(`'${oldTitle}' renombrado a '${trimmedTitle}'.`);
     } catch (e: any) {
       toast.error(e.message || 'No se pudo renombrar el ítem.');
-      if (itemIndex !== -1) items[itemIndex].title = oldTitle;
+      if (itemIndex !== -1) items[itemIndex].title = oldTitle; // Rollback
       errorService.reportError(e, {
         operation: 'commitRename',
         itemId: item.id,
@@ -314,13 +317,13 @@
 
     isProcessingAction = true;
     const movedItem = items.find((i) => i.id === draggedItemId);
-    items = items.filter((i) => i.id !== draggedItemId);
+    items = items.filter((i) => i.id !== draggedItemId); // Optimistic update
     try {
       await directoryService.moveItem(draggedItemId, targetFolderId);
       toast.success(`"${movedItem?.title}" movido.`);
     } catch (e: any) {
       toast.error(e.message || 'No se pudo mover el ítem.');
-      await fetchItemsForParent(currentParentId);
+      await fetchItemsForParent(currentParentId); // Rollback on error
     } finally {
       resetDragState();
       isProcessingAction = false;
@@ -628,6 +631,10 @@
     display: flex;
     gap: var(--space-sm);
     flex-shrink: 0;
+  }
+
+  :global(.header-actions .btn) {
+    gap: 6px;
   }
 
   .breadcrumbs {
