@@ -114,6 +114,8 @@ async function createNewDocument(
     });
 
     await directoryService.setLastActiveDocId(newMetadata.id);
+    // Devolvemos los metadatos para que la UI pueda actuar sobre el nuevo documento si es necesario
+    return newMetadata;
   } catch (error) {
     errorService.reportError(error, {
       operation: 'createNewDocument',
@@ -170,10 +172,6 @@ directoryEvents.subscribe((event) => {
       currentMetadata &&
       event.item.title !== currentMetadata.title
     ) {
-      console.log(
-        `Syncing title: "${currentMetadata.title}" -> "${event.item.title}"`
-      );
-
       // Actualizamos los metadatos en nuestro store
       update((state) => ({ ...state, metadata: event.item }));
 
@@ -197,6 +195,17 @@ directoryEvents.subscribe((event) => {
             .insertContent(event.item.title)
             .run();
         }
+      } else {
+        // Si no hay un H1, lo insertamos al principio del documento
+        editor
+          .chain()
+          .focus()
+          .insertContentAt(0, {
+            type: 'heading',
+            attrs: { level: 1 },
+            content: [{ type: 'text', text: event.item.title }],
+          })
+          .run();
       }
     }
   }

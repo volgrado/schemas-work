@@ -39,10 +39,6 @@
   // --- ESTADO PARA LA ANIMACIÓN DE ERROR ---
   let inputError = $state(false);
 
-  // --- ✨ MEJORA: ESTADO PARA EL MENÚ DESPLEGABLE "NUEVO" ---
-  let showNewMenu = $state<boolean>(false);
-  let newButtonElement = $state<HTMLButtonElement | undefined>();
-
   // Referencias al DOM (la advertencia 'non_reactive_update' es un falso positivo aquí)
   let renameInput: HTMLInputElement;
   let newFolderInput: HTMLInputElement;
@@ -103,26 +99,28 @@
 
     isProcessingAction = true;
     try {
-      // Llamamos a directoryService para crear solo los metadatos.
-      await directoryService.createSchema(schemaName, currentParentId);
+      await documentStore.createNewDocument(
+        schemaName,
+        undefined,
+        currentParentId
+      );
       toast.success(`Esquema "${schemaName}" creado.`);
+      commandBarStore.close();
+
       isCreatingSchema = false;
       newSchemaName = '';
-      await fetchItemsForParent(currentParentId); // Refresca la lista
     } catch (e: any) {
       toast.error(e.message || 'No se pudo crear el esquema.');
       errorService.reportError(e, { operation: 'commitNewSchema', schemaName });
 
-      // LÓGICA DE REINTENTO
       isProcessingAction = false;
       inputError = true;
       await tick();
       newSchemaInput?.focus();
       newSchemaInput?.select();
-      setTimeout(() => (inputError = false), 500); // Resetea la animación
+      setTimeout(() => (inputError = false), 500);
     } finally {
       if (isCreatingSchema !== true) {
-        // Solo si no estamos reintentando
         isProcessingAction = false;
       }
     }
@@ -155,7 +153,6 @@
       toast.error(e.message || 'No se pudo crear la carpeta.');
       errorService.reportError(e, { operation: 'commitNewFolder', folderName });
 
-      // LÓGICA DE REINTENTO
       isProcessingAction = false;
       inputError = true;
       await tick();
@@ -317,13 +314,13 @@
 
     isProcessingAction = true;
     const movedItem = items.find((i) => i.id === draggedItemId);
-    items = items.filter((i) => i.id !== draggedItemId); // Optimistic update
+    items = items.filter((i) => i.id !== draggedItemId);
     try {
       await directoryService.moveItem(draggedItemId, targetFolderId);
       toast.success(`"${movedItem?.title}" movido.`);
     } catch (e: any) {
       toast.error(e.message || 'No se pudo mover el ítem.');
-      await fetchItemsForParent(currentParentId); // Rollback on error
+      await fetchItemsForParent(currentParentId);
     } finally {
       resetDragState();
       isProcessingAction = false;
@@ -448,6 +445,7 @@
         <input
           type="text"
           class="rename-input"
+          class:input-error={inputError}
           placeholder="Nombre del esquema..."
           bind:value={newSchemaName}
           bind:this={newSchemaInput}
@@ -469,6 +467,7 @@
         <input
           type="text"
           class="rename-input"
+          class:input-error={inputError}
           placeholder="Nombre de la carpeta..."
           bind:value={newFolderName}
           bind:this={newFolderInput}
@@ -502,8 +501,9 @@
     >
       <div
         class="schema-item"
-        class:disabled={isProcessingAction || !!editingItemId}
         class:drop-target={dropTargetId === item.id}
+        class:disabled={isProcessingAction ||
+          (!!editingItemId && editingItemId !== item.id)}
       >
         {#if editingItemId === item.id}
           <div class="schema-edit-wrapper">
@@ -676,7 +676,9 @@
     align-items: center;
     justify-content: space-between;
     border-radius: 8px;
-    transition: background-color 0.2s;
+    transition:
+      background-color 0.2s,
+      opacity 0.2s;
   }
 
   .schema-item.disabled {
@@ -721,7 +723,6 @@
     transition: opacity 0.2s ease;
   }
 
-  /* Oculta acciones hover en pantallas táctiles */
   @media (pointer: coarse) {
     .schema-actions {
       display: none;
@@ -830,7 +831,6 @@
     outline-offset: -1px;
   }
 
-  /* Añadimos una transición para que el feedback visual sea más suave */
   .list-header,
   .schema-item {
     transition:
@@ -863,7 +863,6 @@
     }
   }
 
-  /* --- ✨ ANIMACIÓN DE ERROR PARA INPUTS --- */
   @keyframes shake {
     10%,
     90% {
