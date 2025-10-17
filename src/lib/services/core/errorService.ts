@@ -3,9 +3,20 @@
  * @module errorService
  *
  * @remarks
- * This service functions as a robust, persistent diagnostics recorder. It captures errors,
- * enriches them with context, and stores them in `localStorage`. The log is capped to
- * a maximum number of entries to prevent unbounded growth of storage.
+ * This service provides a unified, persistent error handling mechanism for the entire application.
+ * Instead of scattering `console.error` calls throughout the codebase, other modules can delegate
+ * error handling to this service. This approach offers several key advantages:
+ *
+ * 1.  **Centralization**: All error reporting logic is in one place, making it easy to modify
+ *     or extend. For example, you could add a remote logging service (like Sentry or LogRocket)
+ *     by changing only this file.
+ * 2.  **Persistence**: By storing errors in `localStorage`, we can diagnose issues that occur
+ *     over time or across sessions. Users can also access these logs to provide more detailed
+ *     bug reports.
+ * 3.  **Contextualization**: The `reportError` function accepts a `context` object, allowing
+ *     developers to attach relevant data to an error, which is invaluable for debugging.
+ * 4.  **Safety**: The service includes safety checks (like capping the number of logs and handling
+ *     parsing errors) to prevent it from becoming a source of new problems.
  */
 
 /**

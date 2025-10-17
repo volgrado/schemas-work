@@ -3,10 +3,24 @@
  * @module directoryService
  *
  * @remarks
- * This service provides a CRUD interface for managing `SchemaMetadata` objects,
- * which represent files (schemas) and folders. All metadata is persisted in
- * `localStorage`, making the application offline-first. It uses a Svelte store
- * and the browser's `storage` event to synchronize state across multiple tabs.
+ * This service is the backbone of the application's file management system. It provides a complete
+ * CRUD (Create, Read, Update, Delete) interface for `SchemaMetadata` objects, which represent
+ * both the schema documents (files) and the folders that contain them.
+ *
+ * Key Architectural Decisions:
+ * - **Offline-First Persistence**: The entire directory structure is stored as a single JSON object
+ *   in `localStorage`. This makes the application inherently offline-first, as all file and folder
+ *   metadata is available immediately on load without needing a network request.
+ *
+ * - **Cross-Tab Synchronization**: The service uses a combination of a Svelte store (`directoryEvents`)
+ *   and the browser's `storage` event to achieve real-time synchronization across multiple open tabs.
+ *   When a change is made in one tab, the `localStorage` is updated, which triggers the `storage`
+ *   event in all other tabs. This service listens for that event and emits a change on the
+ *   `directoryEvents` store, allowing the UI in other tabs to update reactively.
+ *
+ * - **Separation of Concerns**: This service is strictly responsible for the *metadata* of the files
+ *   and folders (e.g., title, parentId, timestamps). The actual *content* of the schema documents
+ *   is handled by the `documentService` and `persistenceService`.
  */
 
 import { writable } from 'svelte/store';

@@ -1,6 +1,51 @@
 /**
  * @file Manages the global state and orchestration for the Text-to-Speech (TTS) feature.
  * @module ttsStore
+ *
+ * @remarks
+ * This store orchestrates the entire Text-to-Speech (TTS) feature. It acts as a high-level
+ * state machine, managing everything from initializing the underlying speech synthesis engine to
+ * building a playable queue, tracking playback progress, and highlighting the text in the editor
+ * as it's being spoken.
+ *
+ * ### Architectural Role
+ *
+ * - **Complex Feature Controller**: This is one of the most complex stores in the application,
+ *   showcasing a rich set of responsibilities. It manages not just UI state (`status`, `rate`,
+ *   `selectedVoiceId`), but also a data queue (`nodesToRead`) and direct interaction with a
+ *   browser API via a service abstraction (`ttsService`).
+ *
+ * - **Service Abstraction**: The store does not interact with the `SpeechSynthesis` Web API
+ *   directly. Instead, it uses a `TTSService` interface (`BrowserTTSService`). This is an
+ *   important architectural choice. It decouples the store's logic from the specific
+ *   implementation of the TTS engine. This would make it easier to swap in a different TTS
+ *   provider in the future (e.g., a cloud-based AI voice service) without having to rewrite the
+ *   entire store. The new provider would just need to implement the `TTSService` interface.
+ *
+ * - **Editor Integration for Highlighting**: A key feature is the real-time highlighting of spoken
+ *   text. The store achieves this by interacting with the `editorStore`. 
+ *   1. It generates a `wordMap` for each `ReadableNode`, pre-calculating the exact document
+ *      position of every word.
+ *   2. It listens to the `onBoundary` event from the `ttsService`.
+ *   3. In the `handleWordBoundary` function, it uses this event to find the currently spoken word
+ *      in the `wordMap` and creates a ProseMirror `Decoration` to apply a CSS class to it.
+ *   4. The new `DecorationSet` is committed to the store, which causes the `DocumentView` to
+ *      update the editor's appearance.
+ *   This creates a highly dynamic and interactive experience that is tightly coupled to the editor's
+ *   state.
+ *
+ * - **Robust State and Race Condition Management**: Speaking is an asynchronous, time-based
+ *   operation with many events (`onEnd`, `onError`, `onBoundary`). The store carefully manages
+ *   its state (`status`) and uses a unique `currentSpeechId` (a UUID) for each utterance. Notice
+ *   how the event handlers always check if the `currentSpeechId` still matches the one from the
+ *   state. This prevents race conditions, for example, if the user quickly stops and starts a new
+ *   speech request, the `onEnd` event from the old, cancelled speech won't incorrectly trigger
+ *   the `nextNode` action.
+ * 
+ * - **Reactive to Document Changes**: The store subscribes to the `editorStore` and listens for
+ *   transactions. If the document is modified while TTS is active, it automatically stops playback.
+ *   This prevents the playback from going out of sync with the document content and avoids potential
+ *   errors with stale node positions in the `nodesToRead` queue.
  */
 
 import { writable, get } from 'svelte/store';

@@ -1,29 +1,52 @@
-# Services
+# Arquitectura de Servicios (`/src/lib/services`)
 
-This directory contains the core business logic and third-party API abstractions for the application. The services are organized into three subdirectories, each with a distinct responsibility.
+Este directorio es la **capa de lógica de negocio** de la aplicación. Es responsable de orquestar operaciones complejas, implementar la lógica de las características y actuar como intermediario entre la aplicación y los sistemas externos (bases de datos, APIs, SDKs).
 
-## Core Services (`./core`)
+## Filosofía de Diseño
 
-These services provide the foundational, cross-cutting functionalities that the entire application relies on. They are abstract, generic, and not tied to any specific application feature.
+El objetivo principal es lograr una **separación de responsabilidades estricta** y una alta **cohesión**, siguiendo principios de diseño de software sólido.
 
-- **`directoryService.ts`**: Manages the virtual file and folder hierarchy for user-created schemas. It provides a CRUD interface for `SchemaMetadata` objects and uses `localStorage` for persistence, with real-time, cross-tab synchronization.
+1.  **Orquestación a través de Stores**: Los servicios no son invocados directamente por los componentes de la UI. Los **Svelte Stores** actúan como controladores de estado y orquestadores. Un store invoca a uno o varios servicios para ejecutar una operación y, basándose en el resultado, actualiza su estado. La UI, a su vez, reacciona a los cambios en el store.
+    *   *Ejemplo*: `reviewStore.submitReview()` invoca a `reviewService` y a `cardService` para procesar una revisión, y luego actualiza su estado con la siguiente tarjeta.
 
-- **`errorService.ts`**: A centralized service for capturing, storing, and managing application-wide errors. It creates a persistent, first-in-first-out log of issues that can be reviewed for debugging.
+2.  **Abstracción de Dependencias (Inversión de Control)**: Los servicios ocultan los detalles de implementación de las fuentes de datos y APIs. `cardService` expone un método `updateCard(card)`, pero el resto de la aplicación no sabe si esto se guarda en Firebase, una API REST o `localStorage`. Este principio nos permite intercambiar dependencias sin afectar la lógica de negocio.
 
-- **`persistenceService.ts`**: Abstracts the persistence layer for document content using Y.js and IndexedDB. It acts as the bridge between the in-memory, collaborative representation of a document and its physical storage in the browser.
+3.  **Composición y Responsabilidad Única**: Cada servicio debe tener una responsabilidad clara y única. Un servicio puede componerse de otros para realizar tareas más complejas, promoviendo la reutilización de código.
+    *   *Ejemplo*: `reviewService` no sabe cómo guardar una tarjeta; delega esa responsabilidad en `cardService`.
 
-## Feature Services (`./features`)
+## Estructura de Directorios
 
-These services implement the business logic for specific, user-facing features of the application.
+La estructura está diseñada para reflejar esta separación de responsabilidades, dividiéndose en capas de abstracción.
 
-- **`cardService.ts`**: Manages the persistence and lifecycle of "cards" (e.g., flashcards, annotations) using a local IndexedDB database. It provides a robust CRUD interface for `Card` objects linked to specific nodes within a schema document.
+-   **/api**: Contiene los **clientes de API de más bajo nivel**. Su única responsabilidad es realizar la comunicación de red (e.g., `fetch`) y manejar la serialización/deserialización de datos. No contienen lógica de negocio.
+    -   `databaseClient.ts`: Funciones `get`, `post`, `put` que interactúan con el backend de la base de datos.
+    -   `aiClient.ts`: Lógica para enviar prompts a un modelo de lenguaje y recibir la respuesta.
 
-- **`reviewService.ts`**: Implements the business logic for the spaced repetition learning (SRS) feature. It uses a modified SM-2 algorithm to calculate the optimal time to present a card for review, aiming to maximize learning and retention.
+-   **/core**: Servicios transversales esenciales para el funcionamiento de la aplicación, pero que no están ligados a una característica específica.
+    -   `errorService.ts`: Servicio centralizado para el reporte y logging de errores.
+    -   `authService.ts`: Gestiona la autenticación, sesiones de usuario y tokens.
+    -   `syncService.ts`: Orquesta la sincronización de datos con el backend (potencialmente usando Y.js o similar).
 
-## TTS Services (`./tts`)
+-   **/features**: Aquí reside el **corazón de la lógica de negocio**. Cada servicio implementa las reglas y procesos para una característica específica de la aplicación.
+    -   `reviewService.ts`: Implementa el algoritmo de repetición espaciada (`calculateNextReviewDate`). No interactúa directamente con la base de datos.
+    -   `cardService.ts`: Proporciona una API de tipo CRUD (`createCard`, `updateCard`) para las tarjetas. Actúa como una capa de abstracción sobre el `databaseClient`, transformando los datos si es necesario.
 
-These services provide the text-to-speech (TTS) functionality for the application. They are designed to be modular and swappable.
+-   **/tts** (Ejemplo de Abstracción de Interfaz):
+    -   `tts.service.ts`: Define una **interfaz** `TTSService` (`speak`, `pause`). Esto establece un contrato para cualquier servicio de Text-to-Speech.
+    -   `BrowserTTSService.ts`: Una **implementación concreta** que utiliza la API del navegador `SpeechSynthesis`.
+    -   `CloudTTSService.ts` (Hipotético): Otra implementación que podría usar una API de IA en la nube, intercambiable con la anterior.
 
-- **`tts.service.ts`**: Defines the core interfaces for the Text-to-Speech (TTS) feature. It establishes a clear, implementation-agnostic contract for any TTS engine, decoupling the application's business logic from any specific implementation.
+## Flujo de Ejemplo Detallado: Revisar una Tarjeta
 
-- **`BrowserTTSService.ts`**: An implementation of the `TTSService` interface that utilizes the native browser `window.speechSynthesis` API. It includes features to handle browser inconsistencies, such as robust voice loading, automatic text chunking, and a watchdog to prevent stalled synthesis.
+1.  **UI (`ReviewPanel.svelte`)**: El usuario hace clic en "Buena". Se invoca `reviewStore.submitReview('good')`.
+2.  **Store (`reviewStore`)**:
+    a. Obtiene la tarjeta actual de su estado.
+    b. Invoca `reviewService.calculateNextReview(currentCard, 'good')` para obtener los nuevos parámetros de revisión (e.g., `dueDate`, `interval`).
+    c. Crea un objeto `updatedCard` fusionando los nuevos parámetros.
+    d. Invoca `cardService.updateCard(updatedCard)` para persistir el cambio.
+    e. En caso de éxito, actualiza su propio estado para cargar la siguiente tarjeta.
+3.  **Servicio de Característica (`reviewService`)**: La función `calculateNextReview` ejecuta lógica pura, sin efectos secundarios, y devuelve el resultado.
+4.  **Servicio de Característica (`cardService`)**: La función `updateCard` invoca a `databaseClient.put('/cards/123', updatedCard)`. Puede contener lógica para transformar la tarjeta al formato esperado por la API.
+5.  **Cliente API (`databaseClient`)**: La función `put` realiza la llamada `fetch`, gestiona los encabezados de autenticación y devuelve la respuesta del servidor.
+
+Este flujo demuestra cómo cada capa tiene una responsabilidad clara, lo que hace que el sistema sea más fácil de entender, probar y mantener.

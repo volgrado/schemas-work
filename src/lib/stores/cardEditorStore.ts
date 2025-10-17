@@ -1,6 +1,37 @@
 /**
  * @file Manages the state and interactions for the `CardEditorPanel` component.
  * @module cardEditorStore
+ *
+ * @remarks
+ * This store is the central state management hub for the `CardEditorPanel`, which is the primary
+ * interface for creating, viewing, and editing spaced repetition (SRS) cards. These cards are
+ * directly associated with specific nodes (content blocks) within the main document editor.
+ *
+ * ### Architectural Role
+ *
+ * - **State Controller for a Feature**: This store encapsulates all the state related to the card
+ *   editing feature. This includes not just the data (the cards themselves) but also the UI
+ *   state, such as whether the panel is open (`isOpen`), data fetching status (`fetchStatus`),
+ *   and save status (`status`). This is a classic example of centralizing state management
+ *   for a complex, feature-specific component.
+ *
+ * - **Orchestrator of Services**: The store doesn't perform database operations directly.
+ *   Instead, it orchestrates calls to the `cardService`, which handles the actual persistence
+ *   logic. It also interacts with the `editorStore` to get contextual information about the
+ *   ProseMirror node being annotated with cards. This separation of concerns makes the
+ *   codebase easier to maintain and test.
+ *
+ * ### Design Patterns
+ *
+ * - **Optimistic Updates**: In functions like `updateCard` and `deleteCard`, the local Svelte
+ *   store is updated *immediately* before the asynchronous database call is made. This provides
+ *   a snappy user experience, as the UI reflects the change instantly. The code then handles
+ *   potential errors from the async operation (e.g., by showing a toast notification and,
+ *   in the case of deletion, reverting the change).
+ *
+ * - **Status Flags for UI Feedback**: The `fetchStatus` and `status` properties are crucial
+ *   for providing clear feedback to the user. The UI can subscribe to this store and display
+ *   loading spinners, error messages, or "Saved" indicators based on the values of these flags.
  */
 
 import { writable, get } from 'svelte/store';

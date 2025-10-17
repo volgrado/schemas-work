@@ -1,6 +1,43 @@
 /**
  * @file Manages the lifecycle, state, and persistence of the active schema document.
  * @module documentStore
+ *
+ * @remarks
+ * This store is the heart of the application's state management. It is responsible for the entire
+ * lifecycle of the currently active document, from loading it from storage, making it available to
+ * the editor, and handling its eventual cleanup. It serves as the single source of truth for all
+ * information about the *active* document.
+ *
+ * ### Architectural Role
+ *
+ * - **Central Document Hub**: This store holds the live `Y.Doc` instance, which is the collaborative
+ *   real-time data structure (CRDT) that powers the editor. All other parts of the application
+ *   that need to interact with the document's content or metadata (like the editor itself, the
+ *   title bar, etc.) do so by subscribing to this store.
+ *
+ * - **Lifecycle Management**: It provides the core functions for document lifecycle: `loadDocument`,
+ *   `createNewDocument`, and the internal `cleanup` function. When a new document is loaded,
+ *   this store orchestrates the process of tearing down the old document's persistence connection
+ *   and setting up the new one. This is crucial for preventing memory leaks and ensuring data
+ *   integrity.
+ *
+ * - **Bridge to Persistence**: The store collaborates with `persistenceService` to get a
+ *   `DocumentProvider` (which bundles the `Y.Doc` and its `IndexeddbPersistence` layer). It waits for
+ *   the provider to be synced (`provider.whenSynced`) before marking the document as 'ready'. This
+ *   ensures that the editor doesn't receive the document until its initial state has been fully
+ *   loaded from IndexedDB, preventing content flashing or data loss.
+ *
+ * - **Reactive to External Changes**: The store subscribes to `directoryEvents`. This is a powerful
+ *   decoupling mechanism. If another part of the application (e.g., a file browser UI) renames or
+ *   deletes the currently active document, the `directoryService` will emit an event. This store
+ *   listens for those events and reacts accordingly: updating the title in the store if the document
+ *   is renamed, or loading a new document if the active one is deleted. This prevents the UI from
+ *   becoming stale or inconsistent.
+ *
+ * - **Optimistic Updates**: The `updateTitle` function demonstrates an optimistic UI update. The local
+ *   `metadata` in the store is updated immediately, providing instant feedback to the user. The
+ *   asynchronous call to `directoryService.updateItemMetadata` then proceeds. If it fails, the
+ *   store reverts the change, ensuring the UI remains consistent with the backend state.
  */
 
 import { writable, get } from 'svelte/store';

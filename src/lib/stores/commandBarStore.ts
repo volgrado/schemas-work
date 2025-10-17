@@ -1,6 +1,30 @@
 /**
  * @file Manages the global state for the command bar and related UI modals.
  * @module commandBarStore
+ *
+ * @remarks
+ * This store acts as a centralized controller for the application's command-oriented user interface.
+ * It is the single source of truth for the visibility and context of the main command bar (`Cmd-K`)
+ * and all the modal dialogs that can be launched from it or from other parts of the UI.
+ *
+ * ### Architectural Role
+ *
+ * - **Global UI State Manager**: Unlike stores tied to a specific feature (like `cardEditorStore`),
+ *   this store manages a global UI concern. The command bar is a cross-cutting feature that can be
+ *   invoked from anywhere, and this store provides the necessary state management for that.
+ *
+ * - **Modal Orchestrator**: A key responsibility of this store is to manage the flow between the
+ *   main command bar and various specialized modals (e.g., for password entry, AI actions,
+ *   or diagnostics). Notice a common pattern in the action functions like `openPasswordModal`:
+ *   they set `isOpen: false` for the main command bar while setting `is...ModalOpen: true` for
+ *   the target modal. This ensures that only one of these modal layers is active at any given
+ *   time, preventing complex and confusing UI layering.
+ *
+ * - **Decoupling Trigger from Implementation**: This store effectively decouples the components that
+ *   *trigger* an action (e.g., a menu item, a button) from the UI components that *implement*
+ *   that action (e.g., the `PasswordModal` Svelte component). A button can simply call
+ *   `commandBarStore.openPasswordModal('export')` without needing any direct reference to the
+ *   modal component itself, promoting better component isolation and reusability.
  */
 
 import { writable } from 'svelte/store';

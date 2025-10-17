@@ -1,6 +1,34 @@
 /**
  * @file Manages the state and interactions for the editor's slash command menu.
  * @module slashMenuStore
+ *
+ * @remarks
+ * This store manages the state for the slash command menu, a floating UI element that appears
+ * in the editor when the user types the '/' character. It's responsible for filtering commands
+ * based on user input, handling keyboard navigation, and executing the selected command.
+ *
+ * ### Architectural Role
+ *
+ * - **Ephemeral UI State Manager**: Unlike stores that manage persistent application data (like
+ *   `documentStore`), this store handles purely ephemeral UI state. The menu's entire lifecycle
+ *   is fleeting: it opens, the user interacts with it for a few seconds, a command is triggered,
+ *   and the state is completely reset. This is a common pattern for managing complex, temporary
+ *   UI interactions like command palettes or context menus.
+ *
+ * - **Decoupling Input from Presentation**: The logic for this store is driven by a Tiptap
+ *   extension (`slashCommands/suggestion.ts`). That extension is responsible for detecting when
+ *   to open the menu and providing the necessary data (the list of commands, the cursor position,
+ *   the user's query). The store takes this data and manages the state, but it has no knowledge
+ *   of Tiptap itself. The `SlashMenu.svelte` component, in turn, is a purely presentational
+ *   component that subscribes to this store and renders the UI. This creates a clean separation:
+ *   `Tiptap Extension (Logic) -> Svelte Store (State) -> Svelte Component (View)`.
+ *
+ * - **Callback-Based Execution**: The store itself does not know how to execute any of the commands.
+ *   When the menu is opened, the Tiptap extension provides a `commandToExecute` callback function.
+ *   When a user selects a command, the store simply invokes this callback with the chosen command
+ *   item. This is a powerful form of inversion of control that keeps the store generic and reusable,
+ *   as the execution logic remains within the Tiptap/ProseMirror ecosystem where it has access to
+ *   the editor's transaction model.
  */
 
 import { writable } from 'svelte/store';
@@ -13,7 +41,7 @@ interface SlashMenuState {
 	/** Determines whether the slash command menu is visible. */
 	isOpen: boolean;
 	/** The complete, unfiltered list of all available command items. */
-	allItems: CommandItem[];
+	allitems: CommandItem[];
 	/** The filtered list of items currently displayed. */
 	filteredItems: CommandItem[];
 	/** An array of unique group names from `allItems`. */

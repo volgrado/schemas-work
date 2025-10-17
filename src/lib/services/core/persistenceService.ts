@@ -3,10 +3,26 @@
  * @module persistenceService
  *
  * @remarks
- * This service acts as the bridge between the in-memory, collaborative representation
- * of a document (a `Y.Doc`) and its physical storage in the browser (IndexedDB).
- * By centralizing this logic, the rest of the application can operate on Y.js data
- * structures without being aware of the specific persistence mechanism.
+ * This service is the crucial link between the in-memory representation of a document and its
+ * long-term storage. It leverages the `y-indexeddb` provider to create a robust, offline-first
+ * persistence layer for Y.js documents.
+ *
+ * Key Architectural Principles:
+ * - **Decoupling**: This service completely decouples the application's components and stores from the
+ *   specifics of data storage. Components can interact with a `Y.Doc` without needing to know
+ *   or care that it is being saved to IndexedDB. This makes the architecture more modular
+ *   and allows for future changes to the persistence layer (e.g., adding a real-time backend)
+ *   with minimal impact on the rest of the codebase.
+ *
+ * - **Isolation**: Each document is stored in its own separate IndexedDB database, identified by
+ *   the `docId`. This is a critical design choice that ensures data integrity and prevents
+ *   one document's data from interfering with another's. It also simplifies the process
+ *   of deleting a document, as we can simply delete the entire database.
+ *
+ * - **Efficiency**: The `y-indexeddb` provider is highly efficient. It listens for changes to the
+ *   `Y.Doc` and only writes the incremental updates (the "diffs") to IndexedDB, rather than
+ *   saving the entire document on every change. This is a significant performance advantage,
+ *   especially for large documents.
  */
 
 import * as Y from 'yjs';

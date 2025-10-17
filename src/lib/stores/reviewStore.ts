@@ -1,6 +1,45 @@
 /**
  * @file Manages the state and logic for the spaced repetition review feature.
  * @module reviewStore
+ *
+ * @remarks
+ * This store encapsulates all the state and business logic required for running a spaced
+ * repetition review session. It is the single source of truth for the entire review experience,
+ * from fetching due cards to calculating the next review date and advancing the session.
+ *
+ * ### Architectural Role
+ *
+ * - **Feature State Controller**: Similar to `cardEditorStore`, this store manages the state
+ *   for a major, self-contained application feature. It holds the queue of cards to review,
+ *   the user's progress through the queue, and UI state like whether a card's answer is visible.
+ *   This isolates the complexity of the review feature from the rest of the application.
+ *
+ * - **Orchestrator of Services**: The store uses `reviewService` to fetch the initial set of
+ *   cards (either all due cards or a set of the weakest ones) and to perform the core SRS
+ *   algorithm (`calculateNextReview`). It then uses `cardService` to persist the updated card
+ *   data to the database. This is a great example of the store acting as a high-level
+ *   coordinator, delegating specialized tasks to dedicated services.
+ *
+ * - **Session Management**: The store manages the concept of a "session". The `startReview`
+ *   function initiates the session, loading the cards and setting `isReviewing` to true. The
+ *   `submitReview` function advances the session, and `finishReview` or `jumpToSource` terminates
+ *   it, resetting the store to its initial state. The UI (`ReviewPanel.svelte`) is a purely
+ *   reactive component that just displays the state provided by this store.
+ *
+ * ### Interesting Design Patterns
+ *
+ * - **Dynamic Review Queue**: The `submitReview` function contains an interesting piece of logic.
+ *   If a user rates their recall quality as poor (e.g., `quality < 3`), the card is not simply
+ *   discarded from the session. Instead, it's re-queued at the end of the `cardsToReview` array.
+ *   This ensures that the user gets another chance to practice the cards they are struggling
+ *   with within the same review session, reinforcing learning.
+ *
+ * - **Decoupled Editor Interaction**: The `jumpToSource` function demonstrates how this store
+ *   interacts with the `editorStore`. It doesn't have a direct dependency on the editor component.
+ *   Instead, it gets the editor instance from the `editorStore`, finds the relevant node position,
+ *   and then uses the editor's command chain to move the user's focus. It also updates the
+ *   `editorStore.selectedNodePos`, which might cause other UI elements to react. Finally, it
+ *   calls its own `finishReview` to clean up the review state.
  */
 
 import { writable, get } from 'svelte/store';
