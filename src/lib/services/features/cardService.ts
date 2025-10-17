@@ -1,17 +1,11 @@
 /**
  * @file Manages the persistence and lifecycle of "cards" using a local IndexedDB database.
+ * @module cardService
  *
  * @remarks
- * This service provides a straightforward and robust CRUD (Create, Read, Update, Delete)
- * interface for managing `Card` objects. Cards represent supplementary, structured pieces
- * of information that can be linked to specific nodes within a larger schema document.
- *
- * The service leverages `Dexie.js`, a powerful and developer-friendly wrapper around the
- * native `IndexedDB` API. This choice allows for efficient, transactional, and indexed
- * local storage. Decoupling card storage from the main document persistence layer
- * (`y-indexeddb`) is a deliberate design choice, making it highly suitable for storing
- * metadata, annotations, or other transient, view-specific state that doesn't need to
- * be part of the collaborative, versioned document history.
+ * This service provides a CRUD interface for managing `Card` objects, which are linked
+ * to specific nodes within a schema document. It uses `Dexie.js` for efficient local
+ * storage, decoupling card data from the main document's CRDT-based persistence.
  */
 
 import type { Card } from '$lib/types';
@@ -20,100 +14,99 @@ import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
 
 /**
- * Defines the IndexedDB database schema for storing cards using the Dexie ORM.
+ * Defines the IndexedDB database schema for storing cards.
  * @internal
  */
 class CardDB extends Dexie {
-  /** The Dexie table that will store the `Card` objects. */
-  cards!: Table<Card>;
+	/** The Dexie table that stores `Card` objects. */
+	cards!: Table<Card>;
 
-  constructor() {
-    // The database name must be unique across the application's domain.
-    super('CardDatabase');
-    this.version(1).stores({
-      // Defines the schema for version 1 of the database.
-      // '++id' specifies an auto-incrementing primary key named 'id'.
-      // 'nodeId' creates an index on the `nodeId` property for fast lookups.
-      cards: '++id, nodeId',
-    });
-  }
+	constructor() {
+		super('CardDatabase');
+		this.version(1).stores({
+			cards: '++id, nodeId'
+		});
+	}
 }
 
-// A singleton instance of the database is created to be shared across the application.
+/**
+ * A singleton instance of the database.
+ * @internal
+ */
 const db = new CardDB();
 
 /**
- * Retrieves all cards currently stored in the database.
- * @returns A promise that resolves to an array of all `Card` objects. Returns an empty array in case of an error.
+ * Retrieves all cards from the database.
+ * @returns {Promise<Card[]>} A promise that resolves to an array of all `Card` objects.
  */
 export async function getAllCards(): Promise<Card[]> {
-  try {
-    return await db.cards.toArray();
-  } catch (error) {
-    errorService.reportError(error, { operation: 'getAllCards' });
-    return []; // Return a safe, empty value on failure.
-  }
+	try {
+		return await db.cards.toArray();
+	} catch (error) {
+		errorService.reportError(error, { operation: 'getAllCards' });
+		return [];
+	}
 }
 
 /**
- * Retrieves all cards that are associated with a specific schema node ID.
- * @param nodeId The unique identifier of the node whose cards are to be fetched.
- * @returns A promise that resolves to an array of matching `Card` objects. Returns an empty array on error.
+ * Retrieves all cards associated with a specific schema node ID.
+ * @param {string} nodeId The unique identifier of the schema node.
+ * @returns {Promise<Card[]>} A promise that resolves to an array of matching `Card` objects.
  */
 export async function getCardsByNodeId(nodeId: string): Promise<Card[]> {
-  try {
-    // The `where()` clause uses the 'nodeId' index for efficient querying.
-    return await db.cards.where('nodeId').equals(nodeId).toArray();
-  } catch (error) {
-    errorService.reportError(error, { operation: 'getCardsByNodeId', nodeId });
-    return [];
-  }
+	try {
+		return await db.cards.where('nodeId').equals(nodeId).toArray();
+	} catch (error) {
+		errorService.reportError(error, { operation: 'getCardsByNodeId', nodeId });
+		return [];
+	}
 }
 
 /**
  * Adds a single new card to the database.
- * @param nodeId The ID of the node to which this card should be associated.
- * @param card The card data to add. The `id` property will be automatically generated.
- * @returns The newly created card, now including its unique, generated `id`.
+ * @param {string} nodeId The ID of the node to associate the card with.
+ * @param {Omit<Card, 'id' | 'nodeId'>} card The card data to add.
+ * @returns {Promise<Card>} A promise that resolves to the newly created card.
  */
 export async function addCard(nodeId: string, card: Omit<Card, 'id' | 'nodeId'>): Promise<Card> {
-  const newCard: Card = {
-    ...card,
-    id: uuidv4(), // Generate a new, universally unique identifier for the card.
-    nodeId: nodeId,
-  };
-  await db.cards.add(newCard);
-  return newCard;
+	const newCard: Card = {
+		...card,
+		id: uuidv4(),
+		nodeId: nodeId
+	};
+	await db.cards.add(newCard);
+	return newCard;
 }
 
 /**
- * Adds multiple cards for a specific node in a single, efficient database transaction.
- * @param nodeId The ID of the node to which these cards should be associated.
- * @param cards An array of card data to add.
+ * Adds multiple cards for a specific node in a single transaction.
+ * @param {string} nodeId The ID of the node to associate the cards with.
+ * @param {Omit<Card, 'id' | 'nodeId'>[]} cards An array of card data to add.
+ * @returns {Promise<void>} A promise that resolves when the bulk operation is complete.
  */
 export async function addCards(nodeId: string, cards: Omit<Card, 'id' | 'nodeId'>[]): Promise<void> {
-  const newCards: Card[] = cards.map((card) => ({
-    ...card,
-    id: uuidv4(),
-    nodeId: nodeId,
-  }));
-  // Dexie's `bulkAdd` is significantly more performant for multiple additions than calling `add()` in a loop.
-  await db.cards.bulkAdd(newCards);
+	const newCards: Card[] = cards.map((card) => ({
+		...card,
+		id: uuidv4(),
+		nodeId: nodeId
+	}));
+	await db.cards.bulkAdd(newCards);
 }
 
 /**
- * Updates an existing card in the database. If the card does not exist, it will be created.
- * @param card The card object containing the updated data. It must have a valid `id`.
+ * Updates an existing card or creates it if it doesn't exist (upsert).
+ * @param {Card} card The card object to update or create. It must have a valid `id`.
+ * @returns {Promise<void>} A promise that resolves when the operation is complete.
  */
 export async function updateCard(card: Card): Promise<void> {
-  // Dexie's `put` method handles both creating and updating, based on the primary key.
-  await db.cards.put(card);
+	await db.cards.put(card);
 }
 
 /**
  * Deletes a card from the database by its unique identifier.
- * @param cardId The ID of the card to be deleted.
+ * @param {string} cardId The ID of the card to delete.
+ * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteCard(cardId: string): Promise<void> {
-  await db.cards.delete(cardId);
+	await db.cards.delete(cardId);
 }

@@ -1,112 +1,89 @@
 /**
  * @file Centralized service for capturing, storing, and managing application-wide errors.
+ * @module errorService
  *
  * @remarks
- * This service functions as a robust, persistent diagnostics recorder. It captures errors
- * that occur anywhere within the application, enriches them with valuable context (such as
- * the operation being performed at the time), and stores them in `localStorage`. This
- * creates a persistent, first-in-first-out log of issues that can be reviewed by the
- * user or sent to a developer for effective debugging.
- *
- * To prevent unbounded growth of the browser's storage, the log is capped to a
- * maximum number of entries (`MAX_LOGS`).
+ * This service functions as a robust, persistent diagnostics recorder. It captures errors,
+ * enriches them with context, and stores them in `localStorage`. The log is capped to
+ * a maximum number of entries to prevent unbounded growth of storage.
  */
 
 /**
- * Defines the canonical structure for a single error entry in the log.
+ * Defines the structure for a single error entry in the log.
  */
 export interface ErrorLog {
-  /** The ISO 8601 timestamp indicating exactly when the error was logged. */
-  timestamp: string;
-  /** The primary error message, typically from `error.message`. */
-  message: string;
-  /** The stack trace of the error, if available, for detailed debugging. */
-  stack?: string;
-  /** A record of key-value pairs providing additional context at the time of the error to aid in diagnostics. */
-  context?: Record<string, any>;
+	/** The ISO 8601 timestamp when the error was logged. */
+	timestamp: string;
+	/** The primary error message. */
+	message: string;
+	/** The stack trace of the error, if available. */
+	stack?: string;
+	/** Additional context about the error. */
+	context?: Record<string, any>;
 }
 
-/**
- * The key used to store the array of error logs in the browser's `localStorage`.
- * @internal
- */
 const ERROR_LOGS_STORAGE_KEY = 'schemas-work-error-logs';
-
-/**
- * The maximum number of error records to maintain in the log. When this limit is exceeded,
- * the oldest entries are discarded.
- * @internal
- */
 const MAX_LOGS = 50;
 
 /**
  * Retrieves all stored error logs from `localStorage`.
  *
- * @returns An array of `ErrorLog` objects, sorted from the most recent to the oldest.
- *          Returns an empty array if the logs are corrupted or not present.
+ * @returns {ErrorLog[]} An array of `ErrorLog` objects, sorted from most recent to oldest.
  */
 export function getLogs(): ErrorLog[] {
-  try {
-    if (typeof window === 'undefined') return [];
-    const storedLogs = localStorage.getItem(ERROR_LOGS_STORAGE_KEY);
-    return storedLogs ? JSON.parse(storedLogs) : [];
-  } catch (e) {
-    console.error('Error parsing stored error logs. The logs may be corrupted.', e);
-    // If parsing fails, the logs are likely corrupted. It's safer to clear them.
-    clearLogs();
-    return [];
-  }
+	try {
+		if (typeof window === 'undefined') return [];
+		const storedLogs = localStorage.getItem(ERROR_LOGS_STORAGE_KEY);
+		return storedLogs ? JSON.parse(storedLogs) : [];
+	} catch (e) {
+		console.error('Error parsing stored error logs. Clearing them.', e);
+		clearLogs();
+		return [];
+	}
 }
 
 /**
- * Captures, formats, and logs a new error to the persistent history.
+ * Captures, formats, and logs a new error.
  *
- * This is the primary public method of the service.
- *
- * @param error - The captured error object. It can be of any type, but an `Error` object is preferred for its `stack` property.
- * @param context - An optional record of key-value pairs that provides context about the circumstances of the error (e.g., `{ operation: 'file.save' }`).
+ * @param {Error | any} error The captured error object.
+ * @param {Record<string, any>} [context] Optional context about the error.
  */
 export function reportError(error: Error | any, context?: Record<string, any>): void {
-  if (typeof window === 'undefined') return;
+	if (typeof window === 'undefined') return;
 
-  const newLog: ErrorLog = {
-    timestamp: new Date().toISOString(),
-    message: error?.message || 'An unknown or non-standard error occurred.',
-    stack: error?.stack,
-    context,
-  };
+	const newLog: ErrorLog = {
+		timestamp: new Date().toISOString(),
+		message: error?.message || 'An unknown error occurred.',
+		stack: error?.stack,
+		context
+	};
 
-  const existingLogs = getLogs();
-  // Prepend the new log to the beginning of the array to maintain newest-first order.
-  const updatedLogs = [newLog, ...existingLogs];
+	const existingLogs = getLogs();
+	const updatedLogs = [newLog, ...existingLogs];
+	const trimmedLogs = updatedLogs.slice(0, MAX_LOGS);
 
-  // Enforce the size limit by trimming the array to the maximum allowed length.
-  const trimmedLogs = updatedLogs.slice(0, MAX_LOGS);
+	try {
+		localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
+	} catch (e) {
+		console.error('Could not save new error log to localStorage:', e);
+	}
 
-  try {
-    localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
-  } catch (e) {
-    // This might happen if localStorage is full.
-    console.error('Could not save new error log to localStorage:', e);
-  }
-
-  // During development, also log to the console for immediate visibility and easier debugging.
-  if (import.meta.env.DEV) {
-    console.error('[Error Service Reported]:', newLog.message, {
-      logEntry: newLog,
-      originalError: error,
-    });
-  }
+	if (import.meta.env.DEV) {
+		console.error('[Error Service Reported]:', newLog.message, {
+			logEntry: newLog,
+			originalError: error
+		});
+	}
 }
 
 /**
- * Deletes all error logs from `localStorage`. Useful for cleanup or providing a fresh start.
+ * Deletes all error logs from `localStorage`.
  */
 export function clearLogs(): void {
-  try {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(ERROR_LOGS_STORAGE_KEY);
-  } catch (e) {
-    console.error('Could not clear error logs from localStorage:', e);
-  }
+	try {
+		if (typeof window === 'undefined') return;
+		localStorage.removeItem(ERROR_LOGS_STORAGE_KEY);
+	} catch (e) {
+		console.error('Could not clear error logs from localStorage:', e);
+	}
 }
