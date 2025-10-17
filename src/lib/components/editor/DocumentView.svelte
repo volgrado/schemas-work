@@ -20,6 +20,9 @@
   import BulletList from '@tiptap/extension-bullet-list';
   import OrderedList from '@tiptap/extension-ordered-list';
   import HorizontalRule from '@tiptap/extension-horizontal-rule';
+  // --- NEW: Media Extensions ---
+  import Image from '@tiptap/extension-image';
+  import YouTube from '@tiptap/extension-youtube';
 
   // --- Tiptap Extensions (Personalizadas) ---
   import { RoleExtension } from '$lib/editor/extensions/RoleExtension';
@@ -28,12 +31,16 @@
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
   import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
-  import { CardIndicatorExtension } from '$lib/editor/extensions/CardIndicatorExtension'; // *** 1. IMPORTAMOS LA NUEVA EXTENSIÓN ***
+  import { CardIndicatorExtension } from '$lib/editor/extensions/CardIndicatorExtension';
+  // --- NEW: Math Extensions ---
+  import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
 
   // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
   import { documentStore } from '$lib/stores/documentStore';
   import { debounce } from '$lib/utils/debounce';
+  // --- NEW: Modal Store ---
+  import { modalStore } from '$lib/stores/modalStore';
 
   // --- Props y Eventos ---
   let {
@@ -52,6 +59,7 @@
   let editor = $state<Editor | null>(null);
 
   const syncTitleWithStore = debounce((editorInstance: Editor) => {
+    // ... existing syncTitleWithStore logic ...
     if (!editorInstance || editorInstance.isDestroyed) return;
 
     const firstNode = editorInstance.state.doc.firstChild;
@@ -78,6 +86,7 @@
 
   $effect(() => {
     if (focusedNodePos !== null && editor && editor.isEditable) {
+      // ... existing focus logic ...
       const currentSelection = editor.state.selection;
       const parentListItem = findParentNode(
         (node) => node.type.name === 'listItem'
@@ -109,8 +118,9 @@
         SmartEnter,
         PositionSyncExtension,
         NodeIdExtension,
-        CardIndicatorExtension, // *** 2. AÑADIMOS LA EXTENSIÓN AL EDITOR ***
+        CardIndicatorExtension,
         Placeholder.configure({
+          // ... existing placeholder logic ...
           placeholder: ({ editor, node, pos }) => {
             if (node.type.name === 'heading' && node.attrs.level === 1) {
               return '¿Cuál es el título de tu esquema?';
@@ -134,6 +144,42 @@
         DynamicHighlighter,
         SlashCommandExtension,
         Collaboration.configure({ document: ydoc }),
+
+        // --- NEW EXTENSIONS ---
+        Image.extend({
+          // --- NEW: Custom Node View for Image ---
+          addNodeView() {
+            return ({ node, getPos, editor }) => {
+              const container = document.createElement('div');
+              container.classList.add('image-view');
+
+              const img = document.createElement('img');
+              img.setAttribute('src', node.attrs.src);
+              container.append(img);
+
+              if (editor.isEditable) {
+                const button = document.createElement('button');
+                button.classList.add('edit-button');
+                button.innerText = 'Edit';
+                button.addEventListener('click', () => {
+                  const pos = getPos();
+                  if (pos === undefined) return;
+                  modalStore.open({
+                    type: 'media',
+                    nodeType: 'image',
+                    nodePos: pos,
+                    attrs: node.attrs,
+                  });
+                });
+                container.append(button);
+              }
+              return { dom: container };
+            };
+          },
+        }).configure({}),
+        YouTube.configure({}),
+        MathInline,
+        MathBlock,
       ],
       editorProps: {
         attributes: {

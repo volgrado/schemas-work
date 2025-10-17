@@ -1,4 +1,4 @@
-<!-- src/lib/components/ui/Icon.svelte (CORREGIDO CON EL TIPO ADECUADO) -->
+<!-- src/lib/components/ui/Icon.svelte -->
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
 
@@ -35,7 +35,9 @@
     FastForwardIcon,
     SkipBackIcon,
     SkipForwardIcon,
-    MinusIcon, // <-- AÑADIDO
+    MinusIcon,
+    ImageIcon,
+    VideoIcon,
   } from 'svelte-feather-icons';
 
   const icons: Record<string, any> = {
@@ -68,10 +70,12 @@
     'alert-triangle': AlertTriangleIcon,
     mic: MicIcon,
     'fast-forward': FastForwardIcon,
-    // REMEDIATION: New icons for navigation controls
     'skip-back': SkipBackIcon,
     'skip-forward': SkipForwardIcon,
-    minus: MinusIcon, // <-- AÑADIDO
+    minus: MinusIcon,
+    image: ImageIcon,
+    video: VideoIcon,
+    'plus-slash-minus': MinusIcon,
   };
 
   export let name: keyof typeof icons;

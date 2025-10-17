@@ -136,11 +136,6 @@ body {
   background-color: var(--color-accent);
   color: #ffffff;
 }
-/*
-  FIX: The dark mode override for selection color was removed.
-  The default `color: #ffffff` provides good contrast against the
-  accent color in both light and dark themes, solving the invisibility issue.
-*/
 
 /* 6. COMPONENTS
    ========================================================================== */
@@ -153,17 +148,15 @@ body {
   caret-color: var(--color-accent);
 }
 
-/* FIX: Explicitly style selection within the editor for higher specificity. */
 .prose ::selection {
   background-color: var(--color-accent);
-  color: #ffffff !important; /* Use !important to override any conflicting styles */
+  color: #ffffff !important;
 }
 .prose ::-moz-selection {
   background-color: var(--color-accent);
   color: #ffffff !important;
 }
 
-/* FIX: Add styles for Tiptap's selection decoration class. */
 .prose .selection {
   background-color: hsl(var(--color-accent-hsl) / 0.3);
   border-radius: 3px;
@@ -192,7 +185,6 @@ body {
   height: 0;
 }
 
-/* Optional nesting guide lines */
 .prose ul {
   position: relative;
 }
@@ -206,6 +198,57 @@ body {
   background-color: var(--color-gray-100);
   transition: background-color 0.3s;
 }
+
+/* --- NEW MEDIA NODES --- */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--space-sm);
+  cursor: pointer;
+}
+
+.prose img.ProseMirror-selectednode {
+  outline: 3px solid var(--color-accent);
+}
+
+.prose .youtube-wrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+  background: #000;
+  border-radius: var(--space-sm);
+}
+
+.prose .youtube-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.prose .math-inline,
+.prose .math-block {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.prose .math-inline:hover,
+.prose .math-block:hover {
+  background-color: var(--color-gray-100);
+}
+
+.prose .math-block {
+  padding: var(--space-md);
+  display: block;
+  text-align: center;
+}
+
 @media (prefers-color-scheme: dark) {
   .prose ul > li > ul::before {
     background-color: var(--color-gray-100);
@@ -292,7 +335,6 @@ body {
 }
 .is-reviewing .prose .is-current-review-node {
   opacity: 1;
-  /* ADDED: Apply consistent background highlight */
   background-color: hsl(var(--color-accent-hsl) / 0.1);
   border-radius: var(--space-sm);
 }
@@ -318,14 +360,12 @@ body {
   border-radius: 4px;
 }
 
-/* ADDED: Style for Tiptap/ProseMirror's default node selection */
 .prose .ProseMirror-selectednode {
   background-color: hsl(var(--color-accent-hsl) / 0.1);
   border-radius: var(--space-sm);
   outline: 2px solid var(--color-accent);
 }
 
-/* *** INICIO DE LA SOLUCIÓN: ESTILOS DEL INDICADOR DE TARJETA *** */
 .card-indicator-icon {
   display: inline-block;
   width: 1em;
@@ -348,4 +388,3 @@ li:hover .card-indicator-icon {
     filter: invert(1);
   }
 }
-/* *** FIN DE LA SOLUCIÓN *** */

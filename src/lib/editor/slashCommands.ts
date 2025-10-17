@@ -7,6 +7,11 @@ import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { ttsStore } from '$lib/stores/ttsStore';
 import { cardEditorStore } from '$lib/stores/cardEditorStore';
+import {
+  modalStore,
+  type MediaModalConfig,
+  type FormulaModalConfig,
+} from '$lib/stores/modalStore';
 
 export interface CommandItem {
   title: string;
@@ -26,13 +31,7 @@ export const getCommands = (): CommandItem[] => [
     group: 'Básico',
     icon: 'pen-tool',
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .toggleBulletList()
-        //.liftListItem('listItem') // This seems to be buggy with current setup, toggle works better.
-        .run();
+      editor.chain().focus().deleteRange(range).toggleBulletList().run();
     },
   },
   {
@@ -124,6 +123,95 @@ export const getCommands = (): CommandItem[] => [
       editor.chain().focus().deleteRange(range).setMark('italic').run();
     },
   },
+  // --- NEW: Media Group ---
+  {
+    title: 'Imagen',
+    description: 'Añadir una imagen desde una URL.',
+    group: 'Media',
+    icon: 'image',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const pos = range.from;
+      editor
+        .chain()
+        .insertContentAt(pos, { type: 'image', attrs: { src: null } })
+        .run();
+      const node = editor.state.doc.nodeAt(pos);
+      if (node) {
+        const config: MediaModalConfig = {
+          type: 'media',
+          nodeType: 'image',
+          nodePos: pos,
+          attrs: node.attrs,
+        };
+        modalStore.open(config);
+      }
+    },
+  },
+  {
+    title: 'Video de YouTube',
+    description: 'Incrustar un video de YouTube.',
+    group: 'Media',
+    icon: 'video',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const pos = range.from;
+      editor
+        .chain()
+        .insertContentAt(pos, { type: 'youtube', attrs: { src: null } })
+        .run();
+      const node = editor.state.doc.nodeAt(pos);
+      if (node) {
+        const config: MediaModalConfig = {
+          type: 'media',
+          nodeType: 'youtube',
+          nodePos: pos,
+          attrs: node.attrs,
+        };
+        modalStore.open(config);
+      }
+    },
+  },
+  {
+    title: 'Fórmula (Bloque)',
+    description: 'Añadir una fórmula matemática (KaTeX).',
+    group: 'Media',
+    icon: 'plus-slash-minus',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const pos = range.from;
+      editor.chain().insertContentAt(pos, { type: 'mathBlock' }).run();
+      const node = editor.state.doc.nodeAt(pos);
+      if (node) {
+        const config: FormulaModalConfig = {
+          type: 'formula',
+          nodePos: pos,
+          attrs: node.attrs as { formula: string },
+        };
+        modalStore.open(config);
+      }
+    },
+  },
+  {
+    title: 'Fórmula (En línea)',
+    description: 'Añadir una fórmula en la misma línea.',
+    group: 'Media',
+    icon: 'plus-slash-minus',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const pos = range.from;
+      editor.chain().insertContentAt(pos, { type: 'mathInline' }).run();
+      const node = editor.state.doc.nodeAt(pos);
+      if (node) {
+        const config: FormulaModalConfig = {
+          type: 'formula',
+          nodePos: pos,
+          attrs: node.attrs as { formula: string },
+        };
+        modalStore.open(config);
+      }
+    },
+  },
 
   // --- Grupo: IA ---
   {
@@ -174,32 +262,24 @@ export const getCommands = (): CommandItem[] => [
       }
     },
   },
-  // *** INICIO DE LA SOLUCIÓN: Comando Robusto ***
   {
     title: 'Editar Tarjetas',
     description: 'Abrir el editor de tarjetas para este nodo.',
     group: 'Utilidades',
     icon: 'edit-3',
     command: ({ editor, range }) => {
-      // 1. Limpiamos el comando "/" del editor.
       editor.chain().focus().deleteRange(range).run();
       const state = get(editorStore);
-
-      // 2. Verificamos que un nodo esté realmente seleccionado.
       if (state.selectedNodePos === null) {
         toast.error('Selecciona un nodo para editar sus tarjetas.');
         return;
       }
-
-      // 3. Obtenemos el nodo y verificamos que tenga un ID.
       const node = editor.state.doc.nodeAt(state.selectedNodePos);
       if (node?.attrs.nodeId) {
         cardEditorStore.open(node.attrs.nodeId);
       } else {
-        // 4. Si no hay ID, informamos al usuario.
         toast.error('Este nodo no tiene un ID válido para asociar tarjetas.');
       }
     },
   },
-  // *** FIN DE LA SOLUCIÓN ***
 ];

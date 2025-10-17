@@ -1,4 +1,7 @@
-<!-- src/routes/+page.svelte (VERSIÓN COMPLETA, CORREGIDA Y ROBUSTA) -->
+<!-- src/routes/+page.svelte -->
+<!-- NO CHANGES NEEDED IN THIS FILE. -->
+<!-- With the updated `modalStore.ts`, the errors here are resolved. -->
+
 <script lang="ts">
   // --- Svelte Core y Entorno ---
   import { onMount } from 'svelte';
@@ -20,17 +23,22 @@
   import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
   import SchemaTree from '$lib/components/views/SchemaTree.svelte';
   import type { TreeNodeData } from '$lib/components/views/SchemaTree.svelte';
-  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte'; // Importar el canvas
+  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
+  // --- NEW: Modal Imports ---
+  import FormulaEditModal from '$lib/components/editor/FormulaEditModal.svelte';
+  import MediaEditModal from '$lib/components/editor/MediaEditModal.svelte';
 
   // --- Stores y Servicios ---
   import { documentStore } from '$lib/stores/documentStore';
   import { editorStore } from '$lib/stores/editorStore';
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
   import { commandBarStore } from '$lib/stores/commandBarStore';
-  import { ttsStore } from '$lib/stores/ttsStore'; // Importar ttsStore
+  import { ttsStore } from '$lib/stores/ttsStore';
   import * as directoryService from '$lib/services/core/directoryService';
   import * as schemaService from '$lib/services/features/schemaService';
   import { reviewStore } from '$lib/stores/reviewStore';
+  // --- NEW: Modal Store Import ---
+  import { modalStore } from '$lib/stores/modalStore';
 
   // --- PROPS Y ESTADO LOCAL ---
   let { data }: { data: { showWelcome: boolean } } = $props();
@@ -42,31 +50,18 @@
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
   // --- ESTADO DERIVADO REACTIVO (CON REACTIVIDAD EXPLÍCITA) ---
-
-  // Creamos una variable de estado que contendrá los datos del árbol.
   let treeData = $state<TreeNodeData | null>(null);
 
-  // Un `$effect` que escucha los cambios en `contentVersion` y recalcula `treeData`.
   $effect(() => {
-    // 1. Dependencia explícita: Svelte re-ejecutará este bloque cuando `contentVersion` cambie.
     const version = $editorStore.contentVersion;
-
-    // 2. Obtenemos el `doc` más reciente del store.
     const currentDoc = $editorStore.doc;
-
-    // 3. Si hay un documento, recalculamos el árbol.
     if (currentDoc) {
-      const newTreeData = schemaService.documentToTreeData(currentDoc);
-      treeData = newTreeData;
+      treeData = schemaService.documentToTreeData(currentDoc);
     } else {
-      // 4. Si no hay documento, nos aseguramos de que el árbol esté vacío.
       treeData = null;
     }
   });
 
-  // *** LÓGICA DE RESALTADO SINCRONIZADO ***
-  // El nodo seleccionado en el árbol ahora depende tanto de la selección del usuario
-  // como del estado del lector de voz (TTS), dando prioridad al TTS.
   let selectedNodeId = $derived(
     ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
       $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
@@ -79,16 +74,10 @@
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
   // --- EFECTOS SECUNDARIOS Y CICLO DE VIDA ---
-
   onMount(() => {
-    // CORRECCIÓN: La carga inicial se mueve a onMount para garantizar que el entorno
-    // del navegador esté completamente listo, evitando condiciones de carrera con IndexedDB.
     if (!showWelcome) {
       loadInitialDocument();
     }
-
-    // *** INICIO DE LA SOLUCIÓN: Atajo de Teclado ***
-    // Añadimos un listener global para los atajos de teclado.
     window.addEventListener('keydown', handleGlobalKeydown);
     window.addEventListener('resize', handleResize);
     return () => {
@@ -98,15 +87,12 @@
   });
 
   // --- MANEJADORES DE EVENTOS Y ACCIONES ---
-
   function handleGlobalKeydown(event: KeyboardEvent) {
-    // Comprobamos si se ha pulsado Ctrl+' o Cmd+'
     if ((event.metaKey || event.ctrlKey) && event.key === "'") {
-      event.preventDefault(); // Evitamos cualquier comportamiento por defecto del navegador.
-      openCardEditor(); // Llamamos a la función para abrir el editor.
+      event.preventDefault();
+      openCardEditor();
     }
   }
-  // *** FIN DE LA SOLUCIÓN ***
 
   function handleResize() {
     isMobile = window.innerWidth <= 768;
@@ -116,7 +102,6 @@
     localStorage.setItem('schemas-work-has-seen-welcome', 'true');
     showWelcome = false;
     isRevealingContent = true;
-    // La carga del documento se dispara aquí después de la animación de bienvenida.
     await loadInitialDocument();
   }
 
@@ -129,7 +114,6 @@
   function handleNodeClickInTree(event: CustomEvent<{ id: string }>) {
     const { id } = event.detail;
     if (id === 'root-title') return;
-
     const pos = parseInt(id.replace('node-', ''), 10);
     if (!isNaN(pos)) {
       nodeToFocus = pos;
@@ -140,18 +124,10 @@
   function openCardEditor() {
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
-    if (!editor || pos === null) {
-      // Si no hay nodo seleccionado, no hacemos nada (o podríamos mostrar un aviso)
-      return;
-    }
-
+    if (!editor || pos === null) return;
     const node = editor.state.doc.nodeAt(pos);
-    if (!node) return;
-
-    const nodeId = node.attrs.nodeId;
-    if (!nodeId) return;
-
-    cardEditorStore.open(nodeId);
+    if (!node || !node.attrs.nodeId) return;
+    cardEditorStore.open(node.attrs.nodeId);
   }
 
   function openCommandBar() {
@@ -160,16 +136,12 @@
 
   async function loadInitialDocument() {
     if (get(documentStore).status === 'ready') return;
-
     const allItems = await directoryService.getAllItems();
     const schemas = allItems.filter((item) => item.type === 'schema');
-
     if (schemas.length > 0) {
       const lastActiveId = await directoryService.getLastActiveDocId();
-      const lastActiveSchema = schemas.find((s) => s.id === lastActiveId);
-      const docToLoadId = lastActiveSchema
-        ? lastActiveSchema.id
-        : schemas[0].id;
+      const docToLoadId =
+        schemas.find((s) => s.id === lastActiveId)?.id || schemas[0].id;
       await documentStore.loadDocument(docToLoadId);
     } else {
       await documentStore.createNewDocument(
@@ -178,6 +150,23 @@
         null
       );
     }
+  }
+
+  // --- Modal Save Handlers ---
+  function handleModalSave(event: CustomEvent) {
+    const { nodePos, newAttrs } = event.detail;
+    const editor = get(editorStore).instance;
+    if (!editor) return;
+    // TypeScript now knows that `config` in the store has a `nodePos` property
+    // because both FormulaModalConfig and MediaModalConfig have it.
+    const pos = get(modalStore).config?.nodePos;
+    if (pos === undefined) return;
+
+    const node = editor.state.doc.nodeAt(pos);
+    if (!node) return;
+
+    editor.chain().focus(pos).updateAttributes(node.type, newAttrs).run();
+    modalStore.close();
   }
 </script>
 
@@ -190,6 +179,33 @@
 </svelte:head>
 
 <Toaster position="bottom-center" theme="system" />
+
+<!-- Render Modals based on modalStore -->
+{#if $modalStore.isOpen}
+  {@const config = $modalStore.config}
+  {#if config?.type === 'formula'}
+    <!-- TS now understands `config.attrs` is `{ formula: string }` -->
+    <FormulaEditModal
+      show={true}
+      initialAttrs={config.attrs as { formula: string }}
+      onClose={modalStore.close}
+      on:close={modalStore.close}
+      on:save={handleModalSave}
+    />
+  {:else if config?.type === 'media'}
+    <!-- TS now understands `config.nodeType` exists and `config.attrs` is `{ src: string, mediaType: ... }` -->
+    <MediaEditModal
+      show={true}
+      initialAttrs={config.attrs as {
+        src: string;
+        mediaType: 'image' | 'youtube';
+      }}
+      onClose={modalStore.close}
+      on:close={modalStore.close}
+      on:save={handleModalSave}
+    />
+  {/if}
+{/if}
 
 {#if !showWelcome}
   <AppHeader
@@ -239,10 +255,8 @@
       {#if !showWelcome}
         {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
           <div class="status-container">
-            <!-- *** INICIO DE LA SOLUCIÓN: Spinner de Carga *** -->
             <Icon name="loader" size={24} class="spinner" />
             <p>Cargando esquema...</p>
-            <!-- *** FIN DE LA SOLUCIÓN *** -->
           </div>
         {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
           {#key $documentStore.docId}
@@ -319,20 +333,12 @@
 {/if}
 
 <style>
-  /*
-	  CORRECCIÓN: Se han separado las reglas. El selector `:global(.app-header)`
-	  ya no está agrupado con una coma, lo que causaba que siempre tuviera
-	  `pointer-events: none`. Ahora, el encabezado solo se ocultará cuando
-	  el modo de repaso esté activo.
-	*/
   .view-wrapper.is-reviewing .main-content,
   .view-wrapper.is-reviewing .tree-view-content {
-    /* Oculta el contenido principal durante el modo de repaso inmersivo */
     opacity: 0;
     pointer-events: none;
   }
 
-  /* AÑADIDO: Regla específica para ocultar el header durante el repaso */
   .view-wrapper.is-reviewing + :global(.app-header) {
     opacity: 0;
     pointer-events: none;
@@ -357,7 +363,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: var(--space-md); /* Añadido para espaciar el spinner del texto */
+    gap: var(--space-md);
     min-height: 100vh;
     font-style: italic;
     color: var(--color-gray-500);
@@ -365,8 +371,8 @@
     text-align: center;
   }
   .status-container p {
-    margin: 0; /* Reseteamos el margen del párrafo */
-    font-style: normal; /* El texto ya no será itálico */
+    margin: 0;
+    font-style: normal;
   }
   .status-container span {
     margin-top: var(--space-sm);
@@ -382,7 +388,7 @@
     position: relative;
     width: 100%;
     height: 100vh;
-    transition: opacity 0.3s ease; /* Transición para el modo inmersivo */
+    transition: opacity 0.3s ease;
   }
   .view-content {
     position: absolute;
@@ -397,7 +403,7 @@
   :global(.app-header) {
     opacity: 0;
     will-change: transform, opacity;
-    transition: opacity 0.3s ease; /* Transición para el modo inmersivo */
+    transition: opacity 0.3s ease;
   }
   .main-content.reveal,
   .tree-view-content.reveal {
@@ -417,14 +423,12 @@
     }
   }
 
-  /* *** INICIO DE LA SOLUCIÓN: Animación del Spinner *** */
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
-  .spinner {
+  :global(.spinner) {
     animation: spin 1s linear infinite;
   }
-  /* *** FIN DE LA SOLUCIÓN *** */
 </style>
