@@ -1,14 +1,43 @@
 /**
- * @file Prompt Library V5.0 - Multi-Card & BYOK Focused
+ * @file Centralized Library of Prompts for AI-Powered Learning Tools
  *
- * Contains all the necessary prompts for the application's AI functionalities,
- * including schema creation and advanced, multi-format card generation.
- * This version is optimized for a "Bring Your Own Key" (BYOK) workflow.
+ * @remarks
+ * This file serves as the definitive library for all instructional prompts sent to the
+ * generative AI model. Each prompt is meticulously engineered to elicit a specific,
+ * structured response, almost always in a JSON format. This structured data approach
+ * is critical for ensuring reliable and predictable integration between the AI's output
+ * and the application's various components, such as the Tiptap editor for schema
+ * generation and the Svelte components for rendering interactive study cards.
+ *
+ * The prompts are designed with a "Bring Your Own Key" (BYOK) model in mind, where the
+ * end-user's API key is used for authentication with the AI service. This decentralizes
+ * API usage and cost.
+ *
+ * The primary functionalities covered by these prompts include:
+ * 1.  **Schema Creation**: Converting unstructured, free-form text into a hierarchical,
+ *     editable schema document (Tiptap JSON).
+ * 2.  **Node Expansion**: Elaborating on specific concepts within an existing schema to
+ *     add depth and detail.
+ * 3.  **Flashcard Generation**: Creating a variety of interactive study cards (e.g.,
+ *     basic Q&A, fill-in-the-blank, sequencing) from a given piece of text.
  */
-import type { Card, CardType } from '$lib/types';
+
+import type { CardType } from '$lib/types';
 
 /**
- * Prompt for creating a new schema from unstructured text, outputting Tiptap JSON.
+ * A detailed, role-playing prompt that instructs the AI to act as an Information
+ * Architect and Science Communicator. Its primary goal is to convert a blob of
+ * unstructured text into a well-organized, pedagogically sound Tiptap JSON document.
+ *
+ * @remarks
+ * The prompt is engineered to achieve two main objectives:
+ * - **Structuring**: It must generate a valid Tiptap document with a root `heading`
+ *   (serving as the title) and a main `bulletList` (serving as the schema).
+ * - **Explaining**: For each identified term in the schema, it must provide a clear,
+ *   didactic description suitable for learning, effectively applying the Feynman Technique
+ *   (explaining a concept in simple terms).
+ *
+ * The `{{TEXT_INPUT}}` placeholder is intended to be replaced with the user's raw text input.
  */
 export const CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL = `
 **ROLE AND OBJECTIVE:**
@@ -68,7 +97,19 @@ You are an exceptional hybrid: an Information Architect with the soul of an expe
 `;
 
 /**
- * Prompt for expanding a node in the schema, outputting Tiptap JSON for a nested list.
+ * A prompt that directs the AI to act as an expert tutor and expand upon a specific
+ * concept node within an existing schema.
+ *
+ * @remarks
+ * This prompt is used to add hierarchical depth to the user's knowledge schema by generating
+ * 2-3 relevant sub-points for a given node. The expected output is a Tiptap JSON
+ * object representing a `bulletList`, which can be seamlessly nested within the existing
+ * Tiptap document structure.
+ *
+ * Placeholders:
+ * - `{{NODE_TEXT}}`: The text content of the node that the user wishes to expand.
+ * - `{{CONTEXT_BREADCRUMB}}`: The hierarchical path to the node (e.g., "Science > Physics > Quantum Mechanics"),
+ *   providing essential context to the AI.
  */
 export const EXPAND_NODE_PROMPT_V4_PEDAGOGICAL = `
 **ROLE AND OBJECTIVE:**
@@ -116,8 +157,16 @@ Now, expand the concept provided in the context."
 `;
 
 /**
- * V2: Generates a variety of study cards from a given text.
- * Instructs the AI to create different card types for a richer learning experience.
+ * A prompt designed to generate a diverse set of interactive study cards from a piece of text.
+ *
+ * @remarks
+ * This prompt instructs the AI to adopt the persona of a learning science expert. Its goal
+ * is to create 2-3 distinct study cards in different formats (`basic`, `input`, `sequencing`).
+ * This variety is intended to enhance the effectiveness and engagement of the user's study
+ * session. The expected output is a clean JSON array of `Card` objects, conforming to the
+ * provided TypeScript interface definitions.
+ *
+ * The `{{NODE_TEXT}}` placeholder should be replaced with the source text for the cards.
  */
 export const GENERATE_FLASHCARDS_V2_PROMPT = `
 You are an expert in learning science and active recall. Based on the following text, generate 2-3 key study cards using different formats.
@@ -163,10 +212,13 @@ Base text for the cards:
 `;
 
 /**
- * Generates a prompt for creating a single, specific type of card.
- * @param type The type of card to create.
- * @param text The source text for the card.
- * @returns A formatted prompt string.
+ * A factory function that generates a highly targeted prompt for creating a single
+ * study card of a specific, user-requested type.
+ *
+ * @param type - The desired type of card to generate (`basic`, `input`, or `sequencing`).
+ * @param text - The source text from which the AI should create the card.
+ * @returns A formatted prompt string that clearly instructs the AI to generate a JSON object
+ *          for a single card of the specified type, adhering to the specified interface.
  */
 export function getSpecificCardPrompt(type: CardType, text: string): string {
   switch (type) {

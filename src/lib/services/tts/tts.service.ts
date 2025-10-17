@@ -1,73 +1,84 @@
-// src/lib/services/tts/tts.service.ts
+/**
+ * @file Defines the core interfaces for the Text-to-Speech (TTS) feature.
+ *
+ * @remarks
+ * This file establishes a clear, implementation-agnostic contract for any TTS engine.
+ * By defining the `TTSService` interface, the application's audio architecture becomes
+ * modular and adaptable. This abstraction is key to decoupling the application's
+ * business logic (managed in stores and components) from any specific TTS engine,
+ * such as the native browser API or a future cloud-based service.
+ */
 
 /**
  * Describes the structure of a voice available in a TTS engine.
- * It is a clean, implementation-agnostic data model.
+ * This is a clean, implementation-agnostic data model.
  */
 export interface TTSVoice {
-  /** A unique identifier to use in the API (e.g., the `voiceURI` property). */
+  /** A unique identifier for the voice, used to select it in the API (e.g., the `voiceURI`). */
   id: string;
-  /** A human-readable name for the user (e.g., "Google UK English Female"). */
+  /** A human-readable name for display to the user (e.g., "Google UK English Female"). */
   name: string;
-  /** A BCP 47 language code (e.g., "en-GB"). */
+  /** The BCP 47 language code for the voice (e.g., "en-GB"). */
   lang: string;
 }
 
 /**
- * Defines the complete set of options and callbacks for a speech operation.
- * This allows for granular control over each `speak` call.
+ * Defines the complete set of options and callbacks for a single speech operation.
+ * This allows for granular control over the behavior of each `speak` call.
  */
 export interface TTSSpeakOptions {
   /** The unique identifier of the voice to use, obtained from `getVoices()`. */
   voiceId: string;
 
-  /** The speech rate. The typical range is 0.5 (slow) to 2 (fast). */
+  /** The desired speech rate. The value is typically between 0.5 (slow) and 2 (fast). */
   rate: number;
 
-  /** The pitch of the voice. The typical range is 0 (low) to 2 (high). */
+  /** The desired pitch of the voice. The value is typically between 0 (low) and 2 (high). */
   pitch: number;
 
-  /** Callback that executes when the entire speech (including all fragments) has successfully finished. */
+  /** A callback function that executes when the entire speech synthesis has successfully finished. */
   onEnd: () => void;
 
-  /** Callback that executes if an error occurs during speech synthesis. */
+  /** A callback function that executes if an error occurs at any point during the synthesis. */
   onError: (error: any) => void;
 
   /**
-   * (Optional) Callback that executes each time the speech engine
-   * reaches a word boundary. Essential for "karaoke" functionality.
-   * The event provides information like `charIndex` to know where to highlight.
+   * An optional callback that executes each time the speech engine reaches a word or sentence boundary.
+   * The event provides the `charIndex`, which is crucial for highlighting text as it is spoken.
    */
   onBoundary?: (event: SpeechSynthesisEvent) => void;
 }
 
 /**
- * The `TTSService` interface defines the fundamental contract for any Text-to-Speech engine.
+ * The `TTSService` interface defines the standard contract for any Text-to-Speech engine.
  *
- * This abstraction is the cornerstone of our audio architecture, allowing us
- * to swap the underlying implementation (e.g., from the browser to a cloud-based AI service)
- * without needing to modify the business logic in the stores or components.
+ * @remarks
+ * Adhering to this interface ensures that different TTS implementations can be swapped
+ * with minimal friction, preserving the separation of concerns.
  */
 export interface TTSService {
   /**
-   * Initializes the service. This is a critical and often asynchronous step,
-   * necessary for tasks like loading voices from the operating system or an API.
-   * It must be called before any other operation.
-   * @returns {Promise<void>} A promise that resolves when the service is ready.
+   * Initializes the service. This is a critical, and often asynchronous, first step.
+   * It is responsible for loading voices or connecting to a remote service.
+   * This method MUST be called before any other operation.
+   *
+   * @returns A promise that resolves when the service is ready for use.
    */
   initialize(): Promise<void>;
 
   /**
-   * Returns a list of all available voices after a successful initialization.
-   * @returns {TTSVoice[]} An array of `TTSVoice` objects.
+   * Retrieves the list of all available voices after the service has been initialized.
+   *
+   * @returns An array of `TTSVoice` objects.
    */
   getVoices(): TTSVoice[];
 
   /**
-   * Starts the speech of a given text with the specified options.
-   * The implementation must handle queue logic and text segmentation if necessary.
-   * @param {string} text The text to synthesize.
-   * @param {TTSSpeakOptions} options The configuration and callbacks object for this speech.
+   * Initiates the speech synthesis of a given text with specified options.
+   * The implementation must handle text segmentation and queuing if necessary.
+   *
+   * @param text - The text to be synthesized.
+   * @param options - The configuration object for this specific speech request, including callbacks.
    */
   speak(text: string, options: TTSSpeakOptions): void;
 
@@ -77,14 +88,13 @@ export interface TTSService {
   pause(): void;
 
   /**
-   * Resumes a speech that has been paused.
+   * Resumes a previously paused speech.
    */
   resume(): void;
 
   /**
-   * Immediately stops the current speech and clears any
-   * text fragments that were queued to be played.
-   * Resets the service state to idle.
+   * Immediately stops the current speech and clears any pending utterances.
+   * This should reset the service to an idle state.
    */
   cancel(): void;
 }

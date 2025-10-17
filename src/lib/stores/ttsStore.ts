@@ -1,4 +1,17 @@
-// src/lib/stores/ttsStore.ts
+/**
+ * @file Manages the global state and orchestration for the entire Text-to-Speech (TTS) feature.
+ *
+ * @remarks
+ * This Svelte store is the central controller for all text-to-speech functionality.
+ * It is responsible for a wide range of tasks, including:
+ * - Initializing and interacting with the underlying TTS service (e.g., `BrowserTTSService`).
+ * - Scanning the editor's document to identify and queue readable content blocks (headings and list items).
+ * - Managing the complete playback lifecycle and state (e.g., `playing`, `paused`, `idle`).
+ * - Handling all user controls: play, pause, resume, stop, and navigating between content nodes.
+ * - Synchronizing with the Tiptap editor to provide real-time highlighting of both the currently spoken word and the containing node (paragraph or heading).
+ * - Managing TTS settings such as voice selection, speech rate, and pitch.
+ * - Reacting to changes in the editor's content to automatically stop playback if the source document is modified, preventing desynchronization.
+ */
 
 import { writable, get } from 'svelte/store';
 import { editorStore } from './editorStore';
@@ -12,43 +25,68 @@ import * as errorService from '$lib/services/core/errorService';
 import type { Unsubscriber } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
 
-// --- Types ---
+/**
+ * Defines the possible playback statuses of the TTS engine.
+ */
+export type TTSStatus = 'idle' | 'initializing' | 'playing' | 'paused' | 'error';
 
-export type TTSStatus =
-  | 'idle'
-  | 'initializing'
-  | 'playing'
-  | 'paused'
-  | 'error';
-
-// Represents a single word and its exact position in the document.
+/**
+ * Represents a single word and its exact start and end positions within the ProseMirror document,
+ * which is crucial for enabling real-time, word-by-word highlighting during playback.
+ */
 interface WordSegment {
   word: string;
   from: number;
   to: number;
 }
 
+/**
+ * Represents a contiguous block of text that can be read aloud, corresponding to a single
+ * ProseMirror node (e.g., a heading or a list item).
+ */
 export interface ReadableNode {
-  pos: number; // Position of the listItem node.
+  /** The start position of the node in the ProseMirror document. */
+  pos: number;
+  /** The ProseMirror node object itself. */
   node: ProseMirrorNode;
+  /** A user-friendly, truncated title for the node, displayed in the TTS controls UI. */
   title: string;
+  /** The full, cleaned text content of the node that will be synthesized into speech. */
   textToSpeak: string;
-  wordMap: WordSegment[]; // The pre-calculated map of all words in the node.
+  /** A pre-calculated map of each word's exact position, used for efficient highlighting during playback. */
+  wordMap: WordSegment[];
 }
 
+/**
+ * Defines the complete state of the TTS feature, including playback status, queues, and settings.
+ */
 export interface TTSState {
+  /** The current playback status of the TTS engine. */
   status: TTSStatus;
+  /** The queue of `ReadableNode` objects to be read in the current playback session. */
   nodesToRead: ReadableNode[];
+  /** The index of the currently playing or paused node within the `nodesToRead` array. */
   currentNodeIndex: number;
+  /** A ProseMirror `DecorationSet` used to apply dynamic highlighting styles to the editor content. */
   decorationSet: DecorationSet;
+  /** A list of all synthesis voices available from the underlying TTS service. */
   availableVoices: TTSVoice[];
+  /** The unique identifier of the currently selected voice. */
   selectedVoiceId: string | null;
+  /** The desired playback rate (speed), where 1 is the default. */
   rate: number;
+  /** The desired playback pitch, where 1 is the default. */
   pitch: number;
+  /** An error message string if the last operation failed, for display in the UI. */
   error: string | null;
-  currentSpeechId: string | null; // ID to prevent race conditions
+  /** A unique identifier for the current speech utterance, used to prevent race conditions from overlapping commands. */
+  currentSpeechId: string | null;
 }
 
+/**
+ * The initial, default state of the TTS store.
+ * @internal
+ */
 const initialState: TTSState = {
   status: 'idle',
   nodesToRead: [],
@@ -62,432 +100,327 @@ const initialState: TTSState = {
   currentSpeechId: null,
 };
 
-// --- Store Creation ---
 const ttsService: TTSService = new BrowserTTSService();
 const store = writable<TTSState>(initialState);
 const { subscribe, update, set } = store;
 let unsubscribeFromEditor: Unsubscriber | null = null;
 
-// --- Helper Function ---
-
 /**
- * Scans the editor document and extracts all readable nodes (headings and list items)
- * in the order they appear.
+ * Scans the editor document and extracts all readable nodes (headings and list items).
+ * It processes the text and creates a detailed word map for each node to enable highlighting.
  * @param editor The Tiptap editor instance.
- * @returns An array of readable nodes.
+ * @returns An array of `ReadableNode` objects, ready for playback.
+ * @internal
  */
 function getReadableNodes(editor: Editor): ReadableNode[] {
   const nodes: ReadableNode[] = [];
   editor.state.doc.descendants((node, pos) => {
-    // Process Headings (h1, h2, h3, etc.)
-    if (node.type.name === 'heading' && node.textContent.trim()) {
-      const text = node.textContent.trim();
+    if ((node.type.name === 'heading' || node.type.name === 'listItem') && node.textContent.trim()) {
+      const textToSpeak = node.textContent.trim();
       const wordMap: WordSegment[] = [];
-      const words = text.match(/\S+/g) || [];
-      let currentIndex = 0;
-      const textStartPos = pos + 1;
-
-      words.forEach((word) => {
-        const wordIndex = text.indexOf(word, currentIndex);
-        if (wordIndex !== -1) {
-          wordMap.push({
-            word,
-            from: textStartPos + wordIndex,
-            to: textStartPos + wordIndex + word.length,
-          });
-          currentIndex = wordIndex + word.length;
+      let offset = 0;
+      // Use a regex to split by whitespace and calculate the precise position of each word.
+      textToSpeak.split(/\s+/).forEach((word) => {
+        if (word) {
+          const from = pos + 1 + offset;
+          const to = from + word.length;
+          wordMap.push({ word, from, to });
+          offset = to - pos - 1 + 1; // +1 to account for the space separator
         }
       });
 
       nodes.push({
         pos,
         node,
-        title: text,
-        textToSpeak: text,
+        title: textToSpeak.substring(0, 50) + (textToSpeak.length > 50 ? '...' : ''),
+        textToSpeak,
         wordMap,
       });
-      // Don't descend into heading's children (just text nodes)
-      return false;
     }
-
-    // Process ListItems
-    if (node.type.name === 'listItem' && node.textContent.trim()) {
-      const wordMap: WordSegment[] = [];
-      let title = '';
-      let fullText = '';
-
-      node.forEach((child, offset) => {
-        if (child.type.name === 'paragraph' && child.textContent.trim()) {
-          const paragraphText = child.textContent;
-          const paragraphStartPos = pos + 1 + offset;
-
-          if (!title) {
-            title = paragraphText.trim();
-          }
-
-          const words = paragraphText.match(/\S+/g) || [];
-          let currentIndex = 0;
-          words.forEach((word) => {
-            const wordIndex = paragraphText.indexOf(word, currentIndex);
-            if (wordIndex !== -1) {
-              wordMap.push({
-                word,
-                from: paragraphStartPos + wordIndex,
-                to: paragraphStartPos + wordIndex + word.length,
-              });
-              currentIndex = wordIndex + word.length;
-            }
-          });
-
-          fullText += paragraphText.trim() + '. ';
-        }
-      });
-
-      if (wordMap.length > 0) {
-        nodes.push({
-          pos,
-          node,
-          title,
-          textToSpeak: fullText.trim(),
-          wordMap,
-        });
-      }
-      // Don't descend into listItem's children (nested lists will be found by the main loop)
-      return false;
-    }
-    return true;
+    // Do not descend into list items, as their content is handled at the `listItem` level itself.
+    return node.type.name !== 'listItem';
   });
   return nodes;
 }
 
-// --- Actions ---
-
+/**
+ * Starts reading the entire document from the beginning.
+ */
 async function startReading() {
-  const currentStatus = get(store).status;
-  if (['playing', 'paused', 'initializing'].includes(currentStatus)) {
+  const editor = get(editorStore).instance;
+  if (!editor) return;
+
+  await initialize();
+  const nodes = getReadableNodes(editor);
+  if (nodes.length === 0) {
+    toast.info('There is no readable content in the document.');
     return;
   }
-  update((s) => ({ ...s, status: 'initializing', error: null }));
 
-  try {
-    if (get(store).availableVoices.length === 0) await initialize();
-    if (get(store).status === 'error') return;
-
-    const editor = get(editorStore).instance;
-    if (!editor) throw new Error('Editor not available.');
-
-    const nodes = getReadableNodes(editor);
-
-    if (nodes.length === 0) {
-      toast.info('No readable content found in this document.');
-      set({ ...get(store), status: 'idle' });
-      return;
-    }
-
-    ttsService.cancel();
-    update((s) => ({ ...s, nodesToRead: nodes, currentNodeIndex: 0 }));
-    speakNodeAtIndex(0);
-  } catch (e: any) {
-    errorService.reportError(e, { operation: 'ttsStore.startReading' });
-    update((s) => ({
-      ...s,
-      status: 'error',
-      error: e.message || 'Could not start reading.',
-    }));
-  }
+  update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+  speakNodeAtIndex(0);
 }
 
+/**
+ * Starts reading from a specific node within the document.
+ * @param nodeId The `nodeId` attribute of the ProseMirror node from which to start reading.
+ */
 async function startReadingFromNode(nodeId: string) {
-  const currentStatus = get(store).status;
-  if (['playing', 'paused', 'initializing'].includes(currentStatus)) {
+  const editor = get(editorStore).instance;
+  if (!editor) return;
+
+  await initialize();
+  const nodes = getReadableNodes(editor);
+  const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
+
+  if (startIndex === -1) {
+    toast.error('Could not find the specified node to start reading.');
     return;
   }
-  update((s) => ({ ...s, status: 'initializing', error: null }));
 
-  try {
-    if (get(store).availableVoices.length === 0) await initialize();
-    if (get(store).status === 'error') return;
-
-    const editor = get(editorStore).instance;
-    if (!editor) throw new Error('Editor not available.');
-
-    const nodes = getReadableNodes(editor);
-
-    if (nodes.length === 0) {
-      toast.info('No readable content found in this document.');
-      set({ ...get(store), status: 'idle' });
-      return;
-    }
-
-    const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
-
-    if (startIndex === -1) {
-      toast.error('Could not find the selected node to start reading from.');
-      set({ ...get(store), status: 'idle' });
-      return;
-    }
-
-    ttsService.cancel();
-    update((s) => ({ ...s, nodesToRead: nodes, currentNodeIndex: startIndex }));
-    speakNodeAtIndex(startIndex);
-  } catch (e: any) {
-    errorService.reportError(e, {
-      operation: 'ttsStore.startReadingFromNode',
-      nodeId,
-    });
-    update((s) => ({
-      ...s,
-      status: 'error',
-      error: e.message || 'Could not start reading from the selected node.',
-    }));
-  }
+  update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+  speakNodeAtIndex(startIndex);
 }
 
+/**
+ * Initiates speech synthesis for the node at a given index in the `nodesToRead` queue.
+ * @param index The index of the node to speak.
+ * @internal
+ */
 function speakNodeAtIndex(index: number) {
   const state = get(store);
-  if (index >= state.nodesToRead.length) {
-    stopReading(false);
-    toast.success('Schema reading complete!');
+  if (index < 0 || index >= state.nodesToRead.length) {
+    stopReading(true);
+    toast.success('Finished reading the document.');
     return;
   }
 
+  const nodeToRead = state.nodesToRead[index];
   const speechId = uuidv4();
+
   update((s) => ({
     ...s,
     currentNodeIndex: index,
     status: 'playing',
     currentSpeechId: speechId,
   }));
+
   highlightCurrentNode();
 
-  const currentNode = state.nodesToRead[index];
-  const { selectedVoiceId, rate, pitch } = state;
-
-  if (!selectedVoiceId) {
-    update((s) => ({ ...s, status: 'error', error: 'No voice is selected.' }));
-    return;
-  }
-
-  ttsService.speak(currentNode.textToSpeak, {
-    voiceId: selectedVoiceId,
-    rate,
-    pitch,
+  ttsService.speak(nodeToRead.textToSpeak, {
+    voiceId: state.selectedVoiceId!,
+    rate: state.rate,
+    pitch: state.pitch,
     onEnd: () => {
+      // Only proceed if this is still the current speech utterance.
       if (get(store).currentSpeechId === speechId) {
-        speakNodeAtIndex(get(store).currentNodeIndex + 1);
+        nextNode();
       }
     },
-    onBoundary: (event) =>
-      handleWordBoundary(event, currentNode.textToSpeak, currentNode.wordMap),
     onError: (error) => {
-      errorService.reportError(error, { operation: 'ttsService.speak' });
       if (get(store).currentSpeechId === speechId) {
-        update((s) => ({
-          ...s,
-          status: 'error',
-          error: 'An error occurred during playback.',
-        }));
+        errorService.reportError(error, { operation: 'tts.speakNode' });
+        update((s) => ({ ...s, status: 'error', error: 'An error occurred during playback.' }));
+      }
+    },
+    onBoundary: (event) => {
+      if (get(store).currentSpeechId === speechId) {
+        handleWordBoundary(event, nodeToRead.textToSpeak, nodeToRead.wordMap);
       }
     },
   });
 }
 
-function handleWordBoundary(
-  event: SpeechSynthesisEvent,
-  fullText: string,
-  wordMap: WordSegment[]
-) {
-  const state = get(store);
-  const editor = get(editorStore).instance;
-  if (!editor || state.status !== 'playing') return;
-
-  const currentNodeInfo = state.nodesToRead[state.currentNodeIndex];
-  if (!currentNodeInfo) return;
-
-  const spokenText = fullText.substring(0, event.charIndex);
-  const wordIndex = (spokenText.match(/\S+/g) || []).length;
-
-  const currentWord = wordMap[wordIndex];
+/**
+ * Handles the `onboundary` event from the TTS service to highlight the currently spoken word in the editor.
+ * @internal
+ */
+function handleWordBoundary(event: SpeechSynthesisEvent, fullText: string, wordMap: WordSegment[]) {
+  const { charIndex } = event;
+  const currentWord = wordMap.find((w) => charIndex >= fullText.indexOf(w.word) && charIndex < fullText.indexOf(w.word) + w.word.length);
   if (!currentWord) return;
 
-  const { from, to } = currentWord;
+  const editor = get(editorStore).instance;
+  if (!editor) return;
 
-  const decorations = [
-    Decoration.node(
-      currentNodeInfo.pos,
-      currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-      { class: 'is-current-tts-node' }
-    ),
-    Decoration.inline(from, to, { class: 'is-current-tts-word' }),
-  ];
+  const state = get(store);
+  const currentNode = state.nodesToRead[state.currentNodeIndex];
+  const wordDeco = Decoration.inline(currentWord.from, currentWord.to, { class: 'tts-highlight-word' });
+  const nodeDeco = Decoration.node(currentNode.pos, currentNode.pos + currentNode.node.nodeSize, { class: 'tts-highlight-node' });
 
-  const newDecorationSet = DecorationSet.create(editor.state.doc, decorations);
-  update((s) => ({ ...s, decorationSet: newDecorationSet }));
+  update((s) => ({ ...s, decorationSet: DecorationSet.create(editor.state.doc, [nodeDeco, wordDeco]) }));
 }
 
+/**
+ * Applies a decoration to highlight the entire ProseMirror node that is currently being read.
+ * @internal
+ */
 function highlightCurrentNode() {
   const editor = get(editorStore).instance;
   const state = get(store);
+  if (!editor || state.nodesToRead.length === 0) return;
 
-  if (!editor || !['playing', 'paused'].includes(state.status)) {
-    update((s) => ({ ...s, decorationSet: DecorationSet.empty }));
-    return;
-  }
-
-  const currentNodeInfo = state.nodesToRead[state.currentNodeIndex];
-  if (!currentNodeInfo) return;
-
-  const nodeDecoration = Decoration.node(
-    currentNodeInfo.pos,
-    currentNodeInfo.pos + currentNodeInfo.node.nodeSize,
-    { class: 'is-current-tts-node' }
-  );
-
-  update((s) => ({
-    ...s,
-    decorationSet: DecorationSet.create(editor.state.doc, [nodeDecoration]),
-  }));
+  const currentNode = state.nodesToRead[state.currentNodeIndex];
+  const deco = Decoration.node(currentNode.pos, currentNode.pos + currentNode.node.nodeSize, { class: 'tts-highlight-node' });
+  update((s) => ({ ...s, decorationSet: DecorationSet.create(editor.state.doc, [deco]) }));
 }
 
+/**
+ * Initializes the TTS service, fetching available voices and setting a sensible default voice.
+ */
 async function initialize() {
-  if (get(store).availableVoices.length > 0) return;
+  if (get(store).availableVoices.length > 0) return; // Avoid re-initialization
 
+  update((s) => ({ ...s, status: 'initializing' }));
   try {
     await ttsService.initialize();
     const voices = ttsService.getVoices();
-    if (voices.length === 0)
-      throw new Error('No TTS voices found in this browser.');
-
-    const userLang = navigator.language || 'en-US';
-    const defaultVoice =
-      voices.find((v) => v.lang === userLang) ||
-      voices.find((v) => v.lang.startsWith(userLang.split('-')[0])) ||
-      voices.find((v) => v.lang.startsWith('en')) ||
-      voices[0];
-
-    update((s) => ({
-      ...s,
-      availableVoices: voices,
-      selectedVoiceId: defaultVoice.id,
-      error: null,
-    }));
-  } catch (e: any) {
-    errorService.reportError(e, { operation: 'ttsStore.initialize' });
-    update((s) => ({
-      ...s,
-      status: 'error',
-      error: e.message || 'Could not initialize the voice engine.',
-    }));
-  }
-}
-
-function stopReading(reset: boolean) {
-  ttsService.cancel();
-  if (reset) {
-    const currentState = get(store);
-    set({
-      ...initialState,
-      availableVoices: currentState.availableVoices,
-      selectedVoiceId: currentState.selectedVoiceId,
-      rate: currentState.rate,
-      pitch: currentState.pitch,
-    });
-  } else {
+    // Prefer a Google UK English voice, falling back to any English voice, then the first available voice.
+    const preferredVoice = voices.find(v => v.id.includes('Google') && v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en')) || voices[0];
     update((s) => ({
       ...s,
       status: 'idle',
-      decorationSet: DecorationSet.empty,
-      currentSpeechId: null,
+      availableVoices: voices,
+      selectedVoiceId: preferredVoice ? preferredVoice.id : null,
     }));
+  } catch (error) {
+    errorService.reportError(error, { operation: 'tts.initialize' });
+    update((s) => ({ ...s, status: 'error', error: 'Could not initialize Text-to-Speech.' }));
+    throw error;
   }
-  highlightCurrentNode();
 }
 
+/**
+ * Stops playback and optionally resets the entire TTS state to its initial values.
+ * @param reset If true, resets all state; otherwise, just stops playback and clears decorations.
+ * @internal
+ */
+function stopReading(reset: boolean) {
+  ttsService.cancel();
+  if (reset) {
+    set(initialState);
+  } else {
+    update((s) => ({ ...s, status: 'idle', decorationSet: DecorationSet.empty, currentSpeechId: null }));
+  }
+}
+
+/**
+ * Pauses the current playback at its current position.
+ */
 function pauseReading() {
-  if (get(store).status === 'playing') {
-    ttsService.pause();
-    update((s) => ({ ...s, status: 'paused' }));
-    highlightCurrentNode();
-  }
+  const state = get(store);
+  if (state.status !== 'playing') return;
+  ttsService.pause();
+  update((s) => ({ ...s, status: 'paused' }));
 }
 
+/**
+ * Resumes playback from a paused state.
+ */
 function resumeReading() {
-  if (get(store).status === 'paused') {
-    ttsService.resume();
-    update((s) => ({ ...s, status: 'playing' }));
-  }
+  const state = get(store);
+  if (state.status !== 'paused') return;
+  ttsService.resume();
+  update((s) => ({ ...s, status: 'playing' }));
 }
 
+/**
+ * Skips to the next node in the reading queue.
+ */
 function nextNode() {
-  const state = get(store);
-  if (state.currentNodeIndex < state.nodesToRead.length - 1) {
-    ttsService.cancel();
-    speakNodeAtIndex(state.currentNodeIndex + 1);
-  }
+  ttsService.cancel();
+  const currentIndex = get(store).currentNodeIndex;
+  speakNodeAtIndex(currentIndex + 1);
 }
 
+/**
+ * Goes back to the previous node in the reading queue.
+ */
 function previousNode() {
-  const state = get(store);
-  if (state.currentNodeIndex > 0) {
-    ttsService.cancel();
-    speakNodeAtIndex(state.currentNodeIndex - 1);
-  }
+  ttsService.cancel();
+  const currentIndex = get(store).currentNodeIndex;
+  speakNodeAtIndex(currentIndex - 1);
 }
 
+/**
+ * Restarts the speech for the currently active node from the beginning. Used after changing voice or rate.
+ * @internal
+ */
 function restartCurrentSpeech() {
   const state = get(store);
   if (['playing', 'paused'].includes(state.status)) {
     ttsService.cancel();
-    setTimeout(() => {
-      if (['playing', 'paused'].includes(get(store).status)) {
-        speakNodeAtIndex(get(store).currentNodeIndex);
-      }
-    }, 50);
+    speakNodeAtIndex(state.currentNodeIndex);
   }
 }
 
+/**
+ * Sets the active voice and immediately restarts the current speech to apply the change.
+ * @param voiceId The unique ID of the voice to use.
+ */
 function setVoice(voiceId: string) {
   update((s) => ({ ...s, selectedVoiceId: voiceId }));
   restartCurrentSpeech();
 }
 
+/**
+ * Sets the playback rate and immediately restarts the current speech to apply the change.
+ * @param rate The new playback rate (e.g., 1.25 for 25% faster).
+ */
 function setRate(rate: number) {
   update((s) => ({ ...s, rate }));
   restartCurrentSpeech();
 }
 
-// --- Lifecycle ---
+// Subscribes to editor transactions to stop playback if the document changes during speech.
 editorStore.subscribe(($editorStore) => {
   if (unsubscribeFromEditor) unsubscribeFromEditor();
   if ($editorStore.instance) {
     const editor = $editorStore.instance;
+    let previousDoc: ProseMirrorNode | null = editor.state.doc;
+
     const handleTransaction = () => {
       const state = get(store);
-      const previousDoc = get(editorStore).doc;
-      if (
-        ['playing', 'paused'].includes(state.status) &&
-        previousDoc &&
-        !editor.state.doc.eq(previousDoc)
-      ) {
+      const currentDoc = editor.state.doc;
+      if (['playing', 'paused'].includes(state.status) && previousDoc && !currentDoc.eq(previousDoc)) {
         toast.info('Playback stopped due to document changes.');
         stopReading(true);
       }
+      previousDoc = currentDoc;
     };
+
     editor.on('transaction', handleTransaction);
-    unsubscribeFromEditor = () => editor.off('transaction', handleTransaction);
+    unsubscribeFromEditor = () => {
+      editor.off('transaction', handleTransaction);
+      previousDoc = null; // Clear reference on cleanup
+    };
   }
 });
 
+/**
+ * The publicly exposed interface for the `ttsStore`, containing all user-facing actions.
+ */
 export const ttsStore = {
+  /** Subscribes to changes in the TTS store's state. */
   subscribe,
+  /** Initializes the TTS engine and fetches available voices. This must be called before starting playback. */
   initialize,
+  /** Starts reading the document from the beginning. */
   startReading,
+  /** Starts reading from a specific node within the document. */
   startReadingFromNode,
+  /** Stops the current playback and fully resets the TTS state. */
   stopReading: () => stopReading(true),
+  /** Pauses the current playback. */
   pauseReading,
+  /** Resumes a paused playback. */
   resumeReading,
+  /** Sets the active TTS voice. Playback will restart on the current node to apply the change. */
   setVoice,
+  /** Sets the TTS playback rate (speed). Playback will restart on the current node to apply the change. */
   setRate,
+  /** Skips to the next readable node in the queue. */
   nextNode,
+  /** Skips to the previous readable node in the queue. */
   previousNode,
 };

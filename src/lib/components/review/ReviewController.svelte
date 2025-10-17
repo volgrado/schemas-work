@@ -1,8 +1,9 @@
-<!-- src/lib/components/review/ReviewController.svelte (Versión Final y Robusta) -->
+<!-- src/lib/components/review/ReviewController.svelte -->
 <script lang="ts">
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { reviewStore } from '$lib/stores/reviewStore';
+  import { evaluateAnswer } from '$lib/services/features/reviewService';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import type { Card, ReviewQuality, SequencingCard } from '$lib/types';
@@ -15,33 +16,42 @@
   let userInput = $state('');
   let userSequence = $state<string[]>([]);
   let draggedItemIndex = $state<number | null>(null);
+  let isSubmitting = $state(false); // Nuevo estado para la evaluación automática
 
   // --- Estado Derivado ---
-  // Se ejecuta cada vez que el estado del store cambia.
   $effect(() => {
     const currentCard = $review.cardsToReview[$review.currentCardIndex];
     if (currentCard && currentCard.type === 'sequencing') {
-      // Desordena los ítems para el usuario cada vez que aparece una nueva tarjeta de secuencia.
       userSequence = [...currentCard.content.items].sort(
         () => Math.random() - 0.5
       );
     } else {
-      // Limpia el estado para otros tipos de tarjeta.
       userSequence = [];
     }
-    // Limpia el input del usuario para cada nueva tarjeta.
     userInput = '';
+    isSubmitting = false; // Resetea el estado en cada nueva tarjeta
   });
 
   // --- Manejadores de Eventos ---
 
-  function handleCheckInput() {
+  async function handleCheckInput() {
     const currentCard = $review.cardsToReview[$review.currentCardIndex];
-    if (currentCard.type !== 'input') return;
-    const isCorrect =
-      userInput.trim().toLowerCase() ===
-      currentCard.content.expected.trim().toLowerCase();
-    review.submitInteractiveAnswer(isCorrect);
+    if (currentCard.type !== 'input' || isSubmitting) return;
+
+    isSubmitting = true;
+
+    const quality = await evaluateAnswer(
+      userInput,
+      currentCard.content.expected
+    );
+
+    // Muestra el feedback inmediatamente
+    review.submitInteractiveAnswer(quality >= 3);
+
+    // Envía la revisión automáticamente después de un momento
+    setTimeout(() => {
+      review.submitReview(quality);
+    }, 2000); // Espera 2s para que el usuario vea el feedback
   }
 
   function handleCheckSequence() {
@@ -62,7 +72,7 @@
   }
 
   function handleDragOver(event: DragEvent) {
-    event.preventDefault(); // Necesario para permitir el drop.
+    event.preventDefault();
   }
 
   function handleDrop(targetIndex: number) {
@@ -105,7 +115,7 @@
               class="input-field"
               placeholder="Escribe tu respuesta..."
               bind:value={userInput}
-              disabled={$review.isAnswerShown}
+              disabled={$review.isAnswerShown || isSubmitting}
             />
             {#if $review.isAnswerShown}
               <div
@@ -166,28 +176,33 @@
                 >Mostrar Respuesta</Button
               >
             {:else if currentCard.type === 'input'}
-              <Button onclick={handleCheckInput} size="md">Comprobar</Button>
+              <Button onclick={handleCheckInput} size="md" disabled={isSubmitting}>
+                {#if isSubmitting}Evaluando...{:else}Comprobar{/if}
+              </Button>
             {:else if currentCard.type === 'sequencing'}
               <Button onclick={handleCheckSequence} size="md">Comprobar</Button>
             {/if}
           {:else}
-            <div class="review-buttons">
-              <Button
-                onclick={() => submitReview(0)}
-                size="md"
-                variant="secondary">Otra vez</Button
-              >
-              <Button
-                onclick={() => submitReview(3)}
-                size="md"
-                variant="secondary">Difícil</Button
-              >
-              <Button
-                onclick={() => submitReview(5)}
-                size="md"
-                variant="primary">Fácil</Button
-              >
-            </div>
+            <!-- Para tarjetas 'input', la revisión es automática, así que no se muestran los botones. -->
+            {#if currentCard.type !== 'input'}
+              <div class="review-buttons">
+                <Button
+                  onclick={() => submitReview(0)}
+                  size="md"
+                  variant="secondary">Otra vez</Button
+                >
+                <Button
+                  onclick={() => submitReview(3)}
+                  size="md"
+                  variant="secondary">Difícil</Button
+                >
+                <Button
+                  onclick={() => submitReview(5)}
+                  size="md"
+                  variant="primary">Fácil</Button
+                >
+              </div>
+            {/if}
           {/if}
         </div>
       </div>

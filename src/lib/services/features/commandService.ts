@@ -1,24 +1,24 @@
-// src/lib/services/features/commandService.ts
-
 /**
- * @file This service is the heart of the CommandBar.
- * It centralizes the definition of all available commands in the application,
- * decoupling the business logic from the presentation layer (the Svelte component).
+ * @file Centralizes the definition, logic, and state management of all application commands.
  *
- * RESPONSIBILITIES:
- * 1. Define the structure of a command through the `Command` interface.
- * 2. Import the necessary stores and services to execute the actions.
- * 3. Provide functions that return lists of commands (`getCommands`, `getAiCommands`)
- * based on the current state of the application (e.g., if a node is selected).
+ * @remarks
+ * This service is the definitive source of truth for the command bar feature. It decouples
+ * the command logic from the UI components by defining a comprehensive list of available
+ * `Command` objects. Each command is a self-contained unit with an ID, a user-facing
+ * label, an icon, an action to execute, and an optional `isEnabled` function to
+ * dynamically determine if it should be active based on the current application state.
  *
- * BENEFITS OF THIS ARCHITECTURE:
- * - **Testability:** Each `action` can be unit-tested without rendering the UI.
- * - **Maintainability:** Adding or modifying commands is done in a single place.
- * - **Clarity:** The `CommandBar.svelte` component becomes a "dumb component"
- * focused solely on rendering and delegating events.
+ * This architectural pattern provides several key advantages:
+ * - **Decoupling & Single Responsibility**: The `CommandBar.svelte` component is only
+ *   responsible for rendering the list of commands and dispatching user actions, not for
+ *   implementing the command logic itself. This keeps the UI component clean and focused.
+ * - **Centralization & Maintainability**: All application-wide commands are defined in this
+ *   single location, making them easy to discover, manage, update, and reason about.
+ * - **Testability**: Each command's action can be unit-tested in isolation, without needing
+ *   to interact with the Svelte component lifecycle or the DOM.
  */
 
-import type { Command } from '$lib/types/command';
+import type { Command } from '$lib/types';
 import { get } from 'svelte/store';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { documentStore } from '$lib/stores/documentStore';
@@ -27,8 +27,14 @@ import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
 
 /**
- * Returns the list of commands for the main view of the CommandBar.
- * @returns {Command[]} An array of main commands.
+ * Retrieves the list of primary commands available in the main view of the command bar.
+ *
+ * @remarks
+ * The availability of certain commands is dynamically determined by reading the current
+ * state of the application from various Svelte stores. For example, the "Start Review"
+ * command is disabled if a review is already in progress.
+ *
+ * @returns An array of `Command` objects for the main command bar view.
  */
 export function getCommands(): Command[] {
   return [
@@ -37,10 +43,7 @@ export function getCommands(): Command[] {
       label: 'New Schema',
       icon: 'plus',
       action: () => {
-        // --- ✨ MEJORA CLAVE ---
-        // Ahora obtenemos el ID de la carpeta actual desde el store.
-        // Si el usuario está en la raíz, será `null`, creando el archivo en la raíz.
-        // Si está dentro de una carpeta, usará el ID de esa carpeta.
+        // Creates a new schema, correctly parenting it under the currently viewed folder, if any.
         const parentId = get(commandBarStore).currentParentId;
         documentStore.createNewDocument('New Schema', undefined, parentId);
         commandBarStore.close();
@@ -51,8 +54,7 @@ export function getCommands(): Command[] {
       label: 'Explore Schemas...',
       icon: 'folder',
       action: () => {
-        // Instead of handling UI logic here, we tell the store
-        // to change its internal view. The component will react to this.
+        // Changes the command bar's view to show the searchable list of schemas and folders.
         commandBarStore.setView('list-schemas');
       },
     },
@@ -61,6 +63,7 @@ export function getCommands(): Command[] {
       label: 'AI Assistant...',
       icon: 'sparkles',
       action: () => {
+        // Navigates to the secondary view containing AI-specific commands.
         commandBarStore.setView('ai-actions');
       },
     },
@@ -72,7 +75,7 @@ export function getCommands(): Command[] {
         reviewStore.startReview();
         commandBarStore.close();
       },
-      // The command is disabled if a review is already in progress.
+      // This command is only enabled if a review session is not already active.
       isEnabled: () => !get(reviewStore).isReviewing,
     },
     {
@@ -83,7 +86,7 @@ export function getCommands(): Command[] {
         ttsStore.startReading();
         commandBarStore.close();
       },
-      // The command is disabled if it is already reading aloud.
+      // This command is only enabled if the text-to-speech feature is not currently playing.
       isEnabled: () => get(ttsStore).status !== 'playing',
     },
     {
@@ -91,8 +94,7 @@ export function getCommands(): Command[] {
       label: 'Export Vault',
       icon: 'download-cloud',
       action: () => {
-        // The command does not manage the modal directly.
-        // It delegates to the store the opening of the modal with the correct action.
+        // Delegates the export action to the command bar store, which handles the UI flow (e.g., password modal).
         commandBarStore.openPasswordModal('export');
       },
     },
@@ -101,6 +103,7 @@ export function getCommands(): Command[] {
       label: 'Import Vault',
       icon: 'upload-cloud',
       action: () => {
+        // Delegates the import action to the command bar store for the same reasons.
         commandBarStore.openPasswordModal('import');
       },
     },
@@ -109,6 +112,7 @@ export function getCommands(): Command[] {
       label: 'Diagnostics and Error Report',
       icon: 'help-circle',
       action: () => {
+        // Opens the diagnostic modal, allowing users to view and report errors.
         commandBarStore.openDiagnosticModal();
       },
     },
@@ -116,11 +120,15 @@ export function getCommands(): Command[] {
 }
 
 /**
- * Returns the list of commands for the "AI Assistant" sub-menu.
- * @returns {Command[]} An array of AI commands.
+ * Retrieves the list of secondary commands specific to the AI Assistant feature.
+ *
+ * @remarks
+ * The availability of these commands often depends on the state of the editor, such as
+ * whether a specific node is selected, as this provides the necessary context for the AI.
+ *
+ * @returns An array of `Command` objects for the AI Assistant command view.
  */
 export function getAiCommands(): Command[] {
-  // The `isEnabled` check is based on the current state of the `editorStore`.
   const isNodeSelected = get(editorStore).selectedNodePos !== null;
 
   return [
@@ -129,7 +137,7 @@ export function getAiCommands(): Command[] {
       label: 'Create Schema from Text...',
       icon: 'sparkles',
       action: () => {
-        // Again, we delegate to the store the opening of the AI helper modal.
+        // Opens the AI helper modal, configured for the schema generation task.
         commandBarStore.openAiHelper('create-schema-from-text');
       },
     },
@@ -138,8 +146,10 @@ export function getAiCommands(): Command[] {
       label: 'Generate Study Cards',
       icon: 'zap',
       action: () => {
+        // Opens the AI helper modal for generating flashcards based on the selected node's content.
         commandBarStore.openAiHelper('generate-flashcards');
       },
+      // This command is only enabled if a node is currently selected in the editor.
       isEnabled: () => isNodeSelected,
     },
     {
@@ -147,8 +157,10 @@ export function getAiCommands(): Command[] {
       label: 'Expand this node',
       icon: 'plus',
       action: () => {
+        // Opens the AI helper modal to expand upon the content of the selected node.
         commandBarStore.openAiHelper('expand-node');
       },
+      // This command also requires a node to be selected to provide context.
       isEnabled: () => isNodeSelected,
     },
   ];
