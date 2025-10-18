@@ -1,15 +1,15 @@
-// src/routes/+layout.ts (This will now be valid)
+// src/routes/+layout.ts
 
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 
 export const load: LayoutLoad = ({ url }) => {
   if (url.pathname === '/') {
-    // This redirect will now be handled by the server hook, not the static build.
-    // The static adapter will be able to successfully generate the fallback page.
+    // This redirect is now correctly handled by `hooks.server.ts` for live traffic,
+    // not during the static build. This allows the adapter to generate the necessary
+    // fallback page at the root.
   }
 
-  // With the global requirement for `lang` removed,
-  // returning an empty object is now perfectly valid.
+  // Returning an empty object is now valid and expected.
   return {};
 };
