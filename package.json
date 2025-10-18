@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "npm run assets:generate && vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -14,7 +14,8 @@
     "lint": "prettier --check . && eslint .",
     "test:e2e": "playwright test",
     "test": "npm run test:e2e && npm run test:unit -- --run",
-    "test:unit": "vitest"
+    "test:unit": "vitest",
+    "assets:generate": "node ./scripts/generate-assets.js"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
@@ -63,6 +64,7 @@
     "d3": "^7.9.0",
     "dexie": "^4.2.1",
     "katex": "^0.16.11",
+    "sharp": "^0.34.4",
     "svelte-feather-icons": "^4.2.0",
     "svelte-sonner": "^1.0.5",
     "uuid": "^13.0.0",
