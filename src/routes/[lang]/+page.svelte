@@ -1,18 +1,3 @@
-<!--
-  @component
-  [lang]/+page.svelte
-
-  This is the main page component of the application, acting as the primary user interface.
-  It orchestrates the display of different views and components based on the application's state.
-  It is responsible for:
-
-  - **Initial Load Logic**: Determines whether to show the `WelcomeAnimator` or load an existing document based on user history.
-  - **View Management**: Toggles between the main document editor (`DocumentView`) and the schema tree view (`SchemaTree`).
-  - **Component Orchestration**: Integrates and manages major UI components like the `AppHeader`, `CommandBar`, `CardEditorPanel`, and various modals.
-  - **State Management**: Subscribes to and reacts to changes in global Svelte stores (`documentStore`, `editorStore`, `modalStore`, etc.).
-  - **Global Event Handling**: Listens for global keyboard shortcuts and window resize events to provide a responsive experience.
-  - **Data Fetching**: Initiates the loading of the initial document or creates a new one if none exist.
--->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -31,7 +16,6 @@
   import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
   import SchemaTree from '$lib/components/views/SchemaTree.svelte';
   import type { TreeNodeData } from '$lib/components/views/SchemaTree.svelte';
-  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import FormulaEditModal from '$lib/components/editor/FormulaEditModal.svelte';
   import MediaEditModal from '$lib/components/editor/MediaEditModal.svelte';
   import Screen from '$lib/components/ui/Screen.svelte';
@@ -45,10 +29,8 @@
   import { reviewStore } from '$lib/stores/reviewStore';
   import { modalStore } from '$lib/stores/modalStore';
   import { t } from '$lib/utils/i18n';
-
   // --- Props ---
   let { data }: { data: { showWelcome: boolean } } = $props();
-
   // --- State ---
   let showWelcome = $state(data.showWelcome);
   let isRevealingContent = $state(!data.showWelcome);
@@ -69,7 +51,6 @@
       treeData = null;
     }
   });
-
   // Determines which node in the tree view should be highlighted.
   let selectedNodeId = $derived(
     ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
@@ -79,7 +60,6 @@
         ? `node-${$editorStore.selectedNodePos}`
         : 'root-title'
   );
-
   // A derived boolean to check if a node is currently selected in the editor.
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
@@ -95,10 +75,10 @@
       window.removeEventListener('resize', handleResize);
     };
   });
-
   // --- Event Handlers ---
 
-  /** Handles global keydown events, specifically for opening the card editor. */
+  /** Handles global keydown events, specifically for opening the card editor.
+   */
   function handleGlobalKeydown(event: KeyboardEvent) {
     if ((event.metaKey || event.ctrlKey) && event.key === "'") {
       event.preventDefault();
@@ -106,7 +86,8 @@
     }
   }
 
-  /** Updates the `isMobile` state based on window width. */
+  /** Updates the `isMobile` state based on window width.
+   */
   function handleResize() {
     isMobile = window.innerWidth <= 768;
   }
@@ -119,14 +100,18 @@
     await loadInitialDocument();
   }
 
-  /** Resets the view to show the welcome screen again. */
+  /** Resets the view to show the welcome screen again.
+   */
   function handleShowWelcome() {
-    currentView = 'editor';
-    showWelcome = true;
     isRevealingContent = false;
+    setTimeout(() => {
+      currentView = 'editor';
+      showWelcome = true;
+    }, 300); // Wait for the main screen to fade out
   }
 
-  /** Handles clicks on nodes in the schema tree, switching to the editor and focusing the node. */
+  /** Handles clicks on nodes in the schema tree, switching to the editor and focusing the node.
+   */
   function handleNodeClickInTree(event: CustomEvent<{ id: string }>) {
     const { id } = event.detail;
     if (id === 'root-title') return;
@@ -137,7 +122,8 @@
     }
   }
 
-  /** Opens the card editor panel for the currently selected node. */
+  /** Opens the card editor panel for the currently selected node.
+   */
   function openCardEditor() {
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
@@ -152,7 +138,8 @@
     commandBarStore.open();
   }
 
-  /** Loads the last active document or creates a new one. */
+  /** Loads the last active document or creates a new one.
+   */
   async function loadInitialDocument() {
     if (get(documentStore).status === 'ready') return;
     const allItems = await directoryService.getAllItems();
@@ -171,7 +158,8 @@
     }
   }
 
-  /** Handles the save event from modals, updating node attributes in the editor. */
+  /** Handles the save event from modals, updating node attributes in the editor.
+   */
   function handleModalSave(event: CustomEvent) {
     const { newAttrs } = event.detail;
     const editor = get(editorStore).instance;
@@ -181,7 +169,6 @@
 
     const node = editor.state.doc.nodeAt(pos);
     if (!node) return;
-
     editor.chain().focus(pos).updateAttributes(node.type, newAttrs).run();
     modalStore.close();
   }
@@ -197,7 +184,6 @@
 
 <Toaster position="bottom-center" theme="system" />
 
-<!-- Renders the appropriate modal when the modalStore is open -->
 {#if $modalStore.isOpen}
   {@const config = $modalStore.config}
   {#if config?.type === 'formula'}
@@ -222,46 +208,30 @@
   {/if}
 {/if}
 
-<!-- Main Application Header (conditionally rendered) -->
-{#if !showWelcome}
-  <AppHeader
-    on:showWelcome={handleShowWelcome}
-    class={isRevealingContent ? 'reveal' : ''}
-  >
-    {#if !isMobile}
-      <Button
-        variant="secondary"
-        size="sm"
-        onclick={() =>
-          (currentView = currentView === 'editor' ? 'tree' : 'editor')}
-        aria-label={currentView === 'editor'
-          ? $t('page.view_toggle.aria_label.to_tree')
-          : $t('page.view_toggle.aria_label.to_editor')}
-      >
-        <Icon
-          name={currentView === 'editor' ? 'git-branch' : 'edit-3'}
-          size={16}
-        />
-      </Button>
-    {/if}
-  </AppHeader>
-{/if}
+<AppHeader show={isRevealingContent} on:showWelcome={handleShowWelcome}>
+  {#if !isMobile}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() =>
+        (currentView = currentView === 'editor' ? 'tree' : 'editor')}
+      aria-label={currentView === 'editor'
+        ? $t('page.view_toggle.aria_label.to_tree')
+        : $t('page.view_toggle.aria_label.to_editor')}
+    >
+      <Icon
+        name={currentView === 'editor' ? 'git-branch' : 'edit-3'}
+        size={16}
+      />
+    </Button>
+  {/if}
+</AppHeader>
 
-<!-- Welcome animation, shown only on first visit -->
 {#if showWelcome}
   <WelcomeAnimator on:animationComplete={onAnimationComplete} />
 {/if}
 
-<!-- Main Screen Component -->
-<Screen show={!showWelcome} let:isExiting>
-  <!-- Background canvas for the editor view -->
-  {#if currentView === 'editor'}
-    <div class="editor-background-canvas">
-      <OrganicCanvas {isExiting} />
-    </div>
-  {/if}
-
-  <!-- Editor View -->
+<Screen show={isRevealingContent} let:isExiting>
   <div
     class="view-content"
     style:display={currentView === 'editor' ? 'block' : 'none'}
@@ -293,7 +263,6 @@
     </div>
   </div>
 
-  <!-- Schema Tree View -->
   <div
     class="view-content"
     style:display={currentView === 'tree' ? 'block' : 'none'}
@@ -315,7 +284,6 @@
   </div>
 </Screen>
 
-<!-- Global UI Components (rendered outside the main view) -->
 {#if !showWelcome}
   <CommandBar />
   <CardEditorPanel />
@@ -323,7 +291,6 @@
   <TTSController />
   <SlashMenuController />
 
-  <!-- Mobile-specific Floating Action Buttons -->
   {#if isMobile}
     <FloatingActionButton
       icon={currentView === 'editor' ? 'git-branch' : 'edit-3'}
@@ -352,14 +319,6 @@
 {/if}
 
 <style>
-  .editor-background-canvas {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    opacity: 1; /* Make the canvas visible by default */
-    transition: opacity 0.5s ease-in-out;
-  }
-
   /* Styles for loading/error status messages */
   .status-container {
     display: flex;
@@ -394,7 +353,8 @@
   }
 
   .tree-view-content {
-    /* This padding pushes the tree view down to appear below the fixed header, matching the document view's layout. */
+    /* This padding pushes the tree view down to appear below the fixed header, matching the document view's layout.
+     */
     padding-top: var(--space-xxl);
     height: 100vh;
     box-sizing: border-box;

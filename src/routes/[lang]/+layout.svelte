@@ -1,14 +1,11 @@
-<!-- src/routes/[lang]/+layout.svelte -->
-
 <script lang="ts">
   import { browser } from '$app/environment';
   import '$lib/styles/app.css';
   import * as errorService from '$lib/services/core/errorService';
-
   // --- Stores ---
   import { editorStore } from '$lib/stores/editorStore';
   import { locale } from '$lib/utils/i18n';
-
+  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   // --- Props ---
   // `data` is from +layout.ts. `children` is the page content snippet.
   let { data, children } = $props();
@@ -24,12 +21,10 @@
       document.documentElement.lang = data.lang;
     }
   });
-
   // --- DEBUG: Global Store Listener ---
   $effect(() => {
     // console.log('[GLOBAL LAYOUT] editorStore has changed:', $editorStore);
   });
-
   /**
    * This effect sets up global error handling for the entire application.
    */
@@ -79,19 +74,7 @@
   });
 </script>
 
-<!--
-  THE <svelte:head> BLOCK CONTAINING THE <html> TAG HAS BEEN REMOVED.
-  THIS WAS THE SOURCE OF THE ERROR.
--->
-
-<!--
-  By using `data.pathname` as the key, we ensure the page is
-  fully remounted whenever the user navigates to a new URL.
--->
+<OrganicCanvas />
 {#key data.pathname}
-  <!--
-    CORRECT SVELTE 5 SYNTAX:
-    The `children` snippet must be CALLED as a function to be rendered.
-  -->
   {@render children()}
 {/key}

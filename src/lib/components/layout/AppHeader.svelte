@@ -1,24 +1,6 @@
-<!--
-  @component
-  AppHeader
-
-  This component serves as the global header for the main application view.
-  It is designed with a three-column layout to ensure a balanced and scalable structure.
-
-  Features:
-  - **Three-Column Layout**:
-    - **Left Slot**: A flexible area where parent components can inject custom controls (e.g., a view-switcher button).
-    - **Center**: Displays the application brand and logo. Clicking it dispatches an event to return to the welcome screen.
-    - **Right Section**: Contains global actions like the `LanguageSwitcher` and a `HelpTooltip` with keyboard shortcuts.
-  - **Event-Driven**: Dispatches a `showWelcome` event instead of directly handling navigation, promoting component decoupling.
-  - **Styling Flexibility**: Exports a `class` prop, allowing parent components to pass down custom CSS classes (e.g., for animations).
-
-  Events:
-  - `showWelcome`: Dispatched when the central brand/logo is clicked.
--->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-
+  import { fade } from 'svelte/transition';
   // --- UI Components & Utilities ---
   import Logo from '$lib/components/ui/Logo.svelte';
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
@@ -26,6 +8,10 @@
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
 
   const dispatch = createEventDispatcher<{ showWelcome: void }>();
+  /**
+   * @prop {boolean} show - Controls the visibility of the header.
+   */
+  export let show: boolean = false;
 
   /**
    * Dispatches the 'showWelcome' event to the parent component.
@@ -34,53 +20,56 @@
     dispatch('showWelcome');
   }
 
-  /** @props {string} class - Allows passing a custom CSS class from the parent. */
+  /** @props {string} class - Allows passing a custom CSS class from the parent.
+   */
   let className = '';
   export { className as class };
 </script>
 
-<header class="app-header {className}">
-  <div class="header-content">
-    <!-- Left Section: A slot for parent-provided controls. -->
-    <div class="header-section left">
-      <slot />
-    </div>
+{#if show}
+  <header class="app-header {className}" transition:fade={{ duration: 300 }}>
+    <div class="header-content">
+      <div class="header-section left">
+        <slot />
+      </div>
 
-    <!-- Center Section: The clickable brand logo and name. -->
-    <div class="header-section center">
-      <button
-        class="brand-button"
-        on:click={showWelcome}
-        aria-label={$t('appHeader.aria.returnToWelcome')}
-      >
-        <div class="logo-wrapper"><Logo size={28} /></div>
-        <h1 class="brand-name">
-          Schemas<span class="accent-word">.Work</span>
-        </h1>
-      </button>
-    </div>
+      <div class="header-section center">
+        <button
+          class="brand-button"
+          on:click={showWelcome}
+          aria-label={$t('appHeader.aria.returnToWelcome')}
+        >
+          <div class="logo-wrapper"><Logo size={28} /></div>
+          <h1 class="brand-name">
+            Schemas<span class="accent-word">.Work</span>
+          </h1>
+        </button>
+      </div>
 
-    <!-- Right Section: Global actions like language and help. -->
-    <div class="header-section right">
-      <LanguageSwitcher />
-      <!-- The help tooltip is hidden on smaller screens for a cleaner mobile experience. -->
-      <div class="desktop-only-tooltip">
-        <HelpTooltip>
-          <div class="shortcuts">
-            <div class="shortcut-item">
-              <span>{$t('appHeader.shortcuts.menu')}</span>
-              <div class="keys"><kbd>Ctrl</kbd><span>+</span><kbd>K</kbd></div>
+      <div class="header-section right">
+        <LanguageSwitcher />
+        <div class="desktop-only-tooltip">
+          <HelpTooltip>
+            <div class="shortcuts">
+              <div class="shortcut-item">
+                <span>{$t('appHeader.shortcuts.menu')}</span>
+                <div class="keys">
+                  <kbd>Ctrl</kbd><span>+</span><kbd>K</kbd>
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <span>{$t('appHeader.shortcuts.editCards')}</span>
+                <div class="keys">
+                  <kbd>Ctrl</kbd><span>+</span><kbd>'</kbd>
+                </div>
+              </div>
             </div>
-            <div class="shortcut-item">
-              <span>{$t('appHeader.shortcuts.editCards')}</span>
-              <div class="keys"><kbd>Ctrl</kbd><span>+</span><kbd>'</kbd></div>
-            </div>
-          </div>
-        </HelpTooltip>
+          </HelpTooltip>
+        </div>
       </div>
     </div>
-  </div>
-</header>
+  </header>
+{/if}
 
 <style>
   .app-header {

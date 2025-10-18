@@ -1,22 +1,3 @@
-<!--
-  @component
-  WelcomeScreen
-
-  This component serves as the initial landing page for new users. It presents a clean,
-  centralized panel that highlights the application's key features and provides a clear
-  call-to-action to get started. It is designed to be visually engaging, using an
-  `OrganicCanvas` background, and informative.
-
-  The component is largely static but dispatches a `start` event when the user clicks the
-  main call-to-action button, allowing the parent component (`WelcomeAnimator`) to control
-  the transition to the main application interface.
-
-  Props:
-  - `isExiting`: A boolean that can be passed to child components like `OrganicCanvas` to trigger exit animations.
-
-  Events:
-  - `start`: Dispatched when the 'Get Started' button is clicked.
--->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 
@@ -24,13 +5,8 @@
   import { t } from '$lib/utils/i18n';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
-  import OrganicCanvas from '../ui/OrganicCanvas.svelte';
-
-  /** @props {boolean} isExiting - Controls the exit animation state, passed to child components. */
-  export let isExiting = false;
 
   const dispatch = createEventDispatcher<{ start: void }>();
-
   /**
    * Dispatches the 'start' event when the main call-to-action button is clicked.
    */
@@ -40,10 +16,6 @@
 </script>
 
 <div class="welcome-container">
-  <!-- The animated background canvas. -->
-  <OrganicCanvas {isExiting} />
-
-  <!-- The main content panel with information and actions. -->
   <div class="content-panel">
     <header class="header">
       <h1 class="title">
@@ -53,7 +25,6 @@
     </header>
 
     <main class="features-grid">
-      <!-- Feature 1: AI-Powered Structuring -->
       <div class="feature">
         <Icon name="sparkles" size={24} />
         <div class="feature-text">
@@ -62,7 +33,6 @@
         </div>
       </div>
 
-      <!-- Feature 2: Visualization -->
       <div class="feature">
         <Icon name="git-branch" size={24} />
         <div class="feature-text">
@@ -71,7 +41,6 @@
         </div>
       </div>
 
-      <!-- Feature 3: Spaced Repetition Learning -->
       <div class="feature">
         <Icon name="zap" size={24} />
         <div class="feature-text">
@@ -80,7 +49,6 @@
         </div>
       </div>
 
-      <!-- Feature 4: Privacy First -->
       <div class="feature">
         <Icon name="lock" size={24} />
         <div class="feature-text">
@@ -91,7 +59,6 @@
     </main>
 
     <footer class="footer">
-      <!-- The primary call-to-action button. -->
       <Button on:click={handleStart} size="lg" variant="primary">
         {$t('welcome.cta')}
       </Button>
@@ -119,18 +86,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-xl);
-    animation: fadeIn 1s ease-out forwards;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   .header,
