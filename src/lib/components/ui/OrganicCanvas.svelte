@@ -109,7 +109,8 @@
     const scaleFactor = Math.max(0.5, Math.min(width / 1200, 1.2));
     const densities = [15000, 12000, 18000];
     const radii = [0.4, 0.8, 1.2];
-    const starColor = currentTheme === 'dark' ? '220, 220, 255' : '50, 50, 80';
+    const starColor =
+      currentTheme === 'dark' ? '220, 220, 255' : '100, 100, 130'; // Darker stars for light theme
 
     for (let i = 0; i < 3; i++) {
       const starCount = (width * height) / (densities[i] / scaleFactor);
@@ -140,7 +141,8 @@
     y: number,
     radius: number
   ) {
-    const starColor = currentTheme === 'dark' ? '255, 255, 255' : '0, 0, 0';
+    const starColor =
+      currentTheme === 'dark' ? '255, 255, 255' : '180, 180, 200'; // Light grey for light theme
     const alpha = Math.random() * 0.7 + 0.5;
 
     // Core
@@ -193,7 +195,7 @@
   ) {
     ctx.save();
     ctx.globalCompositeOperation =
-      currentTheme === 'dark' ? 'screen' : 'overlay';
+      currentTheme === 'dark' ? 'screen' : 'screen'; // Use screen for light mode for brighter results
     ctx.translate(x, y);
     ctx.beginPath();
     ctx.moveTo(radius, 0);
@@ -234,7 +236,7 @@
     const colorStart =
       currentTheme === 'dark'
         ? 'rgba(0, 0, 0, 0.2)'
-        : 'rgba(255, 255, 255, 0.2)';
+        : 'rgba(255, 255, 255, 0.4)'; // Lighter dust for light theme
     const colorEnd =
       currentTheme === 'dark' ? 'rgba(0, 0, 0, 0)' : 'rgba(255, 255, 255, 0)';
     ctx.save();
@@ -254,7 +256,8 @@
   ) {
     ctx.save();
     ctx.translate(x, y);
-    const starColor = currentTheme === 'dark' ? `220, 220, 255` : `50, 50, 80`;
+    const starColor =
+      currentTheme === 'dark' ? `220, 220, 255` : `120, 120, 150`; // Darker stars for light theme
     for (let i = 0; i < density * scaleFactor; i++) {
       const r = Math.pow(Math.random(), 2) * radius;
       const angle = Math.random() * Math.PI * 2;
@@ -267,7 +270,8 @@
       ctx.fillStyle = `rgba(${starColor}, ${alpha})`;
       ctx.fill();
     }
-    const coreGlow = currentTheme === 'dark' ? `255, 255, 255` : `0, 0, 0`;
+    const coreGlow =
+      currentTheme === 'dark' ? `255, 255, 255` : `200, 200, 220`; // Light grey glow
     const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 0.4);
     coreGradient.addColorStop(0, `rgba(${coreGlow}, 0.2)`);
     coreGradient.addColorStop(0.5, `rgba(${coreGlow}, 0.1)`);
@@ -289,7 +293,7 @@
   ) {
     ctx.save();
     ctx.globalCompositeOperation =
-      currentTheme === 'dark' ? 'screen' : 'overlay';
+      currentTheme === 'dark' ? 'screen' : 'screen'; // Use screen for light mode too
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     const cp1x = x1 + (Math.random() - 0.5) * (x2 - x1) * 2;
@@ -298,7 +302,7 @@
     const cp2y = y2 - (Math.random() - 0.5) * (y2 - y1) * 2;
     ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
 
-    const opacity = currentTheme === 'dark' ? 0.15 : 0.4;
+    const opacity = currentTheme === 'dark' ? 0.15 : 0.5; // Increased opacity for light mode
     const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
     gradient.addColorStop(0, `rgba(${color}, 0)`);
     gradient.addColorStop(0.5, `rgba(${color}, ${opacity})`);
@@ -343,7 +347,8 @@
     darkA: number,
     lightA: number
   ) {
-    return `rgba(${r}, ${g}, ${b}, ${currentTheme === 'dark' ? darkA : lightA})`;
+    // Increased alpha values for light mode
+    return `rgba(${r}, ${g}, ${b}, ${currentTheme === 'dark' ? darkA : lightA * 1.5})`;
   }
 
   // --- THEME 1: Diffuse Nebula (Orion-like) ---
@@ -356,21 +361,21 @@
     const palettes = [
       [
         {
-          start: themedRGBA(255, 120, 50, 0.05, 0.15),
+          start: themedRGBA(255, 120, 50, 0.05, 0.2),
           end: themedRGBA(255, 0, 0, 0, 0),
         },
         {
-          start: themedRGBA(50, 120, 255, 0.04, 0.12),
+          start: themedRGBA(50, 120, 255, 0.04, 0.18),
           end: themedRGBA(0, 0, 255, 0, 0),
         },
       ],
       [
         {
-          start: themedRGBA(255, 50, 180, 0.05, 0.15),
+          start: themedRGBA(255, 50, 180, 0.05, 0.2),
           end: themedRGBA(200, 0, 200, 0, 0),
         },
         {
-          start: themedRGBA(80, 220, 200, 0.04, 0.12),
+          start: themedRGBA(80, 220, 200, 0.04, 0.18),
           end: themedRGBA(0, 255, 255, 0, 0),
         },
       ],
@@ -412,21 +417,21 @@
     const palettes = [
       {
         outer: {
-          start: themedRGBA(255, 50, 50, 0.08, 0.2),
+          start: themedRGBA(255, 50, 50, 0.08, 0.25),
           end: themedRGBA(255, 0, 0, 0, 0),
         },
         inner: {
-          start: themedRGBA(50, 200, 255, 0.09, 0.25),
+          start: themedRGBA(50, 200, 255, 0.09, 0.3),
           end: themedRGBA(0, 200, 255, 0, 0),
         },
       },
       {
         outer: {
-          start: themedRGBA(255, 150, 50, 0.08, 0.2),
+          start: themedRGBA(255, 150, 50, 0.08, 0.25),
           end: themedRGBA(255, 100, 0, 0, 0),
         },
         inner: {
-          start: themedRGBA(150, 100, 255, 0.09, 0.25),
+          start: themedRGBA(150, 100, 255, 0.09, 0.3),
           end: themedRGBA(100, 50, 255, 0, 0),
         },
       },
@@ -466,7 +471,7 @@
     scaleFactor: number
   ) {
     const mainColor = {
-      start: themedRGBA(50, 120, 255, 0.06, 0.18),
+      start: themedRGBA(50, 120, 255, 0.06, 0.22),
       end: themedRGBA(0, 0, 255, 0, 0),
     };
     for (let i = 0; i < 5; i++) {
@@ -509,21 +514,21 @@
     const palettes = [
       {
         edge: {
-          start: themedRGBA(255, 180, 80, 0.08, 0.22),
+          start: themedRGBA(255, 180, 80, 0.08, 0.28),
           end: themedRGBA(255, 100, 0, 0, 0),
         },
         gas: {
-          start: themedRGBA(80, 150, 255, 0.04, 0.1),
+          start: themedRGBA(80, 150, 255, 0.04, 0.15),
           end: themedRGBA(0, 100, 255, 0, 0),
         },
       },
       {
         edge: {
-          start: themedRGBA(255, 100, 200, 0.08, 0.22),
+          start: themedRGBA(255, 100, 200, 0.08, 0.28),
           end: themedRGBA(255, 50, 150, 0, 0),
         },
         gas: {
-          start: themedRGBA(100, 220, 200, 0.04, 0.1),
+          start: themedRGBA(100, 220, 200, 0.04, 0.15),
           end: themedRGBA(50, 200, 200, 0, 0),
         },
       },
@@ -602,11 +607,11 @@
     // Draw the accretion disk
     const palettes = [
       {
-        start: themedRGBA(255, 200, 100, 0.2, 0.4),
+        start: themedRGBA(255, 200, 100, 0.2, 0.45),
         end: themedRGBA(255, 100, 0, 0, 0),
       },
       {
-        start: themedRGBA(150, 200, 255, 0.2, 0.4),
+        start: themedRGBA(150, 200, 255, 0.2, 0.45),
         end: themedRGBA(50, 100, 255, 0, 0),
       },
     ];
@@ -689,7 +694,8 @@
 
     // --- Draw DYNAMIC elements here ---
 
-    const starColor = currentTheme === 'dark' ? '255, 255, 255' : '0, 0, 0';
+    const starColor =
+      currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130'; // Darker shooting stars for light theme
     for (let i = shootingStars.length - 1; i >= 0; i--) {
       const s = shootingStars[i];
       s.x += s.speed * Math.cos(s.angle);
@@ -744,7 +750,6 @@
   });
 </script>
 
-¡
 <div class="canvas-container" class:is-exiting={isExiting}>
   <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true" />
 </div>

@@ -33,20 +33,21 @@
 :root {
   /* --- Primary Colors --- */
   --color-background: #ffffff;
-  --color-page-background: #f8f8f8;
-  --color-text: #111111;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-page-background: #f8f9fa; /* Slightly adjusted for a cleaner base */
+  --color-text: #18191a; /* Not pure black for better readability */
+  --color-text-secondary: #5a626f; /* Softer gray */
+  --color-text-tertiary: #8b929b; /* Lighter tertiary text */
   --color-accent: #d9534f;
   --color-accent-hover: #c9302c;
   --color-accent-hsl: 16 84% 53%;
   --color-accent-rgb: 217, 83, 79;
-  --color-border: #e5e5ea;
+  --color-border: #e0e0e0; /* Made slightly more visible */
 
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
   --color-background-elevated: #ffffff;
-  --color-background-translucent: hsla(0, 0%, 100%, 0.75);
+  /* Made panels fully opaque in light mode for max contrast */
+  --color-background-translucent: #ffffff;
   --color-border-input: var(--color-gray-200);
   --btn-hover-bg: var(--color-gray-100);
 
@@ -597,7 +598,7 @@ li:hover .card-indicator-icon {
   left: 0;
   z-index: -1; /* Ensures it's always in the background */
   pointer-events: none; /* Prevents it from interfering with clicks */
-  opacity: 0.5;
+  opacity: 0.2; /* Further reduced opacity for light mode */
   transition: opacity 0.5s ease-in-out;
 }
 

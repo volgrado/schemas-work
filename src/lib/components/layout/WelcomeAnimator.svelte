@@ -39,5 +39,7 @@
     position: fixed;
     inset: 0;
     z-index: 200; /* High z-index to cover the main UI during animation */
+    /* This background color ensures text is readable regardless of the canvas behind it. */
+    background-color: var(--color-page-background);
   }
 </style>
