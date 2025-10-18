@@ -20,27 +20,33 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { t } from '$lib/utils/i18n';
 
-  // --- Component Properties ---
-  export let show: boolean;
-  export let initialAttrs: { src: string; mediaType: 'image' | 'youtube' };
-  export let onClose: () => void;
+  // --- Component Properties (Svelte 5 Runes) ---
+  // FIX: Replaced `export let` with the `$props()` rune.
+  let { show, initialAttrs, onClose } = $props<{
+    show: boolean;
+    initialAttrs: { src: string; mediaType: 'image' | 'youtube' };
+    onClose: () => void;
+  }>();
 
-  const dispatch = createEventDispatcher<{ save: { newAttrs: { src: string } } }>();
+  const dispatch = createEventDispatcher<{
+    save: { newAttrs: { src: string } };
+  }>();
 
-  // --- Local State ---
-  let src = initialAttrs.src; // The URL being edited.
+  // --- Local State (Svelte 5 Runes) ---
+  // FIX: Used `$state` for mutable local state.
+  let src = $state(initialAttrs.src); // The URL being edited.
 
   // --- Derived State (Svelte 5 Runes) ---
   // These values reactively update if the initialAttrs prop were to ever change.
   const title = $derived(
     initialAttrs.mediaType === 'image'
-      ? t('media_editor.title.image')
-      : t('media_editor.title.youtube')
+      ? $t('media_editor.title.image')
+      : $t('media_editor.title.youtube')
   );
   const label = $derived(
     initialAttrs.mediaType === 'image'
-      ? t('media_editor.label.image')
-      : t('media_editor.label.youtube')
+      ? $t('media_editor.label.image')
+      : $t('media_editor.label.youtube')
   );
 
   /**
@@ -59,19 +65,21 @@
       type="url"
       bind:value={src}
       placeholder="https://example.com/image.png"
-      on:keydown={(e) => { if (e.key === 'Enter') handleSave(); }}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') handleSave();
+      }}
     />
 
     <!-- Show a preview only for images with a valid src -->
     {#if initialAttrs.mediaType === 'image' && src}
-      <img src={src} alt={t('media_editor.preview.alt')} class="image-preview" />
+      <img {src} alt={$t('media_editor.preview.alt')} class="image-preview" />
     {/if}
 
     <div class="modal-actions">
       <Button on:click={onClose} variant="secondary">
-        {t('media_editor.cancel_button')}
+        {$t('media_editor.cancel_button')}
       </Button>
-      <Button on:click={handleSave}>{t('media_editor.save_button')}</Button>
+      <Button on:click={handleSave}>{$t('media_editor.save_button')}</Button>
     </div>
   </div>
 </Modal>
@@ -95,7 +103,9 @@
     border: 1px solid var(--color-border-input);
     background-color: var(--color-background);
     color: var(--color-text);
-    transition: border-color 0.2s, background-color 0.2s;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
   }
 
   input:focus-visible {

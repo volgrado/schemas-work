@@ -17,14 +17,8 @@
 
   Slot Props:
   - `isExiting`: {boolean} - A boolean that is `true` only when the screen is in the process of transitioning out. This is the key to synchronizing animations.
-
-  Usage:
-  <Screen show={shouldDisplayView} let:isExiting>
-    <!-- Pass `isExiting` to any child that needs to animate out in sync -->
-    <MyAnimatedBackground {isExiting} />
-    <MyViewContent />
-  </Screen>
 -->
+
 <script lang="ts">
   import { quintOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
@@ -38,10 +32,6 @@
   let isExiting = false;
 </script>
 
-<!--
-  The `{#if show}` block ensures the component is added or removed from the DOM,
-  triggering the transitions.
--->
 {#if show}
   <div
     class="screen-container"
@@ -52,8 +42,8 @@
       easing: quintOut,
     }}
     out:fade={{ duration: 250 }}
-    on:outrostart={() => (isExiting = true)} 
-    on:introend={() => (isExiting = false)} 
+    on:outrostart={() => (isExiting = true)}
+    on:introend={() => (isExiting = false)}
   >
     <!--
       The `isExiting` state is exposed to the slot. Any component placed inside

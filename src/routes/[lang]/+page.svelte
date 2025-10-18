@@ -327,7 +327,9 @@
   {#if isMobile}
     <FloatingActionButton
       icon={currentView === 'editor' ? 'git-branch' : 'edit-3'}
-      label={currentView === 'editor' ? $t('page.fab.tree') : $t('page.fab.editor')}
+      label={currentView === 'editor'
+        ? $t('page.fab.tree')
+        : $t('page.fab.editor')}
       position="right"
       on:click={() =>
         (currentView = currentView === 'editor' ? 'tree' : 'editor')}

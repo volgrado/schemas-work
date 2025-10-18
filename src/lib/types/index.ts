@@ -9,38 +9,38 @@
  * Represents the user's unique cryptographic identity.
  */
 export interface Identity {
-	/** The public part of the cryptographic key pair. */
-	publicKey: string;
-	/** The private part of the cryptographic key pair. */
-	privateKey: string;
+  /** The public part of the cryptographic key pair. */
+  publicKey: string;
+  /** The private part of the cryptographic key pair. */
+  privateKey: string;
 }
 
 /**
  * Represents the metadata of a schema or a folder.
  */
 export interface SchemaMetadata {
-	/** The unique identifier for the item. */
-	id: string;
-	/** The user-defined title of the schema or folder. */
-	title: string;
-	/** The timestamp when the item was created. */
-	createdAt: number;
-	/** The timestamp when the item was last modified. */
-	updatedAt: number;
-	/** The type of the item. */
-	type: 'schema' | 'folder';
-	/** The ID of the parent folder. `null` if the item is at the root level. */
-	parentId: string | null;
+  /** The unique identifier for the item. */
+  id: string;
+  /** The user-defined title of the schema or folder. */
+  title: string;
+  /** The timestamp when the item was created. */
+  createdAt: number;
+  /** The timestamp when the item was last modified. */
+  updatedAt: number;
+  /** The type of the item. */
+  type: 'schema' | 'folder';
+  /** The ID of the parent folder. `null` if the item is at the root level. */
+  parentId: string | null;
 }
 
 /**
  * Represents the complete structure of a user's vault, used for import and export.
  */
 export interface Vault {
-	/** An array of all schema and folder metadata objects. */
-	schemas: SchemaMetadata[];
-	/** A key-value map where the key is the schema ID and the value is the Y.js document content. */
-	content: Record<string, string>;
+  /** An array of all schema and folder metadata objects. */
+  schemas: SchemaMetadata[];
+  /** A key-value map where the key is the schema ID and the value is the Y.js document content. */
+  content: Record<string, string>;
 }
 
 // --- Card and Spaced Repetition System (SRS) Types ---
@@ -55,14 +55,14 @@ export type ReviewQuality = 0 | 3 | 5;
  * The core data structure for the Spaced Repetition System (SRS) algorithm.
  */
 export interface SrsData {
-	/** The ease factor, which determines how much the interval increases after a correct review. */
-	easeFactor: number;
-	/** The current interval (in days) until the next scheduled review. */
-	interval: number;
-	/** The total number of times the card has been successfully reviewed. */
-	repetitions: number;
-	/** The timestamp when the card is next due for review. */
-	dueDate: number;
+  /** The ease factor, which determines how much the interval increases after a correct review. */
+  easeFactor: number;
+  /** The current interval (in days) until the next scheduled review. */
+  interval: number;
+  /** The total number of times the card has been successfully reviewed. */
+  repetitions: number;
+  /** The timestamp when the card is next due for review. */
+  dueDate: number;
 }
 
 /**
@@ -74,39 +74,39 @@ export type CardType = 'basic' | 'input' | 'sequencing';
 
 /** The base interface shared by all card types. */
 interface CardBase {
-	/** The unique identifier for the card itself. */
-	id: string;
-	/** The ID of the ProseMirror node from which this card was generated. */
-	nodeId: string;
-	/** The SRS data object that tracks the learning state of this card. */
-	srs: SrsData;
+  /** The unique identifier for the card itself. */
+  id: string;
+  /** The ID of the ProseMirror node from which this card was generated. */
+  nodeId: string;
+  /** The SRS data object that tracks the learning state of this card. */
+  srs: SrsData;
 }
 
 /** A simple question-and-answer card. */
 export interface BasicCard extends CardBase {
-	type: 'basic';
-	content: {
-		question: string;
-		answer: string;
-	};
+  type: 'basic';
+  content: {
+    question: string;
+    answer: string;
+  };
 }
 
 /** A card that prompts the user to type in the expected answer. */
 export interface InputCard extends CardBase {
-	type: 'input';
-	content: {
-		prompt: string;
-		expected: string;
-	};
+  type: 'input';
+  content: {
+    prompt: string;
+    expected: string;
+  };
 }
 
 /** A card that requires the user to order a list of items correctly. */
 export interface SequencingCard extends CardBase {
-	type: 'sequencing';
-	content: {
-		prompt: string;
-		items: string[];
-	};
+  type: 'sequencing';
+  content: {
+    prompt: string;
+    items: string[];
+  };
 }
 
 /**
@@ -120,7 +120,35 @@ export type Card = BasicCard | InputCard | SequencingCard;
  * Defines the hierarchical data structure required by the D3.js tree visualization component.
  */
 export interface TreeNodeData {
-	id: string;
-	content: string;
-	children?: TreeNodeData[];
+  id: string;
+  content: string;
+  children?: TreeNodeData[];
+}
+
+// --- Card Creation Types ---
+
+/**
+ * Represents the shape of a new card (before it is stored in the database).
+ */
+export type NewBasicCard = Omit<BasicCard, 'id' | 'nodeId'>;
+export type NewInputCard = Omit<InputCard, 'id' | 'nodeId'>;
+export type NewSequencingCard = Omit<SequencingCard, 'id' | 'nodeId'>;
+
+export type NewCard = NewBasicCard | NewInputCard | NewSequencingCard;
+
+// --- Command Palette Types ---
+
+export interface Command {
+  /** Unique identifier for the command. */
+  id: string;
+  /** Localized label to show in the UI. */
+  label: string;
+  /** Icon name (e.g., for a Feather or Lucide icon). */
+  icon: string;
+  /** The action to run when the command is executed. */
+  action: () => void;
+  /** Whether the command should be enabled in the current context. Optional. */
+  isEnabled?: () => boolean;
+  /** Additional search keywords to help fuzzy matching. Optional. */
+  keywords?: string[];
 }

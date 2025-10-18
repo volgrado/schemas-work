@@ -10,39 +10,40 @@
 
   Props:
   - `name`: The name of the feather icon to display (e.g., 'plus', 'copy', 'git-branch'). This is a required prop.
-  - `size`: The size of the icon in pixels. Defaults to 16.
+  - `size`: The size of the icon in pixels, passed as a string or number. Defaults to '16'.
   - `strokeWidth`: The stroke width of the icon's lines. Defaults to 2.
   - `class`: Allows passing a custom CSS class to the wrapper span element.
 
   @restProps All other standard HTML attributes are passed directly to the wrapper `<span>` element.
 
   Usage:
-  <Icon name="play" size={24} strokeWidth={1.5} class="text-green-500" />
+  <Icon name="play" size="24" strokeWidth={1.5} class="text-green-500" />
 -->
 <script lang="ts">
-  import type { SvelteComponent } from 'svelte';
+  // CORRECTED: Import ComponentType to create a more specific type
+  import type { SvelteComponent, ComponentType } from 'svelte';
 
   // --- Icons from `svelte-feather-icons` ---
   import {
     // General UI
-    PlusIcon,    
+    PlusIcon,
     MinusIcon,
     XIcon,
-    CommandIcon,    
+    CommandIcon,
     HelpCircleIcon,
-    CheckCircleIcon, 
-    XCircleIcon,    
+    CheckCircleIcon,
+    XCircleIcon,
     AlertTriangleIcon,
     LoaderIcon,
-    CopyIcon,    
+    CopyIcon,
     Trash2Icon,
     Edit3Icon,
     PenToolIcon,
     FolderIcon,
-    FileTextIcon,    
+    FileTextIcon,
     LockIcon,
     PlusSquareIcon,
-    
+
     // Media & Audio
     PlayIcon,
     PauseIcon,
@@ -61,19 +62,30 @@
     ListIcon,
 
     // Conceptual
-    ZapIcon,        
-    StarIcon,       
-    GitBranchIcon,  
+    ZapIcon,
+    StarIcon,
+    GitBranchIcon,
     DownloadCloudIcon,
     UploadCloudIcon,
-
   } from 'svelte-feather-icons';
+
+  // CORRECTED: Define a specific interface for the props our icons accept.
+  // This makes our component type-safe.
+  interface FeatherIconProps {
+    size?: string;
+    strokeWidth?: number;
+    class?: string;
+  }
 
   /**
    * A mapping of string names to their corresponding Svelte icon components.
    * This allows for dynamic icon rendering based on the `name` prop.
    */
-  const icons: Record<string, typeof SvelteComponent> = {
+  // CORRECTED: Use our more specific type for the icons dictionary.
+  const icons: Record<
+    string,
+    ComponentType<SvelteComponent<FeatherIconProps>>
+  > = {
     // General & UI
     plus: PlusIcon,
     minus: MinusIcon,
@@ -116,18 +128,17 @@
     'git-branch': GitBranchIcon, // For visualization/branching concepts
     'download-cloud': DownloadCloudIcon,
     'upload-cloud': UploadCloudIcon,
-    
+
     // Special alias
     'plus-slash-minus': MinusIcon, // An example of a custom alias
   };
 
   /** @prop {keyof typeof icons} name - The name of the icon to render. */
   export let name: keyof typeof icons;
-  /** @prop {number} [size=16] - The size of the icon in pixels. */
-  export let size: number = 16;
+  /** @prop {string | number} [size='16'] - The size of the icon in pixels. */
+  export let size: string | number = '16';
   /** @prop {number} [strokeWidth=2] - The stroke width for the icon lines. */
   export let strokeWidth: number = 2;
-
 </script>
 
 <!-- 
@@ -141,8 +152,11 @@
   style="width: {size}px; height: {size}px;"
   {...$$restProps}
 >
-  <!-- Dynamically renders the selected icon component. -->
-  <svelte:component this={icons[name]} {size} {strokeWidth} />
+  <!-- 
+    Dynamically renders the selected icon component.
+    We convert `size` to a string to match the underlying library's prop type.
+  -->
+  <svelte:component this={icons[name]} size={String(size)} {strokeWidth} />
 </span>
 
 <style>

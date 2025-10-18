@@ -22,7 +22,7 @@
 
 <nav class="action-list" aria-labelledby="ai-commands-title">
   <!-- Accessible heading for screen readers -->
-  <h2 id="ai-commands-title" class="visually-hidden">{t('ai_view.title')}</h2>
+  <h2 id="ai-commands-title" class="visually-hidden">{$t('ai_view.title')}</h2>
 
   {#each aiCommands as command (command.id)}
     <button
@@ -42,10 +42,10 @@
   <button
     class="action-button"
     on:click={() => commandBarStore.setView('main')}
-    aria-label={t('ai_view.back_button_aria_label')}
+    aria-label={$t('ai_view.back_button_aria_label')}
   >
     <Icon name="x" size={18} />
-    <span>{t('ai_view.back_button_label')}</span>
+    <span>{$t('ai_view.back_button_label')}</span>
   </button>
 </nav>
 

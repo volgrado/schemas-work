@@ -10,8 +10,9 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import type { EditorState } from 'prosemirror-state';
 import { DecorationSet } from 'prosemirror-view';
-import { reviewStore, type ReviewState } from '@/stores/reviewStore';
-import { ttsStore, type TTSState } from '@/stores/ttsStore';
+// FIX: Replaced the '@' alias with the standard SvelteKit '$lib' alias.
+import { reviewStore, type ReviewState } from '$lib/stores/reviewStore';
+import { ttsStore, type TTSState } from '$lib/stores/ttsStore';
 import type { Unsubscriber } from 'svelte/store';
 
 /**

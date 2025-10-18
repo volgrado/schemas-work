@@ -23,7 +23,7 @@
  *   entire store. The new provider would just need to implement the `TTSService` interface.
  *
  * - **Editor Integration for Highlighting**: A key feature is the real-time highlighting of spoken
- *   text. The store achieves this by interacting with the `editorStore`. 
+ *   text. The store achieves this by interacting with the `editorStore`.
  *   1. It generates a `wordMap` for each `ReadableNode`, pre-calculating the exact document
  *      position of every word.
  *   2. It listens to the `onBoundary` event from the `ttsService`.
@@ -41,7 +41,7 @@
  *   state. This prevents race conditions, for example, if the user quickly stops and starts a new
  *   speech request, the `onEnd` event from the old, cancelled speech won't incorrectly trigger
  *   the `nextNode` action.
- * 
+ *
  * - **Reactive to Document Changes**: The store subscribes to the `editorStore` and listens for
  *   transactions. If the document is modified while TTS is active, it automatically stops playback.
  *   This prevents the playback from going out of sync with the document content and avoids potential
@@ -64,48 +64,53 @@ import { t } from '$lib/utils/i18n';
 /**
  * Defines the possible playback statuses of the TTS engine.
  */
-export type TTSStatus = 'idle' | 'initializing' | 'playing' | 'paused' | 'error';
+export type TTSStatus =
+  | 'idle'
+  | 'initializing'
+  | 'playing'
+  | 'paused'
+  | 'error';
 
 /**
  * Represents a block of text that can be read aloud, corresponding to a ProseMirror node.
  */
 export interface ReadableNode {
-	/** The start position of the node in the document. */
-	pos: number;
-	/** The ProseMirror node object. */
-	node: ProseMirrorNode;
-	/** A truncated title for the node, for display in the UI. */
-	title: string;
-	/** The full text content of the node to be spoken. */
-	textToSpeak: string;
-	/** A map of each word's exact position for highlighting. */
-	wordMap: { word: string; from: number; to: number }[];
+  /** The start position of the node in the document. */
+  pos: number;
+  /** The ProseMirror node object. */
+  node: ProseMirrorNode;
+  /** A truncated title for the node, for display in the UI. */
+  title: string;
+  /** The full text content of the node to be spoken. */
+  textToSpeak: string;
+  /** A map of each word's exact position for highlighting. */
+  wordMap: { word: string; from: number; to: number }[];
 }
 
 /**
  * Defines the complete state of the TTS feature.
  */
 export interface TTSState {
-	/** The current playback status. */
-	status: TTSStatus;
-	/** The queue of nodes to be read. */
-	nodesToRead: ReadableNode[];
-	/** The index of the currently playing node in the queue. */
-	currentNodeIndex: number;
-	/** A ProseMirror `DecorationSet` for highlighting. */
-	decorationSet: DecorationSet;
-	/** A list of all available TTS voices. */
-	availableVoices: TTSVoice[];
-	/** The ID of the currently selected voice. */
-	selectedVoiceId: string | null;
-	/** The playback rate (speed). */
-	rate: number;
-	/** The playback pitch. */
-	pitch: number;
-	/** An error message, if any. */
-	error: string | null;
-	/** A unique ID for the current speech utterance to prevent race conditions. */
-	currentSpeechId: string | null;
+  /** The current playback status. */
+  status: TTSStatus;
+  /** The queue of nodes to be read. */
+  nodesToRead: ReadableNode[];
+  /** The index of the currently playing node in the queue. */
+  currentNodeIndex: number;
+  /** A ProseMirror `DecorationSet` for highlighting. */
+  decorationSet: DecorationSet;
+  /** A list of all available TTS voices. */
+  availableVoices: TTSVoice[];
+  /** The ID of the currently selected voice. */
+  selectedVoiceId: string | null;
+  /** The playback rate (speed). */
+  rate: number;
+  /** The playback pitch. */
+  pitch: number;
+  /** An error message, if any. */
+  error: string | null;
+  /** A unique ID for the current speech utterance to prevent race conditions. */
+  currentSpeechId: string | null;
 }
 
 /**
@@ -113,16 +118,16 @@ export interface TTSState {
  * @internal
  */
 const initialState: TTSState = {
-	status: 'idle',
-	nodesToRead: [],
-	currentNodeIndex: 0,
-	decorationSet: DecorationSet.empty,
-	availableVoices: [],
-	selectedVoiceId: null,
-	rate: 1,
-	pitch: 1,
-	error: null,
-	currentSpeechId: null
+  status: 'idle',
+  nodesToRead: [],
+  currentNodeIndex: 0,
+  decorationSet: DecorationSet.empty,
+  availableVoices: [],
+  selectedVoiceId: null,
+  rate: 1,
+  pitch: 1,
+  error: null,
+  currentSpeechId: null,
 };
 
 const ttsService: TTSService = new BrowserTTSService();
@@ -137,32 +142,36 @@ let unsubscribeFromEditor: Unsubscriber | null = null;
  * @returns An array of readable nodes.
  */
 function getReadableNodes(editor: Editor): ReadableNode[] {
-	const nodes: ReadableNode[] = [];
-	editor.state.doc.descendants((node, pos) => {
-		if ((node.type.name === 'heading' || node.type.name === 'listItem') && node.textContent.trim()) {
-			const textToSpeak = node.textContent.trim();
-			const wordMap: { word: string; from: number; to: number }[] = [];
-			let offset = 0;
-			textToSpeak.split(/\s+/).forEach((word) => {
-				if (word) {
-					const from = pos + 1 + offset;
-					const to = from + word.length;
-					wordMap.push({ word, from, to });
-					offset = to - pos - 1 + 1;
-				}
-			});
+  const nodes: ReadableNode[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (
+      (node.type.name === 'heading' || node.type.name === 'listItem') &&
+      node.textContent.trim()
+    ) {
+      const textToSpeak = node.textContent.trim();
+      const wordMap: { word: string; from: number; to: number }[] = [];
+      let offset = 0;
+      textToSpeak.split(/\s+/).forEach((word) => {
+        if (word) {
+          const from = pos + 1 + offset;
+          const to = from + word.length;
+          wordMap.push({ word, from, to });
+          offset = to - pos - 1 + 1;
+        }
+      });
 
-			nodes.push({
-				pos,
-				node,
-				title: textToSpeak.substring(0, 50) + (textToSpeak.length > 50 ? '...' : ''),
-				textToSpeak,
-				wordMap
-			});
-		}
-		return node.type.name !== 'listItem';
-	});
-	return nodes;
+      nodes.push({
+        pos,
+        node,
+        title:
+          textToSpeak.substring(0, 50) + (textToSpeak.length > 50 ? '...' : ''),
+        textToSpeak,
+        wordMap,
+      });
+    }
+    return node.type.name !== 'listItem';
+  });
+  return nodes;
 }
 
 /**
@@ -171,46 +180,50 @@ function getReadableNodes(editor: Editor): ReadableNode[] {
  * @param index The index of the node to speak.
  */
 function speakNodeAtIndex(index: number) {
-	const state = get(store);
-	if (index < 0 || index >= state.nodesToRead.length) {
-		stopReading(true);
-		toast.success(t('tts.finished_reading_toast'));
-		return;
-	}
+  const state = get(store);
+  if (index < 0 || index >= state.nodesToRead.length) {
+    stopReading(true);
+    toast.success(get(t)('tts.finished_reading_toast'));
+    return;
+  }
 
-	const nodeToRead = state.nodesToRead[index];
-	const speechId = uuidv4();
+  const nodeToRead = state.nodesToRead[index];
+  const speechId = uuidv4();
 
-	update((s) => ({
-		...s,
-		currentNodeIndex: index,
-		status: 'playing',
-		currentSpeechId: speechId
-	}));
+  update((s) => ({
+    ...s,
+    currentNodeIndex: index,
+    status: 'playing',
+    currentSpeechId: speechId,
+  }));
 
-	highlightCurrentNode();
+  highlightCurrentNode();
 
-	ttsService.speak(nodeToRead.textToSpeak, {
-		voiceId: state.selectedVoiceId!,
-		rate: state.rate,
-		pitch: state.pitch,
-		onEnd: () => {
-			if (get(store).currentSpeechId === speechId) {
-				nextNode();
-			}
-		},
-		onError: (error) => {
-			if (get(store).currentSpeechId === speechId) {
-				errorService.reportError(error, { operation: 'tts.speakNode' });
-				update((s) => ({ ...s, status: 'error', error: t('tts.playback_error') }));
-			}
-		},
-		onBoundary: (event) => {
-			if (get(store).currentSpeechId === speechId) {
-				handleWordBoundary(event, nodeToRead.wordMap);
-			}
-		}
-	});
+  ttsService.speak(nodeToRead.textToSpeak, {
+    voiceId: state.selectedVoiceId!,
+    rate: state.rate,
+    pitch: state.pitch,
+    onEnd: () => {
+      if (get(store).currentSpeechId === speechId) {
+        nextNode();
+      }
+    },
+    onError: (error) => {
+      if (get(store).currentSpeechId === speechId) {
+        errorService.reportError(error, { operation: 'tts.speakNode' });
+        update((s) => ({
+          ...s,
+          status: 'error',
+          error: get(t)('tts.playback_error'),
+        }));
+      }
+    },
+    onBoundary: (event) => {
+      if (get(store).currentSpeechId === speechId) {
+        handleWordBoundary(event, nodeToRead.wordMap);
+      }
+    },
+  });
 }
 
 /**
@@ -219,26 +232,41 @@ function speakNodeAtIndex(index: number) {
  * @param event The speech synthesis boundary event.
  * @param wordMap The word map for the current node.
  */
-function handleWordBoundary(event: SpeechSynthesisEvent, wordMap: ReadableNode['wordMap']) {
-	const editor = get(editorStore).instance;
-	if (!editor) return;
+function handleWordBoundary(
+  event: SpeechSynthesisEvent,
+  wordMap: ReadableNode['wordMap']
+) {
+  const editor = get(editorStore).instance;
+  if (!editor) return;
 
-	const state = get(store);
-	const currentNode = state.nodesToRead[state.currentNodeIndex];
-	const spokenText = currentNode.textToSpeak;
-	const charIndex = event.charIndex;
+  const state = get(store);
+  const currentNode = state.nodesToRead[state.currentNodeIndex];
+  const spokenText = currentNode.textToSpeak;
+  const charIndex = event.charIndex;
 
-	const currentWord = wordMap.find((w) => {
-		const wordStartIndex = spokenText.indexOf(w.word);
-		const wordEndIndex = wordStartIndex + w.word.length;
-		return charIndex >= wordStartIndex && charIndex < wordEndIndex;
-	});
+  const currentWord = wordMap.find((w) => {
+    const wordStartIndex = spokenText.indexOf(w.word);
+    const wordEndIndex = wordStartIndex + w.word.length;
+    return charIndex >= wordStartIndex && charIndex < wordEndIndex;
+  });
 
-	if (currentWord) {
-		const wordDeco = Decoration.inline(currentWord.from, currentWord.to, { class: 'tts-highlight-word' });
-		const nodeDeco = Decoration.node(currentNode.pos, currentNode.pos + currentNode.node.nodeSize, { class: 'tts-highlight-node' });
-		update((s) => ({ ...s, decorationSet: DecorationSet.create(editor.state.doc, [nodeDeco, wordDeco]) }));
-	}
+  if (currentWord) {
+    const wordDeco = Decoration.inline(currentWord.from, currentWord.to, {
+      class: 'tts-highlight-word',
+    });
+    const nodeDeco = Decoration.node(
+      currentNode.pos,
+      currentNode.pos + currentNode.node.nodeSize,
+      { class: 'tts-highlight-node' }
+    );
+    update((s) => ({
+      ...s,
+      decorationSet: DecorationSet.create(editor.state.doc, [
+        nodeDeco,
+        wordDeco,
+      ]),
+    }));
+  }
 }
 
 /**
@@ -246,13 +274,20 @@ function handleWordBoundary(event: SpeechSynthesisEvent, wordMap: ReadableNode['
  * @internal
  */
 function highlightCurrentNode() {
-	const editor = get(editorStore).instance;
-	const state = get(store);
-	if (!editor || state.nodesToRead.length === 0) return;
+  const editor = get(editorStore).instance;
+  const state = get(store);
+  if (!editor || state.nodesToRead.length === 0) return;
 
-	const currentNode = state.nodesToRead[state.currentNodeIndex];
-	const deco = Decoration.node(currentNode.pos, currentNode.pos + currentNode.node.nodeSize, { class: 'tts-highlight-node' });
-	update((s) => ({ ...s, decorationSet: DecorationSet.create(editor.state.doc, [deco]) }));
+  const currentNode = state.nodesToRead[state.currentNodeIndex];
+  const deco = Decoration.node(
+    currentNode.pos,
+    currentNode.pos + currentNode.node.nodeSize,
+    { class: 'tts-highlight-node' }
+  );
+  update((s) => ({
+    ...s,
+    decorationSet: DecorationSet.create(editor.state.doc, [deco]),
+  }));
 }
 
 /**
@@ -261,12 +296,17 @@ function highlightCurrentNode() {
  * @param reset If true, resets all state.
  */
 function stopReading(reset: boolean) {
-	ttsService.cancel();
-	if (reset) {
-		set(initialState);
-	} else {
-		update((s) => ({ ...s, status: 'idle', decorationSet: DecorationSet.empty, currentSpeechId: null }));
-	}
+  ttsService.cancel();
+  if (reset) {
+    set(initialState);
+  } else {
+    update((s) => ({
+      ...s,
+      status: 'idle',
+      decorationSet: DecorationSet.empty,
+      currentSpeechId: null,
+    }));
+  }
 }
 
 /**
@@ -274,157 +314,165 @@ function stopReading(reset: boolean) {
  * @internal
  */
 function nextNode() {
-	ttsService.cancel();
-	const currentIndex = get(store).currentNodeIndex;
-	speakNodeAtIndex(currentIndex + 1);
+  ttsService.cancel();
+  const currentIndex = get(store).currentNodeIndex;
+  speakNodeAtIndex(currentIndex + 1);
 }
 
 editorStore.subscribe(($editorStore) => {
-	if (unsubscribeFromEditor) unsubscribeFromEditor();
-	if ($editorStore.instance) {
-		const editor = $editorStore.instance;
-		let previousDoc: ProseMirrorNode | null = editor.state.doc;
+  if (unsubscribeFromEditor) unsubscribeFromEditor();
+  if ($editorStore.instance) {
+    const editor = $editorStore.instance;
+    let previousDoc: ProseMirrorNode | null = editor.state.doc;
 
-		const handleTransaction = () => {
-			const state = get(store);
-			const currentDoc = editor.state.doc;
-			if (['playing', 'paused'].includes(state.status) && previousDoc && !currentDoc.eq(previousDoc)) {
-				toast.info(t('tts.stopped_due_to_changes_toast'));
-				stopReading(true);
-			}
-			previousDoc = currentDoc;
-		};
+    const handleTransaction = () => {
+      const state = get(store);
+      const currentDoc = editor.state.doc;
+      if (
+        ['playing', 'paused'].includes(state.status) &&
+        previousDoc &&
+        !currentDoc.eq(previousDoc)
+      ) {
+        toast.info(get(t)('tts.stopped_due_to_changes_toast'));
+        stopReading(true);
+      }
+      previousDoc = currentDoc;
+    };
 
-		editor.on('transaction', handleTransaction);
-		unsubscribeFromEditor = () => {
-			editor.off('transaction', handleTransaction);
-			previousDoc = null;
-		};
-	}
+    editor.on('transaction', handleTransaction);
+    unsubscribeFromEditor = () => {
+      editor.off('transaction', handleTransaction);
+      previousDoc = null;
+    };
+  }
 });
 
 /**
  * The public interface for the `ttsStore`.
  */
 export const ttsStore = {
-	subscribe,
+  subscribe,
 
-	/**
-	 * Initializes the TTS engine and fetches available voices.
-	 */
-	async initialize(): Promise<void> {
-		if (get(store).availableVoices.length > 0) return;
+  /**
+   * Initializes the TTS engine and fetches available voices.
+   */
+  async initialize(): Promise<void> {
+    if (get(store).availableVoices.length > 0) return;
 
-		update((s) => ({ ...s, status: 'initializing' }));
-		try {
-			await ttsService.initialize();
-			const voices = ttsService.getVoices();
-			const preferredVoice =
-				voices.find((v) => v.id.includes('Google') && v.lang === 'en-GB') ||
-				voices.find((v) => v.lang.startsWith('en')) ||
-				voices[0];
-			update((s) => ({
-				...s,
-				status: 'idle',
-				availableVoices: voices,
-				selectedVoiceId: preferredVoice ? preferredVoice.id : null
-			}));
-		} catch (error) {
-			errorService.reportError(error, { operation: 'tts.initialize' });
-			update((s) => ({ ...s, status: 'error', error: t('tts.init_error') }));
-			throw error;
-		}
-	},
+    update((s) => ({ ...s, status: 'initializing' }));
+    try {
+      await ttsService.initialize();
+      const voices = ttsService.getVoices();
+      const preferredVoice =
+        voices.find((v) => v.id.includes('Google') && v.lang === 'en-GB') ||
+        voices.find((v) => v.lang.startsWith('en')) ||
+        voices[0];
+      update((s) => ({
+        ...s,
+        status: 'idle',
+        availableVoices: voices,
+        selectedVoiceId: preferredVoice ? preferredVoice.id : null,
+      }));
+    } catch (error) {
+      errorService.reportError(error, { operation: 'tts.initialize' });
+      update((s) => ({
+        ...s,
+        status: 'error',
+        error: get(t)('tts.init_error'),
+      }));
+      throw error;
+    }
+  },
 
-	/**
-	 * Starts reading the document from the beginning.
-	 */
-	async startReading(): Promise<void> {
-		const editor = get(editorStore).instance;
-		if (!editor) return;
+  /**
+   * Starts reading the document from the beginning.
+   */
+  async startReading(): Promise<void> {
+    const editor = get(editorStore).instance;
+    if (!editor) return;
 
-		await this.initialize();
-		const nodes = getReadableNodes(editor);
-		if (nodes.length === 0) {
-			toast.info(t('tts.no_readable_content_toast'));
-			return;
-		}
+    await this.initialize();
+    const nodes = getReadableNodes(editor);
+    if (nodes.length === 0) {
+      toast.info(get(t)('tts.no_readable_content_toast'));
+      return;
+    }
 
-		update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
-		speakNodeAtIndex(0);
-	},
+    update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+    speakNodeAtIndex(0);
+  },
 
-	/**
-	 * Starts reading from a specific node in the document.
-	 * @param nodeId The ID of the node from which to start reading.
-	 */
-	async startReadingFromNode(nodeId: string): Promise<void> {
-		const editor = get(editorStore).instance;
-		if (!editor) return;
+  /**
+   * Starts reading from a specific node in the document.
+   * @param nodeId The ID of the node from which to start reading.
+   */
+  async startReadingFromNode(nodeId: string): Promise<void> {
+    const editor = get(editorStore).instance;
+    if (!editor) return;
 
-		await this.initialize();
-		const nodes = getReadableNodes(editor);
-		const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
+    await this.initialize();
+    const nodes = getReadableNodes(editor);
+    const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
 
-		if (startIndex === -1) {
-			toast.error(t('tts.node_not_found_error'));
-			return;
-		}
+    if (startIndex === -1) {
+      toast.error(get(t)('tts.node_not_found_error'));
+      return;
+    }
 
-		update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
-		speakNodeAtIndex(startIndex);
-	},
+    update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+    speakNodeAtIndex(startIndex);
+  },
 
-	/** Stops the current playback and resets the TTS state. */
-	stopReading: () => stopReading(true),
+  /** Stops the current playback and resets the TTS state. */
+  stopReading: () => stopReading(true),
 
-	/** Pauses the current playback. */
-	pauseReading: () => {
-		const state = get(store);
-		if (state.status !== 'playing') return;
-		ttsService.pause();
-		update((s) => ({ ...s, status: 'paused' }));
-	},
+  /** Pauses the current playback. */
+  pauseReading: () => {
+    const state = get(store);
+    if (state.status !== 'playing') return;
+    ttsService.pause();
+    update((s) => ({ ...s, status: 'paused' }));
+  },
 
-	/** Resumes a paused playback. */
-	resumeReading: () => {
-		const state = get(store);
-		if (state.status !== 'paused') return;
-		ttsService.resume();
-		update((s) => ({ ...s, status: 'playing' }));
-	},
+  /** Resumes a paused playback. */
+  resumeReading: () => {
+    const state = get(store);
+    if (state.status !== 'paused') return;
+    ttsService.resume();
+    update((s) => ({ ...s, status: 'playing' }));
+  },
 
-	/**
-	 * Sets the active TTS voice.
-	 * @param voiceId The unique ID of the voice to use.
-	 */
-	setVoice: (voiceId: string) => {
-		update((s) => ({ ...s, selectedVoiceId: voiceId }));
-		if (['playing', 'paused'].includes(get(store).status)) {
-			ttsService.cancel();
-			speakNodeAtIndex(get(store).currentNodeIndex);
-		}
-	},
+  /**
+   * Sets the active TTS voice.
+   * @param voiceId The unique ID of the voice to use.
+   */
+  setVoice: (voiceId: string) => {
+    update((s) => ({ ...s, selectedVoiceId: voiceId }));
+    if (['playing', 'paused'].includes(get(store).status)) {
+      ttsService.cancel();
+      speakNodeAtIndex(get(store).currentNodeIndex);
+    }
+  },
 
-	/**
-	 * Sets the TTS playback rate.
-	 * @param rate The new playback rate (e.g., 1.25 for 25% faster).
-	 */
-	setRate: (rate: number) => {
-		update((s) => ({ ...s, rate }));
-		if (['playing', 'paused'].includes(get(store).status)) {
-			ttsService.cancel();
-			speakNodeAtIndex(get(store).currentNodeIndex);
-		}
-	},
+  /**
+   * Sets the TTS playback rate.
+   * @param rate The new playback rate (e.g., 1.25 for 25% faster).
+   */
+  setRate: (rate: number) => {
+    update((s) => ({ ...s, rate }));
+    if (['playing', 'paused'].includes(get(store).status)) {
+      ttsService.cancel();
+      speakNodeAtIndex(get(store).currentNodeIndex);
+    }
+  },
 
-	/** Skips to the next readable node in the queue. */
-	nextNode: () => nextNode(),
+  /** Skips to the next readable node in the queue. */
+  nextNode: () => nextNode(),
 
-	/** Skips to the previous readable node in the queue. */
-	previousNode: () => {
-		ttsService.cancel();
-		const currentIndex = get(store).currentNodeIndex;
-		speakNodeAtIndex(currentIndex - 1);
-	}
+  /** Skips to the previous readable node in the queue. */
+  previousNode: () => {
+    ttsService.cancel();
+    const currentIndex = get(store).currentNodeIndex;
+    speakNodeAtIndex(currentIndex - 1);
+  },
 };

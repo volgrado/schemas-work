@@ -82,7 +82,7 @@
         <path
           class="line"
           d={path.d}
-          style:--index={i} /* Stagger animation delay using a CSS custom property */
+          style:--index={i}
           fill="none"
           stroke-width="2"
           stroke-linecap="round"
@@ -101,28 +101,45 @@
     transition: opacity 0.5s ease-in-out;
   }
 
-  .organic-canvas { width: 100%; height: 100%; }
+  .organic-canvas {
+    width: 100%;
+    height: 100%;
+  }
 
-  .lines-group { animation: flow 20s linear infinite; }
+  .lines-group {
+    animation: flow 20s linear infinite;
+  }
 
   .line {
     stroke: var(--color-primary-accent-light);
     animation: wave 5s ease-in-out infinite alternate;
-    animation-delay: calc(var(--index) * 0.2s); /* Staggered delay for each line */
+    animation-delay: calc(
+      var(--index) * 0.2s
+    ); /* Staggered delay for each line */
     transform-origin: 50% 50%;
   }
 
   /* Exit animation: fades out the container when the `isExiting` prop is true. */
-  .canvas-container.is-exiting { opacity: 0; }
+  .canvas-container.is-exiting {
+    opacity: 0;
+  }
 
   @keyframes flow {
-    from { transform: translateX(-10%); }
-    to { transform: translateX(10%); }
+    from {
+      transform: translateX(-10%);
+    }
+    to {
+      transform: translateX(10%);
+    }
   }
 
   @keyframes wave {
-    from { transform: scaleY(0.8) translateY(10px); }
-    to { transform: scaleY(1.2) translateY(-10px); }
+    from {
+      transform: scaleY(0.8) translateY(10px);
+    }
+    to {
+      transform: scaleY(1.2) translateY(-10px);
+    }
   }
 
   /* --- Dark Mode Styles --- */

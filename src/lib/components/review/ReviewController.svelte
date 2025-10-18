@@ -18,7 +18,7 @@
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { get } from 'svelte/store';
-  
+
   // --- Stores and Services ---
   import { t } from '$lib/utils/i18n';
   import { reviewStore } from '$lib/stores/reviewStore';
@@ -48,7 +48,9 @@
     const currentCard = $review.cardsToReview[$review.currentCardIndex];
     if (currentCard && currentCard.type === 'sequencing') {
       // Create a shuffled version of the sequence for the user to solve.
-      userSequence = [...currentCard.content.items].sort(() => Math.random() - 0.5);
+      userSequence = [...currentCard.content.items].sort(
+        () => Math.random() - 0.5
+      );
     } else {
       userSequence = [];
     }
@@ -69,7 +71,10 @@
 
     isSubmitting = true;
 
-    const quality = await evaluateAnswer(userInput, currentCard.content.expected);
+    const quality = await evaluateAnswer(
+      userInput,
+      currentCard.content.expected
+    );
 
     // 1. Show immediate feedback (Correct/Incorrect) to the user.
     review.submitInteractiveAnswer(quality >= 3);
@@ -127,7 +132,10 @@
 <!-- The entire review panel is only rendered when a review session is active. -->
 {#if $review.isReviewing}
   {@const currentCard = $review.cardsToReview[$review.currentCardIndex]}
-  <div class="panel" transition:fly={{ y: 20, duration: 300, easing: quintOut }}>
+  <div
+    class="panel"
+    transition:fly={{ y: 20, duration: 300, easing: quintOut }}
+  >
     {#if currentCard}
       <div class="card">
         <div class="card-content">
@@ -142,23 +150,29 @@
               </div>
             {/if}
 
-          <!-- Input Card -->
+            <!-- Input Card -->
           {:else if currentCard.type === 'input'}
             <p class="question">{currentCard.content.prompt}</p>
             <input
               type="text"
               class="input-field"
-              placeholder={t('review.inputPlaceholder')}
+              placeholder={$t('review.inputPlaceholder')}
               bind:value={userInput}
               disabled={$review.isAnswerShown || isSubmitting}
             />
             {#if $review.isAnswerShown}
-              <div class="feedback" class:correct={$review.lastAnswerCorrect} class:incorrect={!$review.lastAnswerCorrect} transition:fade>
-                {t('review.correctAnswer')} <strong>{currentCard.content.expected}</strong>
+              <div
+                class="feedback"
+                class:correct={$review.lastAnswerCorrect}
+                class:incorrect={!$review.lastAnswerCorrect}
+                transition:fade
+              >
+                {$t('review.correctAnswer')}
+                <strong>{currentCard.content.expected}</strong>
               </div>
             {/if}
 
-          <!-- Sequencing Card -->
+            <!-- Sequencing Card -->
           {:else if currentCard.type === 'sequencing'}
             <p class="question">{currentCard.content.prompt}</p>
             <div class="sequence-container" role="list">
@@ -177,11 +191,16 @@
               {/each}
             </div>
             {#if $review.isAnswerShown}
-              <div class="feedback" class:correct={$review.lastAnswerCorrect} class:incorrect={!$review.lastAnswerCorrect} transition:fade>
+              <div
+                class="feedback"
+                class:correct={$review.lastAnswerCorrect}
+                class:incorrect={!$review.lastAnswerCorrect}
+                transition:fade
+              >
                 {#if $review.lastAnswerCorrect}
-                  {t('review.correctSequence')}
+                  {$t('review.correctSequence')}
                 {:else}
-                  <p>{t('review.correctSequenceIs')}</p>
+                  <p>{$t('review.correctSequenceIs')}</p>
                   <ol>
                     {#each currentCard.content.items as item}
                       <li>{item}</li>
@@ -198,22 +217,44 @@
           {#if !$review.isAnswerShown}
             <!-- Initial state: User has not yet answered -->
             {#if currentCard.type === 'basic'}
-              <Button onclick={review.showAnswer} size="md">{t('review.showAnswer')}</Button>
+              <Button onclick={review.showAnswer} size="md"
+                >{$t('review.showAnswer')}</Button
+              >
             {:else if currentCard.type === 'input'}
-              <Button onclick={handleCheckInput} size="md" disabled={isSubmitting}>
-                {#if isSubmitting}{t('review.evaluating')}{:else}{t('review.check')}{/if}
+              <Button
+                onclick={handleCheckInput}
+                size="md"
+                disabled={isSubmitting}
+              >
+                {#if isSubmitting}{$t('review.evaluating')}{:else}{$t(
+                    'review.check'
+                  )}{/if}
               </Button>
             {:else if currentCard.type === 'sequencing'}
-              <Button onclick={handleCheckSequence} size="md">{t('review.check')}</Button>
+              <Button onclick={handleCheckSequence} size="md"
+                >{$t('review.check')}</Button
+              >
             {/if}
           {:else}
             <!-- Answer shown state: User provides self-assessment -->
             <!-- For 'input' cards, review is automatic, so no buttons are needed here. -->
             {#if currentCard.type !== 'input'}
               <div class="review-buttons">
-                <Button onclick={() => submitReview(0)} size="md" variant="secondary">{t('review.again')}</Button>
-                <Button onclick={() => submitReview(3)} size="md" variant="secondary">{t('review.hard')}</Button>
-                <Button onclick={() => submitReview(5)} size="md" variant="primary">{t('review.easy')}</Button>
+                <Button
+                  onclick={() => submitReview(0)}
+                  size="md"
+                  variant="secondary">{$t('review.again')}</Button
+                >
+                <Button
+                  onclick={() => submitReview(3)}
+                  size="md"
+                  variant="secondary">{$t('review.hard')}</Button
+                >
+                <Button
+                  onclick={() => submitReview(5)}
+                  size="md"
+                  variant="primary">{$t('review.easy')}</Button
+                >
               </div>
             {/if}
           {/if}
@@ -222,42 +263,150 @@
 
       <!-- Global Controls: Available throughout the review -->
       <div class="global-controls">
-        <Button onclick={review.jumpToSource} variant="ghost" size="sm" aria-label={t('review.goToSource')}>
+        <Button
+          onclick={review.jumpToSource}
+          variant="ghost"
+          size="sm"
+          aria-label={$t('review.goToSource')}
+        >
           <Icon name="file-text" size={16} />
         </Button>
-        <Button onclick={review.finishReview} variant="ghost" size="sm">{t('review.finishReview')}</Button>
+        <Button onclick={review.finishReview} variant="ghost" size="sm"
+          >{$t('review.finishReview')}</Button
+        >
       </div>
     {/if}
   </div>
 {/if}
 
 <style>
-  .panel { position: fixed; bottom: var(--space-lg); left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); width: 90%; max-width: 600px; }
-  .card { background-color: var(--color-background-raised); border-radius: var(--space-md); box-shadow: var(--shadow-xl); width: 100%; border: 1px solid var(--color-border); overflow: hidden; }
-  .card-content { padding: var(--space-lg); }
-  .question { font-size: 1.2rem; font-weight: 600; margin: 0 0 var(--space-md) 0; line-height: 1.4; }
-  .answer { padding-top: var(--space-md); border-top: 1px solid var(--color-border); line-height: 1.6; }
-  .answer p { margin: 0; }
-  .card-actions { background-color: var(--color-background); border-top: 1px solid var(--color-border); padding: var(--space-sm) var(--space-lg); display: flex; justify-content: flex-end; }
-  .review-buttons { display: flex; gap: var(--space-sm); }
-  .input-field { width: 100%; padding: var(--space-sm); font-family: var(--font-main); font-size: 1rem; border: 1px solid var(--color-border-input); border-radius: var(--space-sm); margin-top: var(--space-sm); background-color: var(--color-background); }
-  
-  .feedback { margin-top: var(--space-md); padding: var(--space-sm); border-radius: var(--space-sm); font-weight: 500; border: 1px solid transparent; }
-  .feedback.correct { background-color: var(--color-success-bg); color: var(--color-success-text); border-color: var(--color-success-border); }
-  .feedback.incorrect { background-color: var(--color-danger-bg); color: var(--color-danger-text); border-color: var(--color-danger-border); }
+  .panel {
+    position: fixed;
+    bottom: var(--space-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 90%;
+    max-width: 600px;
+  }
+  .card {
+    background-color: var(--color-background-raised);
+    border-radius: var(--space-md);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+  .card-content {
+    padding: var(--space-lg);
+  }
+  .question {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0 0 var(--space-md) 0;
+    line-height: 1.4;
+  }
+  .answer {
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    line-height: 1.6;
+  }
+  .answer p {
+    margin: 0;
+  }
+  .card-actions {
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-sm) var(--space-lg);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .review-buttons {
+    display: flex;
+    gap: var(--space-sm);
+  }
+  .input-field {
+    width: 100%;
+    padding: var(--space-sm);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--space-sm);
+    margin-top: var(--space-sm);
+    background-color: var(--color-background);
+  }
 
-  .sequence-container { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-md); }
-  .sequence-item { padding: var(--space-sm) var(--space-md); background-color: var(--color-background); border: 1px solid var(--color-border); border-radius: var(--space-sm); cursor: grab; transition: background-color 0.2s, box-shadow 0.2s; }
-  .sequence-item:active { cursor: grabbing; }
-  .sequence-item.is-dragging { background-color: hsl(var(--color-accent-hsl) / 0.1); box-shadow: var(--shadow-lg); }
+  .feedback {
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    border-radius: var(--space-sm);
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  .feedback.correct {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-color: var(--color-success-border);
+  }
+  .feedback.incorrect {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    border-color: var(--color-danger-border);
+  }
 
-  .global-controls { display: flex; justify-content: space-between; width: 100%; padding: 0 var(--space-xs); }
+  .sequence-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+  .sequence-item {
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--space-sm);
+    cursor: grab;
+    transition:
+      background-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .sequence-item:active {
+    cursor: grabbing;
+  }
+  .sequence-item.is-dragging {
+    background-color: hsl(var(--color-accent-hsl) / 0.1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .global-controls {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 var(--space-xs);
+  }
 
   @media (prefers-color-scheme: dark) {
-    .card { border-color: var(--color-border-dark); }
-    .answer { border-color: var(--color-border-dark); }
-    .card-actions { background-color: var(--color-background-dark-raised); border-color: var(--color-border-dark); }
-    .input-field { background-color: var(--color-background-dark); border-color: var(--color-border-input-dark); }
-    .sequence-item { background-color: var(--color-background-dark); border-color: var(--color-border-dark); }
+    .card {
+      border-color: var(--color-border-dark);
+    }
+    .answer {
+      border-color: var(--color-border-dark);
+    }
+    .card-actions {
+      background-color: var(--color-background-dark-raised);
+      border-color: var(--color-border-dark);
+    }
+    .input-field {
+      background-color: var(--color-background-dark);
+      border-color: var(--color-border-input-dark);
+    }
+    .sequence-item {
+      background-color: var(--color-background-dark);
+      border-color: var(--color-border-dark);
+    }
   }
 </style>

@@ -30,7 +30,7 @@
     It provides a title for the command list that screen readers can announce.
   -->
   <h2 id="commandbar-title" class="visually-hidden">
-    {t('main_view.title')}
+    {$t('main_view.title')}
   </h2>
 
   {#each commands as command (command.id)}

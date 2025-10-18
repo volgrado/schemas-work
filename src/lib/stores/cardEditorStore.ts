@@ -35,7 +35,8 @@
  */
 
 import { writable, get } from 'svelte/store';
-import type { Card, CardType, SrsData } from '$lib/types';
+// MODIFIED: Import NewCard to assist with type assertion
+import type { Card, CardType, SrsData, NewCard } from '$lib/types';
 import { editorStore } from './editorStore';
 import * as errorService from '$lib/services/core/errorService';
 import * as cardService from '$lib/services/features/cardService';
@@ -57,18 +58,18 @@ export type FetchStatus = 'idle' | 'loading' | 'loaded' | 'error';
  * Defines the complete state structure for the card editor Svelte store.
  */
 export interface CardEditorState {
-	/** Indicates whether the card editor panel is visible. */
-	isOpen: boolean;
-	/** The unique ID of the ProseMirror node being edited. */
-	nodeId: string | null;
-	/** The array of `Card` objects for the active `nodeId`. */
-	cards: Card[];
-	/** The current status of the initial card fetching operation. */
-	fetchStatus: FetchStatus;
-	/** The current save status for user feedback. */
-	status: SaveStatus;
-	/** The ID of the most recently added card, to allow the UI to focus it. */
-	lastAddedCardId: string | null;
+  /** Indicates whether the card editor panel is visible. */
+  isOpen: boolean;
+  /** The unique ID of the ProseMirror node being edited. */
+  nodeId: string | null;
+  /** The array of `Card` objects for the active `nodeId`. */
+  cards: Card[];
+  /** The current status of the initial card fetching operation. */
+  fetchStatus: FetchStatus;
+  /** The current save status for user feedback. */
+  status: SaveStatus;
+  /** The ID of the most recently added card, to allow the UI to focus it. */
+  lastAddedCardId: string | null;
 }
 
 /**
@@ -76,12 +77,12 @@ export interface CardEditorState {
  * @internal
  */
 const initialState: CardEditorState = {
-	isOpen: false,
-	nodeId: null,
-	cards: [],
-	fetchStatus: 'idle',
-	status: 'idle',
-	lastAddedCardId: null
+  isOpen: false,
+  nodeId: null,
+  cards: [],
+  fetchStatus: 'idle',
+  status: 'idle',
+  lastAddedCardId: null,
 };
 
 const store = writable<CardEditorState>(initialState);
@@ -92,40 +93,40 @@ const { subscribe, update, set } = store;
  * @param nodeId The unique identifier of the node for which to load cards.
  */
 async function open(nodeId: string): Promise<void> {
-	update((state) => ({
-		...initialState,
-		isOpen: true,
-		fetchStatus: 'loading',
-		nodeId: nodeId
-	}));
+  update((state) => ({
+    ...initialState,
+    isOpen: true,
+    fetchStatus: 'loading',
+    nodeId: nodeId,
+  }));
 
-	try {
-		const cards = await cardService.getCardsByNodeId(nodeId);
-		update((state) => ({
-			...state,
-			cards: cards,
-			fetchStatus: 'loaded'
-		}));
-	} catch (err) {
-		errorService.reportError(err, {
-			operation: 'cardEditorStore.open',
-			nodeId
-		});
-		toast.error(t('card_editor.load_error'));
-		update((state) => ({ ...state, fetchStatus: 'error' }));
-	}
+  try {
+    const cards = await cardService.getCardsByNodeId(nodeId);
+    update((state) => ({
+      ...state,
+      cards: cards,
+      fetchStatus: 'loaded',
+    }));
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.open',
+      nodeId,
+    });
+    toast.error(get(t)('card_editor.load_error'));
+    update((state) => ({ ...state, fetchStatus: 'error' }));
+  }
 }
 
 /**
  * Closes the card editing panel and resets the store to its initial state.
  */
 function close(): void {
-	update((state) => {
-		if (state.isOpen) {
-			return initialState;
-		}
-		return state;
-	});
+  update((state) => {
+    if (state.isOpen) {
+      return initialState;
+    }
+    return state;
+  });
 }
 
 /**
@@ -133,64 +134,77 @@ function close(): void {
  * @param type The type of card to create (`basic`, `input`, or `sequencing`).
  */
 async function addCard(type: CardType): Promise<void> {
-	const state = get(store);
-	if (!state.nodeId) return;
+  const state = get(store);
+  if (!state.nodeId) return;
 
-	update((s) => ({ ...s, lastAddedCardId: null }));
+  update((s) => ({ ...s, lastAddedCardId: null }));
 
-	const editorState = get(editorStore);
-	const node =
-		editorState.instance && state.nodeId
-			? findNodeById(editorState.instance.state.doc, state.nodeId)
-			: null;
+  const editorState = get(editorStore);
+  const node = editorState.doc
+    ? findNodeById(editorState.doc, state.nodeId)
+    : null;
 
-	const defaultSrs: SrsData = {
-		easeFactor: 2.5,
-		interval: 0,
-		repetitions: 0,
-		dueDate: Date.now()
-	};
+  const defaultSrs: SrsData = {
+    easeFactor: 2.5,
+    interval: 0,
+    repetitions: 0,
+    dueDate: Date.now(),
+  };
 
-	let newCardData: Omit<Card, 'id' | 'nodeId'>;
-	switch (type) {
-		case 'input':
-			newCardData = {
-				type: 'input',
-				content: {
-					prompt: node?.textContent ? t('card_editor.input_prompt_template', { content: node.textContent }) : t('card_editor.input_prompt_fallback'),
-					expected: ''
-				},
-				srs: defaultSrs
-			};
-			break;
-		case 'sequencing':
-			newCardData = {
-				type: 'sequencing',
-				content: { prompt: t('card_editor.sequencing_prompt'), items: ['Item 1', 'Item 2'] },
-				srs: defaultSrs
-			};
-			break;
-		case 'basic':
-		default:
-			newCardData = {
-				type: 'basic',
-				content: { question: node?.textContent || t('card_editor.new_question'), answer: '' },
-				srs: defaultSrs
-			};
-			break;
-	}
+  let newCardData: Omit<Card, 'id' | 'nodeId'>;
+  switch (type) {
+    case 'input':
+      newCardData = {
+        type: 'input',
+        content: {
+          prompt: node?.textContent
+            ? get(t)('card_editor.input_prompt_template', {
+                content: node.textContent,
+              })
+            : get(t)('card_editor.input_prompt_fallback'),
+          expected: '',
+        },
+        srs: defaultSrs,
+      };
+      break;
+    case 'sequencing':
+      newCardData = {
+        type: 'sequencing',
+        content: {
+          prompt: get(t)('card_editor.sequencing_prompt'),
+          items: ['Item 1', 'Item 2'],
+        },
+        srs: defaultSrs,
+      };
+      break;
+    case 'basic':
+    default:
+      newCardData = {
+        type: 'basic',
+        content: {
+          question: node?.textContent || get(t)('card_editor.new_question'),
+          answer: '',
+        },
+        srs: defaultSrs,
+      };
+      break;
+  }
 
-	try {
-		const newCard = await cardService.addCard(state.nodeId, newCardData);
-		update((s) => ({
-			...s,
-			cards: [...s.cards, newCard],
-			lastAddedCardId: newCard.id
-		}));
-	} catch (err) {
-		errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
-		toast.error(t('card_editor.create_error'));
-	}
+  try {
+    // MODIFIED: Assert the type of newCardData to satisfy the service's requirement.
+    const newCard = await cardService.addCard(
+      state.nodeId,
+      newCardData as NewCard
+    );
+    update((s) => ({
+      ...s,
+      cards: [...s.cards, newCard],
+      lastAddedCardId: newCard.id,
+    }));
+  } catch (err) {
+    errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
+    toast.error(get(t)('card_editor.create_error'));
+  }
 }
 
 /**
@@ -198,25 +212,25 @@ async function addCard(type: CardType): Promise<void> {
  * @param updatedCard The card object with its new data.
  */
 async function updateCard(updatedCard: Card): Promise<void> {
-	update((s) => ({
-		...s,
-		status: 'saving',
-		cards: s.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c))
-	}));
+  update((s) => ({
+    ...s,
+    status: 'saving',
+    cards: s.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
+  }));
 
-	try {
-		await cardService.updateCard(updatedCard);
-		setTimeout(() => {
-			update((s) => (s.status === 'saving' ? { ...s, status: 'saved' } : s));
-		}, 1000);
-	} catch (err) {
-		errorService.reportError(err, {
-			operation: 'cardEditorStore.updateCard',
-			cardId: updatedCard.id
-		});
-		toast.error(t('card_editor.save_error'));
-		update((s) => ({ ...s, status: 'idle' }));
-	}
+  try {
+    await cardService.updateCard(updatedCard);
+    setTimeout(() => {
+      update((s) => (s.status === 'saving' ? { ...s, status: 'saved' } : s));
+    }, 1000);
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.updateCard',
+      cardId: updatedCard.id,
+    });
+    toast.error(get(t)('card_editor.save_error'));
+    update((s) => ({ ...s, status: 'idle' }));
+  }
 }
 
 /**
@@ -225,22 +239,22 @@ async function updateCard(updatedCard: Card): Promise<void> {
  * @returns The data of the deleted card, useful for an "Undo" action.
  */
 async function deleteCard(cardId: string): Promise<Card | undefined> {
-	const cardToDelete = get(store).cards.find((c) => c.id === cardId);
-	if (!cardToDelete) return;
+  const cardToDelete = get(store).cards.find((c) => c.id === cardId);
+  if (!cardToDelete) return;
 
-	update((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== cardId) }));
+  update((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== cardId) }));
 
-	try {
-		await cardService.deleteCard(cardId);
-		return cardToDelete;
-	} catch (err) {
-		errorService.reportError(err, {
-			operation: 'cardEditorStore.deleteCard',
-			cardId
-		});
-		toast.error(t('card_editor.delete_error'));
-		update((s) => ({ ...s, cards: [...s.cards, cardToDelete] }));
-	}
+  try {
+    await cardService.deleteCard(cardId);
+    return cardToDelete;
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.deleteCard',
+      cardId,
+    });
+    toast.error(get(t)('card_editor.delete_error'));
+    update((s) => ({ ...s, cards: [...s.cards, cardToDelete] }));
+  }
 }
 
 /**
@@ -248,19 +262,21 @@ async function deleteCard(cardId: string): Promise<Card | undefined> {
  * @param cardToRestore The complete `Card` object to add back to the database and store.
  */
 async function restoreCard(cardToRestore: Card): Promise<void> {
-	try {
-		await cardService.updateCard(cardToRestore);
-		update((s) => ({
-			...s,
-			cards: [...s.cards, cardToRestore].sort((a, b) => (a.srs?.dueDate || 0) - (b.srs?.dueDate || 0))
-		}));
-	} catch (err) {
-		errorService.reportError(err, {
-			operation: 'cardEditorStore.restoreCard',
-			cardId: cardToRestore.id
-		});
-		toast.error(t('card_editor.restore_error'));
-	}
+  try {
+    await cardService.updateCard(cardToRestore);
+    update((s) => ({
+      ...s,
+      cards: [...s.cards, cardToRestore].sort(
+        (a, b) => (a.srs?.dueDate || 0) - (b.srs?.dueDate || 0)
+      ),
+    }));
+  } catch (err) {
+    errorService.reportError(err, {
+      operation: 'cardEditorStore.restoreCard',
+      cardId: cardToRestore.id,
+    });
+    toast.error(get(t)('card_editor.restore_error'));
+  }
 }
 
 /**
@@ -270,36 +286,39 @@ async function restoreCard(cardToRestore: Card): Promise<void> {
  * @param id The `nodeId` to find.
  * @returns The found ProseMirror node, or `null`.
  */
-function findNodeById(doc: ProseMirrorNode | null, id: string): ProseMirrorNode | null {
-	if (!doc) return null;
-	let foundNode: ProseMirrorNode | null = null;
-	doc.descendants((node: ProseMirrorNode) => {
-		if (node.attrs.nodeId === id) {
-			foundNode = node;
-			return false;
-		}
-	});
-	return foundNode;
+function findNodeById(
+  doc: ProseMirrorNode | null,
+  id: string
+): ProseMirrorNode | null {
+  if (!doc) return null;
+  let foundNode: ProseMirrorNode | null = null;
+  doc.descendants((node: ProseMirrorNode) => {
+    if (node.attrs.nodeId === id) {
+      foundNode = node;
+      return false; // Stop traversing once found
+    }
+  });
+  return foundNode;
 }
 
 /**
  * The public interface for the `cardEditorStore`.
  */
 export const cardEditorStore = {
-	/** Subscribes to the store to receive updates on state changes. */
-	subscribe,
-	/** Opens the editor panel for a specified node ID and loads its cards. */
-	open,
-	/** Closes the editor panel and resets its state. */
-	close,
-	/** Creates and adds a new card to the current node. */
-	addCard,
-	/** Updates an existing card with new data. */
-	updateCard,
-	/** Deletes a card by its unique ID. */
-	deleteCard,
-	/** Restores a previously deleted card. */
-	restoreCard,
-	/** Resets the `lastAddedCardId` state. */
-	clearLastAdded: () => update((s) => ({ ...s, lastAddedCardId: null }))
+  /** Subscribes to the store to receive updates on state changes. */
+  subscribe,
+  /** Opens the editor panel for a specified node ID and loads its cards. */
+  open,
+  /** Closes the editor panel and resets its state. */
+  close,
+  /** Creates and adds a new card to the current node. */
+  addCard,
+  /** Updates an existing card with new data. */
+  updateCard,
+  /** Deletes a card by its unique ID. */
+  deleteCard,
+  /** Restores a previously deleted card. */
+  restoreCard,
+  /** Resets the `lastAddedCardId` state. */
+  clearLastAdded: () => update((s) => ({ ...s, lastAddedCardId: null })),
 };

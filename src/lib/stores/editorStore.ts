@@ -11,14 +11,16 @@ import type { Node as ProseMirrorNode } from 'prosemirror-model';
  * Defines the structure of the state managed by the global editor store.
  */
 export interface EditorStoreState {
-	/** The active Tiptap editor instance. `null` if no editor is initialized. */
-	instance: Editor | null;
-	/** The document position of the currently selected node. `null` if the selection is not a node selection. */
-	selectedNodePos: number | null;
-	/** A version number that increments with each content change, for reactive updates. */
-	contentVersion: number;
-	/** The root ProseMirror document node. `null` if the editor is not initialized. */
-	doc: ProseMirrorNode | null;
+  /** The active Tiptap editor instance. `null` if no editor is initialized. */
+  instance: Editor | null;
+  /** The document position of the currently selected node. `null` if the selection is not a node selection. */
+  selectedNodePos: number | null;
+  /** The currently selected ProseMirror node instance. `null` if the selection is not a node selection. */
+  selectedNode: ProseMirrorNode | null; // <-- ADDED
+  /** A version number that increments with each content change, for reactive updates. */
+  contentVersion: number;
+  /** The root ProseMirror document node. `null` if the editor is not initialized. */
+  doc: ProseMirrorNode | null;
 }
 
 /**
@@ -26,10 +28,11 @@ export interface EditorStoreState {
  * @internal
  */
 const initialState: EditorStoreState = {
-	instance: null,
-	selectedNodePos: null,
-	contentVersion: 0,
-	doc: null
+  instance: null,
+  selectedNodePos: null,
+  selectedNode: null, // <-- ADDED
+  contentVersion: 0,
+  doc: null,
 };
 
 /**
@@ -56,8 +59,8 @@ const initialState: EditorStoreState = {
  *     - `instance`: The raw editor object for running commands (`.chain().focus()...`).
  *     - `doc`: A snapshot of the entire document structure, useful for analysis without
  *       needing the full editor instance.
- *     - `selectedNodePos`: Tracks which node is selected, allowing components like the
- *       `CardEditorPanel` to know what content they are associated with.
+ *     - `selectedNodePos`: Tracks which node is selected.
+ *     - `selectedNode`: The actual node object at `selectedNodePos`, provided for convenience. // <-- ADDED
  *     - `contentVersion`: This is a simple but effective mechanism. It's a number that
  *       increments on every document change. Components that need to re-render whenever the
  *       *content* of the editor changes (not just the selection) can react to changes in

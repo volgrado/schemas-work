@@ -63,12 +63,12 @@
    */
   async function copyLogs() {
     if (logs.length === 0) {
-      toast.info(t('toast.info.nothing_to_copy'));
+      toast.info($t('toast.info.nothing_to_copy'));
       return;
     }
     // The report includes a header with metadata and a JSON representation of the logs.
     const report = `
---- ${t('error_diagnostic.report_header')} ---
+--- ${$t('error_diagnostic.report_header')} ---
 Timestamp: ${new Date().toISOString()}
 User Agent: ${navigator.userAgent}
 ------------------------------------
@@ -77,11 +77,11 @@ ${JSON.stringify(logs, null, 2)}
 `;
     try {
       await navigator.clipboard.writeText(report.trim());
-      toast.success(t('toast.success.diagnostic_report_copied'));
+      toast.success($t('toast.success.diagnostic_report_copied'));
     } catch (error) {
       // Report the error that occurred during the copy operation itself.
       errorService.reportError(error, { operation: 'copyDiagnosticLogs' });
-      toast.error(t('toast.error.could_not_copy_report'));
+      toast.error($t('toast.error.could_not_copy_report'));
     }
   }
 
@@ -91,15 +91,15 @@ ${JSON.stringify(logs, null, 2)}
   function clearLogs() {
     errorService.clearLogs();
     loadLogs(); // Refresh the list to show the empty state.
-    toast.info(t('toast.info.error_logs_cleared'));
+    toast.info($t('toast.info.error_logs_cleared'));
   }
 </script>
 
-<Modal title={t('error_diagnostic.title')} {show} {onClose}>
+<Modal title={$t('error_diagnostic.title')} {show} {onClose}>
   <div class="diagnostic-container">
     <p class="explanation">
-      {t('error_diagnostic.explanation')}
-      <strong>{t('error_diagnostic.explanation.privacy')}</strong>
+      {$t('error_diagnostic.explanation')}
+      <strong>{$t('error_diagnostic.explanation.privacy')}</strong>
     </p>
 
     <!-- Scrollable area for log entries -->
@@ -121,46 +121,130 @@ ${JSON.stringify(logs, null, 2)}
         <!-- Empty state when no errors are present -->
         <div class="empty-state">
           <Icon name="check-circle" size={24} />
-          <p>{t('error_diagnostic.empty_state')}</p>
+          <p>{$t('error_diagnostic.empty_state')}</p>
         </div>
       {/if}
     </div>
 
     <!-- Footer with action buttons -->
     <footer class="modal-actions">
-      <Button on:click={clearLogs} variant="secondary" disabled={logs.length === 0}>
+      <Button
+        on:click={clearLogs}
+        variant="secondary"
+        disabled={logs.length === 0}
+      >
         <Icon name="trash-2" size={16} />
-        {t('error_diagnostic.clear_logs')}
+        {$t('error_diagnostic.clear_logs')}
       </Button>
-      <Button on:click={copyLogs} variant="primary" disabled={logs.length === 0}>
+      <Button
+        on:click={copyLogs}
+        variant="primary"
+        disabled={logs.length === 0}
+      >
         <Icon name="copy" size={16} />
-        {t('error_diagnostic.copy_report')}
+        {$t('error_diagnostic.copy_report')}
       </Button>
     </footer>
   </div>
 </Modal>
 
 <style>
-  .diagnostic-container { display: flex; flex-direction: column; gap: var(--space-lg); }
-  .explanation { font-size: 0.9rem; color: var(--color-text-secondary); margin: 0; line-height: 1.6; }
-  .log-area { background-color: var(--color-gray-50); border-radius: var(--space-sm); padding: var(--space-sm); max-height: 40vh; overflow-y: auto; border: 1px solid var(--color-border); }
-  .log-entry { margin-bottom: var(--space-sm); font-family: var(--font-mono); font-size: 0.8rem; }
-  .log-entry:last-child { margin-bottom: 0; }
-  .log-entry summary { cursor: pointer; display: flex; gap: var(--space-md); align-items: baseline; padding: var(--space-xs); border-radius: var(--space-xs); transition: background-color 0.2s; }
-  .log-entry summary:hover { background-color: var(--color-gray-100); }
-  .timestamp { color: var(--color-text-tertiary); flex-shrink: 0; }
-  .message { font-weight: 600; font-family: var(--font-main); color: var(--color-danger); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  pre { margin-top: var(--space-sm); padding: var(--space-sm); background-color: var(--color-background); border-radius: var(--space-xs); white-space: pre-wrap; word-break: break-all; color: var(--color-text); }
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-xl); gap: var(--space-md); color: var(--color-text-secondary); }
-  .modal-actions { display: flex; justify-content: space-between; align-items: center; }
+  .diagnostic-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+  .explanation {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .log-area {
+    background-color: var(--color-gray-50);
+    border-radius: var(--space-sm);
+    padding: var(--space-sm);
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+  }
+  .log-entry {
+    margin-bottom: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  .log-entry:last-child {
+    margin-bottom: 0;
+  }
+  .log-entry summary {
+    cursor: pointer;
+    display: flex;
+    gap: var(--space-md);
+    align-items: baseline;
+    padding: var(--space-xs);
+    border-radius: var(--space-xs);
+    transition: background-color 0.2s;
+  }
+  .log-entry summary:hover {
+    background-color: var(--color-gray-100);
+  }
+  .timestamp {
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+  }
+  .message {
+    font-weight: 600;
+    font-family: var(--font-main);
+    color: var(--color-danger);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  pre {
+    margin-top: var(--space-sm);
+    padding: var(--space-sm);
+    background-color: var(--color-background);
+    border-radius: var(--space-xs);
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--color-text);
+  }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+    gap: var(--space-md);
+    color: var(--color-text-secondary);
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
   /* Dark Mode Styles */
   @media (prefers-color-scheme: dark) {
-    .explanation { color: var(--color-text-dark-secondary); }
-    .log-area { background-color: var(--color-gray-900); border-color: var(--color-border-dark); }
-    .log-entry summary:hover { background-color: var(--color-gray-800); }
-    .timestamp { color: var(--color-text-dark-tertiary); }
-    pre { background-color: var(--color-gray-950); color: var(--color-text-dark); }
-    .empty-state { color: var(--color-text-dark-secondary); }
+    .explanation {
+      color: var(--color-text-dark-secondary);
+    }
+    .log-area {
+      background-color: var(--color-gray-900);
+      border-color: var(--color-border-dark);
+    }
+    .log-entry summary:hover {
+      background-color: var(--color-gray-800);
+    }
+    .timestamp {
+      color: var(--color-text-dark-tertiary);
+    }
+    pre {
+      background-color: var(--color-gray-950);
+      color: var(--color-text-dark);
+    }
+    .empty-state {
+      color: var(--color-text-dark-secondary);
+    }
   }
 </style>

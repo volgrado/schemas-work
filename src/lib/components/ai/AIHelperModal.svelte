@@ -40,11 +40,14 @@
   export let prompt: string; // The AI prompt to be copied.
   export let validationSchema: z.ZodSchema; // The Zod schema to validate the JSON against.
 
+  // FIX: Changed the type for the 'close' event from `new () => any` to `void`
   const dispatch = createEventDispatcher<{ apply: any; close: void }>();
 
   // --- Local State ---
   let jsonInput = '';
-  let parseResult: { success: boolean; data?: any; error?: string } = { success: false };
+  let parseResult: { success: boolean; data?: any; error?: string } = {
+    success: false,
+  };
 
   /**
    * This reactive block is the core of the component's validation logic.
@@ -68,9 +71,9 @@
           });
 
           const firstError = validation.error.issues[0];
-          const errorMessage = t('aiHelper.errors.zodValidationError', { 
-            path: firstError.path.join('.'), 
-            message: firstError.message 
+          const errorMessage = $t('aiHelper.errors.zodValidationError', {
+            path: firstError.path.join('.'),
+            message: firstError.message,
           });
           parseResult = { success: false, error: errorMessage };
         }
@@ -80,7 +83,10 @@
           operation: 'parseAiJsonResponse.jsonParse',
           rawInput: jsonInput,
         });
-        parseResult = { success: false, error: t('aiHelper.errors.notValidJson') };
+        parseResult = {
+          success: false,
+          error: $t('aiHelper.errors.notValidJson'),
+        };
       }
     }
   }
@@ -99,7 +105,7 @@
    */
   function handleClose() {
     jsonInput = '';
-    dispatch('close');
+    dispatch('close'); // This call is now valid
   }
 
   /**
@@ -108,39 +114,39 @@
   async function copyPrompt() {
     try {
       await navigator.clipboard.writeText(prompt);
-      toast.success(t('aiHelper.promptCopied'));
+      toast.success($t('aiHelper.promptCopied'));
     } catch (err) {
       errorService.reportError(err, { operation: 'copyPrompt' });
-      toast.error(t('aiHelper.copyError'));
+      toast.error($t('aiHelper.copyError'));
     }
   }
 </script>
 
-<Modal {title} {show} {onClose} bind:show>
+<Modal {title} onClose={handleClose} bind:show>
   <div class="assistant-container">
     <!-- Step 1: Copy Prompt -->
     <div class="step">
       <div class="step-header">
-        <h4>{t('aiHelper.step1.title')}</h4>
+        <h4>{$t('aiHelper.step1.title')}</h4>
         <Button on:click={copyPrompt} size="sm" variant="secondary">
           <Icon name="copy" size={14} />
-          {t('common.copy')}
+          {$t('common.copy')}
         </Button>
       </div>
-      <p>{t('aiHelper.step1.description')}</p>
+      <p>{$t('aiHelper.step1.description')}</p>
       <textarea readonly rows="8">{prompt}</textarea>
     </div>
 
     <!-- Step 2: Paste JSON Response -->
     <div class="step">
       <div class="step-header">
-        <h4>{t('aiHelper.step2.title')}</h4>
+        <h4>{$t('aiHelper.step2.title')}</h4>
       </div>
-      <p>{t('aiHelper.step2.description')}</p>
+      <p>{$t('aiHelper.step2.description')}</p>
       <textarea
         bind:value={jsonInput}
         rows="8"
-        placeholder={t('aiHelper.step2.placeholder')}
+        placeholder={$t('aiHelper.step2.placeholder')}
         class:is-invalid={!parseResult.success && jsonInput.trim() !== ''}
       ></textarea>
       <!-- Display validation error message -->
@@ -150,19 +156,37 @@
     </div>
 
     <footer class="modal-actions">
-      <Button on:click={handleClose} variant="secondary">{t('common.cancel')}</Button>
+      <Button on:click={handleClose} variant="secondary"
+        >{$t('common.cancel')}</Button
+      >
       <Button on:click={handleApply} disabled={!parseResult.success}>
-        {t('common.applyChanges')}
+        {$t('common.applyChanges')}
       </Button>
     </footer>
   </div>
 </Modal>
 
 <style>
-  .assistant-container { display: flex; flex-direction: column; gap: var(--space-lg); }
-  .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); }
-  .step-header h4 { margin: 0; font-weight: 600; }
-  .step p { margin: 0 0 var(--space-sm) 0; font-size: 0.9rem; color: var(--color-gray-600); }
+  .assistant-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xs);
+  }
+  .step-header h4 {
+    margin: 0;
+    font-weight: 600;
+  }
+  .step p {
+    margin: 0 0 var(--space-sm) 0;
+    font-size: 0.9rem;
+    color: var(--color-gray-600);
+  }
   textarea {
     box-sizing: border-box;
     width: 100%;
@@ -176,16 +200,39 @@
     resize: vertical;
     transition: border-color 0.2s;
   }
-  textarea:focus { outline: none; border-color: var(--color-accent); }
-  textarea[readonly] { background-color: var(--color-gray-50); }
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+  textarea[readonly] {
+    background-color: var(--color-gray-50);
+  }
 
-  .is-invalid { border-color: var(--color-danger); }
-  .error-message { color: var(--color-danger); font-size: 0.85rem; margin-top: var(--space-xs); }
-  .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md); }
+  .is-invalid {
+    border-color: var(--color-danger);
+  }
+  .error-message {
+    color: var(--color-danger);
+    font-size: 0.85rem;
+    margin-top: var(--space-xs);
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
 
   @media (prefers-color-scheme: dark) {
-    .step p { color: var(--color-gray-400); }
-    textarea { background-color: var(--color-background-dark); border-color: var(--color-border-input-dark); }
-    textarea[readonly] { background-color: var(--color-background-dark-raised); }
+    .step p {
+      color: var(--color-gray-400);
+    }
+    textarea {
+      background-color: var(--color-background-dark);
+      border-color: var(--color-border-input-dark);
+    }
+    textarea[readonly] {
+      background-color: var(--color-background-dark-raised);
+    }
   }
 </style>

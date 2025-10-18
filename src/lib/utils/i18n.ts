@@ -36,7 +36,11 @@ export const locale = writable<string>(defaultLocale);
  * @param vars An object of variables to interpolate into the translation.
  * @returns The translated string.
  */
-function translate(locale: string, key: string, vars: Record<string, string | number>): string {
+function translate(
+  locale: string,
+  key: string,
+  vars: Record<string, string | number>
+): string {
   if (!key) throw new Error('no key provided to $t()');
 
   let text = translations[locale];
@@ -118,7 +122,7 @@ export const t = derived(
  * import { gett } from '$lib/utils/i18n';
  *
  * const t = gett();
- * const title = t('welcome.title');
+ * const title = $t('welcome.title');
  * ```
  */
 export const gett = () => get(t);

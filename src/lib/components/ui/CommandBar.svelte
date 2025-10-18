@@ -17,7 +17,7 @@
   - Handles complex workflows like AI-powered content generation and encrypted vault backups.
 -->
 <script lang="ts">
-  // --- Svelte & Third-Party --- 
+  // --- Svelte & Third-Party ---
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { get } from 'svelte/store';
@@ -51,7 +51,8 @@
   import * as schemaService from '$lib/services/features/schemaService';
   import * as cardService from '$lib/services/features/cardService';
   import * as errorService from '$lib/services/core/errorService';
-  import type { Card } from '$lib/types';
+  // MODIFIED: Import NewCard type to assist with type assertion
+  import type { Card, NewCard } from '$lib/types';
 
   const state = commandBarStore;
 
@@ -63,47 +64,72 @@
    */
   const aiHelperConfigs = {
     'create-schema-from-text': {
-      title: t('command_bar.ai_helper.create_schema.title'),
+      title: $t('command_bar.ai_helper.create_schema.title'),
       prompt: Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
         '{{TEXT_INPUT}}',
-        t('command_bar.ai_helper.create_schema.prompt_placeholder')
+        $t('command_bar.ai_helper.create_schema.prompt_placeholder')
       ),
       validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
       onApply: (data: any) => {
         const title = data.content?.[0]?.content?.[0]?.text || 'New Schema';
         const parentId = get(state).currentParentId;
         documentStore.createNewDocument(title, data, parentId);
-        toast.success(t('command_bar.ai_helper.create_schema.success', { title }));
+        toast.success(
+          $t('command_bar.ai_helper.create_schema.success', { title })
+        );
       },
     },
     'expand-node': {
-      title: t('command_bar.ai_helper.expand_node.title'),
+      title: $t('command_bar.ai_helper.expand_node.title'),
       prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL, // Base prompt, context is added later
       validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
       onApply: (data: any) => {
-        const { instance: editor, selectedNodePos: currentPos, selectedNode: node } = get(editorStore);
+        const {
+          instance: editor,
+          selectedNodePos: currentPos,
+          selectedNode: node,
+        } = get(editorStore);
         if (editor && node && currentPos !== null) {
-          editor.chain().focus().insertContentAt(currentPos + node.nodeSize - 1, data).run();
-          toast.success(t('command_bar.ai_helper.expand_node.success'));
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(currentPos + node.nodeSize - 1, data)
+            .run();
+          toast.success($t('command_bar.ai_helper.expand_node.success'));
         }
       },
     },
     'generate-flashcards': {
-      title: t('command_bar.ai_helper.generate_flashcards.title'),
+      title: $t('command_bar.ai_helper.generate_flashcards.title'),
       prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Base prompt, context is added later
       validationSchema: aiSchemas.FlashcardResponseSchema,
       onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
         const { selectedNode: node } = get(editorStore);
         if (!node?.attrs.nodeId) {
-          toast.error(t('command_bar.ai_helper.generate_flashcards.error.no_node_id'));
+          toast.error(
+            $t('command_bar.ai_helper.generate_flashcards.error.no_node_id')
+          );
           return;
         }
         try {
-          await cardService.addCards(node.attrs.nodeId, data);
-          toast.success(t('command_bar.ai_helper.generate_flashcards.success', { count: data.length }));
+          // MODIFIED: Use a type assertion to satisfy the stricter `NewCard[]` type.
+          // This is safe because the Zod schema has already validated the data structure.
+          await cardService.addCards(
+            node.attrs.nodeId,
+            data as unknown as NewCard[]
+          );
+          toast.success(
+            $t('command_bar.ai_helper.generate_flashcards.success', {
+              count: data.length,
+            })
+          );
         } catch (err) {
-          errorService.reportError(err, { operation: 'aiGenerateCards.onApply' });
-          toast.error(t('command_bar.ai_helper.generate_flashcards.error.save_failed'));
+          errorService.reportError(err, {
+            operation: 'aiGenerateCards.onApply',
+          });
+          toast.error(
+            $t('command_bar.ai_helper.generate_flashcards.error.save_failed')
+          );
         }
       },
     },
@@ -135,25 +161,39 @@
     if (!config) return;
 
     let finalConfig = { ...config };
-    const { instance: editor, selectedNodePos: currentPos, selectedNode: node } = get(editorStore);
+    const {
+      instance: editor,
+      selectedNodePos: currentPos,
+      selectedNode: node,
+    } = get(editorStore);
 
     if (actionId === 'expand-node') {
       if (!node || !editor || currentPos === null) {
-        toast.error(t('command_bar.ai_helper.expand_node.error.no_node_selected'));
+        toast.error(
+          $t('command_bar.ai_helper.expand_node.error.no_node_selected')
+        );
         commandBarStore.closeAiHelper();
         return;
       }
-      const breadcrumb = schemaService.getBreadcrumbForPosition(editor.state.doc, currentPos);
+      const breadcrumb = schemaService.getBreadcrumbForPosition(
+        editor.state.doc,
+        currentPos
+      );
       finalConfig.prompt = config.prompt
         .replaceAll('{{NODE_TEXT}}', node.textContent)
         .replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
     } else if (actionId === 'generate-flashcards') {
       if (!node) {
-        toast.error(t('command_bar.ai_helper.generate_flashcards.error.no_node_selected'));
+        toast.error(
+          $t('command_bar.ai_helper.generate_flashcards.error.no_node_selected')
+        );
         commandBarStore.closeAiHelper();
         return;
       }
-      finalConfig.prompt = config.prompt.replace('{{NODE_TEXT}}', node.textContent);
+      finalConfig.prompt = config.prompt.replace(
+        '{{NODE_TEXT}}',
+        node.textContent
+      );
     }
 
     helperConfig = finalConfig;
@@ -167,14 +207,16 @@
     try {
       if ($state.passwordModalAction === 'export') {
         await backupService.exportVault(passwordInput);
-        toast.success(t('command_bar.export_success'));
+        toast.success($t('command_bar.export_success'));
       } else {
         await backupService.importVault(passwordInput);
       }
     } catch (error) {
-      errorService.reportError(error, { operation: `backup:${$state.passwordModalAction}` });
-      toast.error(t('command_bar.operation_failed'), {
-        description: t('command_bar.operation_failed_details'),
+      errorService.reportError(error, {
+        operation: `backup:${$state.passwordModalAction}`,
+      });
+      toast.error($t('command_bar.operation_failed'), {
+        description: $t('command_bar.operation_failed_details'),
       });
     } finally {
       commandBarStore.closePasswordModal();
@@ -204,7 +246,7 @@
       }
     }
   }
-  
+
   onMount(() => window.addEventListener('keydown', handleKeydown));
   onDestroy(() => window.removeEventListener('keydown', handleKeydown));
 </script>
@@ -217,32 +259,32 @@
 
 <Modal
   title={$state.passwordModalAction === 'export'
-    ? t('command_bar.password_modal.title.export')
-    : t('command_bar.password_modal.title.import')}
+    ? $t('command_bar.password_modal.title.export')
+    : $t('command_bar.password_modal.title.import')}
   show={$state.isPasswordModalOpen}
   onClose={commandBarStore.closePasswordModal}
 >
   <form on:submit|preventDefault={handlePasswordSubmit}>
     <p>
       {$state.passwordModalAction === 'export'
-        ? t('command_bar.password_modal.description.export')
-        : t('command_bar.password_modal.description.import')}
+        ? $t('command_bar.password_modal.description.export')
+        : $t('command_bar.password_modal.description.import')}
     </p>
     <input
       type="password"
       bind:value={passwordInput}
-      placeholder={t('command_bar.password_modal.password_placeholder')}
+      placeholder={$t('command_bar.password_modal.password_placeholder')}
       required
       autocomplete="new-password"
     />
     <div class="modal-actions">
       <Button on:click={commandBarStore.closePasswordModal} variant="secondary"
-        >{t('command_bar.password_modal.cancel_button')}</Button
+        >{$t('command_bar.password_modal.cancel_button')}</Button
       >
       <Button type="submit">
         {$state.passwordModalAction === 'export'
-          ? t('command_bar.password_modal.confirm_button.export')
-          : t('command_bar.password_modal.confirm_button.import')}
+          ? $t('command_bar.password_modal.confirm_button.export')
+          : $t('command_bar.password_modal.confirm_button.import')}
       </Button>
     </div>
   </form>
@@ -266,7 +308,7 @@
     class="overlay"
     on:click={commandBarStore.close}
     transition:fade={{ duration: 150 }}
-    aria-label={t('command_bar.close_aria_label')}
+    aria-label={$t('command_bar.close_aria_label')}
   ></button>
 
   <div
@@ -333,7 +375,7 @@
     overflow: hidden;
     padding: var(--space-xs);
   }
-  
+
   /*
     The `:global` keyword is used here to style elements that are part of the child
     view components (MainView, AiView, etc.). This allows the CommandBar to enforce

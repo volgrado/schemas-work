@@ -23,7 +23,7 @@
   let style = $state('');
 
   const VIEWPORT_PADDING = 10; // Minimum space between the menu and the edge of the window.
-  const CURSOR_OFFSET = 5;     // Vertical offset from the cursor.
+  const CURSOR_OFFSET = 5; // Vertical offset from the cursor.
 
   /**
    * This effect hook is the core of the component's dynamic positioning.
@@ -49,7 +49,8 @@
 
       let top: number;
 
-      const hasSpaceBelow = posBelow + menuHeight < windowHeight - VIEWPORT_PADDING;
+      const hasSpaceBelow =
+        posBelow + menuHeight < windowHeight - VIEWPORT_PADDING;
       const hasSpaceAbove = posAbove > VIEWPORT_PADDING;
 
       // Prioritize placing the menu below the cursor, but flip above if needed.
@@ -95,7 +96,7 @@
     bind:this={menuElement}
     style="position: absolute; top: 0; left: 0; {style}"
   >
-    {#if $slashMenuStore.allItems.length > 0}
+    {#if $slashMenuStore.allitems.length > 0}
       <!-- Group tabs for categorizing commands -->
       <div class="group-tabs">
         {#each $slashMenuStore.groups as group, index}
@@ -126,7 +127,7 @@
       </div>
     {:else}
       <!-- State for when the filter query yields no results -->
-      <div class="empty-state">{t('slash_menu.empty_state')}</div>
+      <div class="empty-state">{$t('slash_menu.empty_state')}</div>
     {/if}
   </div>
 {/if}
@@ -178,7 +179,11 @@
     background-color: var(--color-gray-100);
   }
 
-  .items-list { flex-grow: 1; overflow-y: auto; padding: var(--space-xs); }
+  .items-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--space-xs);
+  }
 
   .menu-item {
     display: flex;
@@ -194,7 +199,9 @@
     color: var(--color-text);
   }
 
-  .menu-item.is-selected { background-color: var(--color-gray-100); }
+  .menu-item.is-selected {
+    background-color: var(--color-gray-100);
+  }
 
   .icon-wrapper {
     width: 36px;
@@ -203,30 +210,63 @@
     place-items: center;
     background-color: var(--color-gray-100);
     border-radius: var(--space-xs);
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
     flex-shrink: 0;
   }
 
-  .text-wrapper { display: flex; flex-direction: column; }
-  .title { font-weight: 500; }
-  .description { font-size: 0.8rem; color: var(--color-gray-500); }
+  .text-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+  .title {
+    font-weight: 500;
+  }
+  .description {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+  }
 
   .menu-item.is-selected .icon-wrapper {
     background-color: var(--color-accent);
     color: white;
   }
 
-  .empty-state { padding: var(--space-lg); text-align: center; color: var(--color-gray-500); font-style: italic; font-size: 0.9rem; }
+  .empty-state {
+    padding: var(--space-lg);
+    text-align: center;
+    color: var(--color-gray-500);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
 
   /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
-    .slash-menu-container { border-color: var(--color-border-dark); }
-    .group-tabs { border-color: var(--color-border-dark); }
-    .group-tab.is-active { background-color: var(--color-gray-800); }
-    .menu-item.is-selected { background-color: var(--color-gray-800); }
-    .icon-wrapper { background-color: var(--color-gray-800); }
-    .group-tab { color: var(--color-gray-400); }
-    .group-tab.is-active, .group-tab:hover { color: var(--color-text-dark); }
-    .menu-item.is-selected .icon-wrapper { color: var(--color-text-dark); }
+    .slash-menu-container {
+      border-color: var(--color-border-dark);
+    }
+    .group-tabs {
+      border-color: var(--color-border-dark);
+    }
+    .group-tab.is-active {
+      background-color: var(--color-gray-800);
+    }
+    .menu-item.is-selected {
+      background-color: var(--color-gray-800);
+    }
+    .icon-wrapper {
+      background-color: var(--color-gray-800);
+    }
+    .group-tab {
+      color: var(--color-gray-400);
+    }
+    .group-tab.is-active,
+    .group-tab:hover {
+      color: var(--color-text-dark);
+    }
+    .menu-item.is-selected .icon-wrapper {
+      color: var(--color-text-dark);
+    }
   }
 </style>

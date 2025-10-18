@@ -18,21 +18,9 @@
   Props:
   - `isVisible`: {boolean} - Controls the visibility of the popup.
   - `placement`: {Placement} - The preferred placement (e.g., 'bottom-start'). Defaults to 'bottom-start'.
-  - `referenceEl`: {HTMLElement | null} - A direct reference to the anchor DOM element. This is the simplest way to use the component.
-  - `getReferenceClientRect`: {(() => DOMRect) | null} - A function that returns a `DOMRect`. Use this for virtual elements, like positioning relative to a text selection.
+  - `referenceEl`: {HTMLElement | null} - A direct reference to the anchor DOM element.
+  - `getReferenceClientRect`: {(() => DOMRect) | null} - A function that returns a `DOMRect` for virtual elements.
   - `offsetValue`: {number} - The distance in pixels to offset the popup from its reference. Defaults to 8.
-
-  Usage:
-  <!-- Method 1: Binding to a DOM element -->
-  <button bind:this={buttonEl}>Reference</button>
-  <Popup placement="bottom-start" isVisible={show} referenceEl={buttonEl}>
-    Hello!
-  </Popup>
-
-  <!-- Method 2: Using a virtual element -->
-  <Popup isVisible={show} getReferenceClientRect={() => myVirtualRect}>
-    Hello from a virtual element!
-  </Popup>
 -->
 <script lang="ts">
   import { computePosition, flip, shift, offset } from '@floating-ui/dom';

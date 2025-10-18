@@ -12,16 +12,18 @@
   - Manages a wide array of Tiptap extensions, including custom-built ones for application-specific features
     (e.g., `RoleExtension`, `NodeIdExtension`, `SlashCommandExtension`, `CardIndicatorExtension`).
   - Synchronizes the document's title (the first H1 heading) with the `documentStore`.
-  - Handles editor updates, propagating changes to the `editorStore`.
+  - Handles editor updates, propagating changes to the `editorStore`. This component is the *only* writer to the store.
   - Manages editor focus and selection, particularly when navigating from other parts of the UI.
   - Provides custom node views for enhanced rendering and interaction with elements like Images.
 -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
+  import type { Node as ProseMirrorNode } from 'prosemirror-model'; // <-- Import ProseMirrorNode type
 
   // --- Tiptap Core & Extensions ---
   import { Editor, findParentNode } from '@tiptap/core';
+  import { NodeSelection } from 'prosemirror-state'; // <-- Import NodeSelection type
   import * as Y from 'yjs';
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
@@ -81,7 +83,11 @@
     const firstNode = editorInstance.state.doc.firstChild;
     let newTitle = $t('doc_view.untitled_schema');
 
-    if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+    if (
+      firstNode &&
+      firstNode.type.name === 'heading' &&
+      firstNode.attrs.level === 1
+    ) {
       newTitle = firstNode.textContent.trim() || newTitle;
     }
 
@@ -100,12 +106,16 @@
     if (focusedNodePos !== null && editor && editor.isEditable) {
       // Check if the desired node is already selected to avoid redundant focus calls.
       const currentSelection = editor.state.selection;
-      const parentListItem = findParentNode((node) => node.type.name === 'listItem')(currentSelection);
+      const parentListItem = findParentNode(
+        (node) => node.type.name === 'listItem'
+      )(currentSelection);
       if (!parentListItem || parentListItem.pos !== focusedNodePos) {
         editor.chain().focus().setNodeSelection(focusedNodePos).run();
       }
       // Dispatch an event after focus is applied.
-      import('svelte').then(({ tick }) => tick().then(() => dispatch('focusApplied')));
+      import('svelte').then(({ tick }) =>
+        tick().then(() => dispatch('focusApplied'))
+      );
     }
   });
 
@@ -143,18 +153,22 @@
         // --- Placeholder Text ---
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
+            const _t = get(t);
             if (node.type.name === 'heading' && node.attrs.level === 1) {
-              return t('doc_view.placeholder.title');
+              return _t('doc_view.placeholder.title');
             }
-            // Show 'Term' placeholder only for the very first paragraph.
             if (node.type.name === 'paragraph' && !node.textContent) {
               const parent = editor.state.doc.resolve(pos).parent;
               if (parent.firstChild === node) {
-                return t('doc_view.placeholder.term');
+                return _t('doc_view.placeholder.term');
               }
             }
-            if (node.type.name === 'paragraph' && !node.textContent && node.attrs.role === 'description') {
-              return t('doc_view.placeholder.description');
+            if (
+              node.type.name === 'paragraph' &&
+              !node.textContent &&
+              node.attrs.role === 'description'
+            ) {
+              return _t('doc_view.placeholder.description');
             }
             return '';
           },
@@ -170,16 +184,19 @@
               img.setAttribute('src', node.attrs.src);
               container.append(img);
 
-              // Add an 'Edit' button only when the editor is in an editable state.
               if (editor.isEditable) {
                 const button = document.createElement('button');
                 button.classList.add('edit-button');
-                button.innerText = t('doc_view.media.edit_button');
+                button.innerText = get(t)('doc_view.media.edit_button');
                 button.addEventListener('click', () => {
                   const pos = getPos();
                   if (pos === undefined) return;
-                  // Open a modal to edit the image's attributes (e.g., src).
-                  modalStore.open({ type: 'media', nodeType: 'image', nodePos: pos, attrs: node.attrs });
+                  modalStore.open({
+                    type: 'media',
+                    nodeType: 'image',
+                    nodePos: pos,
+                    attrs: node.attrs,
+                  });
                 });
                 container.append(button);
               }
@@ -195,15 +212,22 @@
         // On every update, sync the title and update the global editor store.
         syncTitleWithStore(updatedEditor);
 
-        const { selection } = updatedEditor.state;
-        const listItemNode = findParentNode((node) => node.type.name === 'listItem')(selection);
+        const { selection, doc } = updatedEditor.state;
+        const listItemNode = findParentNode(
+          (node) => node.type.name === 'listItem'
+        )(selection);
         const newSelectedPos = listItemNode ? listItemNode.pos : null;
+
+        // MODIFIED: Derive the selected node from the position
+        const newSelectedNode: ProseMirrorNode | null =
+          newSelectedPos !== null ? doc.nodeAt(newSelectedPos) || null : null;
 
         editorStore.update((s) => ({
           ...s,
-          doc: updatedEditor.state.doc,
+          doc: doc,
           selectedNodePos: newSelectedPos,
-          contentVersion: s.contentVersion + 1, // Increment version for reactive updates.
+          selectedNode: newSelectedNode, // <-- ADDED: Pass the selected node to the store
+          contentVersion: s.contentVersion + 1,
         }));
       },
     });
@@ -213,13 +237,11 @@
     // Sync title on initial load.
     syncTitleWithStore(editor);
 
-    // If initial content is provided, set it in the editor.
     if (initialContent) {
       editor.commands.setContent(initialContent, { emitUpdate: false });
-      documentStore.clearInitialContent(); // Clear it so it's not used again.
+      documentStore.clearInitialContent();
     }
 
-    // Make the editor instance globally available via the store.
     editorStore.update((s) => ({ ...s, instance: editor }));
 
     // --- Cleanup ---
@@ -227,8 +249,14 @@
       if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
-      // Reset the editor store on component destruction.
-      editorStore.set({ instance: null, selectedNodePos: null, contentVersion: 0, doc: null });
+      // MODIFIED: Reset the full editor store state on component destruction.
+      editorStore.set({
+        instance: null,
+        selectedNodePos: null,
+        selectedNode: null, // <-- ADDED: Reset the selected node
+        contentVersion: 0,
+        doc: null,
+      });
     };
   });
 </script>
@@ -283,11 +311,30 @@
   }
 
   /* --- Typography & Element Styling --- */
-  :global(.prose p), :global(.prose li) { line-height: 1.7; }
-  :global(.prose h1) { font-size: 2.25rem; margin-top: 0; margin-bottom: var(--space-md); }
-  :global(.prose h2) { font-size: 1.5rem; margin-top: var(--space-lg); margin-bottom: var(--space-sm); }
-  :global(.prose h3) { font-size: 1.25rem; margin-top: var(--space-lg); margin-bottom: var(--space-sm); }
-  :global(.prose hr) { border: none; border-top: 1px solid var(--color-gray-200); margin: var(--space-lg) 0; }
+  :global(.prose p),
+  :global(.prose li) {
+    line-height: 1.7;
+  }
+  :global(.prose h1) {
+    font-size: 2.25rem;
+    margin-top: 0;
+    margin-bottom: var(--space-md);
+  }
+  :global(.prose h2) {
+    font-size: 1.5rem;
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+  }
+  :global(.prose h3) {
+    font-size: 1.25rem;
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+  }
+  :global(.prose hr) {
+    border: none;
+    border-top: 1px solid var(--color-gray-200);
+    margin: var(--space-lg) 0;
+  }
 
   /* --- Placeholder Styles --- */
   :global(.prose .is-empty::before) {

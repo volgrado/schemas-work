@@ -112,7 +112,7 @@
 <!-- The trigger element that the user interacts with. -->
 <button
   class="tooltip-trigger"
-  aria-label={t('tooltip.show_help')}
+  aria-label={$t('tooltip.show_help')}
   bind:this={referenceEl}
   on:mouseenter={show}
   on:mouseleave={hide}
@@ -184,7 +184,7 @@
     height: 8px;
     transform: rotate(45deg);
   }
-  
+
   /* Dark mode styles */
   @media (prefers-color-scheme: dark) {
     .tooltip-trigger:hover,

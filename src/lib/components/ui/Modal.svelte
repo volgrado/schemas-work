@@ -70,7 +70,7 @@
     class="modal-overlay"
     on:click={close}
     transition:fade={{ duration: 150 }}
-    aria-label={t('modal.close_aria_label')}
+    aria-label={$t('modal.close_aria_label')}
   ></div>
 
   <!-- 
@@ -81,7 +81,7 @@
     class="modal-panel"
     role="dialog"
     aria-modal="true"
-    aria-label={title || t('modal.default_aria_label')}
+    aria-label={title || $t('modal.default_aria_label')}
     transition:fly={{ y: 20, duration: 200 }}
   >
     <!-- The header is only rendered if a title is provided. -->
@@ -91,7 +91,7 @@
         <button
           class="modal-close-button"
           on:click={close}
-          aria-label={t('modal.close_aria_label')}
+          aria-label={$t('modal.close_aria_label')}
         >
           <Icon name="x" size={20} />
         </button>
@@ -140,7 +140,11 @@
     flex-shrink: 0; /* Prevents the header from shrinking if content overflows. */
   }
 
-  .modal-title { margin: 0; font-size: 1.1rem; font-weight: 600; }
+  .modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
 
   .modal-close-button {
     background: none;
@@ -152,19 +156,29 @@
     align-items: center;
     justify-content: center;
     color: var(--color-gray-500);
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
-  .modal-close-button:hover { background-color: var(--color-gray-100); color: var(--color-text); }
+  .modal-close-button:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-text);
+  }
 
-  .modal-content { padding: var(--space-lg); overflow-y: auto; }
+  .modal-content {
+    padding: var(--space-lg);
+    overflow-y: auto;
+  }
 
   @media (prefers-color-scheme: dark) {
     .modal-panel {
       background-color: var(--color-background-dark-raised);
       border-color: var(--color-border-dark);
     }
-    .modal-header { border-color: var(--color-border-dark); }
+    .modal-header {
+      border-color: var(--color-border-dark);
+    }
     .modal-close-button:hover {
       background-color: var(--color-gray-800);
       color: var(--color-text-dark);

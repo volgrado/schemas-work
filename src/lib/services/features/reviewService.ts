@@ -22,47 +22,48 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  * @returns {Card} A new `Card` object with updated SRS data.
  */
 export function calculateNextReview(card: Card, quality: ReviewQuality): Card {
-	const srsData = card.srs || {
-		repetitions: 0,
-		interval: 0,
-		easeFactor: 2.5,
-		dueDate: 0
-	};
+  const srsData = card.srs || {
+    repetitions: 0,
+    interval: 0,
+    easeFactor: 2.5,
+    dueDate: 0,
+  };
 
-	if (quality < 3) {
-		const newSrs: SrsData = {
-			repetitions: 0,
-			interval: 1,
-			easeFactor: Math.max(1.3, srsData.easeFactor - 0.2),
-			dueDate: Date.now() + ONE_DAY_MS
-		};
-		return { ...card, srs: newSrs };
-	}
+  if (quality < 3) {
+    const newSrs: SrsData = {
+      repetitions: 0,
+      interval: 1,
+      easeFactor: Math.max(1.3, srsData.easeFactor - 0.2),
+      dueDate: Date.now() + ONE_DAY_MS,
+    };
+    return { ...card, srs: newSrs };
+  }
 
-	let newInterval: number;
-	let newRepetitions: number;
+  let newInterval: number;
+  let newRepetitions: number;
 
-	if (srsData.repetitions === 0) {
-		newInterval = 1;
-		newRepetitions = 1;
-	} else if (srsData.repetitions === 1) {
-		newInterval = 6;
-		newRepetitions = 2;
-	} else {
-		newInterval = Math.round(srsData.interval * srsData.easeFactor);
-		newRepetitions = srsData.repetitions + 1;
-	}
+  if (srsData.repetitions === 0) {
+    newInterval = 1;
+    newRepetitions = 1;
+  } else if (srsData.repetitions === 1) {
+    newInterval = 6;
+    newRepetitions = 2;
+  } else {
+    newInterval = Math.round(srsData.interval * srsData.easeFactor);
+    newRepetitions = srsData.repetitions + 1;
+  }
 
-	const newEaseFactor = srsData.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  const newEaseFactor =
+    srsData.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
 
-	const finalSrs: SrsData = {
-		repetitions: newRepetitions,
-		interval: newInterval,
-		easeFactor: Math.max(1.3, newEaseFactor),
-		dueDate: Date.now() + newInterval * ONE_DAY_MS
-	};
+  const finalSrs: SrsData = {
+    repetitions: newRepetitions,
+    interval: newInterval,
+    easeFactor: Math.max(1.3, newEaseFactor),
+    dueDate: Date.now() + newInterval * ONE_DAY_MS,
+  };
 
-	return { ...card, srs: finalSrs };
+  return { ...card, srs: finalSrs };
 }
 
 /**
@@ -70,10 +71,12 @@ export function calculateNextReview(card: Card, quality: ReviewQuality): Card {
  * @returns {Promise<Card[]>} A promise that resolves to an array of due `Card` objects.
  */
 export async function getDueCards(): Promise<Card[]> {
-	const allCards = await cardService.getAllCards();
-	const now = Date.now();
+  const allCards = await cardService.getAllCards();
+  const now = Date.now();
 
-	return allCards.filter((card) => !card.srs || !card.srs.dueDate || card.srs.dueDate <= now);
+  return allCards.filter(
+    (card) => !card.srs || !card.srs.dueDate || card.srs.dueDate <= now
+  );
 }
 
 /**
@@ -82,15 +85,15 @@ export async function getDueCards(): Promise<Card[]> {
  * @returns {Promise<Card[]>} A promise that resolves to a list of the weakest cards.
  */
 export async function getWeakestCards(count: number): Promise<Card[]> {
-	const allCards = await cardService.getAllCards();
+  const allCards = await cardService.getAllCards();
 
-	const sortedCards = allCards.sort((a, b) => {
-		const easeA = a.srs?.easeFactor ?? 2.5;
-		const easeB = b.srs?.easeFactor ?? 2.5;
-		return easeA - easeB;
-	});
+  const sortedCards = allCards.sort((a, b) => {
+    const easeA = a.srs?.easeFactor ?? 2.5;
+    const easeB = b.srs?.easeFactor ?? 2.5;
+    return easeA - easeB;
+  });
 
-	return sortedCards.slice(0, count);
+  return sortedCards.slice(0, count);
 }
 
 /**
@@ -100,13 +103,16 @@ export async function getWeakestCards(count: number): Promise<Card[]> {
  * @param {string} correctAnswer The correct answer stored on the card.
  * @returns {Promise<ReviewQuality>} A promise that resolves to a `ReviewQuality` score.
  */
-export async function evaluateAnswer(userAnswer: string, correctAnswer: string): Promise<ReviewQuality> {
-	const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-	const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
+export async function evaluateAnswer(
+  userAnswer: string,
+  correctAnswer: string
+): Promise<ReviewQuality> {
+  const normalizedUserAnswer = userAnswer.trim().toLowerCase();
+  const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
 
-	if (normalizedUserAnswer === normalizedCorrectAnswer) {
-		return 5; // Perfect recall
-	}
+  if (normalizedUserAnswer === normalizedCorrectAnswer) {
+    return 5; // Perfect recall
+  }
 
-	return 1; // Incorrect
+  return 0; // Incorrect
 }
