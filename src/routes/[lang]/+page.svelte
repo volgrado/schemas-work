@@ -29,6 +29,8 @@
   import { reviewStore } from '$lib/stores/reviewStore';
   import { modalStore } from '$lib/stores/modalStore';
   import { t } from '$lib/utils/i18n';
+  import { page } from '$app/stores';
+
   // --- Props ---
   let { data }: { data: { showWelcome: boolean } } = $props();
   // --- State ---
@@ -38,6 +40,34 @@
   let nodeToFocus = $state<number | null>(null);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
   let treeData = $state<TreeNodeData | null>(null);
+
+  // --- Reactive SEO and Metadata ---
+  const siteBaseUrl = 'https://schemas.work';
+  let pageTitle = $derived($documentStore.metadata?.title || 'Schemas.work');
+  let pageDescription = $derived(
+    `Explore the "${pageTitle}" schema. Structure your knowledge, visualize ideas, and learn effectively with Schemas.work.`
+  );
+  let pageUrl = $derived(`${siteBaseUrl}${$page.url.pathname}`);
+  let ogImageUrl = `${siteBaseUrl}/android-chrome-512x512.png`; // Using the large PWA icon
+
+  let structuredData = $derived({
+    '@context': 'https://schema.org',
+    '@type': 'LearningResource',
+    headline: pageTitle,
+    description: pageDescription,
+    image: ogImageUrl,
+    author: {
+      '@type': 'Organization',
+      name: 'Schemas.work',
+    },
+    datePublished: $documentStore.metadata
+      ? new Date($documentStore.metadata.createdAt).toISOString()
+      : '',
+    dateModified: $documentStore.metadata
+      ? new Date($documentStore.metadata.updatedAt).toISOString()
+      : '',
+    url: pageUrl,
+  });
 
   // --- Effects ---
 
@@ -175,11 +205,43 @@
 </script>
 
 <svelte:head>
-  {#if $documentStore.metadata?.title}
-    <title>{$documentStore.metadata.title} - {$t('app_name')}</title>
-  {:else}
-    <title>{$t('app_name')}</title>
-  {/if}
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={pageUrl} />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:image" content={ogImageUrl} />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content={pageUrl} />
+  <meta property="twitter:title" content={pageTitle} />
+  <meta property="twitter:description" content={pageDescription} />
+  <meta property="twitter:image" content={ogImageUrl} />
+
+  <link rel="canonical" href={pageUrl} />
+
+  <!-- Structured Data (JSON-LD) for Rich Snippets -->
+  <script type="application/ld+json">
+    {JSON.stringify(structuredData)}
+  </script>
+
+  <!-- Hreflang tags for internationalization -->
+  {#each ['en', 'es', 'el'] as lang}
+    <link
+      rel="alternate"
+      hreflang={lang}
+      href={`${siteBaseUrl}/${lang}${$page.url.pathname.substring(3)}`}
+    />
+  {/each}
+  <link
+    rel="alternate"
+    hreflang="x-default"
+    href={`${siteBaseUrl}/en${$page.url.pathname.substring(3)}`}
+  />
 </svelte:head>
 
 <Toaster position="bottom-center" theme="system" />
@@ -232,56 +294,58 @@
 {/if}
 
 <Screen show={isRevealingContent} let:isExiting>
-  <div
-    class="view-content"
-    style:display={currentView === 'editor' ? 'block' : 'none'}
-  >
+  <main>
     <div
-      class="main-content"
-      class:is-reading-aloud={$ttsStore.status === 'playing' ||
-        $ttsStore.status === 'paused'}
+      class="view-content"
+      style:display={currentView === 'editor' ? 'block' : 'none'}
     >
-      {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
-        <div class="status-container">
-          <Icon name="loader" size={24} class="spinner" />
-          <p>{$t('page.status.loading_schema')}</p>
-        </div>
-      {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
-        {#key $documentStore.docId}
-          <DocumentView
-            ydoc={$documentStore.ydoc}
-            initialContent={$documentStore.initialContent}
-            focusedNodePos={nodeToFocus}
-            on:focusApplied={() => (nodeToFocus = null)}
+      <div
+        class="main-content"
+        class:is-reading-aloud={$ttsStore.status === 'playing' ||
+          $ttsStore.status === 'paused'}
+      >
+        {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
+          <div class="status-container">
+            <Icon name="loader" size={24} class="spinner" />
+            <p>{$t('page.status.loading_schema')}</p>
+          </div>
+        {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
+          {#key $documentStore.docId}
+            <DocumentView
+              ydoc={$documentStore.ydoc}
+              initialContent={$documentStore.initialContent}
+              focusedNodePos={nodeToFocus}
+              on:focusApplied={() => (nodeToFocus = null)}
+            />
+          {/key}
+        {:else if $documentStore.status === 'error'}
+          <div class="status-container">
+            <p>{$t('page.status.load_error')}</p>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <div
+      class="view-content"
+      style:display={currentView === 'tree' ? 'block' : 'none'}
+    >
+      {#if treeData}
+        <div class="tree-view-content">
+          <SchemaTree
+            {treeData}
+            {selectedNodeId}
+            on:nodeClick={handleNodeClickInTree}
           />
-        {/key}
-      {:else if $documentStore.status === 'error'}
+        </div>
+      {:else if $documentStore.status === 'ready'}
         <div class="status-container">
-          <p>{$t('page.status.load_error')}</p>
+          <p>{$t('page.status.empty_schema.message')}</p>
+          <span>{$t('page.status.empty_schema.hint')}</span>
         </div>
       {/if}
     </div>
-  </div>
-
-  <div
-    class="view-content"
-    style:display={currentView === 'tree' ? 'block' : 'none'}
-  >
-    {#if treeData}
-      <div class="tree-view-content">
-        <SchemaTree
-          {treeData}
-          {selectedNodeId}
-          on:nodeClick={handleNodeClickInTree}
-        />
-      </div>
-    {:else if $documentStore.status === 'ready'}
-      <div class="status-container">
-        <p>{$t('page.status.empty_schema.message')}</p>
-        <span>{$t('page.status.empty_schema.hint')}</span>
-      </div>
-    {/if}
-  </div>
+  </main>
 </Screen>
 
 {#if !showWelcome}
@@ -346,6 +410,12 @@
   .view-content {
     position: absolute;
     inset: 0;
+  }
+
+  main {
+    height: 100%;
+    width: 100%;
+    position: relative;
   }
 
   .main-content {

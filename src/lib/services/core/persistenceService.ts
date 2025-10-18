@@ -32,10 +32,10 @@ import { IndexeddbPersistence } from 'y-indexeddb';
  * A container that bundles a Y.js document instance with its persistence provider.
  */
 export interface DocumentProvider {
-	/** The Y.js document instance. */
-	ydoc: Y.Doc;
-	/** The persistence provider that syncs the `ydoc` with IndexedDB. */
-	provider: IndexeddbPersistence;
+  /** The Y.js document instance. */
+  ydoc: Y.Doc;
+  /** The persistence provider that syncs the `ydoc` with IndexedDB. */
+  provider: IndexeddbPersistence;
 }
 
 /**
@@ -47,11 +47,11 @@ export interface DocumentProvider {
  *   connected `IndexeddbPersistence` provider.
  */
 export function getDocumentProvider(docId: string): DocumentProvider {
-	const ydoc = new Y.Doc();
-	const provider = new IndexeddbPersistence(docId, ydoc);
+  const ydoc = new Y.Doc();
+  const provider = new IndexeddbPersistence(docId, ydoc);
 
-	return {
-		ydoc,
-		provider
-	};
+  return {
+    ydoc,
+    provider,
+  };
 }

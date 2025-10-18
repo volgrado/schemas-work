@@ -14,15 +14,15 @@ This directory contains all the global styles of the application. Our philosophy
 
 ## File Structure
 
--   `global.css`: The most important file. It defines:
-    -   **Color Variables**: Semantic names for all the colors used in the application (e.g., `--color-primary`, `--color-text`, `--color-background`).
-    -   **Typography**: Variables for font families, sizes (`--font-size-sm`, `--font-size-base`, etc.), weights, and line heights.
-    -   **Spacing and Sizing**: A spacing scale (`--space-xs`, `--space-sm`, etc.) for `margin`, `padding`, and `gap`. This ensures a consistent vertical and horizontal rhythm.
-    -   **Borders and Shadows**: Variables for `border-radius` and `box-shadow` to maintain a uniform appearance across all components.
-    -   **Z-Index**: A `z-index` stack to manage the layers of the interface (`--z-modal`, `--z-header`).
-    -   **Resets and Base Styles**: A simple CSS reset (often based on `modern-normalize`) and default styles for the `body`, links, etc.
+- `global.css`: The most important file. It defines:
+  - **Color Variables**: Semantic names for all the colors used in the application (e.g., `--color-primary`, `--color-text`, `--color-background`).
+  - **Typography**: Variables for font families, sizes (`--font-size-sm`, `--font-size-base`, etc.), weights, and line heights.
+  - **Spacing and Sizing**: A spacing scale (`--space-xs`, `--space-sm`, etc.) for `margin`, `padding`, and `gap`. This ensures a consistent vertical and horizontal rhythm.
+  - **Borders and Shadows**: Variables for `border-radius` and `box-shadow` to maintain a uniform appearance across all components.
+  - **Z-Index**: A `z-index` stack to manage the layers of the interface (`--z-modal`, `--z-header`).
+  - **Resets and Base Styles**: A simple CSS reset (often based on `modern-normalize`) and default styles for the `body`, links, etc.
 
--   `tiptap.css`: Contains specific styles to override or supplement the default styles of the Tiptap/ProseMirror editor. This includes the appearance of the cursor, selection, placeholders, and styles for custom nodes.
+- `tiptap.css`: Contains specific styles to override or supplement the default styles of the Tiptap/ProseMirror editor. This includes the appearance of the cursor, selection, placeholders, and styles for custom nodes.
 
 ## How to Use the Design System
 

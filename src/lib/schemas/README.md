@@ -20,19 +20,18 @@ This offers several key advantages:
 
 Each file in this directory generally exports:
 
--   **A Zod schema**: Defines the structure, data types, and constraints of the JSON response we expect.
--   **A TypeScript type**: Automatically inferred from the Zod schema. This is the type we use in the rest of our application.
+- **A Zod schema**: Defines the structure, data types, and constraints of the JSON response we expect.
+- **A TypeScript type**: Automatically inferred from the Zod schema. This is the type we use in the rest of our application.
 
 ### Example: `createCardSchema`
 
--   **`createCardSchema.ts`**: Defines the schema for creating a study card from a text selection.
+- **`createCardSchema.ts`**: Defines the schema for creating a study card from a text selection.
+  - **Zod Schema**: Specifies that the response must be an object with two properties:
+    - `question`: a string, which will be the question on the card.
+    - `answer`: a string, which will be the answer.
 
-    -   **Zod Schema**: Specifies that the response must be an object with two properties:
-        -   `question`: a string, which will be the question on the card.
-        -   `answer`: a string, which will be the answer.
+  - **Associated AI Prompt (conceptual)**: When a user asks to create a card, the `prompt` sent to the LLM will include an instruction such as:
 
-    -   **Associated AI Prompt (conceptual)**: When a user asks to create a card, the `prompt` sent to the LLM will include an instruction such as:
+    > "Based on the following text, generate a concise question and answer. Format your output as a JSON object that conforms to the following schema: `{"type":"object","properties":{"question":{"type":"string"},"answer":{"type":"string"}},"required":["question","answer"]}`"
 
-        > "Based on the following text, generate a concise question and answer. Format your output as a JSON object that conforms to the following schema: `{"type":"object","properties":{"question":{"type":"string"},"answer":{"type":"string"}},"required":["question","answer"]}`"
-
-    -   **Usage in the Application**: The service that calls the AI (`aiService`) receives the JSON response, validates it with `createCardSchema.parse(response)`, and if successful, obtains a strongly typed `CreateCard` object that can be safely passed to the `cardService` to create the card in the database.
+  - **Usage in the Application**: The service that calls the AI (`aiService`) receives the JSON response, validates it with `createCardSchema.parse(response)`, and if successful, obtains a strongly typed `CreateCard` object that can be safely passed to the `cardService` to create the card in the database.

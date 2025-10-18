@@ -20,8 +20,8 @@
     to the homepage) should provide its own accessible name.
 -->
 <script lang="ts">
-  /** 
-   * @prop {number} [size=24] 
+  /**
+   * @prop {number} [size=24]
    * The size (width and height) of the logo in pixels.
    */
   export let size: number = 24;

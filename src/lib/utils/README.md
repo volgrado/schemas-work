@@ -14,17 +14,17 @@ The purpose of utilities is to avoid code duplication and abstract common logic 
 
 ## What Goes Here?
 
--   **Formatters**: Functions for formatting dates, numbers, or strings (e.g., `formatDate(date)`).
--   **Data Manipulation Helpers**: Functions for working with arrays, objects, or strings that are not provided natively by JavaScript (e.g., `groupBy(array, key)`).
--   **Timing Functions**: Implementations of `debounce` and `throttle` to control the frequency with which functions are executed.
--   **Generators**: Functions that generate values, such as unique IDs (e.g., a simple wrapper around `uuid`).
+- **Formatters**: Functions for formatting dates, numbers, or strings (e.g., `formatDate(date)`).
+- **Data Manipulation Helpers**: Functions for working with arrays, objects, or strings that are not provided natively by JavaScript (e.g., `groupBy(array, key)`).
+- **Timing Functions**: Implementations of `debounce` and `throttle` to control the frequency with which functions are executed.
+- **Generators**: Functions that generate values, such as unique IDs (e.g., a simple wrapper around `uuid`).
 
 ## What Does NOT Go Here?
 
--   **Business Logic**: Any logic that is specific to the application's domain (e.g., calculating the next review date of a card) belongs in a service in `/src/lib/services`.
--   **State Logic**: Any function that needs to read from or write to a Svelte Store. That logic belongs in the store itself.
--   **API Calls**: Communication with external systems is the responsibility of the services.
--   **Component-Specific Code**: Logic that directly manipulates a component's state or props should remain within that component.
+- **Business Logic**: Any logic that is specific to the application's domain (e.g., calculating the next review date of a card) belongs in a service in `/src/lib/services`.
+- **State Logic**: Any function that needs to read from or write to a Svelte Store. That logic belongs in the store itself.
+- **API Calls**: Communication with external systems is the responsibility of the services.
+- **Component-Specific Code**: Logic that directly manipulates a component's state or props should remain within that component.
 
 ## Usage Example
 
@@ -34,7 +34,7 @@ A classic use case is the `debounce` function, which delays the execution of a f
 // src/lib/utils/debounce.ts
 export function debounce(func, delay) {
   let timeout;
-  return function(...args) {
+  return function (...args) {
     const context = this;
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(context, args), delay);
@@ -43,7 +43,6 @@ export function debounce(func, delay) {
 ```
 
 ```svelte
-// In a component
 <script>
   import { debounce } from '$lib/utils/debounce';
 
@@ -54,5 +53,6 @@ export function debounce(func, delay) {
   const debouncedHandleInput = debounce(handleInput, 300);
 </script>
 
+// In a component
 <input type="text" on:input={debouncedHandleInput} />
 ```

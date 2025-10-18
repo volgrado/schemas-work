@@ -36,7 +36,7 @@ export function getCommands(): Command[] {
         documentStore.createNewDocument(
           get(t)('file_explorer.default_schema_name'),
           undefined,
-          parentId,
+          parentId
         );
         commandBarStore.close();
       },

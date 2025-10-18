@@ -21,20 +21,20 @@
  * @returns A new function that, when invoked, will delay the execution of `func`.
  */
 export function debounce<T extends (...args: any[]) => void>(
-	func: T,
-	delay: number
+  func: T,
+  delay: number
 ): (...args: Parameters<T>) => void {
-	let timeoutId: number | undefined;
+  let timeoutId: number | undefined;
 
-	return function (this: any, ...args: Parameters<T>) {
-		// When the debounced function is called, any previously scheduled execution is cancelled.
-		clearTimeout(timeoutId);
+  return function (this: any, ...args: Parameters<T>) {
+    // When the debounced function is called, any previously scheduled execution is cancelled.
+    clearTimeout(timeoutId);
 
-		// A new timer is set to execute the original function after the specified delay.
-		// `window.setTimeout` is used to be explicit about running in a browser environment.
-		timeoutId = window.setTimeout(() => {
-			// `apply` is used to preserve the original `this` context and arguments for the function call.
-			func.apply(this, args);
-		}, delay);
-	};
+    // A new timer is set to execute the original function after the specified delay.
+    // `window.setTimeout` is used to be explicit about running in a browser environment.
+    timeoutId = window.setTimeout(() => {
+      // `apply` is used to preserve the original `this` context and arguments for the function call.
+      func.apply(this, args);
+    }, delay);
+  };
 }

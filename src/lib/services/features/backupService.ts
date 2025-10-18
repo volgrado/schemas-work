@@ -20,7 +20,12 @@
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import * as directoryService from '$lib/services/core/directoryService';
-import { encryptData, decryptData, uint8ArrayToBase64, base64ToUint8Array } from '$lib/utils/crypto';
+import {
+  encryptData,
+  decryptData,
+  uint8ArrayToBase64,
+  base64ToUint8Array,
+} from '$lib/utils/crypto';
 import type { Vault } from '$lib/types';
 import { toast } from 'svelte-sonner';
 import * as errorService from '$lib/services/core/errorService';
@@ -36,14 +41,20 @@ import * as errorService from '$lib/services/core/errorService';
 export async function exportVault(password: string): Promise<void> {
   try {
     if (!password) {
-      throw new Error('A password is required to encrypt and export the vault.');
+      throw new Error(
+        'A password is required to encrypt and export the vault.'
+      );
     }
 
     const allItems = await directoryService.getAllItems();
     const schemasToExport = allItems.filter((item) => item.type === 'schema');
 
     const content: Record<string, string> = {};
-    const providers: { provider: IndexeddbPersistence; ydoc: Y.Doc; id: string }[] = [];
+    const providers: {
+      provider: IndexeddbPersistence;
+      ydoc: Y.Doc;
+      id: string;
+    }[] = [];
 
     // Initialize persistence providers for all schemas to access their Y.js documents.
     for (const schema of schemasToExport) {
@@ -86,7 +97,8 @@ export async function exportVault(password: string): Promise<void> {
   } catch (error) {
     errorService.reportError(error, { operation: 'exportVault' });
     toast.error('Export Failed', {
-      description: 'Could not generate the backup file. See the error console for more details.',
+      description:
+        'Could not generate the backup file. See the error console for more details.',
     });
     throw error; // Re-throw to allow for further handling by the caller if needed.
   }
@@ -119,7 +131,10 @@ export async function importVault(password: string): Promise<void> {
     try {
       encryptedJson = JSON.parse(fileContent);
     } catch (parseError) {
-      errorService.reportError(parseError, { operation: 'importVault.parseFileContent', fileName: file?.name });
+      errorService.reportError(parseError, {
+        operation: 'importVault.parseFileContent',
+        fileName: file?.name,
+      });
       throw new Error('The selected file is not a valid JSON backup file.');
     }
 
@@ -127,8 +142,13 @@ export async function importVault(password: string): Promise<void> {
     const vault: Vault = JSON.parse(vaultJson);
 
     if (!isValidVault(vault)) {
-      const validationError = new Error('Vault data is corrupt or has an invalid format after decryption.');
-      errorService.reportError(validationError, { operation: 'importVault.validateVaultStructure', fileName: file?.name });
+      const validationError = new Error(
+        'Vault data is corrupt or has an invalid format after decryption.'
+      );
+      errorService.reportError(validationError, {
+        operation: 'importVault.validateVaultStructure',
+        fileName: file?.name,
+      });
       throw validationError;
     }
 
@@ -148,9 +168,14 @@ export async function importVault(password: string): Promise<void> {
     toast.success('Vault imported successfully! The page will now reload.');
     setTimeout(() => window.location.reload(), 2000); // Reload the page to reflect the new state.
   } catch (error) {
-    errorService.reportError(error, { operation: 'importVault.general', fileName: file?.name, fileSize: file?.size });
+    errorService.reportError(error, {
+      operation: 'importVault.general',
+      fileName: file?.name,
+      fileSize: file?.size,
+    });
     toast.error('Import Failed', {
-      description: 'The password may be incorrect, or the selected file may be corrupt or invalid.',
+      description:
+        'The password may be incorrect, or the selected file may be corrupt or invalid.',
     });
   }
 }
@@ -211,8 +236,12 @@ async function clearAllData(): Promise<void> {
         request.onsuccess = () => resolve();
         request.onerror = (event) => reject(request.error || event);
         request.onblocked = (event) =>
-          reject(new Error(`Database deletion for schema '${schema.id}' is blocked. Close other tabs.`));
-      }),
+          reject(
+            new Error(
+              `Database deletion for schema '${schema.id}' is blocked. Close other tabs.`
+            )
+          );
+      })
   );
   await Promise.all(deletionPromises);
   await directoryService.clearDirectory();

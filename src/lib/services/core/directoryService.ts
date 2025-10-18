@@ -39,40 +39,45 @@ const LAST_ACTIVE_DOC_KEY = 'schemas-work-last-active';
  * and the affected `SchemaMetadata` item.
  */
 export const directoryEvents = writable<{
-	type: 'created' | 'updated' | 'deleted';
-	item: SchemaMetadata;
+  type: 'created' | 'updated' | 'deleted';
+  item: SchemaMetadata;
 } | null>(null);
 
 if (typeof window !== 'undefined') {
-	window.addEventListener('storage', (event) => {
-		if (event.key === DIRECTORY_STORAGE_KEY) {
-			try {
-				const oldItems: SchemaMetadata[] = event.oldValue ? JSON.parse(event.oldValue) : [];
-				const newItems: SchemaMetadata[] = event.newValue ? JSON.parse(event.newValue) : [];
-				const newIds = new Set(newItems.map((i) => i.id));
+  window.addEventListener('storage', (event) => {
+    if (event.key === DIRECTORY_STORAGE_KEY) {
+      try {
+        const oldItems: SchemaMetadata[] = event.oldValue
+          ? JSON.parse(event.oldValue)
+          : [];
+        const newItems: SchemaMetadata[] = event.newValue
+          ? JSON.parse(event.newValue)
+          : [];
+        const newIds = new Set(newItems.map((i) => i.id));
 
-				for (const newItem of newItems) {
-					const oldItem = oldItems.find((i) => i.id === newItem.id);
-					if (!oldItem) {
-						directoryEvents.set({ type: 'created', item: newItem });
-					} else if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
-						directoryEvents.set({ type: 'updated', item: newItem });
-					}
-				}
+        for (const newItem of newItems) {
+          const oldItem = oldItems.find((i) => i.id === newItem.id);
+          if (!oldItem) {
+            directoryEvents.set({ type: 'created', item: newItem });
+          } else if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+            directoryEvents.set({ type: 'updated', item: newItem });
+          }
+        }
 
-				for (const oldItem of oldItems) {
-					if (!newIds.has(oldItem.id)) {
-						directoryEvents.set({ type: 'deleted', item: oldItem });
-					}
-				}
-			} catch (error) {
-				errorService.reportError(error, {
-					operation: 'storageEventListener',
-					description: 'Failed to sync directory data from cross-tab storage event.'
-				});
-			}
-		}
-	});
+        for (const oldItem of oldItems) {
+          if (!newIds.has(oldItem.id)) {
+            directoryEvents.set({ type: 'deleted', item: oldItem });
+          }
+        }
+      } catch (error) {
+        errorService.reportError(error, {
+          operation: 'storageEventListener',
+          description:
+            'Failed to sync directory data from cross-tab storage event.',
+        });
+      }
+    }
+  });
 }
 
 /**
@@ -80,14 +85,17 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<SchemaMetadata[]>} A promise that resolves to an array of all `SchemaMetadata` items.
  */
 export async function getAllItems(): Promise<SchemaMetadata[]> {
-	if (typeof window === 'undefined') return [];
-	const storedDirectory = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-	try {
-		return storedDirectory ? JSON.parse(storedDirectory) : [];
-	} catch (error) {
-		errorService.reportError(error, { operation: 'getAllItems', description: 'Failed to parse directory from localStorage.' });
-		return [];
-	}
+  if (typeof window === 'undefined') return [];
+  const storedDirectory = localStorage.getItem(DIRECTORY_STORAGE_KEY);
+  try {
+    return storedDirectory ? JSON.parse(storedDirectory) : [];
+  } catch (error) {
+    errorService.reportError(error, {
+      operation: 'getAllItems',
+      description: 'Failed to parse directory from localStorage.',
+    });
+    return [];
+  }
 }
 
 /**
@@ -95,9 +103,11 @@ export async function getAllItems(): Promise<SchemaMetadata[]> {
  * @param {string | null} parentId The ID of the parent folder, or `null` for the root.
  * @returns {Promise<SchemaMetadata[]>} A promise that resolves to an array of child `SchemaMetadata` items.
  */
-export async function listItemsByParentId(parentId: string | null): Promise<SchemaMetadata[]> {
-	const allItems = await getAllItems();
-	return allItems.filter((item) => item.parentId === parentId);
+export async function listItemsByParentId(
+  parentId: string | null
+): Promise<SchemaMetadata[]> {
+  const allItems = await getAllItems();
+  return allItems.filter((item) => item.parentId === parentId);
 }
 
 /**
@@ -105,9 +115,11 @@ export async function listItemsByParentId(parentId: string | null): Promise<Sche
  * @param {string} id The ID of the item to retrieve.
  * @returns {Promise<SchemaMetadata | undefined>} A promise that resolves to the `SchemaMetadata` item, or `undefined` if not found.
  */
-export async function getItemById(id: string): Promise<SchemaMetadata | undefined> {
-	const allItems = await getAllItems();
-	return allItems.find((item) => item.id === id);
+export async function getItemById(
+  id: string
+): Promise<SchemaMetadata | undefined> {
+  const allItems = await getAllItems();
+  return allItems.find((item) => item.id === id);
 }
 
 /**
@@ -116,24 +128,33 @@ export async function getItemById(id: string): Promise<SchemaMetadata | undefine
  * @param {string | null} [parentId=null] The ID of the parent folder, or `null` for the root.
  * @returns {Promise<SchemaMetadata>} A promise that resolves to the newly created `SchemaMetadata`.
  */
-export async function createSchema(title: string, parentId: string | null = null): Promise<SchemaMetadata> {
-	const allItems = await getAllItems();
-	const siblingExists = allItems.some((item) => item.parentId === parentId && item.title.toLowerCase() === title.toLowerCase());
-	if (siblingExists) {
-		throw new Error(`An item named "${title}" already exists in this location.`);
-	}
+export async function createSchema(
+  title: string,
+  parentId: string | null = null
+): Promise<SchemaMetadata> {
+  const allItems = await getAllItems();
+  const siblingExists = allItems.some(
+    (item) =>
+      item.parentId === parentId &&
+      item.title.toLowerCase() === title.toLowerCase()
+  );
+  if (siblingExists) {
+    throw new Error(
+      `An item named "${title}" already exists in this location.`
+    );
+  }
 
-	const now = Date.now();
-	const newSchema: SchemaMetadata = {
-		id: uuidv4(),
-		title,
-		createdAt: now,
-		updatedAt: now,
-		type: 'schema',
-		parentId
-	};
-	await saveDirectory([...allItems, newSchema]);
-	return newSchema;
+  const now = Date.now();
+  const newSchema: SchemaMetadata = {
+    id: uuidv4(),
+    title,
+    createdAt: now,
+    updatedAt: now,
+    type: 'schema',
+    parentId,
+  };
+  await saveDirectory([...allItems, newSchema]);
+  return newSchema;
 }
 
 /**
@@ -142,24 +163,33 @@ export async function createSchema(title: string, parentId: string | null = null
  * @param {string | null} [parentId=null] The ID of the parent folder, or `null` for the root.
  * @returns {Promise<SchemaMetadata>} A promise that resolves to the newly created `SchemaMetadata`.
  */
-export async function createFolder(title: string, parentId: string | null = null): Promise<SchemaMetadata> {
-	const allItems = await getAllItems();
-	const siblingExists = allItems.some((item) => item.parentId === parentId && item.title.toLowerCase() === title.toLowerCase());
-	if (siblingExists) {
-		throw new Error(`A folder named "${title}" already exists in this location.`);
-	}
+export async function createFolder(
+  title: string,
+  parentId: string | null = null
+): Promise<SchemaMetadata> {
+  const allItems = await getAllItems();
+  const siblingExists = allItems.some(
+    (item) =>
+      item.parentId === parentId &&
+      item.title.toLowerCase() === title.toLowerCase()
+  );
+  if (siblingExists) {
+    throw new Error(
+      `A folder named "${title}" already exists in this location.`
+    );
+  }
 
-	const now = Date.now();
-	const newFolder: SchemaMetadata = {
-		id: uuidv4(),
-		title,
-		createdAt: now,
-		updatedAt: now,
-		type: 'folder',
-		parentId
-	};
-	await saveDirectory([...allItems, newFolder]);
-	return newFolder;
+  const now = Date.now();
+  const newFolder: SchemaMetadata = {
+    id: uuidv4(),
+    title,
+    createdAt: now,
+    updatedAt: now,
+    type: 'folder',
+    parentId,
+  };
+  await saveDirectory([...allItems, newFolder]);
+  return newFolder;
 }
 
 /**
@@ -168,30 +198,38 @@ export async function createFolder(title: string, parentId: string | null = null
  * @param {Partial<Omit<SchemaMetadata, 'id'>>} updates An object with the properties to update.
  * @returns {Promise<SchemaMetadata>} A promise that resolves to the updated `SchemaMetadata`.
  */
-export async function updateItemMetadata(id: string, updates: Partial<Omit<SchemaMetadata, 'id'>>): Promise<SchemaMetadata> {
-	const allItems = await getAllItems();
-	const itemIndex = allItems.findIndex((s) => s.id === id);
-	if (itemIndex === -1) {
-		const error = new Error(`Item not found for update: ${id}`);
-		errorService.reportError(error, { operation: 'updateItemMetadata' });
-		throw error;
-	}
+export async function updateItemMetadata(
+  id: string,
+  updates: Partial<Omit<SchemaMetadata, 'id'>>
+): Promise<SchemaMetadata> {
+  const allItems = await getAllItems();
+  const itemIndex = allItems.findIndex((s) => s.id === id);
+  if (itemIndex === -1) {
+    const error = new Error(`Item not found for update: ${id}`);
+    errorService.reportError(error, { operation: 'updateItemMetadata' });
+    throw error;
+  }
 
-	const originalItem = allItems[itemIndex];
-	if (updates.title) {
-		const newTitle = updates.title.trim();
-		const siblingExists = allItems.some(
-			(item) => item.parentId === originalItem.parentId && item.id !== id && item.title.toLowerCase() === newTitle.toLowerCase()
-		);
-		if (siblingExists) {
-			throw new Error(`An item named "${newTitle}" already exists in this location.`);
-		}
-	}
+  const originalItem = allItems[itemIndex];
+  if (updates.title) {
+    const newTitle = updates.title.trim();
+    const siblingExists = allItems.some(
+      (item) =>
+        item.parentId === originalItem.parentId &&
+        item.id !== id &&
+        item.title.toLowerCase() === newTitle.toLowerCase()
+    );
+    if (siblingExists) {
+      throw new Error(
+        `An item named "${newTitle}" already exists in this location.`
+      );
+    }
+  }
 
-	const updatedItem = { ...originalItem, ...updates, updatedAt: Date.now() };
-	allItems[itemIndex] = updatedItem;
-	await saveDirectory(allItems);
-	return updatedItem;
+  const updatedItem = { ...originalItem, ...updates, updatedAt: Date.now() };
+  allItems[itemIndex] = updatedItem;
+  await saveDirectory(allItems);
+  return updatedItem;
 }
 
 /**
@@ -200,47 +238,49 @@ export async function updateItemMetadata(id: string, updates: Partial<Omit<Schem
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteItem(itemId: string): Promise<void> {
-	let allItems = await getAllItems();
-	const itemToDelete = allItems.find((item) => item.id === itemId);
-	if (!itemToDelete) return;
+  let allItems = await getAllItems();
+  const itemToDelete = allItems.find((item) => item.id === itemId);
+  if (!itemToDelete) return;
 
-	const itemsToDeleteIds = new Set<string>([itemId]);
+  const itemsToDeleteIds = new Set<string>([itemId]);
 
-	if (itemToDelete.type === 'folder') {
-		const findChildrenRecursive = (parentId: string) => {
-			const children = allItems.filter((item) => item.parentId === parentId);
-			for (const child of children) {
-				itemsToDeleteIds.add(child.id);
-				if (child.type === 'folder') {
-					findChildrenRecursive(child.id);
-				}
-			}
-		};
-		findChildrenRecursive(itemId);
-	}
+  if (itemToDelete.type === 'folder') {
+    const findChildrenRecursive = (parentId: string) => {
+      const children = allItems.filter((item) => item.parentId === parentId);
+      for (const child of children) {
+        itemsToDeleteIds.add(child.id);
+        if (child.type === 'folder') {
+          findChildrenRecursive(child.id);
+        }
+      }
+    };
+    findChildrenRecursive(itemId);
+  }
 
-	const dbDeletionPromises: Promise<void>[] = [];
-	itemsToDeleteIds.forEach((id) => {
-		const item = allItems.find((i) => i.id === id);
-		if (item?.type === 'schema' && typeof window !== 'undefined') {
-			dbDeletionPromises.push(
-				new Promise<void>((resolve, reject) => {
-					const request = window.indexedDB.deleteDatabase(id);
-					request.onsuccess = () => resolve();
-					request.onblocked = (event) => {
-						console.warn(`Deletion of database ${id} is blocked.`, event);
-						resolve();
-					};
-					request.onerror = (event) => reject(request.error || event);
-				})
-			);
-		}
-	});
+  const dbDeletionPromises: Promise<void>[] = [];
+  itemsToDeleteIds.forEach((id) => {
+    const item = allItems.find((i) => i.id === id);
+    if (item?.type === 'schema' && typeof window !== 'undefined') {
+      dbDeletionPromises.push(
+        new Promise<void>((resolve, reject) => {
+          const request = window.indexedDB.deleteDatabase(id);
+          request.onsuccess = () => resolve();
+          request.onblocked = (event) => {
+            console.warn(`Deletion of database ${id} is blocked.`, event);
+            resolve();
+          };
+          request.onerror = (event) => reject(request.error || event);
+        })
+      );
+    }
+  });
 
-	const updatedItems = allItems.filter((item) => !itemsToDeleteIds.has(item.id));
+  const updatedItems = allItems.filter(
+    (item) => !itemsToDeleteIds.has(item.id)
+  );
 
-	await saveDirectory(updatedItems);
-	await Promise.all(dbDeletionPromises);
+  await saveDirectory(updatedItems);
+  await Promise.all(dbDeletionPromises);
 }
 
 /**
@@ -249,34 +289,37 @@ export async function deleteItem(itemId: string): Promise<void> {
  * @param {string | null} newParentId The ID of the new parent folder, or `null` for the root.
  * @returns {Promise<void>} A promise that resolves when the move is complete.
  */
-export async function moveItem(itemId: string, newParentId: string | null): Promise<void> {
-	const allItems = await getAllItems();
-	const itemToMove = allItems.find((item) => item.id === itemId);
-	if (!itemToMove) {
-		throw new Error(`Item to move not found: ${itemId}`);
-	}
+export async function moveItem(
+  itemId: string,
+  newParentId: string | null
+): Promise<void> {
+  const allItems = await getAllItems();
+  const itemToMove = allItems.find((item) => item.id === itemId);
+  if (!itemToMove) {
+    throw new Error(`Item to move not found: ${itemId}`);
+  }
 
-	if (itemToMove.type === 'folder') {
-		if (itemId === newParentId) {
-			throw new Error('Cannot move a folder into itself.');
-		}
-		let currentParentId = newParentId;
-		while (currentParentId !== null) {
-			if (currentParentId === itemId) {
-				throw new Error('Cannot move a folder into one of its own subfolders.');
-			}
-			const parent = allItems.find((item) => item.id === currentParentId);
-			currentParentId = parent ? parent.parentId : null;
-		}
-	}
+  if (itemToMove.type === 'folder') {
+    if (itemId === newParentId) {
+      throw new Error('Cannot move a folder into itself.');
+    }
+    let currentParentId = newParentId;
+    while (currentParentId !== null) {
+      if (currentParentId === itemId) {
+        throw new Error('Cannot move a folder into one of its own subfolders.');
+      }
+      const parent = allItems.find((item) => item.id === currentParentId);
+      currentParentId = parent ? parent.parentId : null;
+    }
+  }
 
-	const updatedItems = allItems.map((item) => {
-		if (item.id === itemId) {
-			return { ...item, parentId: newParentId, updatedAt: Date.now() };
-		}
-		return item;
-	});
-	await saveDirectory(updatedItems);
+  const updatedItems = allItems.map((item) => {
+    if (item.id === itemId) {
+      return { ...item, parentId: newParentId, updatedAt: Date.now() };
+    }
+    return item;
+  });
+  await saveDirectory(updatedItems);
 }
 
 /**
@@ -284,8 +327,8 @@ export async function moveItem(itemId: string, newParentId: string | null): Prom
  * @returns {Promise<string | null>} A promise that resolves to the last active document ID, or `null`.
  */
 export async function getLastActiveDocId(): Promise<string | null> {
-	if (typeof window === 'undefined') return null;
-	return localStorage.getItem(LAST_ACTIVE_DOC_KEY);
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(LAST_ACTIVE_DOC_KEY);
 }
 
 /**
@@ -294,8 +337,8 @@ export async function getLastActiveDocId(): Promise<string | null> {
  * @returns {Promise<void>} A promise that resolves when the operation is complete.
  */
 export async function setLastActiveDocId(id: string): Promise<void> {
-	if (typeof window === 'undefined') return;
-	localStorage.setItem(LAST_ACTIVE_DOC_KEY, id);
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(LAST_ACTIVE_DOC_KEY, id);
 }
 
 /**
@@ -305,21 +348,21 @@ export async function setLastActiveDocId(id: string): Promise<void> {
  * @internal
  */
 export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
-	if (typeof window === 'undefined') return;
-	const oldValue = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-	const newValue = JSON.stringify(items);
+  if (typeof window === 'undefined') return;
+  const oldValue = localStorage.getItem(DIRECTORY_STORAGE_KEY);
+  const newValue = JSON.stringify(items);
 
-	if (oldValue === newValue) return;
+  if (oldValue === newValue) return;
 
-	localStorage.setItem(DIRECTORY_STORAGE_KEY, newValue);
+  localStorage.setItem(DIRECTORY_STORAGE_KEY, newValue);
 
-	window.dispatchEvent(
-		new StorageEvent('storage', {
-			key: DIRECTORY_STORAGE_KEY,
-			oldValue: oldValue,
-			newValue: newValue
-		})
-	);
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key: DIRECTORY_STORAGE_KEY,
+      oldValue: oldValue,
+      newValue: newValue,
+    })
+  );
 }
 
 /**
@@ -328,6 +371,6 @@ export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
  * @internal
  */
 export async function clearDirectory(): Promise<void> {
-	if (typeof window === 'undefined') return;
-	localStorage.removeItem(DIRECTORY_STORAGE_KEY);
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(DIRECTORY_STORAGE_KEY);
 }

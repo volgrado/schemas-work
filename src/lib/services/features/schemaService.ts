@@ -30,7 +30,7 @@ import type { TreeNodeData } from '$lib/types/tree';
  *          document is empty or a valid list structure cannot be found.
  */
 export function documentToTreeData(
-  doc: ProseMirrorNode | null,
+  doc: ProseMirrorNode | null
 ): TreeNodeData | null {
   if (!doc || doc.childCount === 0) {
     return null;
@@ -77,7 +77,7 @@ export function documentToTreeData(
   // Heuristic: The "main" list is assumed to be the one with the largest node size (most content).
   if (topLevelLists.length > 0) {
     mainList = topLevelLists.reduce((prev, current) =>
-      prev.nodeSize > current.nodeSize ? prev : current,
+      prev.nodeSize > current.nodeSize ? prev : current
     );
   } else {
     // Fallback if no top-level lists exist: find the very first list anywhere in the document.
@@ -134,7 +134,8 @@ export function documentToTreeData(
           return; // The position attribute is crucial for creating a stable and unique ID.
         }
 
-        const content = paragraphForContent.textContent.trim() || '(Untitled Node)';
+        const content =
+          paragraphForContent.textContent.trim() || '(Untitled Node)';
         const newNode: TreeNodeData = {
           id: `node-${pos}`,
           content: content,
@@ -170,7 +171,10 @@ export function documentToTreeData(
  * @param pos The numerical position of the `listItem` node for which to generate the breadcrumb.
  * @returns A string representing the hierarchical path to the node (e.g., "Root > Child > Grandchild").
  */
-export function getBreadcrumbForPosition(doc: ProseMirrorNode, pos: number): string {
+export function getBreadcrumbForPosition(
+  doc: ProseMirrorNode,
+  pos: number
+): string {
   const path: string[] = [];
   const resolvedPos = doc.resolve(pos);
 

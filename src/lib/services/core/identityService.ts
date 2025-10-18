@@ -59,7 +59,8 @@ export async function getOrCreateIdentity(): Promise<Identity> {
         // to generate a new identity, effectively overwriting the corrupt one.
         errorService.reportError(parseError, {
           operation: 'getOrCreateIdentity.parse',
-          description: 'Stored identity is corrupt. A new identity will be generated.',
+          description:
+            'Stored identity is corrupt. A new identity will be generated.',
         });
       }
     }
@@ -68,12 +69,18 @@ export async function getOrCreateIdentity(): Promise<Identity> {
     const keyPair = await window.crypto.subtle.generateKey(
       { name: 'Ed25519' }, // A modern, fast, and secure algorithm for digital signatures.
       true, // The key must be extractable so it can be stored as a JWK.
-      ['sign', 'verify'], // Defines the intended uses for the key pair.
+      ['sign', 'verify'] // Defines the intended uses for the key pair.
     );
 
     // Export both the public and private keys into the standard JSON Web Key (JWK) format.
-    const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
-    const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
+    const publicKeyJwk = await window.crypto.subtle.exportKey(
+      'jwk',
+      keyPair.publicKey
+    );
+    const privateKeyJwk = await window.crypto.subtle.exportKey(
+      'jwk',
+      keyPair.privateKey
+    );
 
     const newIdentity: Identity = {
       publicKey: JSON.stringify(publicKeyJwk),
@@ -88,7 +95,8 @@ export async function getOrCreateIdentity(): Promise<Identity> {
     // This block catches errors from the Web Crypto API itself.
     errorService.reportError(cryptoError, {
       operation: 'getOrCreateIdentity.crypto',
-      description: 'A critical failure occurred during cryptographic key generation or export.',
+      description:
+        'A critical failure occurred during cryptographic key generation or export.',
     });
 
     // Return a non-null, empty identity to prevent dependent parts of the application

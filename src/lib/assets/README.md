@@ -12,30 +12,30 @@ The goal is to keep the assets organized and optimized for use on the web.
 
 ## Directory Structure
 
--   **/images**: Contains raster images such as PNG, JPG, WebP, etc.
--   **/icons**: Contains icons, preferably in SVG format so that they are scalable and can be styled with CSS.
--   **/fonts**: Contains custom font files if the application does not use a web font service such as Google Fonts.
+- **/images**: Contains raster images such as PNG, JPG, WebP, etc.
+- **/icons**: Contains icons, preferably in SVG format so that they are scalable and can be styled with CSS.
+- **/fonts**: Contains custom font files if the application does not use a web font service such as Google Fonts.
 
 ## Usage in the Application
 
 SvelteKit/Vite automatically manages the assets imported from this directory.
 
--   **In Svelte components**: They can be imported directly into the script and used in the markup.
+- **In Svelte components**: They can be imported directly into the script and used in the markup.
 
-    ```svelte
-    <script>
-      import logo from '$lib/assets/icons/logo.svg';
-    </script>
+  ```svelte
+  <script>
+    import logo from '$lib/assets/icons/logo.svg';
+  </script>
 
-    <img src={logo} alt="Application logo" />
-    ```
+  <img src={logo} alt="Application logo" />
+  ```
 
--   **In CSS files**: They can be referenced using a relative path.
+- **In CSS files**: They can be referenced using a relative path.
 
-    ```css
-    .background-image {
-      background-image: url('$lib/assets/images/background.webp');
-    }
-    ```
+  ```css
+  .background-image {
+    background-image: url('$lib/assets/images/background.webp');
+  }
+  ```
 
 Vite will process these references, hashing the file names for efficient caching in production and ensuring that the paths are correct.
