@@ -1,37 +1,58 @@
-<!-- src/lib/components/layout/WelcomeAnimator.svelte (SOLUCIÓN FINAL SIMPLE Y ROBUSTA) -->
+<!--
+  @component
+  WelcomeAnimator
+
+  This component orchestrates the animated transition from the WelcomeScreen to the main
+  application interface. It acts as a state controller for the exit animation, ensuring
+  that various visual effects are timed correctly and signaling completion to its parent.
+
+  How it works:
+  1. It wraps the `WelcomeScreen` component.
+  2. When the user clicks the start button in `WelcomeScreen`, a `start` event is emitted.
+  3. This component catches the `start` event and begins the exit sequence by setting `isExiting` to `true`.
+  4. The `isExiting` flag adds a CSS class to the wrapper, which triggers a cascade of animations:
+     - The `WelcomeScreen` itself fades out (handled by styles within that component).
+     - A circular `unfurling-canvas` element rapidly expands from the center, creating a smooth background transition.
+  5. After a set duration that matches the longest animation, it dispatches an `animationComplete` event, allowing the parent page to unmount the welcome view and display the main application.
+
+  Events:
+  - `animationComplete`: Dispatched when the exit animations are finished.
+-->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import WelcomeScreen from './WelcomeScreen.svelte';
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{ animationComplete: void }>();
 
-  // 1. Un único estado para controlar toda la secuencia de salida.
+  /** @state {boolean} isExiting - The single source of truth for controlling the exit animation sequence. */
   let isExiting = false;
 
+  /**
+   * Initiates the exit animation sequence.
+   * This function is triggered by the `start` event from the `WelcomeScreen`.
+   */
   function handleStart() {
-    // 2. Al hacer clic, activamos el estado, lo que añade la clase '.exiting' al wrapper.
+    // 1. Activate the exiting state, adding the '.exiting' class to the wrapper.
     isExiting = true;
 
-    // 3. Establecemos un temporizador que coincide con la duración total de nuestras
-    //    animaciones CSS. Cuando termina, notificamos a la página principal
-    //    que la transición ha finalizado.
+    // 2. Set a timer that matches the total duration of the CSS animations.
+    //    When it completes, notify the parent page that the transition is finished.
     setTimeout(() => {
       dispatch('animationComplete');
-    }, 1500); // 1.5 segundos, que es la duración de la animación más larga.
+    }, 1500); // Duration should match the longest animation, in this case, the unfurling canvas.
   }
 </script>
 
 <div class="animator-wrapper" class:exiting={isExiting}>
   <!-- 
-    Pasamos 'isExiting' como prop a WelcomeScreen.
-    WelcomeScreen, a su vez, se la pasará a OrganicCanvas.
-    Esto permite que los estilos de los componentes hijos reaccionen en cascada.
+    Pass `isExiting` as a prop to WelcomeScreen. 
+    This allows child components (like OrganicCanvas) to react and animate in cascade.
   -->
   <WelcomeScreen on:start={handleStart} {isExiting} />
 
   <!-- 
-    Este es el lienzo que se "despliega" para crear el fondo del editor.
-    Su animación también se activa por la clase '.exiting' del padre.
+    This canvas element "unfurls" to create the background for the main editor view.
+    Its animation is also triggered by the parent's '.exiting' class.
   -->
   <div class="unfurling-canvas"></div>
 </div>
@@ -40,15 +61,13 @@
   .animator-wrapper {
     position: fixed;
     inset: 0;
-    z-index: 200;
-    /* El fondo inicial es el del tema actual (claro u oscuro). */
-    background-color: var(--color-background);
-    /* Importante para que el canvas de despliegue no se desborde */
-    overflow: hidden;
+    z-index: 200; /* High z-index to cover the main UI during animation */
+    background-color: var(--color-background); /* Initial background matches the current theme */
+    overflow: hidden; /* Essential to contain the expanding canvas */
   }
 
   /*
-    Este es el círculo de color que "explota" para convertirse en el nuevo fondo.
+    This is the colored circle that "explodes" to become the new background.
   */
   .unfurling-canvas {
     position: fixed;
@@ -56,22 +75,22 @@
     left: 50%;
     width: 2vw;
     height: 2vw;
-    /* Por defecto, es blanco (para tema claro). */
-    background-color: #ffffff;
+    /* The color is set to the default background color of the destination screen. */
+    background-color: var(--color-background-main, #ffffff);
     border-radius: 50%;
-    /* Se posiciona detrás del contenido de WelcomeScreen para un efecto más limpio. */
+    /* Positioned behind the WelcomeScreen content for a cleaner effect. */
     z-index: -1;
-    /* Comienza invisible y escalado a cero. */
+    /* Starts invisible and scaled to zero. */
     transform: translate(-50%, -50%) scale(0);
   }
 
-  /* --- La Magia de las Animaciones CSS en Cascada --- */
+  /* --- Cascading CSS Animations --- */
 
-  /* Cuando el wrapper obtiene la clase '.exiting', esta animación se activa. */
+  /* When the wrapper gets the '.exiting' class, this animation is triggered. */
   .exiting .unfurling-canvas {
-    /* *** LA MEJORA *** */
-    /* Le decimos al navegador que se prepare para animar 'transform'. */
+    /* Advise the browser to prepare for transform animation for better performance. */
     will-change: transform;
+    /* The animation runs after a delay, allowing other elements to start fading out first. */
     animation: unfurl 0.8s ease-in-out 0.7s forwards;
   }
 
@@ -80,15 +99,15 @@
       transform: translate(-50%, -50%) scale(0);
     }
     to {
-      /* Crece hasta ser enorme, cubriendo toda la pantalla. */
+      /* Grows to be enormous, covering the entire screen. */
       transform: translate(-50%, -50%) scale(100);
     }
   }
 
-  /* Adaptamos el color del lienzo de despliegue para el modo oscuro. */
+  /* Adapt the unfurling canvas color for dark mode. */
   @media (prefers-color-scheme: dark) {
     .unfurling-canvas {
-      background-color: var(--color-background);
+      background-color: var(--color-background-main-dark, var(--color-background-dark));
     }
   }
 </style>

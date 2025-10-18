@@ -1,3 +1,16 @@
+/**
+ * @file commandService.ts
+ * @description This service is responsible for defining and managing all the commands
+ * available in the application's command bar. It acts as a centralized registry for actions
+ * that the user can perform, from creating new documents to interacting with AI features.
+ *
+ * The service exposes functions that return lists of `Command` objects. Each command has
+ * properties like an `id`, a `label`, an `icon`, and an `action` to be executed.
+ * Crucially, commands can also have an `isEnabled` function, which dynamically determines
+ * whether the command should be available to the user based on the current application state.
+ * This state is accessed from various Svelte stores (e.g., `editorStore`, `reviewStore`).
+ */
+
 import type { Command } from '$lib/types';
 import { get } from 'svelte/store';
 import { commandBarStore } from '$lib/stores/commandBarStore';
@@ -5,8 +18,13 @@ import { documentStore } from '$lib/stores/documentStore';
 import { editorStore } from '$lib/stores/editorStore';
 import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
-import { t } from '$lib/services/i18n';
+import { t } from '$lib/utils/i18n';
 
+/**
+ * Retrieves the list of primary commands available in the command bar.
+ * These are the general-purpose commands that are typically always available.
+ * @returns {Command[]} An array of `Command` objects.
+ */
 export function getCommands(): Command[] {
   return [
     {
@@ -15,7 +33,11 @@ export function getCommands(): Command[] {
       icon: 'plus',
       action: () => {
         const parentId = get(commandBarStore).currentParentId;
-        documentStore.createNewDocument('New Schema', undefined, parentId);
+        documentStore.createNewDocument(
+          get(t)('file_explorer.default_schema_name'),
+          undefined,
+          parentId,
+        );
         commandBarStore.close();
       },
     },
@@ -43,6 +65,7 @@ export function getCommands(): Command[] {
         reviewStore.startReview();
         commandBarStore.close();
       },
+      // This command is only enabled if a review session is not already in progress.
       isEnabled: () => !get(reviewStore).isReviewing,
     },
     {
@@ -53,6 +76,7 @@ export function getCommands(): Command[] {
         ttsStore.startReading();
         commandBarStore.close();
       },
+      // This command is disabled if text-to-speech is already playing.
       isEnabled: () => get(ttsStore).status !== 'playing',
     },
     {
@@ -82,6 +106,11 @@ export function getCommands(): Command[] {
   ];
 }
 
+/**
+ * Retrieves the list of AI-specific commands.
+ * These commands are typically housed in a submenu and are often context-dependent.
+ * @returns {Command[]} An array of `Command` objects.
+ */
 export function getAiCommands(): Command[] {
   const isNodeSelected = get(editorStore).selectedNodePos !== null;
 
@@ -101,6 +130,7 @@ export function getAiCommands(): Command[] {
       action: () => {
         commandBarStore.openAiHelper('generate-flashcards');
       },
+      // This command is only enabled if a node is selected in the editor.
       isEnabled: () => isNodeSelected,
     },
     {
@@ -110,6 +140,7 @@ export function getAiCommands(): Command[] {
       action: () => {
         commandBarStore.openAiHelper('expand-node');
       },
+      // This command is only enabled if a node is selected in the editor.
       isEnabled: () => isNodeSelected,
     },
   ];

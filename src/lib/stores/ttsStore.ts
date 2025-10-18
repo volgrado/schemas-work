@@ -59,6 +59,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
 import type { Unsubscriber } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
+import { t } from '$lib/utils/i18n';
 
 /**
  * Defines the possible playback statuses of the TTS engine.
@@ -173,7 +174,7 @@ function speakNodeAtIndex(index: number) {
 	const state = get(store);
 	if (index < 0 || index >= state.nodesToRead.length) {
 		stopReading(true);
-		toast.success('Finished reading the document.');
+		toast.success(t('tts.finished_reading_toast'));
 		return;
 	}
 
@@ -201,7 +202,7 @@ function speakNodeAtIndex(index: number) {
 		onError: (error) => {
 			if (get(store).currentSpeechId === speechId) {
 				errorService.reportError(error, { operation: 'tts.speakNode' });
-				update((s) => ({ ...s, status: 'error', error: 'An error occurred during playback.' }));
+				update((s) => ({ ...s, status: 'error', error: t('tts.playback_error') }));
 			}
 		},
 		onBoundary: (event) => {
@@ -288,7 +289,7 @@ editorStore.subscribe(($editorStore) => {
 			const state = get(store);
 			const currentDoc = editor.state.doc;
 			if (['playing', 'paused'].includes(state.status) && previousDoc && !currentDoc.eq(previousDoc)) {
-				toast.info('Playback stopped due to document changes.');
+				toast.info(t('tts.stopped_due_to_changes_toast'));
 				stopReading(true);
 			}
 			previousDoc = currentDoc;
@@ -330,7 +331,7 @@ export const ttsStore = {
 			}));
 		} catch (error) {
 			errorService.reportError(error, { operation: 'tts.initialize' });
-			update((s) => ({ ...s, status: 'error', error: 'Could not initialize Text-to-Speech.' }));
+			update((s) => ({ ...s, status: 'error', error: t('tts.init_error') }));
 			throw error;
 		}
 	},
@@ -345,7 +346,7 @@ export const ttsStore = {
 		await this.initialize();
 		const nodes = getReadableNodes(editor);
 		if (nodes.length === 0) {
-			toast.info('There is no readable content in the document.');
+			toast.info(t('tts.no_readable_content_toast'));
 			return;
 		}
 
@@ -366,7 +367,7 @@ export const ttsStore = {
 		const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
 
 		if (startIndex === -1) {
-			toast.error('Could not find the specified node to start reading.');
+			toast.error(t('tts.node_not_found_error'));
 			return;
 		}
 

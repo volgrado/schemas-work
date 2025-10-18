@@ -1,13 +1,22 @@
+/**
+ * @file Implements the custom Tiptap nodes for rendering mathematical formulas using KaTeX.
+ * This file provides two nodes: `MathInline` for inline formulas and `MathBlock` for block-level formulas.
+ */
+
 import { Node, mergeAttributes } from '@tiptap/core';
 import katex from 'katex';
 import { modalStore } from '$lib/stores/modalStore';
 
-// --- Inline Math Node ---
+/**
+ * @description The `MathInline` node represents an inline mathematical formula.
+ * It is rendered as an inline element and can be placed within a line of text.
+ * It uses KaTeX for rendering the formula specified in its `formula` attribute.
+ */
 export const MathInline = Node.create({
   name: 'math_inline',
   group: 'inline',
   inline: true,
-  atom: true,
+  atom: true, // The node is treated as a single, indivisible unit.
 
   addAttributes() {
     return {
@@ -20,13 +29,20 @@ export const MathInline = Node.create({
   parseHTML() {
     return [{ tag: 'span[data-type="math-inline"]' }];
   },
+
   renderHTML({ HTMLAttributes }) {
+    // Renders an empty span, which will be populated by the custom node view.
     return [
       'span',
       mergeAttributes(HTMLAttributes, { 'data-type': 'math-inline' }),
       0,
     ];
   },
+
+  /**
+   * @description The `addNodeView` method provides a custom view for the node.
+   * This allows for direct DOM manipulation and interaction.
+   */
   addNodeView() {
     return ({ node, getPos, editor }) => {
       const dom = document.createElement('span');
@@ -34,15 +50,18 @@ export const MathInline = Node.create({
 
       const formula = node.attrs.formula;
       try {
+        // Render the LaTeX formula using KaTeX.
         katex.render(formula, dom, {
           throwOnError: false,
-          displayMode: false,
+          displayMode: false, // `false` for inline rendering.
         });
       } catch (error) {
+        // If rendering fails, display the raw formula and apply an error class.
         dom.innerText = formula;
         dom.classList.add('katex-error');
       }
 
+      // Add a click listener to open the formula editor modal.
       dom.addEventListener('click', () => {
         if (!editor.isEditable) return;
         const pos = getPos();
@@ -59,7 +78,11 @@ export const MathInline = Node.create({
   },
 });
 
-// --- Block Math Node ---
+/**
+ * @description The `MathBlock` node represents a block-level mathematical formula.
+ * It is rendered as a distinct block, separate from the main text flow.
+ * It uses KaTeX with `displayMode: true` for block-style rendering.
+ */
 export const MathBlock = Node.create({
   name: 'math_block',
   group: 'block',
@@ -76,6 +99,7 @@ export const MathBlock = Node.create({
   parseHTML() {
     return [{ tag: 'div[data-type="math-block"]' }];
   },
+
   renderHTML({ HTMLAttributes }) {
     return [
       'div',
@@ -84,6 +108,10 @@ export const MathBlock = Node.create({
     ];
   },
 
+  /**
+   * @description The custom node view for the block-level math node.
+   * It is responsible for rendering the KaTeX formula and handling click events.
+   */
   addNodeView() {
     return ({ node, getPos, editor }) => {
       const dom = document.createElement('div');
@@ -92,15 +120,17 @@ export const MathBlock = Node.create({
       const formula = node.attrs.formula;
 
       try {
+        // Render the LaTeX formula using KaTeX.
         katex.render(formula, dom, {
           throwOnError: false,
-          displayMode: true,
+          displayMode: true, // `true` for block rendering.
         });
       } catch (error) {
         dom.innerText = formula;
         dom.classList.add('katex-error');
       }
 
+      // Add a click listener to open the formula editor modal.
       dom.addEventListener('click', () => {
         if (!editor.isEditable) return;
         const pos = getPos();

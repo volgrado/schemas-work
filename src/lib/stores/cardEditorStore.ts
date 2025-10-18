@@ -41,6 +41,7 @@ import * as errorService from '$lib/services/core/errorService';
 import * as cardService from '$lib/services/features/cardService';
 import { toast } from 'svelte-sonner';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
+import { t } from '$lib/utils/i18n';
 
 /**
  * Represents the save status of a card during an update operation.
@@ -110,7 +111,7 @@ async function open(nodeId: string): Promise<void> {
 			operation: 'cardEditorStore.open',
 			nodeId
 		});
-		toast.error('Could not load cards for this node.');
+		toast.error(t('card_editor.load_error'));
 		update((state) => ({ ...state, fetchStatus: 'error' }));
 	}
 }
@@ -156,7 +157,7 @@ async function addCard(type: CardType): Promise<void> {
 			newCardData = {
 				type: 'input',
 				content: {
-					prompt: node?.textContent ? `Regarding "${node.textContent}", what is the answer?` : 'Fill in the blank',
+					prompt: node?.textContent ? t('card_editor.input_prompt_template', { content: node.textContent }) : t('card_editor.input_prompt_fallback'),
 					expected: ''
 				},
 				srs: defaultSrs
@@ -165,7 +166,7 @@ async function addCard(type: CardType): Promise<void> {
 		case 'sequencing':
 			newCardData = {
 				type: 'sequencing',
-				content: { prompt: 'Order the following items:', items: ['Item 1', 'Item 2'] },
+				content: { prompt: t('card_editor.sequencing_prompt'), items: ['Item 1', 'Item 2'] },
 				srs: defaultSrs
 			};
 			break;
@@ -173,7 +174,7 @@ async function addCard(type: CardType): Promise<void> {
 		default:
 			newCardData = {
 				type: 'basic',
-				content: { question: node?.textContent || 'New Question', answer: '' },
+				content: { question: node?.textContent || t('card_editor.new_question'), answer: '' },
 				srs: defaultSrs
 			};
 			break;
@@ -188,7 +189,7 @@ async function addCard(type: CardType): Promise<void> {
 		}));
 	} catch (err) {
 		errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
-		toast.error('Failed to create the new card.');
+		toast.error(t('card_editor.create_error'));
 	}
 }
 
@@ -213,7 +214,7 @@ async function updateCard(updatedCard: Card): Promise<void> {
 			operation: 'cardEditorStore.updateCard',
 			cardId: updatedCard.id
 		});
-		toast.error('Failed to save card changes.');
+		toast.error(t('card_editor.save_error'));
 		update((s) => ({ ...s, status: 'idle' }));
 	}
 }
@@ -237,7 +238,7 @@ async function deleteCard(cardId: string): Promise<Card | undefined> {
 			operation: 'cardEditorStore.deleteCard',
 			cardId
 		});
-		toast.error('Failed to delete the card.');
+		toast.error(t('card_editor.delete_error'));
 		update((s) => ({ ...s, cards: [...s.cards, cardToDelete] }));
 	}
 }
@@ -258,7 +259,7 @@ async function restoreCard(cardToRestore: Card): Promise<void> {
 			operation: 'cardEditorStore.restoreCard',
 			cardId: cardToRestore.id
 		});
-		toast.error('Failed to restore the card.');
+		toast.error(t('card_editor.restore_error'));
 	}
 }
 

@@ -1,4 +1,9 @@
 // src/lib/editor/slashCommands.ts
+/**
+ * @file Defines the slash commands available in the Tiptap editor.
+ * @module slashCommands
+ */
+
 import type { Editor, Range } from '@tiptap/core';
 import type { IconName } from '$lib/types/iconName';
 import { commandBarStore } from '$lib/stores/commandBarStore';
@@ -14,18 +19,41 @@ import {
 } from '$lib/stores/modalStore';
 import { gett } from '$lib/utils/i18n';
 
+/**
+ * Represents a single command in the slash command menu.
+ */
 export interface CommandItem {
+  /** The display name of the command. */
   title: string;
+  /** A brief explanation of what the command does. */
   description: string;
+  /** The category this command belongs to (e.g., "Basic", "AI"). */
   group: string;
+  /** The icon to display next to the command. */
   icon: IconName;
+  /**
+   * The function to execute when the command is selected.
+   * @param {object} props - The properties passed to the command function.
+   * @param {Editor} props.editor - The Tiptap editor instance.
+   * @param {Range} props.range - The range of text that triggered the command (the "/").
+   */
   command: ({ editor, range }: { editor: Editor; range: Range }) => void;
 }
 
+/**
+ * Checks if a node is currently selected in the editor.
+ * @returns {boolean} `true` if a node is selected, otherwise `false`.
+ * @internal
+ */
 const hasNodeSelected = () => get(editorStore).selectedNodePos !== null;
 
+/**
+ * Retrieves the full list of slash commands, organized by group.
+ * This function is called to populate the slash command suggestion menu.
+ * @returns {CommandItem[]} An array of command items.
+ */
 export const getCommands = (): CommandItem[] => {
-  const t = gett();
+  const t = gett(); // Get the translation function.
   return [
     // --- Group: Basic ---
     {
@@ -34,6 +62,7 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.basic'),
       icon: 'pen-tool',
       command: ({ editor, range }) => {
+        // Toggles a standard list item, which is the default block for this app.
         editor.chain().focus().deleteRange(range).toggleBulletList().run();
       },
     },
@@ -126,7 +155,8 @@ export const getCommands = (): CommandItem[] => {
         editor.chain().focus().deleteRange(range).setMark('italic').run();
       },
     },
-    // --- NEW: Media Group ---
+
+    // --- Group: Media ---
     {
       title: t('slashCommands.image.title'),
       description: t('slashCommands.image.description'),
@@ -135,10 +165,7 @@ export const getCommands = (): CommandItem[] => {
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
-        editor
-          .chain()
-          .insertContentAt(pos, { type: 'image', attrs: { src: null } })
-          .run();
+        editor.chain().insertContentAt(pos, { type: 'image', attrs: { src: null } }).run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
           const config: MediaModalConfig = {
@@ -159,10 +186,7 @@ export const getCommands = (): CommandItem[] => {
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
-        editor
-          .chain()
-          .insertContentAt(pos, { type: 'youtube', attrs: { src: null } })
-          .run();
+        editor.chain().insertContentAt(pos, { type: 'youtube', attrs: { src: null } }).run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
           const config: MediaModalConfig = {
@@ -262,6 +286,8 @@ export const getCommands = (): CommandItem[] => {
         const node = editor.state.doc.nodeAt(state.selectedNodePos);
         if (node?.attrs.nodeId) {
           ttsStore.startReadingFromNode(node.attrs.nodeId);
+        } else {
+          toast.error(t('slashCommands.readNode.errorNoId'));
         }
       },
     },

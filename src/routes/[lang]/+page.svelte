@@ -1,3 +1,18 @@
+<!--
+  @component
+  [lang]/+page.svelte
+
+  This is the main page component of the application, acting as the primary user interface.
+  It orchestrates the display of different views and components based on the application's state.
+  It is responsible for:
+
+  - **Initial Load Logic**: Determines whether to show the `WelcomeAnimator` or load an existing document based on user history.
+  - **View Management**: Toggles between the main document editor (`DocumentView`) and the schema tree view (`SchemaTree`).
+  - **Component Orchestration**: Integrates and manages major UI components like the `AppHeader`, `CommandBar`, `CardEditorPanel`, and various modals.
+  - **State Management**: Subscribes to and reacts to changes in global Svelte stores (`documentStore`, `editorStore`, `modalStore`, etc.).
+  - **Global Event Handling**: Listens for global keyboard shortcuts and window resize events to provide a responsive experience.
+  - **Data Fetching**: Initiates the loading of the initial document or creates a new one if none exist.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -19,6 +34,7 @@
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import FormulaEditModal from '$lib/components/editor/FormulaEditModal.svelte';
   import MediaEditModal from '$lib/components/editor/MediaEditModal.svelte';
+  import Screen from '$lib/components/ui/Screen.svelte';
   import { documentStore } from '$lib/stores/documentStore';
   import { editorStore } from '$lib/stores/editorStore';
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
@@ -28,18 +44,22 @@
   import * as schemaService from '$lib/services/features/schemaService';
   import { reviewStore } from '$lib/stores/reviewStore';
   import { modalStore } from '$lib/stores/modalStore';
-  import { t } from '$lib/services/i18n';
+  import { t } from '$lib/utils/i18n';
 
+  // --- Props ---
   let { data }: { data: { showWelcome: boolean } } = $props();
 
+  // --- State ---
   let showWelcome = $state(data.showWelcome);
   let isRevealingContent = $state(!data.showWelcome);
   let currentView = $state<'editor' | 'tree'>('editor');
   let nodeToFocus = $state<number | null>(null);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
-
   let treeData = $state<TreeNodeData | null>(null);
 
+  // --- Effects ---
+
+  // Regenerates the schema tree whenever the document content changes.
   $effect(() => {
     const version = $editorStore.contentVersion;
     const currentDoc = $editorStore.doc;
@@ -50,6 +70,7 @@
     }
   });
 
+  // Determines which node in the tree view should be highlighted.
   let selectedNodeId = $derived(
     ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
       $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
@@ -59,8 +80,10 @@
         : 'root-title'
   );
 
+  // A derived boolean to check if a node is currently selected in the editor.
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
+  // Sets up global event listeners and loads the initial document if needed.
   onMount(() => {
     if (!showWelcome) {
       loadInitialDocument();
@@ -73,6 +96,9 @@
     };
   });
 
+  // --- Event Handlers ---
+
+  /** Handles global keydown events, specifically for opening the card editor. */
   function handleGlobalKeydown(event: KeyboardEvent) {
     if ((event.metaKey || event.ctrlKey) && event.key === "'") {
       event.preventDefault();
@@ -80,10 +106,12 @@
     }
   }
 
+  /** Updates the `isMobile` state based on window width. */
   function handleResize() {
     isMobile = window.innerWidth <= 768;
   }
 
+  /** Triggered when the welcome animation completes. */
   async function onAnimationComplete() {
     localStorage.setItem('schemas-work-has-seen-welcome', 'true');
     showWelcome = false;
@@ -91,12 +119,14 @@
     await loadInitialDocument();
   }
 
+  /** Resets the view to show the welcome screen again. */
   function handleShowWelcome() {
     currentView = 'editor';
     showWelcome = true;
     isRevealingContent = false;
   }
 
+  /** Handles clicks on nodes in the schema tree, switching to the editor and focusing the node. */
   function handleNodeClickInTree(event: CustomEvent<{ id: string }>) {
     const { id } = event.detail;
     if (id === 'root-title') return;
@@ -107,6 +137,7 @@
     }
   }
 
+  /** Opens the card editor panel for the currently selected node. */
   function openCardEditor() {
     const editor = get(editorStore).instance;
     const pos = get(editorStore).selectedNodePos;
@@ -116,10 +147,12 @@
     cardEditorStore.open(node.attrs.nodeId);
   }
 
+  /** Opens the command bar. */
   function openCommandBar() {
     commandBarStore.open();
   }
 
+  /** Loads the last active document or creates a new one. */
   async function loadInitialDocument() {
     if (get(documentStore).status === 'ready') return;
     const allItems = await directoryService.getAllItems();
@@ -138,8 +171,9 @@
     }
   }
 
+  /** Handles the save event from modals, updating node attributes in the editor. */
   function handleModalSave(event: CustomEvent) {
-    const { nodePos, newAttrs } = event.detail;
+    const { newAttrs } = event.detail;
     const editor = get(editorStore).instance;
     if (!editor) return;
     const pos = get(modalStore).config?.nodePos;
@@ -155,14 +189,15 @@
 
 <svelte:head>
   {#if $documentStore.metadata?.title}
-    <title>{$documentStore.metadata.title} - Schemas.work</title>
+    <title>{$documentStore.metadata.title} - {$t('app_name')}</title>
   {:else}
-    <title>Schemas.work</title>
+    <title>{$t('app_name')}</title>
   {/if}
 </svelte:head>
 
 <Toaster position="bottom-center" theme="system" />
 
+<!-- Renders the appropriate modal when the modalStore is open -->
 {#if $modalStore.isOpen}
   {@const config = $modalStore.config}
   {#if config?.type === 'formula'}
@@ -187,6 +222,7 @@
   {/if}
 {/if}
 
+<!-- Main Application Header (conditionally rendered) -->
 {#if !showWelcome}
   <AppHeader
     on:showWelcome={handleShowWelcome}
@@ -211,72 +247,75 @@
   </AppHeader>
 {/if}
 
+<!-- Welcome animation, shown only on first visit -->
 {#if showWelcome}
   <WelcomeAnimator on:animationComplete={onAnimationComplete} />
 {/if}
 
-<div class="view-wrapper" class:is-reviewing={$reviewStore.isReviewing}>
-  {#if !showWelcome && currentView === 'editor'}
+<!-- Main Screen Component -->
+<Screen show={!showWelcome} let:isExiting>
+  <!-- Background canvas for the editor view -->
+  {#if currentView === 'editor'}
     <div class="editor-background-canvas">
-      <OrganicCanvas />
+      <OrganicCanvas {isExiting} />
     </div>
   {/if}
 
+  <!-- Editor View -->
   <div
     class="view-content"
     style:display={currentView === 'editor' ? 'block' : 'none'}
   >
     <div
       class="main-content"
-      class:reveal={isRevealingContent}
       class:is-reading-aloud={$ttsStore.status === 'playing' ||
         $ttsStore.status === 'paused'}
     >
-      {#if !showWelcome}
-        {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
-          <div class="status-container">
-            <Icon name="loader" size={24} class="spinner" />
-            <p>{$t('page.status.loading_schema')}</p>
-          </div>
-        {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
-          {#key $documentStore.docId}
-            <DocumentView
-              ydoc={$documentStore.ydoc}
-              initialContent={$documentStore.initialContent}
-              focusedNodePos={nodeToFocus}
-              on:focusApplied={() => (nodeToFocus = null)}
-            />
-          {/key}
-        {:else if $documentStore.status === 'error'}
-          <div class="status-container">
-            <p>{$t('page.status.load_error')}</p>
-          </div>
-        {/if}
+      {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
+        <div class="status-container">
+          <Icon name="loader" size={24} class="spinner" />
+          <p>{$t('page.status.loading_schema')}</p>
+        </div>
+      {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
+        {#key $documentStore.docId}
+          <DocumentView
+            ydoc={$documentStore.ydoc}
+            initialContent={$documentStore.initialContent}
+            focusedNodePos={nodeToFocus}
+            on:focusApplied={() => (nodeToFocus = null)}
+          />
+        {/key}
+      {:else if $documentStore.status === 'error'}
+        <div class="status-container">
+          <p>{$t('page.status.load_error')}</p>
+        </div>
       {/if}
     </div>
   </div>
 
+  <!-- Schema Tree View -->
   <div
     class="view-content"
     style:display={currentView === 'tree' ? 'block' : 'none'}
   >
     {#if treeData}
-      <div class="tree-view-content" class:reveal={isRevealingContent}>
+      <div class="tree-view-content">
         <SchemaTree
           {treeData}
           {selectedNodeId}
           on:nodeClick={handleNodeClickInTree}
         />
       </div>
-    {:else if !showWelcome && $documentStore.status === 'ready'}
+    {:else if $documentStore.status === 'ready'}
       <div class="status-container">
         <p>{$t('page.status.empty_schema.message')}</p>
         <span>{$t('page.status.empty_schema.hint')}</span>
       </div>
     {/if}
   </div>
-</div>
+</Screen>
 
+<!-- Global UI Components (rendered outside the main view) -->
 {#if !showWelcome}
   <CommandBar />
   <CardEditorPanel />
@@ -284,6 +323,7 @@
   <TTSController />
   <SlashMenuController />
 
+  <!-- Mobile-specific Floating Action Buttons -->
   {#if isMobile}
     <FloatingActionButton
       icon={currentView === 'editor' ? 'git-branch' : 'edit-3'}
@@ -310,17 +350,6 @@
 {/if}
 
 <style>
-  .view-wrapper.is-reviewing .main-content,
-  .view-wrapper.is-reviewing .tree-view-content {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .view-wrapper.is-reviewing + :global(.app-header) {
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .editor-background-canvas {
     position: fixed;
     inset: 0;
@@ -329,12 +358,14 @@
     transition: opacity 0.5s ease-in-out;
   }
 
+  /* Show canvas on larger screens */
   @media (min-width: 1200px) {
     .editor-background-canvas {
       opacity: 1;
     }
   }
 
+  /* Styles for loading/error status messages */
   .status-container {
     display: flex;
     flex-direction: column;
@@ -356,50 +387,14 @@
     font-style: normal;
     font-size: 0.9rem;
   }
-  .view-wrapper,
-  .view-content {
-    width: 100%;
-    height: 100%;
-  }
-  .view-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    transition: opacity 0.3s ease;
-  }
+
+  /* View content positioning */
   .view-content {
     position: absolute;
     inset: 0;
   }
-  .tree-view-content {
-    width: 100%;
-    height: 100%;
-    opacity: .0;
-  }
-  .main-content,
-  :global(.app-header) {
-    opacity: 0;
-    will-change: transform, opacity;
-    transition: opacity 0.3s ease;
-  }
-  .main-content.reveal,
-  .tree-view-content.reveal {
-    animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  }
-  :global(.app-header.reveal) {
-    animation: fadeInUp 0.6s cubic-bezier(0.25, 1, 0.5, 1) 0.2s forwards;
-  }
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(15px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
 
+  /* Spinner animation for loading icon */
   @keyframes spin {
     to {
       transform: rotate(360deg);

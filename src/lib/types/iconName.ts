@@ -1,60 +1,54 @@
 /**
- * @file Defines a union type of all valid icon names used throughout the application.
- * @module iconName
- * @remarks This file acts as a centralized and type-safe registry for all icons.
+ * @file Defines the IconName type, which is a union of all valid icon names
+ * available in the Icon.svelte component. This provides type safety for any
+ * component prop that expects an icon name.
  */
 
-/**
- * A union type representing all valid icon names.
- */
-export type IconName =
-  // General Purpose & File System
+// To add a new icon, add it to the `icons` object in `src/lib/components/ui/Icon.svelte`
+// and then add the key to this type union.
+
+export type IconName = 
+  // General & UI
   | 'plus'
-  | 'command'
-  | 'download-cloud'
-  | 'upload-cloud'
-  | 'file-text'
-  | 'folder'
-  | 'check-circle'
-  | 'git-branch'
-  | 'edit-3'
-
-  // UI Elements & Common Actions
+  | 'minus'
   | 'x'
+  | 'command'
+  | 'help-circle'
+  | 'check-circle'
+  | 'x-circle'
+  | 'alert-triangle'
+  | 'loader'
   | 'copy'
   | 'trash-2'
-  | 'sparkles'
+  | 'edit-3'
   | 'pen-tool'
-
-  // Feature-Specific Functionalities
-  | 'zap'
-  | 'volume-2'
+  | 'folder'
+  | 'file-text'
+  | 'lock'
+  
+  // Media & Audio
   | 'play'
   | 'pause'
-  | 'x-circle'
-
-  // Text-to-Speech (TTS) Controls
+  | 'mic'
+  | 'volume-2'
+  | 'fast-forward'
   | 'skip-back'
   | 'skip-forward'
-  | 'fast-forward'
-  | 'mic'
+  | 'image'
+  | 'video'
 
-  // Status Indicators
-  | 'loader'
-  | 'alert-triangle'
-
-  // Onboarding & Help
-  | 'lock'
-  | 'help-circle'
-
-  // Text Editor & Formatting
+  // Text & Formatting
+  | 'type'
   | 'bold'
   | 'italic'
   | 'list'
-  | 'type'
-  | 'minus'
 
-  // NEW: Media & Math
-  | 'image'
-  | 'video'
+  // Conceptual & App-Specific
+  | 'zap'
+  | 'sparkles'
+  | 'git-branch'
+  | 'download-cloud'
+  | 'upload-cloud'
+  
+  // Special alias
   | 'plus-slash-minus';

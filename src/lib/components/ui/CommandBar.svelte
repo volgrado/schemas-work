@@ -1,22 +1,50 @@
+<!--
+  @component
+  CommandBar
+
+  This component serves as the application's central command palette, providing a
+  fast, keyboard-driven interface for accessing most of the app's functionality.
+  It is heavily inspired by command palettes in modern code editors like VS Code.
+
+  Key Features:
+  - Activated via a global keyboard shortcut (Cmd/Ctrl + K).
+  - Acts as an orchestrator, launching other specialized modals (AI Helper, Password, Diagnostics).
+  - Features a multi-view system to organize commands:
+    - `main`: The default view with primary actions.
+    - `ai-actions`: A view dedicated to AI-powered commands.
+    - `list-schemas`: A file explorer-like view for navigating documents.
+  - State is managed centrally in the `commandBarStore`, making it accessible app-wide.
+  - Handles complex workflows like AI-powered content generation and encrypted vault backups.
+-->
 <script lang="ts">
+  // --- Svelte & Third-Party --- 
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
   import { z } from 'zod';
+  import { t } from '$lib/utils/i18n';
+
+  // --- UI Components ---
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import AIHelperModal from '$lib/components/ai/AIHelperModal.svelte';
   import ErrorDiagnosticModal from '$lib/components/ui/ErrorDiagnosticModal.svelte';
+
+  // --- Command Bar Views ---
   import MainView from './command-bar/MainView.svelte';
   import AiView from './command-bar/AiView.svelte';
   import FileExplorerView from './command-bar/FileExplorerView.svelte';
+
+  // --- Stores ---
   import {
     commandBarStore,
     type AiHelperAction,
   } from '$lib/stores/commandBarStore';
   import { documentStore } from '$lib/stores/documentStore';
   import { editorStore } from '$lib/stores/editorStore';
+
+  // --- Services & Schemas ---
   import * as backupService from '$lib/services/features/backupService';
   import * as Prompts from '$lib/services/ai/prompts';
   import * as aiSchemas from '$lib/schemas/aiSchemas';
@@ -24,77 +52,64 @@
   import * as cardService from '$lib/services/features/cardService';
   import * as errorService from '$lib/services/core/errorService';
   import type { Card } from '$lib/types';
-  import { t } from '$lib/services/i18n';
 
   const state = commandBarStore;
 
+  /**
+   * Configuration object for the AI Helper modal.
+   * Each key corresponds to an `AiHelperAction` and defines the modal's behavior,
+   * including its title, the AI prompt, the Zod schema for validating the response,
+   * and the callback function to apply the result.
+   */
   const aiHelperConfigs = {
     'create-schema-from-text': {
-      title: $t('command_bar.ai_helper.create_schema.title'),
+      title: t('command_bar.ai_helper.create_schema.title'),
       prompt: Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
         '{{TEXT_INPUT}}',
-        $t('command_bar.ai_helper.create_schema.prompt_placeholder')
+        t('command_bar.ai_helper.create_schema.prompt_placeholder')
       ),
       validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
       onApply: (data: any) => {
         const title = data.content?.[0]?.content?.[0]?.text || 'New Schema';
         const parentId = get(state).currentParentId;
         documentStore.createNewDocument(title, data, parentId);
-        toast.success($t('command_bar.ai_helper.create_schema.success', { title }));
+        toast.success(t('command_bar.ai_helper.create_schema.success', { title }));
       },
     },
     'expand-node': {
-      title: $t('command_bar.ai_helper.expand_node.title'),
-      prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL, // Prompt base
+      title: t('command_bar.ai_helper.expand_node.title'),
+      prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL, // Base prompt, context is added later
       validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
       onApply: (data: any) => {
-        const editorState = get(editorStore);
-        const editor = editorState.instance;
-        const currentPos = editorState.selectedNodePos;
-        const node =
-          editor && currentPos !== null
-            ? editor.state.doc.nodeAt(currentPos)
-            : null;
+        const { instance: editor, selectedNodePos: currentPos, selectedNode: node } = get(editorStore);
         if (editor && node && currentPos !== null) {
-          editor
-            .chain()
-            .focus()
-            .insertContentAt(currentPos + node.nodeSize - 1, data)
-            .run();
-          toast.success($t('command_bar.ai_helper.expand_node.success'));
+          editor.chain().focus().insertContentAt(currentPos + node.nodeSize - 1, data).run();
+          toast.success(t('command_bar.ai_helper.expand_node.success'));
         }
       },
     },
     'generate-flashcards': {
-      title: $t('command_bar.ai_helper.generate_flashcards.title'),
-      prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Prompt base
+      title: t('command_bar.ai_helper.generate_flashcards.title'),
+      prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Base prompt, context is added later
       validationSchema: aiSchemas.FlashcardResponseSchema,
       onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
-        const editorState = get(editorStore);
-        const editor = editorState.instance;
-        const currentPos = editorState.selectedNodePos;
-        const node =
-          editor && currentPos !== null
-            ? editor.state.doc.nodeAt(currentPos)
-            : null;
-
+        const { selectedNode: node } = get(editorStore);
         if (!node?.attrs.nodeId) {
-          toast.error($t('command_bar.ai_helper.generate_flashcards.error.no_node_id'));
+          toast.error(t('command_bar.ai_helper.generate_flashcards.error.no_node_id'));
           return;
         }
         try {
           await cardService.addCards(node.attrs.nodeId, data);
-          toast.success($t('command_bar.ai_helper.generate_flashcards.success', { count: data.length }));
+          toast.success(t('command_bar.ai_helper.generate_flashcards.success', { count: data.length }));
         } catch (err) {
-          errorService.reportError(err, {
-            operation: 'aiGenerateCards.onApply',
-          });
-          toast.error($t('command_bar.ai_helper.generate_flashcards.error.save_failed'));
+          errorService.reportError(err, { operation: 'aiGenerateCards.onApply' });
+          toast.error(t('command_bar.ai_helper.generate_flashcards.error.save_failed'));
         }
       },
     },
   };
 
+  // --- Local State ---
   let passwordInput = '';
   let helperConfig = {
     title: '',
@@ -103,70 +118,63 @@
     onApply: (data: any) => {},
   };
 
-  $: {
-    if ($state.isAiHelperOpen && $state.aiHelperAction) {
-      configureAiHelper($state.aiHelperAction);
-    }
+  // --- Reactive Logic ---
+  // When the AI helper is opened, configure it based on the requested action.
+  $: if ($state.isAiHelperOpen && $state.aiHelperAction) {
+    configureAiHelper($state.aiHelperAction);
   }
 
+  /**
+   * Sets up the configuration for the AI Helper modal based on the action ID.
+   * It fetches the base config and dynamically injects context-specific information
+   * (like selected text or breadcrumbs) into the AI prompt.
+   * @param {AiHelperAction} actionId - The ID of the AI action to configure.
+   */
   function configureAiHelper(actionId: AiHelperAction) {
     const config = aiHelperConfigs[actionId];
     if (!config) return;
 
     let finalConfig = { ...config };
-
-    const editorState = get(editorStore);
-    const editor = editorState.instance;
-    const currentPos = editorState.selectedNodePos;
-    const node =
-      editor && currentPos !== null
-        ? editor.state.doc.nodeAt(currentPos)
-        : null;
+    const { instance: editor, selectedNodePos: currentPos, selectedNode: node } = get(editorStore);
 
     if (actionId === 'expand-node') {
       if (!node || !editor || currentPos === null) {
-        toast.error($t('command_bar.ai_helper.expand_node.error.no_node_selected'));
+        toast.error(t('command_bar.ai_helper.expand_node.error.no_node_selected'));
         commandBarStore.closeAiHelper();
         return;
       }
-      const breadcrumb = schemaService.getBreadcrumbForPosition(
-        editor.state.doc,
-        currentPos
-      );
+      const breadcrumb = schemaService.getBreadcrumbForPosition(editor.state.doc, currentPos);
       finalConfig.prompt = config.prompt
         .replaceAll('{{NODE_TEXT}}', node.textContent)
         .replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
     } else if (actionId === 'generate-flashcards') {
       if (!node) {
-        toast.error($t('command_bar.ai_helper.generate_flashcards.error.no_node_selected'));
+        toast.error(t('command_bar.ai_helper.generate_flashcards.error.no_node_selected'));
         commandBarStore.closeAiHelper();
         return;
       }
-      finalConfig.prompt = config.prompt.replace(
-        '{{NODE_TEXT}}',
-        node.textContent
-      );
+      finalConfig.prompt = config.prompt.replace('{{NODE_TEXT}}', node.textContent);
     }
 
     helperConfig = finalConfig;
   }
 
+  /**
+   * Handles the submission of the password modal for vault import/export.
+   */
   async function handlePasswordSubmit() {
     if (!passwordInput) return;
     try {
       if ($state.passwordModalAction === 'export') {
         await backupService.exportVault(passwordInput);
-        toast.success($t('command_bar.export_success'));
+        toast.success(t('command_bar.export_success'));
       } else {
         await backupService.importVault(passwordInput);
       }
     } catch (error) {
-      console.error(
-        `Error during operation ${$state.passwordModalAction}:`,
-        error
-      );
-      toast.error($t('command_bar.operation_failed'), {
-        description: $t('command_bar.operation_failed_details'),
+      errorService.reportError(error, { operation: `backup:${$state.passwordModalAction}` });
+      toast.error(t('command_bar.operation_failed'), {
+        description: t('command_bar.operation_failed_details'),
       });
     } finally {
       commandBarStore.closePasswordModal();
@@ -174,14 +182,20 @@
     }
   }
 
+  /**
+   * Global keydown handler to open/close the command bar.
+   */
   function handleKeydown(event: KeyboardEvent) {
+    // Do not interfere if another modal is active on top of the command bar.
     if ($state.isPasswordModalOpen || $state.isAiHelperOpen) return;
 
+    // The primary shortcut to open/close the command bar.
     if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       commandBarStore.toggle();
     }
 
+    // 'Escape' key behavior: go back one view or close the bar.
     if (event.key === 'Escape' && $state.isOpen) {
       if ($state.currentView !== 'main') {
         commandBarStore.setView('main');
@@ -190,46 +204,50 @@
       }
     }
   }
+  
   onMount(() => window.addEventListener('keydown', handleKeydown));
   onDestroy(() => window.removeEventListener('keydown', handleKeydown));
 </script>
 
+<!-- Orchestrated Modals -->
 <ErrorDiagnosticModal
   show={$state.isDiagnosticModalOpen}
   onClose={commandBarStore.closeDiagnosticModal}
 />
+
 <Modal
   title={$state.passwordModalAction === 'export'
-    ? $t('command_bar.password_modal.title.export')
-    : $t('command_bar.password_modal.title.import')}
+    ? t('command_bar.password_modal.title.export')
+    : t('command_bar.password_modal.title.import')}
   show={$state.isPasswordModalOpen}
   onClose={commandBarStore.closePasswordModal}
 >
   <form on:submit|preventDefault={handlePasswordSubmit}>
     <p>
       {$state.passwordModalAction === 'export'
-        ? $t('command_bar.password_modal.description.export')
-        : $t('command_bar.password_modal.description.import')}
+        ? t('command_bar.password_modal.description.export')
+        : t('command_bar.password_modal.description.import')}
     </p>
     <input
       type="password"
       bind:value={passwordInput}
-      placeholder={$t('command_bar.password_modal.password_placeholder')}
+      placeholder={t('command_bar.password_modal.password_placeholder')}
       required
       autocomplete="new-password"
     />
     <div class="modal-actions">
       <Button on:click={commandBarStore.closePasswordModal} variant="secondary"
-        >{$t('command_bar.password_modal.cancel_button')}</Button
+        >{t('command_bar.password_modal.cancel_button')}</Button
       >
       <Button type="submit">
         {$state.passwordModalAction === 'export'
-          ? $t('command_bar.password_modal.confirm_button.export')
-          : $t('command_bar.password_modal.confirm_button.import')}
+          ? t('command_bar.password_modal.confirm_button.export')
+          : t('command_bar.password_modal.confirm_button.import')}
       </Button>
     </div>
   </form>
 </Modal>
+
 <AIHelperModal
   show={$state.isAiHelperOpen}
   title={helperConfig.title}
@@ -242,22 +260,23 @@
   on:close={commandBarStore.closeAiHelper}
 />
 
+<!-- Main CommandBar UI -->
 {#if $state.isOpen}
   <button
     class="overlay"
     on:click={commandBarStore.close}
     transition:fade={{ duration: 150 }}
-    aria-label={$t('command_bar.close_aria_label')}
+    aria-label={t('command_bar.close_aria_label')}
   ></button>
 
   <div
     class="panel"
-    class:is-list-view={$state.currentView === 'list-schemas'}
     transition:fly={{ y: 20, duration: 200 }}
     role="dialog"
     aria-modal="true"
     aria-labelledby="commandbar-title"
   >
+    <!-- Dynamic View Rendering -->
     {#if $state.currentView === 'main'}
       <MainView />
     {:else if $state.currentView === 'ai-actions'}
@@ -269,6 +288,7 @@
 {/if}
 
 <style>
+  /* CSS variables provide a single source of truth for theming and consistency. */
   :global(:root) {
     --panel-bg-light: rgba(255, 255, 255, 0.85);
     --panel-bg-dark: rgba(28, 28, 30, 0.85);
@@ -306,14 +326,19 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-xl);
     z-index: 100;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     padding: var(--space-xs);
   }
-
+  
+  /*
+    The `:global` keyword is used here to style elements that are part of the child
+    view components (MainView, AiView, etc.). This allows the CommandBar to enforce
+    a consistent style for all its different views without duplicating CSS.
+  */
   :global(.panel .action-list) {
     display: flex;
     flex-direction: column;
@@ -397,11 +422,12 @@
     width: 100%;
     padding: var(--space-sm) var(--space-md);
     margin-top: var(--space-sm);
-    border: 1px solid var(--panel-border-light);
+    border: 1px solid var(--color-border);
     border-radius: var(--space-sm);
     font-family: var(--font-main);
     font-size: 0.95rem;
-    background-color: var(--color-background);
+    background-color: var(--color-gray-50);
+    color: var(--color-text);
     transition:
       border-color 0.2s,
       box-shadow 0.2s;
@@ -410,9 +436,10 @@
   input[type='password']:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(var(--color-accent), 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.2);
   }
 
+  /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
     :global(.panel .action-list) {
       scrollbar-color: var(--scrollbar-thumb-dark) transparent;
@@ -425,16 +452,16 @@
       border-color: var(--panel-border-dark);
     }
     :global(.panel .action-button) {
-      color: rgba(255, 255, 255, 0.95);
+      color: var(--color-text-dark);
     }
     :global(.panel .action-button:hover:not(:disabled)),
     :global(.panel .action-button:focus-visible) {
       background-color: var(--btn-hover-bg-dark);
     }
     input[type='password'] {
-      background-color: var(--color-gray-100);
-      color: white;
-      border-color: rgba(255, 255, 255, 0.15);
+      background-color: var(--color-gray-900);
+      color: var(--color-text-dark);
+      border-color: var(--color-gray-800);
     }
   }
 </style>

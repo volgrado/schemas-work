@@ -50,6 +50,7 @@ import { toast } from 'svelte-sonner';
 import * as reviewService from '$lib/services/features/reviewService';
 import * as cardService from '$lib/services/features/cardService';
 import type { Unsubscriber } from 'svelte/store';
+import { t } from '$lib/utils/i18n';
 
 /**
  * Represents the complete state of a single review session.
@@ -113,14 +114,14 @@ async function startReview(): Promise<void> {
 	const dueCards = await reviewService.getDueCards();
 
 	if (dueCards.length > 0) {
-		startReviewSession(dueCards, 'Scheduled Review');
+		startReviewSession(dueCards, t('review.scheduled_review'));
 		return;
 	}
 
-	toast.success('All reviewed for today!', {
-		description: 'Want to study your most difficult cards instead?',
+	toast.success(t('review.all_reviewed_toast'), {
+		description: t('review.all_reviewed_description'),
 		action: {
-			label: 'Review 5 Cards',
+			label: t('review.review_weakest_button'),
 			onClick: () => startAdditionalReview()
 		}
 	});
@@ -134,11 +135,11 @@ async function startAdditionalReview(): Promise<void> {
 	const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT);
 
 	if (weakestCards.length === 0) {
-		toast.info('No cards available for an additional review.');
+		toast.info(t('review.no_cards_for_additional_review'));
 		return;
 	}
 
-	startReviewSession(weakestCards, 'Additional Review');
+	startReviewSession(weakestCards, t('review.additional_review'));
 }
 
 /**
@@ -148,7 +149,7 @@ async function startAdditionalReview(): Promise<void> {
  * @param type A label for the type of review.
  */
 function startReviewSession(cards: Card[], type: string): void {
-	toast.info(`${type} started with ${cards.length} card(s).`);
+	toast.info(t('review.review_started_toast', { type, count: cards.length }));
 	update((state) => ({
 		...initialState,
 		isReviewing: true,
@@ -188,11 +189,11 @@ async function submitReview(quality: ReviewQuality): Promise<void> {
 
 	if (quality < 3) {
 		newCardsToReview.push(reviewedCard);
-		toast.info('This card will appear again in this session.');
+		toast.info(t('review.card_will_reappear_toast'));
 	}
 
 	if (newCardsToReview.length === 0 || state.currentCardIndex >= newCardsToReview.length) {
-		toast.success('Review complete!', { description: `You studied ${state.cardsToReview.length} cards.` });
+		toast.success(t('review.review_complete_toast'), { description: t('review.review_complete_description', { count: state.cardsToReview.length }) });
 		finishReview();
 	} else {
 		update((s) => ({

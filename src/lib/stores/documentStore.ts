@@ -50,6 +50,7 @@ import * as directoryService from '$lib/services/core/directoryService';
 import { directoryEvents } from '$lib/services/core/directoryService';
 import { getDocumentProvider } from '$lib/services/core/persistenceService';
 import * as errorService from '$lib/services/core/errorService';
+import { t } from '$lib/utils/i18n';
 
 /**
  * Represents the detailed state of the active document.
@@ -112,7 +113,7 @@ async function loadDocument(docId: string): Promise<void> {
 		const loadData = async () => {
 			const metadata = await directoryService.getItemById(docId);
 			if (!metadata || metadata.type !== 'schema') {
-				throw new Error(`Item is not a valid document: ${docId}`);
+				throw new Error(t('document.invalid_document_error', { docId }));
 			}
 			const { ydoc, provider } = getDocumentProvider(docId);
 			await provider.whenSynced;
@@ -145,7 +146,7 @@ async function loadDocument(docId: string): Promise<void> {
  * @returns The metadata of the new document.
  */
 async function createNewDocument(
-	title: string = 'New Schema',
+	title: string = t('document.new_schema_title'),
 	content?: object,
 	parentId: string | null = null
 ): Promise<SchemaMetadata | undefined> {
@@ -260,7 +261,7 @@ directoryEvents.subscribe((event) => {
 			if (allSchemas.length > 0) {
 				await loadDocument(allSchemas[0].id);
 			} else {
-				await createNewDocument('My First Schema');
+				await createNewDocument(t('document.first_schema_title'));
 			}
 		};
 		findAndLoadReplacementDoc();

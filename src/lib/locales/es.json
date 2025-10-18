@@ -102,6 +102,190 @@
     "hard": "Difícil",
     "easy": "Fácil",
     "goToSource": "Ir a la fuente",
-    "finishReview": "Finalizar Repaso"
+    "finishReview": "Finalizar Repaso",
+    "scheduled_review": "Repaso Programado",
+    "all_reviewed_toast": "¡Todo repasado por hoy!",
+    "all_reviewed_description": "¿Quieres estudiar tus tarjetas más difíciles en su lugar?",
+    "review_weakest_button": "Repasar 5 Tarjetas",
+    "no_cards_for_additional_review": "No hay tarjetas disponibles para un repaso adicional.",
+    "additional_review": "Repaso Adicional",
+    "review_started_toast": "{type} iniciado con {count, plural, =1 {1 tarjeta} other {# tarjetas}}.",
+    "card_will_reappear_toast": "Esta tarjeta volverá a aparecer en esta sesión.",
+    "review_complete_toast": "¡Repaso completo!",
+    "review_complete_description": "Estudiaste {count, plural, =1 {1 tarjeta} other {# tarjetas}}."
+  },
+  "card_editor": {
+    "load_error": "No se pudieron cargar las tarjetas para este nodo.",
+    "input_prompt_template": "Con respecto a \"{content}\", ¿cuál es la respuesta?",
+    "input_prompt_fallback": "Rellena el espacio en blanco",
+    "sequencing_prompt": "Ordena los siguientes elementos:",
+    "new_question": "Nueva Pregunta",
+    "create_error": "No se pudo crear la nueva tarjeta.",
+    "save_error": "No se pudieron guardar los cambios de la tarjeta.",
+    "delete_error": "No se pudo eliminar la tarjeta.",
+    "restore_error": "No se pudo restaurar la tarjeta."
+  },
+  "document": {
+    "invalid_document_error": "El elemento no es un documento válido: {docId}",
+    "new_schema_title": "Nuevo Esquema",
+    "first_schema_title": "Mi Primer Esquema"
+  },
+  "tts": {
+    "finished_reading_toast": "Se terminó de leer el documento.",
+    "playback_error": "Ocurrió un error durante la reproducción.",
+    "stopped_due_to_changes_toast": "La reproducción se detuvo debido a cambios en el documento.",
+    "init_error": "No se pudo inicializar la conversión de texto a voz.",
+    "no_readable_content_toast": "No hay contenido legible en el documento.",
+    "node_not_found_error": "No se pudo encontrar el nodo especificado para iniciar la lectura."
+  },
+  "aiHelper": {
+    "errors": {
+      "jsonFormatIncorrect": "El formato JSON es incorrecto.",
+      "notValidJson": "El texto proporcionado no es un JSON válido.",
+      "zodValidationError": "Error en '{path}': {message}"
+    },
+    "promptCopied": "Prompt copiado al portapapeles.",
+    "copyError": "No se pudo copiar el prompt.",
+    "step1": {
+      "title": "Paso 1: Copia el Prompt",
+      "description": "Copia el prompt a continuación y pégalo en tu asistente de IA preferido."
+    },
+    "step2": {
+      "title": "Paso 2: Pega la Respuesta",
+      "description": "Pega la respuesta JSON completa y sin modificar de la IA en el área de texto a continuación.",
+      "placeholder": "Pega la respuesta JSON de la IA aquí..."
+    }
+  },
+  "common": {
+    "copy": "Copiar",
+    "cancel": "Cancelar",
+    "applyChanges": "Aplicar Cambios"
+  },
+  "doc_view": {
+    "untitled_schema": "Esquema sin título",
+    "placeholder": {
+      "title": "¿Sobre qué es tu esquema?",
+      "term": "Escribe '/' para comandos",
+      "description": "Añadir una descripción..."
+    },
+    "media": {
+      "edit_button": "Editar"
+    }
+  },
+  "formula_editor": {
+    "title": "Editar Fórmula",
+    "label": "Fórmula KaTeX",
+    "cancel_button": "Cancelar",
+    "save_button": "Guardar",
+    "preview_title": "Vista Previa",
+    "help_title": "Ayuda de KaTeX",
+    "error_rendering": "Error al renderizar la vista previa",
+    "help": {
+      "fractions": "Fracciones:",
+      "superscript": "Superíndice:",
+      "subscript": "Subíndice:",
+      "square_root": "Raíz Cuadrada:",
+      "summation": "Sumatoria:",
+      "greek_letters": "Letras Griegas:"
+    }
+  },
+  "card_editor_panel": {
+    "title": "Tarjetas de Estudio",
+    "tooltip": "Crea preguntas y respuestas para este nodo. Úsalas en el \"Modo de Repaso\" para memorizar conceptos clave.",
+    "saving": "Guardando...",
+    "saved": "Guardado",
+    "add_card": "Añadir Tarjeta",
+    "add_basic": "Básica (P/R)",
+    "add_input": "Rellenar el Hueco",
+    "add_sequence": "Secuencia",
+    "done": "Hecho",
+    "question_label": "Pregunta",
+    "question_placeholder": "Escribe la pregunta...",
+    "answer_label": "Respuesta",
+    "answer_placeholder": "Escribe la respuesta...",
+    "prompt_label": "Instrucción (usa {{...}} para el hueco)",
+    "prompt_placeholder": "p. ej., La capital de Francia es {{...}}",
+    "expected_answer_label": "Respuesta Esperada",
+    "expected_answer_placeholder": "p. ej., París",
+    "instruction_label": "Instrucción",
+    "instruction_placeholder": "p. ej., Ordena los siguientes pasos...",
+    "sequence_item_placeholder": "Elemento de la secuencia...",
+    "add_item": "Añadir Elemento",
+    "card_deleted_toast": "Tarjeta eliminada.",
+    "undo_button": "Deshacer"
+  },
+  "command_bar": {
+    "ai_helper": {
+      "create_schema": {
+        "title": "Crear Esquema desde Texto",
+        "prompt_placeholder": "Pega aquí tu texto, notas o artículo...",
+        "success": "Esquema \"{title}\" creado con éxito."
+      },
+      "expand_node": {
+        "title": "Expandir Nodo con IA",
+        "success": "Nodo expandido con éxito.",
+        "error": {
+          "no_node_selected": "Para expandir un nodo, primero debes seleccionarlo en el editor."
+        }
+      },
+      "generate_flashcards": {
+        "title": "Generar Tarjetas de Estudio con IA",
+        "success": "{count, plural, =1 {1 tarjeta de estudio generada} other {# tarjetas de estudio generadas}}.",
+        "error": {
+          "no_node_id": "No se pudieron generar las tarjetas. El nodo seleccionado no tiene un ID válido.",
+          "save_failed": "Error al guardar las tarjetas generadas.",
+          "no_node_selected": "Para generar tarjetas, primero debes seleccionar un nodo en el editor."
+        }
+      }
+    },
+    "export_success": "Bóveda exportada con éxito.",
+    "operation_failed": "La operación falló",
+    "operation_failed_details": "Contraseña incorrecta o archivo dañado.",
+    "password_modal": {
+      "title": {
+        "export": "Exportar Bóveda",
+        "import": "Importar Bóveda"
+      },
+      "description": {
+        "export": "Por favor, introduce una contraseña para encriptar tu bóveda. Será necesaria para la importación.",
+        "import": "Por favor, introduce la contraseña de la bóveda que estás importando."
+      },
+      "password_placeholder": "Introduce la contraseña...",
+      "cancel_button": "Cancelar",
+      "confirm_button": {
+        "export": "Exportar",
+        "import": "Importar"
+      }
+    },
+    "close_aria_label": "Cerrar barra de comandos"
+  },
+  "error_diagnostic": {
+    "title": "Diagnóstico de Errores",
+    "explanation": "Este es un registro de los errores que han ocurrido en la aplicación. Si tienes problemas, copia este informe y envíalo al desarrollador para obtener ayuda.",
+    "explanation.privacy": "Este informe no contiene ningún dato personal.",
+    "report_header": "Informe de Errores",
+    "empty_state": "No se han registrado errores.",
+    "clear_logs": "Limpiar Registros",
+    "copy_report": "Copiar Informe"
+  },
+  "toast": {
+    "info": {
+      "nothing_to_copy": "Nada que copiar.",
+      "error_logs_cleared": "Registros de errores limpiados."
+    },
+    "success": {
+      "diagnostic_report_copied": "Informe de diagnóstico copiado al portapapeles."
+    },
+    "error": {
+      "could_not_copy_report": "No se pudo copiar el informe."
+    }
+  },
+  "first_time_hint": {
+    "command_bar_hint": "Presiona <kbd>Ctrl</kbd> + <kbd>K</kbd> para abrir el menú de comandos.",
+    "close_hint_aria_label": "Cerrar pista"
+  },
+  "modal": {
+    "close_aria_label": "Cerrar modal",
+    "default_aria_label": "Ventana modal"
   }
 }

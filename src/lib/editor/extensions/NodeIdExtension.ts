@@ -1,19 +1,29 @@
 // src/lib/editor/extensions/NodeIdExtension.ts
+/**
+ * @file Implements the `NodeIdExtension` for the Tiptap editor. This extension is critical
+ * for ensuring data persistence and integrity by assigning a unique and stable identifier
+ * (`nodeId`) to every `listItem` node.
+ */
 
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * This extension ensures that every 'listItem' node has a unique and persistent `nodeId`.
- * This ID is the critical link between the visual node in the editor and its associated
- * data, such as study cards, in external services or databases.
+ * @description The `NodeIdExtension` ensures that every `listItem` node in the editor schema
+ * has a unique `nodeId` attribute. This ID serves as a stable reference to the node, allowing
+ * external services (like study card management) to associate data with a specific piece of content.
+ *
+ * The extension employs a two-fold strategy:
+ * 1. An `onCreate` hook to scan the initial document and assign IDs to any `listItem` nodes that lack them.
+ * 2. A ProseMirror plugin using `appendTransaction` to automatically assign IDs to new `listItem` nodes
+ *    as they are created, providing a self-healing mechanism that ensures all nodes are identifiable.
  */
 export const NodeIdExtension = Extension.create({
   name: 'nodeId',
 
   /**
-   * We add `nodeId` as a global attribute to the `listItem` nodes.
+   * Adds `nodeId` as a global attribute to all `listItem` nodes.
    */
   addGlobalAttributes() {
     return [
@@ -22,12 +32,13 @@ export const NodeIdExtension = Extension.create({
         attributes: {
           nodeId: {
             default: null,
-            // Defines how the attribute is read from and written to the HTML representation.
+            // Defines how the attribute is read from and written to the HTML.
             parseHTML: (element) => element.getAttribute('data-node-id'),
             renderHTML: (attributes) => {
               if (!attributes.nodeId) {
                 return {};
               }
+              // Persist the ID to the DOM as a `data-node-id` attribute.
               return { 'data-node-id': attributes.nodeId };
             },
           },
@@ -36,16 +47,19 @@ export const NodeIdExtension = Extension.create({
     ];
   },
 
-  // *** INICIO DE LA SOLUCIÓN: onCreate Hook ***
-  // Se ejecuta una sola vez cuando el editor es creado.
+  /**
+   * The `onCreate` hook runs once when the editor is initialized.
+   * It scans the initial document and assigns a UUID to any `listItem` that does not already have one.
+   * This is essential for back-filling IDs when loading existing content.
+   */
   onCreate() {
     const { tr } = this.editor.state;
     let modified = false;
 
-    // Recorremos el documento inicial.
+    // Iterate over the initial document.
     this.editor.state.doc.descendants((node, pos) => {
       if (node.type.name === 'listItem' && !node.attrs.nodeId) {
-        // Si un 'listItem' no tiene ID, se lo asignamos inmediatamente.
+        // If a listItem is found without an ID, assign one.
         tr.setNodeMarkup(pos, undefined, {
           ...node.attrs,
           nodeId: uuidv4(),
@@ -54,24 +68,26 @@ export const NodeIdExtension = Extension.create({
       }
     });
 
-    // Si hemos modificado algo, aplicamos la transacción.
+    // If any modifications were made, dispatch the transaction.
     if (modified) {
       this.editor.view.dispatch(tr);
     }
   },
-  // *** FIN DE LA SOLUCIÓN ***
 
   /**
-   * We add a ProseMirror plugin to automatically assign an ID to any `listItem` that doesn't have one.
-   * This is a "self-healing" mechanism that guarantees data integrity.
+   * Adds a ProseMirror plugin to ensure that any `listItem` created during an editor session
+   * gets a `nodeId`.
    */
   addProseMirrorPlugins() {
     return [
       new Plugin({
         key: new PluginKey('nodeIdPlugin'),
-        // `appendTransaction` is called for every transaction that occurs in the editor.
+        /**
+         * `appendTransaction` is called for every transaction before it is applied.
+         * This allows us to inspect the transaction and append our own changes.
+         */
         appendTransaction: (transactions, oldState, newState) => {
-          // If the document hasn't changed, we don't need to do anything.
+          // Only proceed if the document has actually changed.
           if (!transactions.some((tr) => tr.docChanged)) {
             return null;
           }
@@ -79,26 +95,23 @@ export const NodeIdExtension = Extension.create({
           const tr = newState.tr;
           let modified = false;
 
-          // We iterate over all nodes in the new state of the document.
+          // Iterate over all nodes in the new document state.
           newState.doc.descendants((node, pos) => {
-            // We are only interested in 'listItem' nodes.
+            // We are only interested in `listItem` nodes.
             if (node.type.name === 'listItem') {
-              // If a node is missing the `nodeId` attribute...
+              // If a node is missing its `nodeId` attribute...
               if (!node.attrs.nodeId) {
-                // ...we generate a new UUID for it.
-                const newId = uuidv4();
-                // We create a markup change in the transaction to add the ID.
+                // ...we generate a new UUID and add it to the transaction.
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
-                  nodeId: newId,
+                  nodeId: uuidv4(),
                 });
                 modified = true;
               }
             }
           });
 
-          // If we made any changes, we return the modified transaction.
-          // Otherwise, we return null to indicate that no changes are needed.
+          // Return the modified transaction if changes were made, otherwise null.
           return modified ? tr : null;
         },
       }),
