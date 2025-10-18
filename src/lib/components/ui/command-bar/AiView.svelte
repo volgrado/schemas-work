@@ -70,9 +70,7 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .separator {
-      background-color: var(--panel-border-dark);
-    }
+  :global(.dark-theme) .separator {
+    background-color: var(--panel-border-dark);
   }
 </style>

@@ -68,7 +68,7 @@
     size="md"
     aria-label={label}
   >
-    <Icon {icon} size={20} />
+    <Icon name={icon} size={20} />
     <span>{label}</span>
   </Button>
 </div>
@@ -78,19 +78,22 @@
     position: fixed;
     bottom: var(--space-lg);
     z-index: 40; /* Positioned above content but below modals. */
-    /* Adds a subtle blur to content scrolling behind the button. */
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     border-radius: var(--space-sm);
   }
 
   /* --- Positioning Classes --- */
-  .center { left: 50%; transform: translateX(-50%); }
-  .right { right: var(--space-lg); }
-  .left { left: var(--space-lg); }
+  .center {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .right {
+    right: var(--space-lg);
+  }
+  .left {
+    left: var(--space-lg);
+  }
 
-  /* 
-    Apply a more prominent shadow to the button inside the FAB wrapper.
+  /* Apply a more prominent shadow to the button inside the FAB wrapper.
     We use :global() because the button is a child component.
   */
   :global(.fab-wrapper button) {
@@ -98,17 +101,16 @@
   }
 
   /* Dark Mode Styles */
-  @media (prefers-color-scheme: dark) {
-    /* 
-      In dark mode, the button itself has a dark background. The backdrop-filter
+  :global(.dark-theme) .fab-wrapper {
+    /* In dark mode, the button itself has a dark background. The backdrop-filter
       is less effective without a semi-transparent background on the wrapper.
     */
-    .fab-wrapper {
-      background-color: hsla(var(--color-background-dark-hsl), 0.1);
-    }
+    background-color: hsla(var(--color-background-dark-hsl), 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 
-    :global(.fab-wrapper button) {
-      box-shadow: var(--shadow-dark-md);
-    }
+  :global(.dark-theme .fab-wrapper button) {
+    box-shadow: var(--shadow-dark-md);
   }
 </style>

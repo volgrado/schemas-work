@@ -46,9 +46,11 @@
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
   --color-background-elevated: #ffffff;
-  --color-background-translucent: rgba(255, 255, 255, 0.85);
+  /* FIX: Use a solid background for panels in light mode for better contrast */
+  --color-background-translucent: var(--color-background-raised);
   --color-border-input: #cbd5e0;
-  --btn-hover-bg: #edf2f7;
+  /* FIX: Darkened hover background for better contrast */
+  --btn-hover-bg: #eaf0f6;
 
   /* --- Feedback Colors --- */
   --color-danger: #e53e3e;
@@ -109,8 +111,8 @@
   --toast-button-hover-background: var(--color-gray-100);
 
   /* --- Command Bar & Panels --- */
-  --panel-bg-light: rgba(255, 255, 255, 0.85);
-  --panel-border-light: rgba(0, 0, 0, 0.08);
+  --panel-bg-light: var(--color-background-translucent);
+  --panel-border-light: var(--color-border);
   --scrollbar-thumb: rgba(0, 0, 0, 0.2);
 
   /* --- Z-Index Stack --- */
@@ -156,11 +158,12 @@ html.dark-theme,
   --color-background-raised: #2c2c2e;
   --color-background-dark-raised: #2c2c2e;
   --color-background-elevated: #3a3a3c;
+  /* FIX: Translucent background is now exclusive to dark mode */
   --color-background-translucent: hsla(0, 0%, 12%, 0.75);
   --color-border-input: var(--color-gray-700);
   --color-border-input-dark: var(--color-gray-700);
-  --btn-hover-bg: #2c2c2e;
-  --btn-hover-bg-dark: #2c2c2e;
+  --btn-hover-bg: #3a3a3c;
+  --btn-hover-bg-dark: #3a3a3c;
 
   /* --- Grayscale Palette --- */
   --color-gray-50: #1c1c1e;
@@ -576,7 +579,7 @@ input[type='range']::-webkit-slider-thumb {
   display: inline-block;
   width: 1em;
   height: 1em;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-pen-tool'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'%3E%3C/path%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'%3E%3C/path%3E%3Cpath d='M2 2l7.586 7.586'%3E%3C/path%3E%3Ccircle cx='11' cy='11' r='2'%3E%3C/circle%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-pen-tool'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'%3E%3C/path%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'%3E%3C/path%3E%3Cpath d='M2 2l7.586 7.586'%3E%3C/path%3E%3Ccircle cx='11' cy='11' r='2'%3E%3C/circle%3E%3C/svg%3E");
   background-size: contain;
   background-repeat: no-repeat;
   opacity: 0.3;

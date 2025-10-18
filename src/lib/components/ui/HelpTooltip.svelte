@@ -186,19 +186,17 @@
   }
 
   /* Dark mode styles */
-  @media (prefers-color-scheme: dark) {
-    .tooltip-trigger:hover,
-    .tooltip-trigger:focus-visible {
-      background-color: var(--color-gray-800);
-    }
-    .tooltip-content {
-      background-color: var(--color-gray-900);
-      border-color: var(--color-gray-700);
-    }
-    .tooltip-arrow {
-      background: var(--color-gray-900);
-      border-right: 1px solid var(--color-gray-700);
-      border-bottom: 1px solid var(--color-gray-700);
-    }
+  :global(.dark-theme) .tooltip-trigger:hover,
+  :global(.dark-theme) .tooltip-trigger:focus-visible {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .tooltip-content {
+    background-color: var(--color-gray-900);
+    border-color: var(--color-gray-700);
+  }
+  :global(.dark-theme) .tooltip-arrow {
+    background: var(--color-gray-900);
+    border-right: 1px solid var(--color-gray-700);
+    border-bottom: 1px solid var(--color-gray-700);
   }
 </style>

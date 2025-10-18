@@ -225,26 +225,24 @@ ${JSON.stringify(logs, null, 2)}
   }
 
   /* Dark Mode Styles */
-  @media (prefers-color-scheme: dark) {
-    .explanation {
-      color: var(--color-text-dark-secondary);
-    }
-    .log-area {
-      background-color: var(--color-gray-900);
-      border-color: var(--color-border-dark);
-    }
-    .log-entry summary:hover {
-      background-color: var(--color-gray-800);
-    }
-    .timestamp {
-      color: var(--color-text-dark-tertiary);
-    }
-    pre {
-      background-color: var(--color-gray-950);
-      color: var(--color-text-dark);
-    }
-    .empty-state {
-      color: var(--color-text-dark-secondary);
-    }
+  :global(.dark-theme) .explanation {
+    color: var(--color-text-dark-secondary);
+  }
+  :global(.dark-theme) .log-area {
+    background-color: var(--color-gray-900);
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .log-entry summary:hover {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .timestamp {
+    color: var(--color-text-dark-tertiary);
+  }
+  :global(.dark-theme) pre {
+    background-color: var(--color-gray-950);
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .empty-state {
+    color: var(--color-text-dark-secondary);
   }
 </style>

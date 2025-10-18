@@ -90,16 +90,11 @@
     position: fixed;
     z-index: 110; /* Must be above other elements like the CommandBar */
     min-width: 180px;
-    background-color: var(
-      --color-background-translucent,
-      rgba(255, 255, 255, 0.75)
-    );
-    border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+    background-color: var(--color-background-translucent);
+    border: 1px solid var(--color-border);
     border-radius: var(--space-sm);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     padding: var(--space-xs);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
   }
 
   /* Global styles for buttons passed into the slot */
@@ -122,7 +117,7 @@
   }
 
   :global(.context-menu-panel button:hover) {
-    background-color: var(--color-gray-100);
+    background-color: var(--btn-hover-bg);
   }
 
   /* Global styles for dividers */
@@ -134,16 +129,16 @@
   }
 
   /* Dark mode adjustments */
-  @media (prefers-color-scheme: dark) {
-    .context-menu-panel {
-      background-color: rgba(30, 30, 30, 0.75);
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-    :global(.context-menu-panel button:hover) {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    :global(.context-menu-panel hr) {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
+  :global(.dark-theme) .context-menu-panel {
+    background-color: var(--color-background-translucent);
+    border-color: var(--panel-border-dark);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+  }
+  :global(.dark-theme .context-menu-panel button:hover) {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme .context-menu-panel hr) {
+    background-color: var(--panel-border-dark);
   }
 </style>

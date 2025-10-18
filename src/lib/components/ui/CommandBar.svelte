@@ -334,8 +334,6 @@
     position: fixed;
     inset: 0;
     background-color: var(--overlay-bg);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     z-index: calc(var(--z-command-bar) - 1);
     border: none;
     cursor: default;
@@ -352,8 +350,6 @@
     box-sizing: border-box;
     background-color: var(--color-background-translucent);
     border: 1px solid var(--color-border);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-radius: 16px;
     box-shadow: var(--shadow-xl);
     z-index: var(--z-command-bar);
@@ -447,23 +443,30 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    :global(.panel .action-list) {
-      scrollbar-color: var(--scrollbar-thumb-dark) transparent;
-    }
-    :global(.panel .action-list::-webkit-scrollbar-thumb) {
-      background-color: var(--scrollbar-thumb-dark);
-    }
-    .panel {
-      background-color: var(--panel-bg-dark);
-      border-color: var(--panel-border-dark);
-    }
-    :global(.panel .action-button) {
-      color: var(--color-text-dark);
-    }
-    :global(.panel .action-button:hover:not(:disabled)),
-    :global(.panel .action-button:focus-visible) {
-      background-color: var(--btn-hover-bg-dark);
-    }
+  :global(.dark-theme) .overlay {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  :global(.dark-theme) .panel {
+    background-color: var(--panel-bg-dark);
+    border-color: var(--panel-border-dark);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  :global(.dark-theme .action-list) {
+    scrollbar-color: var(--scrollbar-thumb-dark) transparent;
+  }
+  :global(.dark-theme .action-list::-webkit-scrollbar-thumb) {
+    background-color: var(--scrollbar-thumb-dark);
+  }
+
+  :global(.dark-theme .action-button) {
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme .action-button:hover:not(:disabled)),
+  :global(.dark-theme .action-button:focus-visible) {
+    background-color: var(--btn-hover-bg-dark);
   }
 </style>

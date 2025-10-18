@@ -38,7 +38,11 @@
 
 <div class="lang-switcher">
   <!-- Button displaying the current language, which also opens the menu. -->
-  <button on:click={handleLangMenu} aria-haspopup="true" aria-expanded={showLangMenu}>
+  <button
+    on:click={handleLangMenu}
+    aria-haspopup="true"
+    aria-expanded={showLangMenu}
+  >
     {$t(`languages.${$locale}`)}
   </button>
 
@@ -60,7 +64,7 @@
   .lang-switcher {
     position: relative;
   }
-  
+
   /* Styling for the button that shows the current language and opens the menu */
   button {
     background-color: transparent;
@@ -70,11 +74,13 @@
     color: var(--color-gray-600);
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--space-sm);
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
   button:hover {
-    background-color: var(--color-gray-100);
+    background-color: var(--btn-hover-bg);
     color: var(--color-text);
   }
 
@@ -101,22 +107,26 @@
   }
 
   .lang-menu li button:hover {
-    background-color: var(--color-gray-100);
+    background-color: var(--btn-hover-bg);
     color: var(--color-text);
   }
 
   /* Dark Mode Styles */
-  @media (prefers-color-scheme: dark) {
-    button:hover {
-      background-color: var(--color-gray-800);
-      color: var(--color-text-dark);
-    }
-    .lang-menu {
-      background-color: var(--color-background-dark-raised);
-      border-color: var(--color-border-dark);
-    }
-    .lang-menu li button:hover {
-      background-color: var(--color-gray-700);
-    }
+  :global(.dark-theme) button {
+    color: var(--color-text-dark-secondary);
+  }
+  :global(.dark-theme) button:hover {
+    background-color: var(--btn-hover-bg-dark);
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .lang-menu {
+    background-color: var(--color-background-dark-raised);
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .lang-menu li button {
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .lang-menu li button:hover {
+    background-color: var(--btn-hover-bg-dark);
   }
 </style>

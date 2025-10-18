@@ -195,11 +195,9 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .preview-pane,
-    .help-pane {
-      background-color: var(--color-background-dark-raised);
-      border: 1px solid var(--color-border-dark);
-    }
+  :global(.dark-theme) .preview-pane,
+  :global(.dark-theme) .help-pane {
+    background-color: var(--color-background-dark-raised);
+    border: 1px solid var(--color-border-dark);
   }
 </style>

@@ -441,7 +441,6 @@
     position: fixed;
     inset: 0;
     background: var(--overlay-bg);
-    backdrop-filter: blur(2px);
     z-index: var(--z-card-editor);
     border: none;
   }
@@ -717,27 +716,30 @@
   }
 
   /* --- Dark Mode Styles --- */
-  @media (prefers-color-scheme: dark) {
-    .panel,
-    .header,
-    .add-menu,
-    .card-wrapper {
-      border-color: var(--color-border-dark);
-    }
+  :global(.dark-theme) .overlay {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
 
-    .add-menu {
-      background-color: var(--color-background-dark-raised);
-    }
-    .add-menu button:hover {
-      background: var(--btn-hover-bg-dark);
-    }
-    .card-wrapper {
-      background-color: var(--color-background-dark-raised);
-    }
-    .remove-card-button:hover,
-    .remove-item-button:hover {
-      background-color: var(--color-gray-800);
-    }
+  :global(.dark-theme) .panel,
+  :global(.dark-theme) .header,
+  :global(.dark-theme) .add-menu,
+  :global(.dark-theme) .card-wrapper {
+    border-color: var(--color-border-dark);
+  }
+
+  :global(.dark-theme) .add-menu {
+    background-color: var(--color-background-dark-raised);
+  }
+  :global(.dark-theme) .add-menu button:hover {
+    background: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .card-wrapper {
+    background-color: var(--color-background-dark-raised);
+  }
+  :global(.dark-theme) .remove-card-button:hover,
+  :global(.dark-theme) .remove-item-button:hover {
+    background-color: var(--color-gray-800);
   }
 
   /* --- Responsive Adjustments --- */

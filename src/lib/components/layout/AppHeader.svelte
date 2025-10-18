@@ -81,8 +81,6 @@
     width: 100%;
     z-index: 50;
     background-color: var(--color-background-translucent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--color-border);
     padding: var(--space-sm) 0;
     transition: all 0.3s ease;
@@ -188,13 +186,15 @@
   }
 
   /* --- Dark Mode --- */
-  .dark-theme .app-header {
+  :global(.dark-theme) .app-header {
     border-bottom-color: var(--color-border-dark);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-  .dark-theme .brand-button:hover {
+  :global(.dark-theme) .brand-button:hover {
     background-color: var(--color-gray-800);
   }
-  .dark-theme :global(.shortcuts kbd) {
+  :global(.dark-theme) :global(.shortcuts kbd) {
     background-color: var(--color-gray-700);
     border-color: var(--color-gray-600);
     color: var(--color-text-dark);

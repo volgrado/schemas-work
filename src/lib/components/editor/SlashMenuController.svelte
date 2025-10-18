@@ -242,31 +242,29 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .slash-menu-container {
-      border-color: var(--color-border-dark);
-    }
-    .group-tabs {
-      border-color: var(--color-border-dark);
-    }
-    .group-tab.is-active {
-      background-color: var(--color-gray-800);
-    }
-    .menu-item.is-selected {
-      background-color: var(--color-gray-800);
-    }
-    .icon-wrapper {
-      background-color: var(--color-gray-800);
-    }
-    .group-tab {
-      color: var(--color-gray-400);
-    }
-    .group-tab.is-active,
-    .group-tab:hover {
-      color: var(--color-text-dark);
-    }
-    .menu-item.is-selected .icon-wrapper {
-      color: var(--color-text-dark);
-    }
+  :global(.dark-theme) .slash-menu-container {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .group-tabs {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .group-tab.is-active {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .menu-item.is-selected {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .icon-wrapper {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .group-tab {
+    color: var(--color-gray-400);
+  }
+  :global(.dark-theme) .group-tab.is-active,
+  :global(.dark-theme) .group-tab:hover {
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .menu-item.is-selected .icon-wrapper {
+    color: var(--color-text-dark);
   }
 </style>

@@ -41,12 +41,20 @@
   The main container for the hint. It uses transitions for a smooth appearance.
   The `in:fly` transition makes it slide up from the bottom, and `out:fade` makes it gently disappear.
 -->
-<div class="hint-container" in:fly={{ y: 20, duration: 400, easing: quintOut }} out:fade={{ duration: 200 }}>
+<div
+  class="hint-container"
+  in:fly={{ y: 20, duration: 400, easing: quintOut }}
+  out:fade={{ duration: 200 }}
+>
   <p class="hint-text">
     <!-- The text is rendered using @html to allow for the <kbd> tags from the i18n string. -->
     {@html $t('first_time_hint.command_bar_hint')}
   </p>
-  <button class="close-button" on:click={handleClose} aria-label={$t('first_time_hint.close_hint_aria_label')}>
+  <button
+    class="close-button"
+    on:click={handleClose}
+    aria-label={$t('first_time_hint.close_hint_aria_label')}
+  >
     <Icon name="x" size={18} />
   </button>
 </div>
@@ -54,8 +62,7 @@
 <style>
   .hint-container {
     position: fixed;
-    /* 
-      The 60px offset provides space for other floating elements like the FAB.
+    /* The 60px offset provides space for other floating elements like the FAB.
       This prevents the hint from overlapping with primary actions.
     */
     bottom: calc(var(--space-lg) + 60px);
@@ -83,8 +90,7 @@
     white-space: nowrap; /* Prevents the text from wrapping to a new line. */
   }
 
-  /* 
-    Styling for the <kbd> (keyboard) element, which is globally applied when inside hint-text.
+  /* Styling for the <kbd> (keyboard) element, which is globally applied when inside hint-text.
     This creates the visual appearance of a keyboard key.
   */
   :global(.hint-text kbd) {
@@ -107,7 +113,9 @@
     justify-content: center;
     padding: var(--space-xs);
     border-radius: 50%;
-    transition: opacity 0.2s, background-color 0.2s;
+    transition:
+      opacity 0.2s,
+      background-color 0.2s;
   }
 
   .close-button:hover {
@@ -116,23 +124,21 @@
   }
 
   /* --- Dark Mode Styles --- */
-  @media (prefers-color-scheme: dark) {
-    .hint-container {
-      background-color: var(--color-text-dark);
-      color: var(--color-background-dark);
-    }
+  :global(.dark-theme) .hint-container {
+    background-color: var(--color-text-dark);
+    color: var(--color-background-dark);
+  }
 
-    :global(.hint-text kbd) {
-      background-color: rgba(0, 0, 0, 0.1);
-      border-color: rgba(0, 0, 0, 0.2);
-    }
+  :global(.dark-theme .hint-text kbd) {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 0, 0, 0.3);
+  }
 
-    .close-button {
-      color: var(--color-background-dark);
-    }
+  :global(.dark-theme) .close-button {
+    color: var(--color-background-dark);
+  }
 
-    .close-button:hover {
-      background-color: rgba(0, 0, 0, 0.1);
-    }
+  :global(.dark-theme) .close-button:hover {
+    background-color: rgba(0, 0, 0, 0.2);
   }
 </style>

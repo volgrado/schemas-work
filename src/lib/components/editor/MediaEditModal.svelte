@@ -114,9 +114,7 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .image-preview {
-      background-color: var(--color-background-dark-raised);
-    }
+  :global(.dark-theme) .image-preview {
+    background-color: var(--color-background-dark-raised);
   }
 </style>

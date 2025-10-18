@@ -382,20 +382,18 @@
     padding: 0 var(--space-xs);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .card {
-      border-color: var(--color-border-dark);
-    }
-    .answer {
-      border-color: var(--color-border-dark);
-    }
-    .card-actions {
-      background-color: var(--color-background-dark-raised);
-      border-color: var(--color-border-dark);
-    }
-    .sequence-item {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-border-dark);
-    }
+  :global(.dark-theme) .card {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .answer {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .card-actions {
+    background-color: var(--color-background-dark-raised);
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .sequence-item {
+    background-color: var(--color-background-dark);
+    border-color: var(--color-border-dark);
   }
 </style>

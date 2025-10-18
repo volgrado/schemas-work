@@ -80,9 +80,21 @@
   }
 
   /* --- Size Modifiers --- */
-  .btn-sm { height: 32px; padding: 0 var(--space-sm); font-size: 0.85rem; }
-  .btn-md { height: 40px; padding: 0 var(--space-md); font-size: 0.9rem; }
-  .btn-lg { height: 48px; padding: 0 var(--space-lg); font-size: 1rem; }
+  .btn-sm {
+    height: 32px;
+    padding: 0 var(--space-sm);
+    font-size: 0.85rem;
+  }
+  .btn-md {
+    height: 40px;
+    padding: 0 var(--space-md);
+    font-size: 0.9rem;
+  }
+  .btn-lg {
+    height: 48px;
+    padding: 0 var(--space-lg);
+    font-size: 1rem;
+  }
 
   /* --- Variant (Color) Modifiers --- */
 
@@ -96,23 +108,57 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px hsl(var(--color-accent-hsl) / 0.2);
   }
-  .btn-primary:disabled { background-color: var(--color-accent); opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-primary:disabled {
+    background-color: var(--color-accent);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
 
   /* Secondary Variant: Clear, but doesn't compete with the primary. */
-  .btn-secondary { background-color: var(--color-gray-100); color: var(--color-text); }
-  .btn-secondary:hover { background-color: var(--color-gray-200); }
-  .btn-secondary:disabled { background-color: var(--color-gray-100); opacity: 0.6; cursor: not-allowed; }
+  .btn-secondary {
+    background-color: var(--color-gray-100);
+    color: var(--color-text);
+  }
+  .btn-secondary:hover {
+    background-color: var(--btn-hover-bg);
+  }
+  .btn-secondary:disabled {
+    background-color: var(--color-gray-100);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   /* Ghost Variant: Minimal, for low-priority actions. */
-  .btn-ghost { background-color: transparent; color: var(--color-gray-500); font-weight: 500; }
-  .btn-ghost:hover { background-color: var(--color-gray-100); color: var(--color-text); }
-  .btn-ghost:disabled { background-color: transparent; opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-gray-500);
+    font-weight: 500;
+  }
+  .btn-ghost:hover {
+    background-color: var(--btn-hover-bg);
+    color: var(--color-text);
+  }
+  .btn-ghost:disabled {
+    background-color: transparent;
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   /* --- Dark Mode Styles --- */
-  @media (prefers-color-scheme: dark) {
-    .btn-secondary { background-color: var(--color-gray-800); color: var(--color-text-dark); }
-    .btn-secondary:hover { background-color: var(--color-gray-700); }
-    .btn-ghost { color: var(--color-gray-400); }
-    .btn-ghost:hover { background-color: var(--color-gray-800); color: var(--color-text-dark); }
+  :global(.dark-theme) .btn-secondary {
+    background-color: var(--color-gray-800);
+    color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .btn-secondary:hover {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .btn-ghost {
+    color: var(--color-gray-400);
+  }
+  :global(.dark-theme) .btn-ghost:hover {
+    background-color: var(--btn-hover-bg-dark);
+    color: var(--color-text-dark);
   }
 </style>

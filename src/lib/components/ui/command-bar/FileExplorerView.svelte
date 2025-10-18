@@ -895,20 +895,18 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .list-header,
-    .separator {
-      border-color: var(--panel-border-dark);
-    }
-    .breadcrumbs button:hover:not(:disabled) {
-      background-color: var(--btn-hover-bg-dark);
-    }
-    .schema-item:not(.disabled):hover,
-    .schema-item:has(.item-main-content:focus-visible) {
-      background-color: var(--btn-hover-bg-dark);
-    }
-    .icon-button:hover:not(:disabled) {
-      background-color: var(--btn-hover-bg-dark);
-    }
+  :global(.dark-theme) .list-header,
+  :global(.dark-theme) .separator {
+    border-color: var(--panel-border-dark);
+  }
+  :global(.dark-theme) .breadcrumbs button:hover:not(:disabled) {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .schema-item:not(.disabled):hover,
+  :global(.dark-theme) .schema-item:has(.item-main-content:focus-visible) {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .icon-button:hover:not(:disabled) {
+    background-color: var(--btn-hover-bg-dark);
   }
 </style>

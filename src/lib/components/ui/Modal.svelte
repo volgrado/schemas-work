@@ -110,7 +110,6 @@
     position: fixed;
     inset: 0;
     background-color: var(--overlay-bg);
-    backdrop-filter: blur(4px); /* Creates a modern, frosted glass effect. */
     z-index: var(--z-modal-overlay);
   }
 
@@ -171,17 +170,20 @@
     overflow-y: auto;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .modal-panel {
-      background-color: var(--color-background-dark-raised);
-      border-color: var(--color-border-dark);
-    }
-    .modal-header {
-      border-color: var(--color-border-dark);
-    }
-    .modal-close-button:hover {
-      background-color: var(--color-gray-800);
-      color: var(--color-text-dark);
-    }
+  :global(.dark-theme) .modal-overlay {
+    backdrop-filter: blur(4px); /* Creates a modern, frosted glass effect. */
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  :global(.dark-theme) .modal-panel {
+    background-color: var(--color-background-dark-raised);
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .modal-header {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .modal-close-button:hover {
+    background-color: var(--color-gray-800);
+    color: var(--color-text-dark);
   }
 </style>

@@ -291,11 +291,9 @@
   }
 
   /* --- Dark Mode Styles --- */
-  @media (prefers-color-scheme: dark) {
-    :global(.prose) {
-      border-color: var(--color-border-dark);
-      box-shadow: var(--shadow-lg-dark);
-    }
+  :global(.dark-theme .prose) {
+    border-color: var(--color-border-dark);
+    box-shadow: var(--shadow-dark-md);
   }
 
   /* --- Responsive Adjustments --- */
