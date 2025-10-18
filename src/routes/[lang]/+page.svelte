@@ -356,15 +356,8 @@
     position: fixed;
     inset: 0;
     z-index: -1;
-    opacity: 0;
+    opacity: 1; /* Make the canvas visible by default */
     transition: opacity 0.5s ease-in-out;
-  }
-
-  /* Show canvas on larger screens */
-  @media (min-width: 1200px) {
-    .editor-background-canvas {
-      opacity: 1;
-    }
   }
 
   /* Styles for loading/error status messages */
@@ -394,6 +387,17 @@
   .view-content {
     position: absolute;
     inset: 0;
+  }
+
+  .main-content {
+    /* Add any specific styles for the main content area here */
+  }
+
+  .tree-view-content {
+    /* This padding pushes the tree view down to appear below the fixed header, matching the document view's layout. */
+    padding-top: var(--space-xxl);
+    height: 100vh;
+    box-sizing: border-box;
   }
 
   /* Spinner animation for loading icon */

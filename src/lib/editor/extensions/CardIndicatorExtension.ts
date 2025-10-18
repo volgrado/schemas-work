@@ -85,7 +85,7 @@ export const CardIndicatorExtension = Extension.create({
             const allCards = await cardService.getAllCards();
             const nodeIds = new Set(allCards.map((card) => card.nodeId));
 
-            const currentState = this.getState(view.state);
+            const currentState = CARD_INDICATOR_PLUGIN_KEY.getState(view.state);
             if (
               currentState &&
               setsAreEqual(currentState.nodeIdsWithCards, nodeIds)

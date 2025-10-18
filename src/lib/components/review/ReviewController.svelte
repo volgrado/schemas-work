@@ -330,14 +330,7 @@
     gap: var(--space-sm);
   }
   .input-field {
-    width: 100%;
-    padding: var(--space-sm);
-    font-family: var(--font-main);
-    font-size: 1rem;
-    border: 1px solid var(--color-border-input);
-    border-radius: var(--space-sm);
     margin-top: var(--space-sm);
-    background-color: var(--color-background);
   }
 
   .feedback {
@@ -399,10 +392,6 @@
     .card-actions {
       background-color: var(--color-background-dark-raised);
       border-color: var(--color-border-dark);
-    }
-    .input-field {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-border-input-dark);
     }
     .sequence-item {
       background-color: var(--color-background-dark);

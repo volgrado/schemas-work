@@ -7,7 +7,7 @@
 // To add a new icon, add it to the `icons` object in `src/lib/components/ui/Icon.svelte`
 // and then add the key to this type union.
 
-export type IconName = 
+export type IconName =
   // General & UI
   | 'plus'
   | 'minus'
@@ -25,7 +25,7 @@ export type IconName =
   | 'folder'
   | 'file-text'
   | 'lock'
-  
+
   // Media & Audio
   | 'play'
   | 'pause'
@@ -42,6 +42,7 @@ export type IconName =
   | 'bold'
   | 'italic'
   | 'list'
+  | 'list-ordered'
 
   // Conceptual & App-Specific
   | 'zap'
@@ -49,6 +50,6 @@ export type IconName =
   | 'git-branch'
   | 'download-cloud'
   | 'upload-cloud'
-  
+
   // Special alias
   | 'plus-slash-minus';

@@ -330,26 +330,13 @@
 {/if}
 
 <style>
-  /* CSS variables provide a single source of truth for theming and consistency. */
-  :global(:root) {
-    --panel-bg-light: rgba(255, 255, 255, 0.85);
-    --panel-bg-dark: rgba(28, 28, 30, 0.85);
-    --panel-border-light: rgba(0, 0, 0, 0.08);
-    --panel-border-dark: rgba(255, 255, 255, 0.12);
-    --overlay-bg: rgba(0, 0, 0, 0.1);
-    --btn-hover-bg: rgba(0, 0, 0, 0.04);
-    --btn-hover-bg-dark: rgba(255, 255, 255, 0.08);
-    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
-    --scrollbar-thumb-dark: rgba(255, 255, 255, 0.2);
-  }
-
   .overlay {
     position: fixed;
     inset: 0;
     background-color: var(--overlay-bg);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 99;
+    z-index: calc(var(--z-command-bar) - 1);
     border: none;
     cursor: default;
   }
@@ -363,13 +350,13 @@
     max-width: 640px;
     max-height: 70vh;
     box-sizing: border-box;
-    background-color: var(--panel-bg-light);
-    border: 1px solid var(--panel-border-light);
+    background-color: var(--color-background-translucent);
+    border: 1px solid var(--color-border);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 16px;
     box-shadow: var(--shadow-xl);
-    z-index: 100;
+    z-index: var(--z-command-bar);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -459,28 +446,6 @@
     gap: var(--space-sm);
   }
 
-  input[type='password'] {
-    box-sizing: border-box;
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    margin-top: var(--space-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--space-sm);
-    font-family: var(--font-main);
-    font-size: 0.95rem;
-    background-color: var(--color-gray-50);
-    color: var(--color-text);
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
-  }
-
-  input[type='password']:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.2);
-  }
-
   /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
     :global(.panel .action-list) {
@@ -499,11 +464,6 @@
     :global(.panel .action-button:hover:not(:disabled)),
     :global(.panel .action-button:focus-visible) {
       background-color: var(--btn-hover-bg-dark);
-    }
-    input[type='password'] {
-      background-color: var(--color-gray-900);
-      color: var(--color-text-dark);
-      border-color: var(--color-gray-800);
     }
   }
 </style>

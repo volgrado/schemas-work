@@ -57,9 +57,9 @@ export const getCommands = (): CommandItem[] => {
   return [
     // --- Group: Basic ---
     {
-      title: $t('slashCommands.term.title'),
-      description: $t('slashCommands.term.description'),
-      group: $t('slashCommands.groups.basic'),
+      title: t('slashCommands.term.title'),
+      description: t('slashCommands.term.description'),
+      group: t('slashCommands.groups.basic'),
       icon: 'pen-tool',
       command: ({ editor, range }) => {
         // Toggles a standard list item, which is the default block for this app.
@@ -67,18 +67,18 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.list.title'),
-      description: $t('slashCommands.list.description'),
-      group: $t('slashCommands.groups.basic'),
+      title: t('slashCommands.list.title'),
+      description: t('slashCommands.list.description'),
+      group: t('slashCommands.groups.basic'),
       icon: 'list',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).toggleBulletList().run();
       },
     },
     {
-      title: $t('slashCommands.numberedList.title'),
-      description: $t('slashCommands.numberedList.description'),
-      group: $t('slashCommands.groups.basic'),
+      title: t('slashCommands.numberedList.title'),
+      description: t('slashCommands.numberedList.description'),
+      group: t('slashCommands.groups.basic'),
       icon: 'list-ordered',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).toggleOrderedList().run();
@@ -87,9 +87,9 @@ export const getCommands = (): CommandItem[] => {
 
     // --- Group: Formatting ---
     {
-      title: $t('slashCommands.h1.title'),
-      description: $t('slashCommands.h1.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.h1.title'),
+      description: t('slashCommands.h1.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'type',
       command: ({ editor, range }) => {
         editor
@@ -101,9 +101,9 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.h2.title'),
-      description: $t('slashCommands.h2.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.h2.title'),
+      description: t('slashCommands.h2.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'type',
       command: ({ editor, range }) => {
         editor
@@ -115,9 +115,9 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.h3.title'),
-      description: $t('slashCommands.h3.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.h3.title'),
+      description: t('slashCommands.h3.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'type',
       command: ({ editor, range }) => {
         editor
@@ -129,27 +129,27 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.separator.title'),
-      description: $t('slashCommands.separator.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.separator.title'),
+      description: t('slashCommands.separator.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'minus',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).setHorizontalRule().run();
       },
     },
     {
-      title: $t('slashCommands.bold.title'),
-      description: $t('slashCommands.bold.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.bold.title'),
+      description: t('slashCommands.bold.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'bold',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).setMark('bold').run();
       },
     },
     {
-      title: $t('slashCommands.italic.title'),
-      description: $t('slashCommands.italic.description'),
-      group: $t('slashCommands.groups.formatting'),
+      title: t('slashCommands.italic.title'),
+      description: t('slashCommands.italic.description'),
+      group: t('slashCommands.groups.formatting'),
       icon: 'italic',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).setMark('italic').run();
@@ -158,9 +158,9 @@ export const getCommands = (): CommandItem[] => {
 
     // --- Group: Media ---
     {
-      title: $t('slashCommands.image.title'),
-      description: $t('slashCommands.image.description'),
-      group: $t('slashCommands.groups.media'),
+      title: t('slashCommands.image.title'),
+      description: t('slashCommands.image.description'),
+      group: t('slashCommands.groups.media'),
       icon: 'image',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -182,9 +182,9 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.youtube.title'),
-      description: $t('slashCommands.youtube.description'),
-      group: $t('slashCommands.groups.media'),
+      title: t('slashCommands.youtube.title'),
+      description: t('slashCommands.youtube.description'),
+      group: t('slashCommands.groups.media'),
       icon: 'video',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -206,9 +206,9 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.mathBlock.title'),
-      description: $t('slashCommands.mathBlock.description'),
-      group: $t('slashCommands.groups.media'),
+      title: t('slashCommands.mathBlock.title'),
+      description: t('slashCommands.mathBlock.description'),
+      group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -226,9 +226,9 @@ export const getCommands = (): CommandItem[] => {
       },
     },
     {
-      title: $t('slashCommands.mathInline.title'),
-      description: $t('slashCommands.mathInline.description'),
-      group: $t('slashCommands.groups.media'),
+      title: t('slashCommands.mathInline.title'),
+      description: t('slashCommands.mathInline.description'),
+      group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -248,28 +248,28 @@ export const getCommands = (): CommandItem[] => {
 
     // --- Group: AI ---
     {
-      title: $t('slashCommands.expandNode.title'),
-      description: $t('slashCommands.expandNode.description'),
-      group: $t('slashCommands.groups.ai'),
+      title: t('slashCommands.expandNode.title'),
+      description: t('slashCommands.expandNode.description'),
+      group: t('slashCommands.groups.ai'),
       icon: 'sparkles',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         if (!hasNodeSelected()) {
-          toast.error($t('slashCommands.expandNode.error'));
+          toast.error(t('slashCommands.expandNode.error'));
           return;
         }
         commandBarStore.openAiHelper('expand-node');
       },
     },
     {
-      title: $t('slashCommands.generateCards.title'),
-      description: $t('slashCommands.generateCards.description'),
-      group: $t('slashCommands.groups.ai'),
+      title: t('slashCommands.generateCards.title'),
+      description: t('slashCommands.generateCards.description'),
+      group: t('slashCommands.groups.ai'),
       icon: 'zap',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         if (!hasNodeSelected()) {
-          toast.error($t('slashCommands.generateCards.error'));
+          toast.error(t('slashCommands.generateCards.error'));
           return;
         }
         commandBarStore.openAiHelper('generate-flashcards');
@@ -278,42 +278,42 @@ export const getCommands = (): CommandItem[] => {
 
     // --- Group: Utilities ---
     {
-      title: $t('slashCommands.readNode.title'),
-      description: $t('slashCommands.readNode.description'),
-      group: $t('slashCommands.groups.utilities'),
+      title: t('slashCommands.readNode.title'),
+      description: t('slashCommands.readNode.description'),
+      group: t('slashCommands.groups.utilities'),
       icon: 'volume-2',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         const state = get(editorStore);
         if (state.selectedNodePos === null) {
-          toast.error($t('slashCommands.readNode.error'));
+          toast.error(t('slashCommands.readNode.error'));
           return;
         }
         const node = editor.state.doc.nodeAt(state.selectedNodePos);
         if (node?.attrs.nodeId) {
           ttsStore.startReadingFromNode(node.attrs.nodeId);
         } else {
-          toast.error($t('slashCommands.readNode.errorNoId'));
+          toast.error(t('slashCommands.readNode.errorNoId'));
         }
       },
     },
     {
-      title: $t('slashCommands.editCards.title'),
-      description: $t('slashCommands.editCards.description'),
-      group: $t('slashCommands.groups.utilities'),
+      title: t('slashCommands.editCards.title'),
+      description: t('slashCommands.editCards.description'),
+      group: t('slashCommands.groups.utilities'),
       icon: 'edit-3',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         const state = get(editorStore);
         if (state.selectedNodePos === null) {
-          toast.error($t('slashCommands.editCards.error'));
+          toast.error(t('slashCommands.editCards.error'));
           return;
         }
         const node = editor.state.doc.nodeAt(state.selectedNodePos);
         if (node?.attrs.nodeId) {
           cardEditorStore.open(node.attrs.nodeId);
         } else {
-          toast.error($t('slashCommands.editCards.errorNoId'));
+          toast.error(t('slashCommands.editCards.errorNoId'));
         }
       },
     },

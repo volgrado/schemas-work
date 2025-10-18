@@ -150,15 +150,8 @@
   }
 
   textarea {
-    width: 100%;
-    padding: var(--space-sm);
-    border-radius: var(--space-sm);
-    border: 1px solid var(--color-border-input);
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 1rem;
-    background-color: var(--color-background);
-    color: var(--color-text);
-    resize: vertical;
     min-height: 80px;
   }
 
@@ -193,12 +186,6 @@
     flex-direction: column;
     gap: var(--space-sm);
   }
-  code {
-    background-color: var(--color-gray-200);
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: monospace;
-  }
 
   .modal-actions {
     display: flex;
@@ -209,17 +196,10 @@
 
   /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
-    textarea {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-border-input-dark);
-    }
     .preview-pane,
     .help-pane {
       background-color: var(--color-background-dark-raised);
       border: 1px solid var(--color-border-dark);
-    }
-    code {
-      background-color: var(--color-gray-700);
     }
   }
 </style>

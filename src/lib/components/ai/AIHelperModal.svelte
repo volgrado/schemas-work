@@ -185,31 +185,15 @@
   .step p {
     margin: 0 0 var(--space-sm) 0;
     font-size: 0.9rem;
-    color: var(--color-gray-600);
-  }
-  textarea {
-    box-sizing: border-box;
-    width: 100%;
-    padding: var(--space-sm);
-    border: 1px solid var(--color-border-input);
-    border-radius: var(--space-sm);
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    background-color: var(--color-background);
-    color: var(--color-text);
-    resize: vertical;
-    transition: border-color 0.2s;
-  }
-  textarea:focus {
-    outline: none;
-    border-color: var(--color-accent);
+    color: var(--color-text-secondary);
   }
   textarea[readonly] {
     background-color: var(--color-gray-50);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
   }
-
   .is-invalid {
-    border-color: var(--color-danger);
+    border-color: var(--color-danger) !important;
   }
   .error-message {
     color: var(--color-danger);
@@ -224,13 +208,6 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .step p {
-      color: var(--color-gray-400);
-    }
-    textarea {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-border-input-dark);
-    }
     textarea[readonly] {
       background-color: var(--color-background-dark-raised);
     }

@@ -440,9 +440,9 @@
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-bg);
     backdrop-filter: blur(2px);
-    z-index: var(--z-overlay, 100);
+    z-index: var(--z-card-editor);
     border: none;
   }
   .panel {
@@ -450,7 +450,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: var(--z-panel, 101);
+    z-index: calc(var(--z-card-editor) + 1);
     background-color: var(--color-background);
     border-top: 1px solid var(--color-border);
     border-radius: var(--space-md) var(--space-md) 0 0;
@@ -489,7 +489,7 @@
     align-items: center;
     gap: 6px;
     font-size: 0.8rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
   }
   @keyframes spin {
     from {
@@ -543,7 +543,7 @@
     transition: background-color 0.15s ease;
   }
   .add-menu button:hover {
-    background: var(--color-gray-100);
+    background: var(--btn-hover-bg);
   }
 
   /* --- Content & Card List --- */
@@ -562,7 +562,7 @@
 
   /* --- Individual Card Styling --- */
   .card-wrapper {
-    background-color: var(--color-background-raised);
+    background-color: var(--color-background);
     border: 1px solid var(--color-border);
     border-radius: var(--space-md);
     padding: var(--space-md);
@@ -614,28 +614,8 @@
   .field label {
     font-size: 0.8rem;
     font-weight: 500;
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
     padding-left: var(--space-xs);
-  }
-  .card-inputs input,
-  .card-inputs textarea {
-    width: 100%;
-    padding: var(--space-sm);
-    font-family: inherit;
-    font-size: 0.95rem;
-    background-color: var(--color-gray-50);
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--space-sm);
-    color: var(--color-text);
-    transition:
-      border-color 0.2s,
-      background-color 0.2s;
-  }
-  .card-inputs input:focus-visible,
-  .card-inputs textarea:focus-visible {
-    outline: none;
-    background-color: var(--color-background);
-    border-color: var(--color-accent);
   }
   .card-inputs textarea {
     min-height: 40px;
@@ -723,7 +703,7 @@
   /* --- Empty State --- */
   .empty-state {
     text-align: center;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     padding: var(--space-xl) 0;
   }
   .empty-state h4 {
@@ -738,31 +718,21 @@
 
   /* --- Dark Mode Styles --- */
   @media (prefers-color-scheme: dark) {
+    .panel,
     .header,
-    .panel {
+    .add-menu,
+    .card-wrapper {
       border-color: var(--color-border-dark);
     }
+
     .add-menu {
       background-color: var(--color-background-dark-raised);
-      border-color: var(--color-border-dark);
     }
     .add-menu button:hover {
-      background: var(--color-gray-800);
+      background: var(--btn-hover-bg-dark);
     }
     .card-wrapper {
       background-color: var(--color-background-dark-raised);
-      border-color: var(--color-border-dark);
-    }
-    .card-inputs input,
-    .card-inputs textarea {
-      background-color: var(--color-gray-900);
-      border-color: var(--color-gray-700);
-      color: var(--color-text-dark);
-    }
-    .card-inputs input:focus-visible,
-    .card-inputs textarea:focus-visible {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-accent);
     }
     .remove-card-button:hover,
     .remove-item-button:hover {

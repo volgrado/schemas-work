@@ -1,3 +1,4 @@
+<!-- svelte-ignore non_reactive_update -->
 <!--
   @component
   FileExplorerView

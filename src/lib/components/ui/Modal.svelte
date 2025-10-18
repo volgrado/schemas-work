@@ -109,9 +109,9 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: var(--overlay-bg);
     backdrop-filter: blur(4px); /* Creates a modern, frosted glass effect. */
-    z-index: 199; /* Below the modal panel, but above everything else. */
+    z-index: var(--z-modal-overlay);
   }
 
   .modal-panel {
@@ -119,7 +119,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 200;
+    z-index: var(--z-modal-panel);
     width: 90vw;
     max-width: 500px;
     background-color: var(--color-background);

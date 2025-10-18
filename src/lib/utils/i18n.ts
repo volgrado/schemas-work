@@ -41,7 +41,7 @@ function translate(
   key: string,
   vars: Record<string, string | number>
 ): string {
-  if (!key) throw new Error('no key provided to $t()');
+  if (!key) throw new Error('no key provided to get(t)()');
 
   let text = translations[locale];
   if (!text) {
@@ -103,7 +103,7 @@ function translate(
  *   import { t } from '$lib/utils/i18n';
  * </script>
  *
- * <h1>{$t('welcome.title', { name: 'World' })}</h1>
+ * <h1>{get(t)('welcome.title', { name: 'World' })}</h1>
  * ```
  */
 export const t = derived(
@@ -122,7 +122,7 @@ export const t = derived(
  * import { gett } from '$lib/utils/i18n';
  *
  * const t = gett();
- * const title = $t('welcome.title');
+ * const title = get(t)('welcome.title');
  * ```
  */
 export const gett = () => get(t);

@@ -2,22 +2,14 @@
  * src/lib/styles/app.css
  *
  * ========================================================================
- * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V2.0)
+ * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V3.0)
  * ========================================================================
  *
  * METHODOLOGY:
- * This stylesheet follows principles from modern CSS architectures like
- * ITCSS (Inverted Triangle CSS), organizing rules from generic to specific.
- * This improves predictability, scalability, and maintainability.
- *
- * STRUCTURE:
- * 1. SETTINGS: Font loading and global variable definitions (Design Tokens).
- * 2. TOOLS: Globally available mixins or helper functions (if any).
- * 3. GENERIC: Reset and universal box-sizing rules.
- * 4. BASE: Default styles for basic HTML elements (body, headings, etc.).
- * 5. OBJECTS: Layout-related classes (if any).
- * 6. COMPONENTS: Styling for specific, reusable UI components.
- * 7. UTILITIES: Override and helper classes (if any).
+ * This stylesheet acts as the single source of truth for the application's
+ * design tokens. It follows ITCSS principles, organizing rules from generic
+ * to specific to improve predictability, scalability, and maintainability.
+ * All colors, spacing, typography, and z-index values should be defined here.
  *
  */
 
@@ -39,21 +31,52 @@
  * 1.2. Design Tokens (CSS Variables)
  * -------------------------------------------------------------------------- */
 :root {
-  /* --- Colors --- */
+  /* --- Primary Colors --- */
   --color-background: #ffffff;
   --color-page-background: #f8f8f8;
   --color-text: #111111;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
   --color-accent: #d9534f;
-  --color-danger: #e53e3e;
-  --color-gray-100: #f2f2f2;
-  --color-gray-200: #e5e5ea;
-  --color-gray-500: #a1a1a6;
+  --color-accent-hover: #c9302c;
   --color-accent-hsl: 16 84% 53%;
+  --color-accent-rgb: 217, 83, 79;
+  --color-border: #e5e5ea;
+
+  /* --- Component Colors --- */
+  --color-background-raised: #ffffff;
+  --color-background-elevated: #ffffff;
+  --color-background-translucent: hsla(0, 0%, 100%, 0.75);
+  --color-border-input: var(--color-gray-200);
+  --btn-hover-bg: var(--color-gray-100);
+
+  /* --- Feedback Colors --- */
+  --color-danger: #e53e3e;
+  --color-danger-bg: #fee2e2;
+  --color-danger-text: #991b1b;
+  --color-danger-border: #fca5a5;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #166534;
+  --color-success-border: #86efac;
+  --color-blue-500: #3b82f6;
+  --color-green-500: #22c55e;
+  --color-orange-500: #f97316;
+
+  /* --- Grayscale Palette --- */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
 
   /* --- Typography --- */
   --font-main:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
 
   /* --- Spacing --- */
   --space-xs: 4px;
@@ -63,11 +86,44 @@
   --space-xl: 32px;
   --space-xxl: 64px;
 
-  /* --- Component-Specific Tokens (Light Theme) --- */
+  /* --- Shadows --- */
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* --- Misc & Overlays --- */
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --color-background-faint: hsla(0, 0%, 50%, 0.1);
+
+  /* --- Animation Colors --- */
+  --color-background-main: var(--color-page-background);
+  --color-primary-accent-light: hsl(var(--color-accent-hsl) / 0.2);
+
+  /* --- Toasts & Notifications --- */
   --toast-background: var(--color-background);
   --toast-color: var(--color-text);
   --toast-border: var(--color-gray-100);
   --toast-button-hover-background: var(--color-gray-100);
+
+  /* --- Command Bar & Panels --- */
+  --panel-bg-light: rgba(255, 255, 255, 0.85);
+  --panel-border-light: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+
+  /* --- Z-Index Stack --- */
+  --z-base: 1;
+  --z-fab: 40;
+  --z-header: 50;
+  --z-slash-menu: 70;
+  --z-first-time-hint: 90;
+  --z-command-bar: 100;
+  --z-card-editor: 101;
+  --z-context-menu: 110;
+  --z-modal-overlay: 199;
+  --z-modal-panel: 200;
+  --z-welcome-animator: 200;
 }
 
 /**
@@ -75,20 +131,64 @@
  * -------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* --- Colors --- */
+    /* --- Primary Colors --- */
     --color-background: #1c1c1e;
+    --color-background-dark: #1c1c1e; /* Alias for component compatibility */
     --color-page-background: #161618;
     --color-text: rgba(255, 255, 255, 0.9);
+    --color-text-dark: rgba(255, 255, 255, 0.9);
+    --color-text-secondary: #a1a1a6;
+    --color-text-dark-secondary: #a1a1a6;
+    --color-text-tertiary: #8e8e93;
+    --color-text-dark-tertiary: #8e8e93;
     --color-accent: #ff6347; /* Tomato */
+    --color-accent-hover: #ff4500;
+    --color-accent-hsl: 9 100% 64%;
+    --color-border: #3a3a3c;
+    --color-border-dark: #3a3a3c;
+
+    /* --- Animation Colors --- */
+    --color-background-main-dark: var(--color-page-background);
+    --color-primary-accent-dark: hsl(var(--color-accent-hsl) / 0.3);
+
+    /* --- Component Colors --- */
+    --color-background-raised: #2c2c2e;
+    --color-background-dark-raised: #2c2c2e;
+    --color-background-elevated: #3a3a3c;
+    --color-background-translucent: hsla(0, 0%, 12%, 0.75);
+    --color-border-input: var(--color-gray-700);
+    --color-border-input-dark: var(--color-gray-700);
+    --btn-hover-bg: #2c2c2e;
+    --btn-hover-bg-dark: #2c2c2e;
+
+    /* --- Grayscale Palette --- */
+    --color-gray-50: #1c1c1e;
     --color-gray-100: #2c2c2e;
     --color-gray-200: #3a3a3c;
-    --color-gray-500: #8e8e93;
-    --color-accent-hsl: 9 100% 64%;
+    --color-gray-400: #8e8e93;
+    --color-gray-500: #a1a1a6;
+    --color-gray-600: #d1d1d6;
+    --color-gray-700: #48484a;
+    --color-gray-800: #3a3a3c;
+    --color-gray-900: #1c1c1e;
+    --color-gray-950: #121212;
 
-    /* --- Component-Specific Tokens (Dark Theme) --- */
-    --toast-background: var(--color-background);
-    --toast-border: rgba(255, 255, 255, 0.1);
-    --toast-button-hover-background: var(--color-gray-100);
+    /* --- Shadows --- */
+    --shadow-md:
+      0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-dark-md: var(--shadow-md);
+    --shadow-lg:
+      0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl:
+      0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+
+    /* --- Command Bar & Panels --- */
+    --panel-bg-dark: rgba(28, 28, 30, 0.85);
+    --panel-border-dark: rgba(255, 255, 255, 0.12);
+    --scrollbar-thumb-dark: rgba(255, 255, 255, 0.2);
+
+    /* --- Misc & Overlays --- */
+    --overlay-bg: rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -137,11 +237,106 @@ body {
   color: #ffffff;
 }
 
+/**
+ * 4.3. Keyboard Key Styles
+ * -------------------------------------------------------------------------- */
+kbd {
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--color-gray-100);
+  color: var(--color-text);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--color-gray-200);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  kbd {
+    background-color: var(--color-gray-700);
+    border-color: var(--color-gray-600);
+    color: var(--color-text-dark);
+  }
+}
+
 /* 6. COMPONENTS
    ========================================================================== */
 
 /**
- * 6.1. ProseMirror Editor (`.prose`)
+ * 6.1. Form Elements
+ * Global styles for inputs, textareas, and select elements for consistency.
+ * -------------------------------------------------------------------------- */
+input[type='text'],
+input[type='url'],
+input[type='password'],
+textarea,
+select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-sm);
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--space-sm);
+  color: var(--color-text);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+input[type='text']:focus-visible,
+input[type='url']:focus-visible,
+input[type='password']:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.2);
+}
+
+textarea {
+  resize: vertical;
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--color-gray-200);
+  border-radius: 3px;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type='text'],
+  input[type='url'],
+  input[type='password'],
+  textarea,
+  select {
+    background-color: var(--color-background-dark-raised);
+    border-color: var(--color-border-input-dark);
+    color: var(--color-text-dark);
+  }
+  input[type='range'] {
+    background: hsla(0, 0%, 100%, 0.1);
+  }
+}
+
+/**
+ * 6.2. ProseMirror Editor (`.prose`)
  * Styles for the main text editor content area.
  * -------------------------------------------------------------------------- */
 .prose {
@@ -256,13 +451,13 @@ body {
 }
 
 /**
- * 6.2. Svelte-Sonner Notifications
+ * 6.3. Svelte-Sonner Notifications
  * Overrides to integrate the notification library with the design system.
  * -------------------------------------------------------------------------- */
 :global([data-sonner-toaster]) {
   --normal-bg: var(--toast-background);
   --normal-border: var(--toast-border);
-  --normal-text: var(--toast-color);
+  --normal-text: var(--color-text);
   --success-bg: var(--toast-background);
   --success-border: var(--toast-border);
   --success-text: var(--color-text);
@@ -286,17 +481,17 @@ body {
   transition: background-color 0.2s;
 }
 :global([data-sonner-toaster] [data-button]:hover) {
-  background: var(--toast-button-hover-background);
+  background: var(--btn-hover-bg);
 }
 :global([data-sonner-toaster] [data-close-button]) {
   background: transparent;
 }
 :global([data-sonner-toaster] [data-close-button]:hover) {
-  background: var(--toast-button-hover-background);
+  background: var(--btn-hover-bg);
 }
 
 /**
- * 6.3. Tippy.js Tooltips
+ * 6.4. Tippy.js Tooltips
  * Overrides for tooltip styles.
  * -------------------------------------------------------------------------- */
 .tippy-box {
@@ -387,4 +582,19 @@ li:hover .card-indicator-icon {
   .card-indicator-icon {
     filter: invert(1);
   }
+}
+
+/* 8. UTILITIES
+   ========================================================================== */
+
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  white-space: nowrap;
 }

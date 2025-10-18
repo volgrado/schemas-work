@@ -96,23 +96,6 @@
     font-size: 0.9rem;
   }
 
-  input {
-    width: 100%;
-    padding: var(--space-sm);
-    border-radius: var(--space-sm);
-    border: 1px solid var(--color-border-input);
-    background-color: var(--color-background);
-    color: var(--color-text);
-    transition:
-      border-color 0.2s,
-      background-color 0.2s;
-  }
-
-  input:focus-visible {
-    outline: none;
-    border-color: var(--color-accent);
-  }
-
   .image-preview {
     max-width: 100%;
     max-height: 200px;
@@ -132,10 +115,6 @@
 
   /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
-    input {
-      background-color: var(--color-background-dark);
-      border-color: var(--color-border-input-dark);
-    }
     .image-preview {
       background-color: var(--color-background-dark-raised);
     }

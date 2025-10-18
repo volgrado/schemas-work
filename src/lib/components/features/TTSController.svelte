@@ -209,14 +209,11 @@
     bottom: var(--space-lg);
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: var(--z-command-bar);
     width: 90%;
     max-width: 650px;
     border-radius: var(--space-md);
-    background-color: var(
-      --color-background-translucent,
-      hsla(0, 0%, 100%, 0.75)
-    );
+    background-color: var(--color-background-translucent);
     backdrop-filter: blur(12px) saturate(150%);
     -webkit-backdrop-filter: blur(12px) saturate(150%);
     border: 1px solid var(--color-border);
@@ -232,7 +229,7 @@
     left: 0;
     width: 100%;
     height: 4px;
-    background-color: hsla(0, 0%, 50%, 0.1);
+    background-color: var(--color-background-faint);
   }
   .progress-bar {
     height: 100%;
@@ -247,7 +244,7 @@
     justify-content: center;
     gap: var(--space-sm);
     padding: var(--space-sm) 0;
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
   }
   .status-view.error {
     color: var(--color-danger);
@@ -287,7 +284,7 @@
   .progress-indicator {
     display: inline-block;
     background-color: var(--color-gray-100);
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -317,7 +314,7 @@
   .setting-item label {
     font-size: 0.85rem;
     font-weight: 500;
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -331,45 +328,15 @@
     background-color: var(--color-background);
     color: var(--color-text);
   }
-  input[type='range'] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    background: var(--color-gray-200);
-    border-radius: 3px;
-    outline: none;
-    margin-top: auto;
-  }
-  input[type='range']::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--color-accent);
-    cursor: pointer;
-    border-radius: 50%;
-  }
 
   /* --- Dark Mode --- */
   @media (prefers-color-scheme: dark) {
-    .panel {
-      background-color: hsla(0, 0%, 12%, 0.75);
-      border-color: var(--color-border-dark);
-    }
     .settings {
       border-top-color: var(--color-border-dark);
     }
-    .progress-container,
     .progress-indicator {
-      background-color: hsla(0, 0%, 100%, 0.1);
-    }
-    .ui-select {
       background-color: var(--color-gray-800);
-      border-color: var(--color-border-input-dark);
-    }
-    input[type='range'] {
-      background: hsla(0, 0%, 100%, 0.1);
+      color: var(--color-text-dark-secondary);
     }
   }
 

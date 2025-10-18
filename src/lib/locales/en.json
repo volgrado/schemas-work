@@ -1,4 +1,28 @@
 {
+  "app_name": "Schemas",
+  "welcome": {
+    "tagline": "Structure your knowledge, visualize your ideas, and learn effectively.",
+    "cta": "Get Started",
+    "cta_support": "Completely free and offline."
+  },
+  "feature": {
+    "ai_structure": {
+      "title": "AI-Powered Structuring",
+      "description": "Transform unstructured notes into organized schemas with a single click."
+    },
+    "visualize": {
+      "title": "Visualize Connections",
+      "description": "Explore your knowledge as an interactive tree to see the bigger picture."
+    },
+    "learn": {
+      "title": "Learn with SRS",
+      "description": "Generate flashcards from your notes and master concepts with spaced repetition."
+    },
+    "privacy": {
+      "title": "Privacy First & Offline",
+      "description": "All your data stays on your device, securely stored in your browser."
+    }
+  },
   "slashCommands": {
     "groups": {
       "basic": "Basic",
@@ -125,12 +149,50 @@
     "delete_error": "Failed to delete the card.",
     "restore_error": "Failed to restore the card."
   },
+  "card_editor_panel": {
+    "title": "Study Cards",
+    "tooltip": "Create questions and answers for this node. Use them in \"Review Mode\" to memorize key concepts.",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "add_card": "Add Card",
+    "add_basic": "Basic (Q/A)",
+    "add_input": "Fill in the Blank",
+    "add_sequence": "Sequence",
+    "done": "Done",
+    "loading": "Loading cards...",
+    "load_error": "Could not load the cards for this node.",
+    "question_label": "Question",
+    "question_placeholder": "Write the question...",
+    "answer_label": "Answer",
+    "answer_placeholder": "Write the answer...",
+    "prompt_label": "Prompt (use {{...}} for the blank)",
+    "prompt_placeholder": "e.g., The capital of France is {{...}}",
+    "expected_answer_label": "Expected Answer",
+    "expected_answer_placeholder": "e.g., Paris",
+    "instruction_label": "Instruction",
+    "instruction_placeholder": "e.g., Order the following steps...",
+    "sequence_item_placeholder": "Sequence item...",
+    "add_item": "Add Item",
+    "card_deleted_toast": "Card deleted.",
+    "undo_button": "Undo",
+    "empty_title": "No Cards Yet",
+    "empty_message": "Add your first study card for this node to begin."
+  },
   "document": {
     "invalid_document_error": "Item is not a valid document: {docId}",
     "new_schema_title": "New Schema",
     "first_schema_title": "My First Schema"
   },
   "tts": {
+    "initializing": "Initializing audio...",
+    "error": "An unknown error occurred.",
+    "previous_node": "Previous",
+    "play": "Play",
+    "pause": "Pause",
+    "next_node": "Next",
+    "stop": "Stop",
+    "voice": "Voice",
+    "speed": "Speed ({rate}x)",
     "finished_reading_toast": "Finished reading the document.",
     "playback_error": "An error occurred during playback.",
     "stopped_due_to_changes_toast": "Playback stopped due to document changes.",
@@ -159,7 +221,8 @@
   "common": {
     "copy": "Copy",
     "cancel": "Cancel",
-    "applyChanges": "Apply Changes"
+    "applyChanges": "Apply Changes",
+    "close": "Close"
   },
   "doc_view": {
     "untitled_schema": "Untitled Schema",
@@ -188,31 +251,6 @@
       "summation": "Summation:",
       "greek_letters": "Greek Letters:"
     }
-  },
-  "card_editor_panel": {
-    "title": "Study Cards",
-    "tooltip": "Create questions and answers for this node. Use them in \"Review Mode\" to memorize key concepts.",
-    "saving": "Saving...",
-    "saved": "Saved",
-    "add_card": "Add Card",
-    "add_basic": "Basic (Q/A)",
-    "add_input": "Fill in the Blank",
-    "add_sequence": "Sequence",
-    "done": "Done",
-    "question_label": "Question",
-    "question_placeholder": "Write the question...",
-    "answer_label": "Answer",
-    "answer_placeholder": "Write the answer...",
-    "prompt_label": "Prompt (use {{...}} for the blank)",
-    "prompt_placeholder": "e.g., The capital of France is {{...}}",
-    "expected_answer_label": "Expected Answer",
-    "expected_answer_placeholder": "e.g., Paris",
-    "instruction_label": "Instruction",
-    "instruction_placeholder": "e.g., Order the following steps...",
-    "sequence_item_placeholder": "Sequence item...",
-    "add_item": "Add Item",
-    "card_deleted_toast": "Card deleted.",
-    "undo_button": "Undo"
   },
   "command_bar": {
     "ai_helper": {
@@ -287,5 +325,124 @@
   "modal": {
     "close_aria_label": "Close modal",
     "default_aria_label": "Modal window"
+  },
+  "file_explorer": {
+    "item_type": {
+      "folder": "folder",
+      "schema": "schema"
+    },
+    "header": {
+      "root_breadcrumb": "Home",
+      "new_schema_button": "New Schema",
+      "new_folder_button": "New Folder",
+      "drop_zone_aria_label": "Drop files here to move to root"
+    },
+    "state": {
+      "loading": "Loading items...",
+      "empty_folder_title": "This folder is empty",
+      "empty_folder_message": "Create a new schema or folder to get started."
+    },
+    "new_item_placeholder": "Enter {type} name...",
+    "rename_input_aria_label": "Rename {title}",
+    "delete_confirm": {
+      "title": "Delete \"{title}\"?",
+      "description": "Are you sure? This will permanently delete the {itemType} and all its contents.",
+      "action": "Delete"
+    },
+    "context_menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "delete": "Delete"
+    },
+    "toast": {
+      "folder_created": "Folder \"{name}\" created.",
+      "schema_created": "Schema \"{name}\" created.",
+      "create_failed": "Failed to create {type}.",
+      "renamed": "\"{oldTitle}\" was renamed to \"{newTitle}\"",
+      "rename_failed": "Failed to rename item.",
+      "item_deleted": "Item deleted.",
+      "delete_failed": "Failed to delete item.",
+      "item_moved": "\"{title}\" was moved.",
+      "move_failed": "Failed to move item."
+    },
+    "errors": {
+      "load_failed": "Failed to load items."
+    },
+    "default_schema_name": "New Schema",
+    "item_actions": {
+      "rename": "Rename item",
+      "delete": "Delete item"
+    },
+    "footer": {
+      "back_to_main_menu": "Back to Main Menu"
+    }
+  },
+  "ai_view": {
+    "title": "AI Assistant Actions",
+    "back_button_aria_label": "Back to main menu",
+    "back_button_label": "Back"
+  },
+  "page": {
+    "view_toggle": {
+      "aria_label": {
+        "to_tree": "Switch to tree view",
+        "to_editor": "Switch to editor view"
+      }
+    },
+    "status": {
+      "loading_schema": "Loading schema...",
+      "load_error": "There was an error loading the document.",
+      "empty_schema": {
+        "message": "This schema is empty.",
+        "hint": "Start typing or use '/' for commands."
+      }
+    },
+    "fab": {
+      "tree": "Tree",
+      "editor": "Editor",
+      "menu": "Menu",
+      "cards": "Cards"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "es": "Spanish"
+  },
+  "media_editor": {
+    "title": {
+      "image": "Edit Image",
+      "youtube": "Edit YouTube Video"
+    },
+    "label": {
+      "image": "Image URL",
+      "youtube": "YouTube URL"
+    },
+    "preview": {
+      "alt": "Image preview"
+    },
+    "cancel_button": "Cancel",
+    "save_button": "Save"
+  },
+  "tooltip": {
+    "show_help": "Show help"
+  },
+  "slash_menu": {
+    "empty_state": "No matching commands"
+  },
+  "main_view": {
+    "title": "Commands"
+  },
+  "command": {
+    "new_schema": "New Schema",
+    "explore_schemas": "Explore Schemas",
+    "ai_assistant": "AI Assistant",
+    "start_review": "Start Review",
+    "read_schema": "Read Schema",
+    "export_vault": "Export Vault",
+    "import_vault": "Import Vault",
+    "diagnostics_and_error_report": "Diagnostics & Error Report",
+    "create_schema_from_text": "Create Schema From Text",
+    "generate_study_cards": "Generate Study Cards",
+    "expand_this_node": "Expand This Node"
   }
 }
