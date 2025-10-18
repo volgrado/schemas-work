@@ -750,6 +750,9 @@
       const effectiveTheme = resolveTheme(newTheme);
       // Only re-initialize if the effective theme has actually changed
       if (effectiveTheme !== currentTheme) {
+        // FIX: Update currentTheme *before* calling init to ensure
+        // the correct theme is used for cache validation and drawing.
+        currentTheme = effectiveTheme;
         init();
       }
     });
@@ -758,6 +761,8 @@
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
       if (get(themeStore) === 'system') {
+        // FIX: Update currentTheme *before* calling init.
+        currentTheme = resolveTheme('system');
         init(); // Re-run init to get the new system theme
       }
     };
