@@ -6,28 +6,15 @@ import type { Handle } from '@sveltejs/kit';
 export const handle: Handle = async ({ event, resolve }) => {
   const lang = event.url.pathname.split('/')[1];
 
+  // This part remains, as it's needed for setting the `lang` attribute on the HTML.
   if (lang === 'en' || lang === 'es') {
     return resolve(event, {
       transformPageChunk: ({ html }) => html.replace('%lang%', lang),
     });
   }
 
-  // This part handles the redirect for users visiting the root.
-  // We check if we are building the app, and if so, we don't redirect.
-  if (!building) {
-    const browserLang =
-      event.request.headers
-        .get('accept-language')
-        ?.split(',')[0]
-        .split('-')[0] || 'en';
-
-    return new Response(undefined, {
-      status: 302,
-      headers: {
-        location: `/${browserLang}${event.url.pathname}`,
-      },
-    });
-  }
+  // The server-side redirect logic is no longer needed and has been removed.
+  // The root route will now be handled by src/routes/+page.svelte.
 
   return resolve(event);
 };
