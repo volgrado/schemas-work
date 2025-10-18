@@ -1,3 +1,4 @@
+// src/hooks.server.ts (Ensure it looks like this)
 
 import type { Handle } from '@sveltejs/kit';
 
@@ -6,12 +7,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (lang === 'en' || lang === 'es') {
     return resolve(event, {
-      transformPageChunk: ({ html }) =>
-        html.replace('%lang%', lang),
+      transformPageChunk: ({ html }) => html.replace('%lang%', lang),
     });
   }
 
-  const browserLang = event.request.headers.get('accept-language')?.split(',')[0].split('-')[0] || 'en';
+  // This part handles the redirect for users visiting the root.
+  const browserLang =
+    event.request.headers.get('accept-language')?.split(',')[0].split('-')[0] ||
+    'en';
 
   return new Response(undefined, {
     status: 302,

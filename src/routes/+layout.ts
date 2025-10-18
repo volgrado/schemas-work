@@ -5,7 +5,8 @@ import type { LayoutLoad } from './$types';
 
 export const load: LayoutLoad = ({ url }) => {
   if (url.pathname === '/') {
-    throw redirect(307, '/en');
+    // This redirect will now be handled by the server hook, not the static build.
+    // The static adapter will be able to successfully generate the fallback page.
   }
 
   // With the global requirement for `lang` removed,
