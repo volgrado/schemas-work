@@ -3,11 +3,10 @@
   import '$lib/styles/app.css';
   import * as errorService from '$lib/services/core/errorService';
   // --- Stores ---
-  import { editorStore } from '$lib/stores/editorStore';
   import { locale } from '$lib/utils/i18n';
+  import { theme, applyTheme } from '$lib/stores/themeStore';
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   // --- Props ---
-  // `data` is from +layout.ts. `children` is the page content snippet.
   let { data, children } = $props();
 
   /**
@@ -17,14 +16,15 @@
   $effect(() => {
     if (browser) {
       locale.set(data.lang);
-      // CORRECTED: Directly set the attribute on the root <html> element.
       document.documentElement.lang = data.lang;
     }
   });
-  // --- DEBUG: Global Store Listener ---
+
+  // Apply theme reactively when the store changes.
   $effect(() => {
-    // console.log('[GLOBAL LAYOUT] editorStore has changed:', $editorStore);
+    applyTheme($theme);
   });
+
   /**
    * This effect sets up global error handling for the entire application.
    */
@@ -53,7 +53,8 @@
           error
         );
       }
-      return !import.meta.env.DEV;
+      const isDevelopment = import.meta.env.DEV;
+      return !isDevelopment;
     };
 
     window.onunhandledrejection = (event: PromiseRejectionEvent) => {
@@ -61,7 +62,8 @@
       if (originalOnUnhandledRejection) {
         return originalOnUnhandledRejection.call(window, event);
       }
-      if (!import.meta.env.DEV) {
+      const isDevelopment = import.meta.env.DEV;
+      if (!isDevelopment) {
         event.preventDefault();
       }
     };

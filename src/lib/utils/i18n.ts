@@ -1,6 +1,7 @@
 import { derived, writable, get } from 'svelte/store';
 import en from '$lib/locales/en.json';
 import es from '$lib/locales/es.json';
+import el from '$lib/locales/el.json';
 
 /**
  * The translations object holds the translations for each language.
@@ -10,6 +11,7 @@ import es from '$lib/locales/es.json';
 export const translations: Record<string, any> = {
   en,
   es,
+  el,
 };
 
 /**
@@ -100,7 +102,7 @@ function translate(
  * Example:
  * ```svelte
  * <script>
- *   import { t } from '$lib/utils/i18n';
+ * import { t } from '$lib/utils/i18n';
  * </script>
  *
  * <h1>{get(t)('welcome.title', { name: 'World' })}</h1>

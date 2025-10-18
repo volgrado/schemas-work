@@ -6,6 +6,7 @@
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
   import { t } from '$lib/utils/i18n';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
+  import ThemeToggleButton from '$lib/components/ui/ThemeToggleButton.svelte';
 
   const dispatch = createEventDispatcher<{ showWelcome: void }>();
   /**
@@ -48,6 +49,7 @@
 
       <div class="header-section right">
         <LanguageSwitcher />
+        <ThemeToggleButton />
         <div class="desktop-only-tooltip">
           <HelpTooltip>
             <div class="shortcuts">
@@ -186,17 +188,15 @@
   }
 
   /* --- Dark Mode --- */
-  @media (prefers-color-scheme: dark) {
-    .app-header {
-      border-bottom-color: var(--color-border-dark);
-    }
-    .brand-button:hover {
-      background-color: var(--color-gray-800);
-    }
-    :global(.shortcuts kbd) {
-      background-color: var(--color-gray-700);
-      border-color: var(--color-gray-600);
-      color: var(--color-text-dark);
-    }
+  .dark-theme .app-header {
+    border-bottom-color: var(--color-border-dark);
+  }
+  .dark-theme .brand-button:hover {
+    background-color: var(--color-gray-800);
+  }
+  .dark-theme :global(.shortcuts kbd) {
+    background-color: var(--color-gray-700);
+    border-color: var(--color-gray-600);
+    color: var(--color-text-dark);
   }
 </style>

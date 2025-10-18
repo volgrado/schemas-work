@@ -7,20 +7,8 @@
   away the need to import each icon component individually in every file.
 
   It provides a consistent interface for sizing, styling, and customizing icons throughout the application.
-
-  Props:
-  - `name`: The name of the feather icon to display (e.g., 'plus', 'copy', 'git-branch'). This is a required prop.
-  - `size`: The size of the icon in pixels, passed as a string or number. Defaults to '16'.
-  - `strokeWidth`: The stroke width of the icon's lines. Defaults to 2.
-  - `class`: Allows passing a custom CSS class to the wrapper span element.
-
-  @restProps All other standard HTML attributes are passed directly to the wrapper `<span>` element.
-
-  Usage:
-  <Icon name="play" size="24" strokeWidth={1.5} class="text-green-500" />
 -->
 <script lang="ts">
-  // CORRECTED: Import ComponentType to create a more specific type
   import type { SvelteComponent, ComponentType } from 'svelte';
 
   // --- Icons from `svelte-feather-icons` ---
@@ -43,6 +31,9 @@
     FileTextIcon,
     LockIcon,
     PlusSquareIcon,
+    SunIcon,
+    MoonIcon,
+    MonitorIcon,
 
     // Media & Audio
     PlayIcon,
@@ -69,8 +60,6 @@
     UploadCloudIcon,
   } from 'svelte-feather-icons';
 
-  // CORRECTED: Define a specific interface for the props our icons accept.
-  // This makes our component type-safe.
   interface FeatherIconProps {
     size?: string;
     strokeWidth?: number;
@@ -81,7 +70,6 @@
    * A mapping of string names to their corresponding Svelte icon components.
    * This allows for dynamic icon rendering based on the `name` prop.
    */
-  // CORRECTED: Use our more specific type for the icons dictionary.
   const icons: Record<
     string,
     ComponentType<SvelteComponent<FeatherIconProps>>
@@ -104,6 +92,9 @@
     'file-text': FileTextIcon,
     lock: LockIcon,
     'plus-square': PlusSquareIcon,
+    sun: SunIcon,
+    moon: MoonIcon,
+    monitor: MonitorIcon,
 
     // Media & Audio
     play: PlayIcon,
@@ -141,21 +132,12 @@
   export let strokeWidth: number = 2;
 </script>
 
-<!-- 
-  The wrapper span ensures consistent layout and allows for easy styling.
-  `aria-hidden="true"` is used because icons are typically decorative; 
-  if an icon is interactive, its parent button should have an `aria-label`.
--->
 <span
   class="icon-wrapper {$$props.class || ''}"
   aria-hidden="true"
   style="width: {size}px; height: {size}px;"
   {...$$restProps}
 >
-  <!-- 
-    Dynamically renders the selected icon component.
-    We convert `size` to a string to match the underlying library's prop type.
-  -->
   <svelte:component this={icons[name]} size={String(size)} {strokeWidth} />
 </span>
 

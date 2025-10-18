@@ -25,6 +25,9 @@ export type IconName =
   | 'folder'
   | 'file-text'
   | 'lock'
+  | 'sun' // NEW
+  | 'moon' // NEW
+  | 'monitor' // NEW
 
   // Media & Audio
   | 'play'
