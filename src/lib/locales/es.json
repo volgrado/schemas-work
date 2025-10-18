@@ -1,0 +1,107 @@
+{
+  "slashCommands": {
+    "groups": {
+      "basic": "Básico",
+      "formatting": "Formato",
+      "media": "Multimedia",
+      "ai": "IA",
+      "utilities": "Utilidades"
+    },
+    "term": {
+      "title": "Término",
+      "description": "Añadir un nuevo concepto o término."
+    },
+    "list": {
+      "title": "Lista",
+      "description": "Crear una lista con viñetas."
+    },
+    "numberedList": {
+      "title": "Lista Numerada",
+      "description": "Crear una lista ordenada (1, 2, 3...)"
+    },
+    "h1": {
+      "title": "Título 1",
+      "description": "El título principal del esquema."
+    },
+    "h2": {
+      "title": "Título 2",
+      "description": "Añadir un subtítulo de sección."
+    },
+    "h3": {
+      "title": "Título 3",
+      "description": "Añadir un subtítulo anidado."
+    },
+    "separator": {
+      "title": "Separador",
+      "description": "Añadir una línea horizontal."
+    },
+    "bold": {
+      "title": "Negrita",
+      "description": "Resaltar el texto seleccionado."
+    },
+    "italic": {
+      "title": "Cursiva",
+      "description": "Enfatizar el texto seleccionado."
+    },
+    "image": {
+      "title": "Imagen",
+      "description": "Añadir una imagen desde una URL."
+    },
+    "youtube": {
+      "title": "Video de YouTube",
+      "description": "Incrustar un video de YouTube."
+    },
+    "mathBlock": {
+      "title": "Fórmula (Bloque)",
+      "description": "Añadir una fórmula matemática (KaTeX)."
+    },
+    "mathInline": {
+      "title": "Fórmula (En línea)",
+      "description": "Añadir una fórmula en la misma línea."
+    },
+    "expandNode": {
+      "title": "Expandir Nodo (IA)",
+      "description": "Generar sub-puntos para el nodo actual.",
+      "error": "Para expandir, primero selecciona un nodo en el esquema."
+    },
+    "generateCards": {
+      "title": "Generar Tarjetas (IA)",
+      "description": "Crear tarjetas de estudio para este nodo.",
+      "error": "Para generar tarjetas, primero selecciona un nodo."
+    },
+    "readNode": {
+      "title": "Leer Nodo",
+      "description": "Iniciar la lectura en voz alta desde aquí.",
+      "error": "Selecciona un nodo para empezar a leer."
+    },
+    "editCards": {
+      "title": "Editar Tarjetas",
+      "description": "Abrir el editor de tarjetas para este nodo.",
+      "error": "Selecciona un nodo para editar sus tarjetas.",
+      "errorNoId": "Este nodo no tiene un ID válido para asociar tarjetas."
+    }
+  },
+  "appHeader": {
+    "aria": {
+      "returnToWelcome": "Volver a la pantalla de bienvenida"
+    },
+    "shortcuts": {
+      "menu": "Menú",
+      "editCards": "Editar Tarjetas"
+    }
+  },
+  "review": {
+    "inputPlaceholder": "Escribe tu respuesta...",
+    "correctAnswer": "Respuesta correcta:",
+    "correctSequence": "¡Secuencia correcta!",
+    "correctSequenceIs": "La secuencia correcta es:",
+    "showAnswer": "Mostrar Respuesta",
+    "evaluating": "Evaluando...",
+    "check": "Comprobar",
+    "again": "De nuevo",
+    "hard": "Difícil",
+    "easy": "Fácil",
+    "goToSource": "Ir a la fuente",
+    "finishReview": "Finalizar Repaso"
+  }
+}

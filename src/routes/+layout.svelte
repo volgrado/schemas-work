@@ -1,34 +1,34 @@
-<!-- src/routes/+layout.svelte (REFACTORIZADO A SVELTE 5 CON RUNES) -->
+<!-- src/routes/+layout.svelte (REFACTORED TO SVELTE 5 WITH RUNES) -->
 <script lang="ts">
   import { browser } from '$app/environment';
   import '$lib/styles/app.css';
   import * as errorService from '$lib/services/core/errorService';
 
-  // --- Store para el Test ---
+  // --- Store for Testing ---
   import { editorStore } from '$lib/stores/editorStore';
 
-  // --- Props (estilo Svelte 5) ---
+  // --- Props (Svelte 5 style) ---
   let { data } = $props();
 
-  // --- TEST: Listener Global del Store ---
-  // Este efecto reactivo es nuestra herramienta clave para depurar.
-  // Se ejecutará cada vez que el valor de `editorStore` cambie.
+  // --- TEST: Global Store Listener ---
+  // This reactive effect is our key debugging tool.
+  // It will run every time the value of `editorStore` changes.
   $effect(() => {
-    // La suscripción es automática al usar el prefijo '$'
-    console.log('[LAYOUT GLOBAL] El editorStore ha cambiado:', $editorStore);
+    // Subscription is automatic when using the '$' prefix
+    console.log('[GLOBAL LAYOUT] editorStore has changed:', $editorStore);
   });
 
-  // --- EFECTO: Manejo de Errores Globales (reemplaza onMount/onDestroy) ---
-  // Este efecto se ejecuta una vez cuando el componente se monta en el cliente.
-  // La función que retorna se ejecutará como limpieza cuando el componente se desmonte.
+  // --- EFFECT: Global Error Handling (replaces onMount/onDestroy) ---
+  // This effect runs once when the component is mounted on the client.
+  // The returned function will be executed as cleanup when the component is unmounted.
   $effect(() => {
-    // Los efectos que interactúan con APIs del navegador (window)
-    // deben protegerse para no ejecutarse durante el renderizado en servidor (SSR).
+    // Effects that interact with browser APIs (window)
+    // must be protected from running during server-side rendering (SSR).
     if (!browser) {
       return;
     }
 
-    // --- Lógica de "Setup" ---
+    // --- "Setup" Logic ---
     const originalOnError = window.onerror;
     const originalOnUnhandledRejection = window.onunhandledrejection;
 
@@ -49,7 +49,7 @@
           error
         );
       }
-      // Retorna true para prevenir el comportamiento por defecto en producción
+      // Return true to prevent default behavior in production
       return !import.meta.env.DEV;
     };
 
@@ -63,8 +63,8 @@
       }
     };
 
-    // --- Lógica de "Limpieza" ---
-    // Esta función se ejecutará automáticamente cuando el layout se desmonte.
+    // --- "Cleanup" Logic ---
+    // This function will be automatically executed when the layout is unmounted.
     return () => {
       window.onerror = originalOnError;
       window.onunhandledrejection = originalOnUnhandledRejection;

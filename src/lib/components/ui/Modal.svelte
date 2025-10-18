@@ -1,8 +1,9 @@
-<!-- src/lib/components/ui/Modal.svelte (CORREGIDO) -->
+
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import { t } from '$lib/services/i18n';
 
   export let show: boolean = false;
   export let title: string | null = null;
@@ -27,20 +28,18 @@
 </script>
 
 {#if show}
-  <!-- *** CORRECCIÓN ***: Se usa una clase más específica -->
   <button
     class="modal-overlay"
     on:click={close}
     transition:fade={{ duration: 150 }}
-    aria-label="Cerrar modal"
+    aria-label={$t('modal.close_aria_label')}
   ></button>
 
-  <!-- *** CORRECCIÓN ***: Se usa una clase más específica -->
   <div
     class="modal-panel"
     role="dialog"
     aria-modal="true"
-    aria-label={title || 'Modal'}
+    aria-label={title || $t('modal.default_aria_label')}
     transition:fly={{ y: 20, duration: 200 }}
   >
     {#if title}
@@ -49,7 +48,7 @@
         <button
           class="modal-close-button"
           on:click={close}
-          aria-label="Cerrar modal"
+          aria-label={$t('modal.close_aria_label')}
         >
           <Icon name="x" size={20} />
         </button>
@@ -70,7 +69,7 @@
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px); /* Añadimos un ligero desenfoque al fondo */
+    backdrop-filter: blur(4px); 
     z-index: 199;
     cursor: default;
     border: none;
@@ -85,11 +84,7 @@
     z-index: 200;
     width: 90vw;
     max-width: 500px;
-
-    /* AHORA ES 100% DEPENDIENTE DE LAS VARIABLES GLOBALES */
-    /* Se volverá oscuro y opaco automáticamente en modo oscuro */
     background-color: var(--color-background);
-    /* El borde también se adaptará */
     border: 1px solid var(--color-gray-100);
     border-radius: var(--space-md);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -104,12 +99,10 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--space-md);
-    /* El borde del encabezado también usará las variables globales */
     border-bottom: 1px solid var(--color-gray-100);
     flex-shrink: 0;
   }
 
-  /* El texto del título heredará --color-text automáticamente */
   .modal-title {
     margin: 0;
     font-size: 1.1rem;
@@ -125,7 +118,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* El color del icono usará la variable de texto secundario */
     color: var(--color-gray-500);
     transition:
       background-color 0.2s,
@@ -134,7 +126,6 @@
 
   .modal-close-button:hover {
     background-color: var(--color-gray-100);
-    /* Al pasar el ratón, usará el color de texto principal */
     color: var(--color-text);
   }
 
@@ -142,6 +133,4 @@
     padding: var(--space-lg);
     overflow-y: auto;
   }
-
-  /* YA NO NECESITAMOS UN BLOQUE @media aquí, todo es global. */
 </style>

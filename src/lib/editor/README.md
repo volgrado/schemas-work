@@ -1,36 +1,36 @@
-# Arquitectura del Editor (`/src/lib/editor`)
+# Editor Architecture (`/src/lib/editor`)
 
-Este directorio encapsula toda la lógica, configuración y componentes relacionados con el editor de texto basado en Tiptap/ProseMirror. Es una de las partes más críticas y complejas de la aplicación.
+This directory encapsulates all the logic, configuration, and components related to the Tiptap/ProseMirror-based text editor. It is one of the most critical and complex parts of the application.
 
-## Filosofía de Diseño
+## Design Philosophy
 
-El objetivo principal es crear una experiencia de edición potente y personalizada que se integre a la perfección con el resto de nuestra aplicación Svelte. La clave de nuestra arquitectura es la **abstracción y la modularidad**.
+The main goal is to create a powerful and personalized editing experience that integrates seamlessly with the rest of our Svelte application. The key to our architecture is **abstraction and modularity**.
 
-1.  **Integración Centralizada**: La inicialización y configuración del editor se centralizan en el componente `DocumentView.svelte` (`/src/lib/components/core/DocumentView.svelte`). Este componente es el **único** que escribe en el `editorStore`, siguiendo un patrón de "escritor único, múltiples lectores".
+1.  **Centralized Integration**: The initialization and configuration of the editor are centralized in the `DocumentView.svelte` component (`/src/lib/components/core/DocumentView.svelte`). This component is the **only** one that writes to the `editorStore`, following a "single writer, multiple readers" pattern.
 
-2.  **Extensiones Modulares**: Cada pieza de funcionalidad del editor se implementa como una extensión personalizada de Tiptap. Esto mantiene el código organizado y permite activar o desactivar características fácilmente. Las extensiones se dividen en dos categorías:
-    *   **Nodes**: Definen elementos de bloque o en línea en el esquema del documento (e.g., `Card.ts`, `Heading.ts`).
-    *   **Extensions**: Añaden comportamiento, atajos de teclado o plugins sin introducir un nuevo tipo de nodo (e.g., `SlashCommands`, `Highlight` a través de `suggestion.ts`).
+2.  **Modular Extensions**: Each piece of editor functionality is implemented as a custom Tiptap extension. This keeps the code organized and allows features to be easily enabled or disabled. Extensions are divided into two categories:
+    *   **Nodes**: Define block or inline elements in the document schema (e.g., `Card.ts`, `Heading.ts`).
+    *   **Extensions**: Add behavior, keyboard shortcuts, or plugins without introducing a new node type (e.g., `SlashCommands`, `Highlight` via `suggestion.ts`).
 
-3.  **Comunicación a través de Stores**: La comunicación entre el editor y el resto de la aplicación se realiza a través de Svelte Stores, principalmente el `editorStore`. Las extensiones personalizadas pueden leer el estado de otros stores, pero para enviar información *desde* el editor *hacia* la UI de Svelte, actualizan el `editorStore` o invocan acciones en otros stores.
+3.  **Communication via Stores**: Communication between the editor and the rest of the application is done through Svelte Stores, mainly the `editorStore`. Custom extensions can read the state of other stores, but to send information *from* the editor *to* the Svelte UI, they update the `editorStore` or invoke actions in other stores.
 
-## Estructura de Directorios
+## Directory Structure
 
--   **/nodes**: Contiene las definiciones de nuestros nodos personalizados de Tiptap. Cada archivo define el nombre, el esquema, los comandos y las reglas de renderizado del nodo.
-    -   `Card.ts`: Un ejemplo complejo que define el nodo para las tarjetas de estudio, incluyendo atributos personalizados como `nodeId`.
+-   **/nodes**: Contains the definitions of our custom Tiptap nodes. Each file defines the name, schema, commands, and rendering rules of the node.
+    -   `Card.ts`: A complex example that defines the node for study cards, including custom attributes such as `nodeId`.
 
--   **/slashCommands**: Implementa la funcionalidad del menú de comandos que aparece al escribir `/`.
-    -   `suggestion.ts`: El corazón de esta característica. Es una extensión de Tiptap que utiliza el plugin `Suggestion` para detectar el patrón de activación, filtrar comandos y, lo más importante, **invocar acciones en el `slashMenuStore`**. Pasa al store la lista de comandos, la función para ejecutar un comando y la posición en pantalla.
-    -   `commands.ts`: Define la lista de comandos disponibles, sus íconos, descripciones y la lógica de ejecución (que utiliza la cadena de comandos de Tiptap).
+-   **/slashCommands**: Implements the functionality of the command menu that appears when typing `/`.
+    -   `suggestion.ts`: The heart of this feature. It is a Tiptap extension that uses the `Suggestion` plugin to detect the activation pattern, filter commands, and, most importantly, **invoke actions on the `slashMenuStore`**. It passes the list of commands, the function to execute a command, and the screen position to the store.
+    -   `commands.ts`: Defines the list of available commands, their icons, descriptions, and execution logic (which uses the Tiptap command chain).
 
--   `setup.ts`: Un archivo crucial que exporta la función `createEditor`. Esta función ensambla todas las piezas: importa las extensiones de nodos y de comportamiento, configura los plugins (como `Collaboration` para Y.js) y devuelve una nueva instancia del editor Tiptap. Esto asegura que cada instancia del editor sea consistente.
+-   `setup.ts`: A crucial file that exports the `createEditor` function. This function assembles all the pieces: it imports the node and behavior extensions, configures the plugins (such as `Collaboration` for Y.js), and returns a new instance of the Tiptap editor. This ensures that each instance of the editor is consistent.
 
-## Flujo de Datos para Características Complejas (Ej: Comandos Slash)
+## Data Flow for Complex Features (e.g., Slash Commands)
 
-1.  **Detección (Tiptap)**: El usuario escribe `/`. La extensión `suggestion.ts` en Tiptap detecta esto.
-2.  **Apertura del Store (Tiptap -> Store)**: La extensión `suggestion.ts` llama a `slashMenuStore.open()`, pasándole todos los datos necesarios: la lista de comandos, la consulta del usuario, una función para el posicionamiento (`clientRect`) y una **función de callback** para ejecutar el comando seleccionado.
-3.  **Renderizado (Store -> Svelte)**: El componente `SlashMenu.svelte` (`/src/lib/components/features/slashMenu`) está suscrito al `slashMenuStore`. Detecta que `isOpen` es `true` y se renderiza en la pantalla utilizando los datos del store.
-4.  **Selección (Svelte -> Store)**: El usuario navega por el menú. El componente `SlashMenu.svelte` captura las pulsaciones de teclas y llama a acciones en el `slashMenuStore` como `moveSelection()` o `triggerCommand()`.
-5.  **Ejecución (Store -> Tiptap)**: `slashMenuStore.triggerCommand()` invoca la función de callback que se le pasó en el paso 2. Esta callback, que vive dentro de la extensión de Tiptap, finalmente ejecuta el comando en el editor (e.g., `editor.chain().focus().setHeading({ level: 1 }).run()`).
+1.  **Detection (Tiptap)**: The user types `/`. The `suggestion.ts` extension in Tiptap detects this.
+2.  **Opening the Store (Tiptap -> Store)**: The `suggestion.ts` extension calls `slashMenuStore.open()`, passing it all the necessary data: the list of commands, the user's query, a function for positioning (`clientRect`), and a **callback function** to execute the selected command.
+3.  **Rendering (Store -> Svelte)**: The `SlashMenu.svelte` component (`/src/lib/components/features/slashMenu`) is subscribed to the `slashMenuStore`. It detects that `isOpen` is `true` and renders on the screen using the data from the store.
+4.  **Selection (Svelte -> Store)**: The user navigates the menu. The `SlashMenu.svelte` component captures keystrokes and calls actions on the `slashMenuStore` such as `moveSelection()` or `triggerCommand()`.
+5.  **Execution (Store -> Tiptap)**: `slashMenuStore.triggerCommand()` invokes the callback function that was passed to it in step 2. This callback, which lives inside the Tiptap extension, finally executes the command in the editor (e.g., `editor.chain().focus().setHeading({ level: 1 }).run()`).
 
-Este patrón de "ida y vuelta" a través de un store es fundamental. Desacopla la lógica de la UI de Svelte de la lógica interna del editor, permitiendo que cada parte se ocupe de lo que mejor sabe hacer.
+This "round trip" pattern through a store is fundamental. It decouples the Svelte UI logic from the internal logic of the editor, allowing each part to do what it does best.

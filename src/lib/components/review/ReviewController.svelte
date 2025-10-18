@@ -9,16 +9,17 @@
   import type { Card, ReviewQuality, SequencingCard } from '$lib/types';
   import { get } from 'svelte/store';
   import deepEqual from 'deep-eql';
+  import { t } from '$lib/utils/i18n';
 
   const review = reviewStore;
 
-  // --- Estado Local Reactivo ---
+  // --- Local Reactive State ---
   let userInput = $state('');
   let userSequence = $state<string[]>([]);
   let draggedItemIndex = $state<number | null>(null);
-  let isSubmitting = $state(false); // Nuevo estado para la evaluación automática
+  let isSubmitting = $state(false); // New state for automatic evaluation
 
-  // --- Estado Derivado ---
+  // --- Derived State ---
   $effect(() => {
     const currentCard = $review.cardsToReview[$review.currentCardIndex];
     if (currentCard && currentCard.type === 'sequencing') {
@@ -29,10 +30,10 @@
       userSequence = [];
     }
     userInput = '';
-    isSubmitting = false; // Resetea el estado en cada nueva tarjeta
+    isSubmitting = false; // Reset the state on each new card
   });
 
-  // --- Manejadores de Eventos ---
+  // --- Event Handlers ---
 
   async function handleCheckInput() {
     const currentCard = $review.cardsToReview[$review.currentCardIndex];
@@ -45,13 +46,13 @@
       currentCard.content.expected
     );
 
-    // Muestra el feedback inmediatamente
+    // Show feedback immediately
     review.submitInteractiveAnswer(quality >= 3);
 
-    // Envía la revisión automáticamente después de un momento
+    // Submit the review automatically after a moment
     setTimeout(() => {
       review.submitReview(quality);
-    }, 2000); // Espera 2s para que el usuario vea el feedback
+    }, 2000); // Wait 2s for the user to see the feedback
   }
 
   function handleCheckSequence() {
@@ -65,7 +66,7 @@
     review.submitReview(quality);
   }
 
-  // --- Lógica de Arrastrar y Soltar (Drag and Drop) ---
+  // --- Drag and Drop Logic ---
 
   function handleDragStart(index: number) {
     draggedItemIndex = index;
@@ -99,7 +100,7 @@
     {#if currentCard}
       <div class="card">
         <div class="card-content">
-          <!-- Renderizado condicional basado en el tipo de tarjeta -->
+          <!-- Conditional rendering based on card type -->
 
           {#if currentCard.type === 'basic'}
             <p class="question">{currentCard.content.question}</p>
@@ -113,7 +114,7 @@
             <input
               type="text"
               class="input-field"
-              placeholder="Escribe tu respuesta..."
+              placeholder={$t('review.inputPlaceholder')}
               bind:value={userInput}
               disabled={$review.isAnswerShown || isSubmitting}
             />
@@ -124,7 +125,7 @@
                 class:incorrect={!$review.lastAnswerCorrect}
                 transition:fade
               >
-                Respuesta correcta: <strong
+                {$t('review.correctAnswer')} <strong
                   >{currentCard.content.expected}</strong
                 >
               </div>
@@ -154,9 +155,9 @@
                 transition:fade
               >
                 {#if $review.lastAnswerCorrect}
-                  ¡Secuencia correcta!
+                  {$t('review.correctSequence')}
                 {:else}
-                  <p>La secuencia correcta es:</p>
+                  <p>{$t('review.correctSequenceIs')}</p>
                   <ol>
                     {#each currentCard.content.items as item}
                       <li>{item}</li>
@@ -168,38 +169,40 @@
           {/if}
         </div>
 
-        <!-- Acciones de la Tarjeta -->
+        <!-- Card Actions -->
         <div class="card-actions">
           {#if !$review.isAnswerShown}
             {#if currentCard.type === 'basic'}
               <Button onclick={review.showAnswer} size="md"
-                >Mostrar Respuesta</Button
+                >{$t('review.showAnswer')}</Button
               >
             {:else if currentCard.type === 'input'}
               <Button onclick={handleCheckInput} size="md" disabled={isSubmitting}>
-                {#if isSubmitting}Evaluando...{:else}Comprobar{/if}
+                {#if isSubmitting}{$t('review.evaluating')}{:else}{$t('review.check')}{/if}
               </Button>
             {:else if currentCard.type === 'sequencing'}
-              <Button onclick={handleCheckSequence} size="md">Comprobar</Button>
+              <Button onclick={handleCheckSequence} size="md"
+                >{$t('review.check')}</Button
+              >
             {/if}
           {:else}
-            <!-- Para tarjetas 'input', la revisión es automática, así que no se muestran los botones. -->
+            <!-- For 'input' cards, the review is automatic, so the buttons are not shown. -->
             {#if currentCard.type !== 'input'}
               <div class="review-buttons">
                 <Button
                   onclick={() => submitReview(0)}
                   size="md"
-                  variant="secondary">Otra vez</Button
+                  variant="secondary">{$t('review.again')}</Button
                 >
                 <Button
                   onclick={() => submitReview(3)}
                   size="md"
-                  variant="secondary">Difícil</Button
+                  variant="secondary">{$t('review.hard')}</Button
                 >
                 <Button
                   onclick={() => submitReview(5)}
                   size="md"
-                  variant="primary">Fácil</Button
+                  variant="primary">{$t('review.easy')}</Button
                 >
               </div>
             {/if}
@@ -207,18 +210,18 @@
         </div>
       </div>
 
-      <!-- Controles Globales del Repaso -->
+      <!-- Global Review Controls -->
       <div class="global-controls">
         <Button
           onclick={review.jumpToSource}
           variant="ghost"
           size="sm"
-          aria-label="Ir a la fuente"
+          aria-label={$t('review.goToSource')}
         >
           <Icon name="file-text" size={16} />
         </Button>
         <Button onclick={review.finishReview} variant="ghost" size="sm"
-          >Finalizar Repaso</Button
+          >{$t('review.finishReview')}</Button
         >
       </div>
     {/if}

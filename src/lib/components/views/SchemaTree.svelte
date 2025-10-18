@@ -1,7 +1,7 @@
-<!-- src/lib/components/views/SchemaTree.svelte (VERSIÓN FINAL Y 100% TYPE-SAFE) -->
+<!-- src/lib/components/views/SchemaTree.svelte (FINAL AND 100% TYPE-SAFE VERSION) -->
 
 <script module lang="ts">
-  // Este tipo es usado por `+page.svelte` y el `schemaService`
+  // This type is used by `+page.svelte` and the `schemaService`
   export interface TreeNodeData {
     id: string;
     content: string;
@@ -14,7 +14,7 @@
   import * as d3 from 'd3';
   import { createEventDispatcher } from 'svelte';
 
-  // --- Props y Eventos ---
+  // --- Props and Events ---
   let {
     treeData,
     selectedNodeId,
@@ -25,21 +25,21 @@
 
   const dispatch = createEventDispatcher<{ nodeClick: { id: string } }>();
 
-  // --- Estado Local ---
+  // --- Local State ---
   let svgEl = $state<SVGSVGElement | undefined>();
   let gEl = $state<SVGGElement | undefined>();
   let height = $state(0);
 
-  // ✅ NUEVO: Un Set para mantener el estado de los nodos expandidos.
-  // La raíz ('root-title') siempre está expandida por defecto.
+  // ✅ NEW: A Set to maintain the state of expanded nodes.
+  // The root ('root-title') is always expanded by default.
   let expandedNodeIds = $state<Set<string>>(new Set(['root-title']));
 
-  // --- Constantes de Layout ---
+  // --- Layout Constants ---
   const nodeWidth = 140;
   const nodeHeight = 40;
   const transitionDuration = 300;
 
-  // --- Interfaz de Tipo Personalizada ---
+  // --- Custom Type Interface ---
   interface HierarchyPointNodeWithCustomData
     extends d3.HierarchyPointNode<TreeNodeData> {
     _children?: d3.HierarchyNode<TreeNodeData>[];
@@ -47,7 +47,7 @@
     y0?: number;
   }
 
-  // --- Función de Renderizado Principal ---
+  // --- Main Rendering Function ---
   function update(
     source: HierarchyPointNodeWithCustomData,
     root: d3.HierarchyNode<TreeNodeData>
@@ -66,7 +66,7 @@
 
     const transition = d3.transition().duration(transitionDuration);
 
-    // --- NODOS ---
+    // --- NODES ---
     const node = g
       .selectAll<SVGGElement, HierarchyPointNodeWithCustomData>('g.node')
       .data(nodes, (d) => d.data.id);
@@ -89,7 +89,7 @@
           expandedNodeIds.add(nodeId);
         }
         update(d, root);
-      }) // <-- ¡SIN PUNTO Y COMA! La cadena continúa.
+      }) // <-- NO SEMICOLON! The chain continues.
 
       .on(
         'dblclick',
@@ -205,7 +205,7 @@
       .attr('transform', `translate(${source.y},${source.x})`)
       .attr('opacity', 0);
 
-    // --- ENLACES ---
+    // --- LINKS ---
     const link = g
       .selectAll<
         SVGPathElement,
@@ -256,7 +256,7 @@
     });
   }
 
-  // --- Ciclo de Vida y Efectos Reactivos ---
+  // --- Lifecycle and Reactive Effects ---
   onMount(() => {
     if (!svgEl) return;
     const svg = d3.select(svgEl);
@@ -290,10 +290,10 @@
     rootWithCoords.x0 = height / 2;
     rootWithCoords.y0 = 0;
 
-    // ✅ CORRECCIÓN: Usamos `expandedNodeIds` para preservar el estado de expansión.
+    // ✅ FIX: Use `expandedNodeIds` to preserve expansion state.
     root.descendants().forEach((d) => {
       const node = d as HierarchyPointNodeWithCustomData;
-      // Colapsamos un nodo si tiene hijos y NO está en la lista de expandidos.
+      // Collapse a node if it has children and is NOT in the expanded list.
       if (node.children && !expandedNodeIds.has(node.data.id)) {
         node._children = node.children;
         node.children = undefined;
@@ -310,7 +310,7 @@
   });
 </script>
 
-<div class="tree-container" role="tree" aria-label="Visualización del esquema">
+<div class="tree-container" role="tree" aria-label="Schema visualization">
   <svg bind:this={svgEl} class="tree-svg" />
 </div>
 
@@ -327,7 +327,7 @@
     cursor: grabbing;
   }
 
-  /* === Estilos Base === */
+  /* === Base Styles === */
   :global(.tree-svg .link) {
     fill: none;
     stroke: var(--color-gray-100);
@@ -370,7 +370,7 @@
     pointer-events: none;
   }
 
-  /* === Indicador de Hijos === */
+  /* === Child Indicator === */
   :global(.tree-svg .node .indicator) {
     stroke: var(--color-gray-500);
     stroke-width: 1.5px;
@@ -391,7 +391,7 @@
     stroke: var(--color-accent);
   }
 
-  /* === Estados de Interacción === */
+  /* === Interaction States === */
   :global(.tree-svg .node.has-children rect) {
     fill: var(--color-gray-100);
   }
@@ -408,7 +408,7 @@
     font-weight: 700;
   }
 
-  /* === Estilos de Resaltado de Linaje (Hover) === */
+  /* === Lineage Highlight Styles (Hover) === */
   :global(.tree-svg .is-dimmed) {
     opacity: 0.15 !important;
   }

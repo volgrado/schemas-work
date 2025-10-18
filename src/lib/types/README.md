@@ -1,34 +1,35 @@
-# Definiciones de Tipos Globales (`/src/lib/types`)
+# Global Type Definitions (`/src/lib/types`)
 
-Este directorio centraliza las definiciones de tipos y de interfaces de TypeScript que se utilizan en múltiples partes de la aplicación. Sirve como la "fuente de la verdad" para las estructuras de datos compartidas.
+This directory centralizes the TypeScript type and interface definitions that are used in multiple parts of the application. It serves as the "source of truth" for shared data structures.
 
-## Filosofía
+## Philosophy
 
-1.  **Evitar la Repetición (DRY - Don't Repeat Yourself)**: En lugar de definir la misma estructura de datos en múltiples archivos (lo que llevaría a inconsistencias), la definimos una sola vez aquí y la importamos donde sea necesario.
+1.  **Don't Repeat Yourself (DRY)**: Instead of defining the same data structure in multiple files (which would lead to inconsistencies), we define it once here and import it wherever it is needed.
 
-2.  **Claridad y Contrato**: Los tipos e interfaces actúan como una forma de documentación y definen un "contrato" claro para la forma de los datos que fluyen a través de la aplicación. Esto hace que el código sea más fácil de entender y razonar.
+2.  **Clarity and Contract**: Types and interfaces act as a form of documentation and define a clear "contract" for the shape of the data flowing through the application. This makes the code easier to understand and reason about.
 
-3.  **Seguridad de Tipos Global**: Al tener un conjunto de tipos compartidos, TypeScript puede verificar en tiempo de compilación que los datos que pasan entre diferentes módulos (e.g., de un servicio a un store, y de un store a un componente) son consistentes, previniendo una clase entera de errores de runtime.
+3.  **Global Type Safety**: By having a set of shared types, TypeScript can verify at compile time that the data passing between different modules (e.g., from a service to a store, and from a store to a component) is consistent, preventing an entire class of runtime errors.
 
-## ¿Qué va aquí?
+## What Goes Here?
 
--   **Tipos de Datos del Dominio**: Las estructuras de datos principales de la aplicación. Por ejemplo, `Card.ts` define cómo es una tarjeta de estudio, con sus propiedades `id`, `question`, `answer`, `dueDate`, etc. `Document.ts` define la estructura de un documento.
+-   **Domain Data Types**: The main data structures of the application. For example, `Card.ts` defines what a study card looks like, with its properties `id`, `question`, `answer`, `dueDate`, etc. `Document.ts` defines the structure of a document.
 
--   **Tipos de Estado**: A veces, la forma del estado de un store complejo (`TTSState`, `ReviewState`) se define aquí para ser reutilizada o para desacoplar la definición del store de su implementación.
+-   **State Types**: Sometimes, the shape of a complex store's state (`TTSState`, `ReviewState`) is defined here to be reused or to decouple the store's definition from its implementation.
 
--   **Interfaces para Servicios**: Se pueden definir interfaces para abstraer implementaciones de servicios (e.g., `TTSService` en `tts.service.ts`), permitiendo la inyección de dependencias y facilitando las pruebas.
+-   **Interfaces for Services**: Interfaces can be defined to abstract service implementations (e.g., `TTSService` in `tts.service.ts`), allowing for dependency injection and facilitating testing.
 
-## ¿Qué NO va aquí?
+## What Does NOT Go Here?
 
--   **Tipos Específicos de un Componente**: Si un tipo solo se utiliza dentro de un único componente de Svelte y no se comparte, es mejor mantenerlo local a ese componente. Esto evita saturar el espacio de nombres global.
--   **Tipos Inferidos**: Si un tipo se puede inferir fácilmente de una función o un esquema Zod (como los de `/lib/schemas`), a menudo no es necesario declararlo explícitamente aquí. Por ejemplo, el tipo para `createCard` se infiere directamente del `createCardSchema`.
+-   **Component-Specific Types**: If a type is only used within a single Svelte component and is not shared, it is better to keep it local to that component. This avoids cluttering the global namespace.
 
-## Ejemplo de Uso
+-   **Inferred Types**: If a type can be easily inferred from a function or a Zod schema (like those in `/lib/schemas`), it is often not necessary to declare it explicitly here. For example, the type for `createCard` is inferred directly from the `createCardSchema`.
 
-El tipo `Card` es un ejemplo perfecto. Se define en `src/lib/types/Card.ts` y luego se importa en:
+## Usage Example
 
--   `cardService.ts`: Para tipar los argumentos y los valores de retorno de sus funciones (`getCard(id: string): Promise<Card>`).
--   `cardEditorStore.ts`: Para tipar la tarjeta que se está editando actualmente (`$cardEditorStore.card: Card | null`).
--   `ReviewPanel.svelte`: Para tipar la prop que recibe la tarjeta a revisar (`export let card: Card`).
+The `Card` type is a perfect example. It is defined in `src/lib/types/Card.ts` and then imported into:
 
-Si en el futuro necesitamos añadir una nueva propiedad a todas las tarjetas (e.g., `tags: string[]`), solo necesitamos modificar `Card.ts`, y TypeScript nos señalará inmediatamente todos los lugares en la aplicación que necesitan ser actualizados para manejar esta nueva propiedad.
+-   `cardService.ts`: To type the arguments and return values of its functions (`getCard(id: string): Promise<Card>`).
+-   `cardEditorStore.ts`: To type the card currently being edited (`$cardEditorStore.card: Card | null`).
+-   `ReviewPanel.svelte`: To type the prop that receives the card to be reviewed (`export let card: Card`).
+
+If in the future we need to add a new property to all cards (e.g., `tags: string[]`), we only need to modify `Card.ts`, and TypeScript will immediately point out all the places in the application that need to be updated to handle this new property.

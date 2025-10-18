@@ -1,7 +1,7 @@
-<!-- src/lib/components/editor/SlashMenuController.svelte -->
 <script lang="ts">
   import { slashMenuStore } from '$lib/stores/slashMenuStore';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import { t } from '$lib/services/i18n';
 
   let menuElement = $state<HTMLElement | undefined>();
   let style = $state('');
@@ -97,7 +97,7 @@
         {/each}
       </div>
     {:else}
-      <div class="empty-state">No hay resultados</div>
+      <div class="empty-state">{$t('slash_menu.empty_state')}</div>
     {/if}
   </div>
 {/if}
@@ -109,14 +109,14 @@
     outline: none;
     background-color: var(--color-background);
     border: 1px solid var(--color-gray-100);
-    border-radius: var(--space-md); /* Aumentado para un look más moderno */
+    border-radius: var(--space-md);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
-    min-width: 320px; /* Ancho ajustado */
-    max-height: 400px; /* Altura máxima para evitar desbordes */
+    min-width: 320px;
+    max-height: 400px;
     z-index: 70;
-    overflow: hidden; /* Ocultar desbordes */
+    overflow: hidden;
   }
 
   .group-tabs {
@@ -206,7 +206,7 @@
   }
 
   .empty-state {
-    padding: var(--space-lg); /* Más espaciado */
+    padding: var(--space-lg);
     text-align: center;
     color: var(--color-gray-500);
     font-style: italic;

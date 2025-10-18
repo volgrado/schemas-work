@@ -1,52 +1,52 @@
-# Arquitectura de Servicios (`/src/lib/services`)
+# Service Architecture (`/src/lib/services`)
 
-Este directorio es la **capa de lógica de negocio** de la aplicación. Es responsable de orquestar operaciones complejas, implementar la lógica de las características y actuar como intermediario entre la aplicación y los sistemas externos (bases de datos, APIs, SDKs).
+This directory is the **business logic layer** of the application. It is responsible for orchestrating complex operations, implementing feature logic, and acting as an intermediary between the application and external systems (databases, APIs, SDKs).
 
-## Filosofía de Diseño
+## Design Philosophy
 
-El objetivo principal es lograr una **separación de responsabilidades estricta** y una alta **cohesión**, siguiendo principios de diseño de software sólido.
+The main goal is to achieve a **strict separation of responsibilities** and high **cohesion**, following solid software design principles.
 
-1.  **Orquestación a través de Stores**: Los servicios no son invocados directamente por los componentes de la UI. Los **Svelte Stores** actúan como controladores de estado y orquestadores. Un store invoca a uno o varios servicios para ejecutar una operación y, basándose en el resultado, actualiza su estado. La UI, a su vez, reacciona a los cambios en el store.
-    *   *Ejemplo*: `reviewStore.submitReview()` invoca a `reviewService` y a `cardService` para procesar una revisión, y luego actualiza su estado con la siguiente tarjeta.
+1.  **Orchestration through Stores**: Services are not invoked directly by UI components. **Svelte Stores** act as state controllers and orchestrators. A store invokes one or more services to execute an operation and, based on the result, updates its state. The UI, in turn, reacts to changes in the store.
+    *   *Example*: `reviewStore.submitReview()` invokes `reviewService` and `cardService` to process a review, and then updates its state with the next card.
 
-2.  **Abstracción de Dependencias (Inversión de Control)**: Los servicios ocultan los detalles de implementación de las fuentes de datos y APIs. `cardService` expone un método `updateCard(card)`, pero el resto de la aplicación no sabe si esto se guarda en Firebase, una API REST o `localStorage`. Este principio nos permite intercambiar dependencias sin afectar la lógica de negocio.
+2.  **Dependency Abstraction (Inversion of Control)**: Services hide the implementation details of data sources and APIs. `cardService` exposes an `updateCard(card)` method, but the rest of the application does not know if this is saved in Firebase, a REST API, or `localStorage`. This principle allows us to swap dependencies without affecting business logic.
 
-3.  **Composición y Responsabilidad Única**: Cada servicio debe tener una responsabilidad clara y única. Un servicio puede componerse de otros para realizar tareas más complejas, promoviendo la reutilización de código.
-    *   *Ejemplo*: `reviewService` no sabe cómo guardar una tarjeta; delega esa responsabilidad en `cardService`.
+3.  **Composition and Single Responsibility**: Each service should have a clear and unique responsibility. A service can be composed of others to perform more complex tasks, promoting code reuse.
+    *   *Example*: `reviewService` does not know how to save a card; it delegates that responsibility to `cardService`.
 
-## Estructura de Directorios
+## Directory Structure
 
-La estructura está diseñada para reflejar esta separación de responsabilidades, dividiéndose en capas de abstracción.
+The structure is designed to reflect this separation of responsibilities, dividing into layers of abstraction.
 
--   **/api**: Contiene los **clientes de API de más bajo nivel**. Su única responsabilidad es realizar la comunicación de red (e.g., `fetch`) y manejar la serialización/deserialización de datos. No contienen lógica de negocio.
-    -   `databaseClient.ts`: Funciones `get`, `post`, `put` que interactúan con el backend de la base de datos.
-    -   `aiClient.ts`: Lógica para enviar prompts a un modelo de lenguaje y recibir la respuesta.
+-   **/api**: Contains the **lowest-level API clients**. Their sole responsibility is to perform network communication (e.g., `fetch`) and handle data serialization/deserialization. They do not contain business logic.
+    -   `databaseClient.ts`: `get`, `post`, `put` functions that interact with the database backend.
+    -   `aiClient.ts`: Logic for sending prompts to a language model and receiving the response.
 
--   **/core**: Servicios transversales esenciales para el funcionamiento de la aplicación, pero que no están ligados a una característica específica.
-    -   `errorService.ts`: Servicio centralizado para el reporte y logging de errores.
-    -   `authService.ts`: Gestiona la autenticación, sesiones de usuario y tokens.
-    -   `syncService.ts`: Orquesta la sincronización de datos con el backend (potencialmente usando Y.js o similar).
+-   **/core**: Essential cross-cutting services for the application's operation, but not tied to a specific feature.
+    -   `errorService.ts`: Centralized service for error reporting and logging.
+    -   `authService.ts`: Manages authentication, user sessions, and tokens.
+    -   `syncService.ts`: Orchestrates data synchronization with the backend (potentially using Y.js or similar).
 
--   **/features**: Aquí reside el **corazón de la lógica de negocio**. Cada servicio implementa las reglas y procesos para una característica específica de la aplicación.
-    -   `reviewService.ts`: Implementa el algoritmo de repetición espaciada (`calculateNextReviewDate`). No interactúa directamente con la base de datos.
-    -   `cardService.ts`: Proporciona una API de tipo CRUD (`createCard`, `updateCard`) para las tarjetas. Actúa como una capa de abstracción sobre el `databaseClient`, transformando los datos si es necesario.
+-   **/features**: This is where the **heart of the business logic** resides. Each service implements the rules and processes for a specific application feature.
+    -   `reviewService.ts`: Implements the spaced repetition algorithm (`calculateNextReviewDate`). It does not interact directly with the database.
+    -   `cardService.ts`: Provides a CRUD-like API (`createCard`, `updateCard`) for cards. It acts as an abstraction layer over the `databaseClient`, transforming data if necessary.
 
--   **/tts** (Ejemplo de Abstracción de Interfaz):
-    -   `tts.service.ts`: Define una **interfaz** `TTSService` (`speak`, `pause`). Esto establece un contrato para cualquier servicio de Text-to-Speech.
-    -   `BrowserTTSService.ts`: Una **implementación concreta** que utiliza la API del navegador `SpeechSynthesis`.
-    -   `CloudTTSService.ts` (Hipotético): Otra implementación que podría usar una API de IA en la nube, intercambiable con la anterior.
+-   **/tts** (Example of Interface Abstraction):
+    -   `tts.service.ts`: Defines a `TTSService` **interface** (`speak`, `pause`). This establishes a contract for any Text-to-Speech service.
+    -   `BrowserTTSService.ts`: A **concrete implementation** that uses the browser's `SpeechSynthesis` API.
+    -   `CloudTTSService.ts` (Hypothetical): Another implementation that could use a cloud AI API, interchangeable with the previous one.
 
-## Flujo de Ejemplo Detallado: Revisar una Tarjeta
+## Detailed Example Flow: Reviewing a Card
 
-1.  **UI (`ReviewPanel.svelte`)**: El usuario hace clic en "Buena". Se invoca `reviewStore.submitReview('good')`.
+1.  **UI (`ReviewPanel.svelte`)**: The user clicks "Good". `reviewStore.submitReview('good')` is invoked.
 2.  **Store (`reviewStore`)**:
-    a. Obtiene la tarjeta actual de su estado.
-    b. Invoca `reviewService.calculateNextReview(currentCard, 'good')` para obtener los nuevos parámetros de revisión (e.g., `dueDate`, `interval`).
-    c. Crea un objeto `updatedCard` fusionando los nuevos parámetros.
-    d. Invoca `cardService.updateCard(updatedCard)` para persistir el cambio.
-    e. En caso de éxito, actualiza su propio estado para cargar la siguiente tarjeta.
-3.  **Servicio de Característica (`reviewService`)**: La función `calculateNextReview` ejecuta lógica pura, sin efectos secundarios, y devuelve el resultado.
-4.  **Servicio de Característica (`cardService`)**: La función `updateCard` invoca a `databaseClient.put('/cards/123', updatedCard)`. Puede contener lógica para transformar la tarjeta al formato esperado por la API.
-5.  **Cliente API (`databaseClient`)**: La función `put` realiza la llamada `fetch`, gestiona los encabezados de autenticación y devuelve la respuesta del servidor.
+    a. Gets the current card from its state.
+    b. Invokes `reviewService.calculateNextReview(currentCard, 'good')` to get the new review parameters (e.g., `dueDate`, `interval`).
+    c. Creates an `updatedCard` object by merging the new parameters.
+    d. Invokes `cardService.updateCard(updatedCard)` to persist the change.
+    e. On success, updates its own state to load the next card.
+3.  **Feature Service (`reviewService`)**: The `calculateNextReview` function executes pure logic, without side effects, and returns the result.
+4.  **Feature Service (`cardService`)**: The `updateCard` function invokes `databaseClient.put('/cards/123', updatedCard)`. It may contain logic to transform the card to the format expected by the API.
+5.  **API Client (`databaseClient`)**: The `put` function performs the `fetch` call, manages authentication headers, and returns the server's response.
 
-Este flujo demuestra cómo cada capa tiene una responsabilidad clara, lo que hace que el sistema sea más fácil de entender, probar y mantener.
+This flow demonstrates how each layer has a clear responsibility, which makes the system easier to understand, test, and maintain.

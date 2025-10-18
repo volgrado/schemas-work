@@ -1,5 +1,4 @@
 <script lang="ts">
-  // --- Svelte Core y UI ---
   import { get } from 'svelte/store';
   import { tick } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
@@ -8,15 +7,13 @@
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
-
-  // --- Stores y Servicios ---
   import { commandBarStore } from '$lib/stores/commandBarStore';
   import { documentStore } from '$lib/stores/documentStore';
   import * as directoryService from '$lib/services/core/directoryService';
   import * as errorService from '$lib/services/core/errorService';
   import type { SchemaMetadata } from '$lib/types';
+  import { t } from '$lib/services/i18n';
 
-  // --- Estado Reactivo (Svelte 5 Runes) ---
   let items = $state<SchemaMetadata[]>([]);
   let currentParentId = $state<string | null>(null);
   let breadcrumbs = $state<SchemaMetadata[]>([]);
@@ -25,7 +22,6 @@
   let isProcessingAction = $state(false);
   let editingItemId = $state<string | null>(null);
 
-  // --- Estado de Creación Unificado ---
   let itemBeingCreated = $state<'schema' | 'folder' | null>(null);
   let newItemName = $state('');
 
@@ -37,22 +33,18 @@
     item: SchemaMetadata;
   } | null>(null);
 
-  // --- ESTADO PARA LA ANIMACIÓN DE ERROR ---
   let inputError = $state(false);
 
-  // Referencias al DOM
   let renameInput: HTMLInputElement;
   let newItemInput: HTMLInputElement;
 
-  // --- Efectos ---
   $effect(() => {
     commandBarStore.setCurrentParentId(currentParentId);
     fetchItemsForParent(currentParentId);
   });
 
-  // --- Lógica de Datos ---
   async function fetchItemsForParent(parentId: string | null) {
-    const MIN_LOADING_TIME = 300; // 300ms de tiempo mínimo de carga
+    const MIN_LOADING_TIME = 300;
     isLoading = true;
     error = null;
 
@@ -69,7 +61,7 @@
         return a.title.localeCompare(b.title);
       });
     } catch (e) {
-      error = 'No se pudieron cargar los esquemas.';
+      error = $t('file_explorer.errors.load_failed');
       errorService.reportError(e, {
         operation: 'fetchItemsForParent',
         parentId,
@@ -80,7 +72,6 @@
     }
   }
 
-  // --- Lógica de Creación Unificada ---
   async function startCreatingItem(type: 'schema' | 'folder') {
     if (isProcessingAction) return;
     itemBeingCreated = type;
@@ -92,7 +83,6 @@
     const name = newItemName.trim();
     const type = itemBeingCreated;
 
-    // Resetea el estado de la UI inmediatamente para una respuesta más rápida
     itemBeingCreated = null;
     newItemName = '';
 
@@ -104,19 +94,17 @@
     try {
       if (type === 'folder') {
         await directoryService.createFolder(name, currentParentId);
-        toast.success(`Carpeta "${name}" creada.`);
-        await fetchItemsForParent(currentParentId); // Refresca la lista
+        toast.success($t('file_explorer.toast.folder_created', { name }));
+        await fetchItemsForParent(currentParentId);
       } else {
-        // type === 'schema'
         await documentStore.createNewDocument(name, undefined, currentParentId);
-        toast.success(`Esquema "${name}" creado.`);
-        commandBarStore.close(); // Cierra para abrir el nuevo esquema
+        toast.success($t('file_explorer.toast.schema_created', { name }));
+        commandBarStore.close();
       }
     } catch (e: any) {
-      toast.error(e.message || `No se pudo crear el ${type}.`);
+      toast.error(e.message || $t('file_explorer.toast.create_failed', { type }));
       errorService.reportError(e, { operation: 'commitNewItem', name, type });
 
-      // Reabre el input para corrección en caso de error
       itemBeingCreated = type;
       newItemName = name;
       inputError = true;
@@ -125,14 +113,12 @@
       newItemInput?.select();
       setTimeout(() => (inputError = false), 500);
     } finally {
-      // Solo finaliza el estado de procesamiento si no estamos en un reintento por error
       if (itemBeingCreated === null) {
         isProcessingAction = false;
       }
     }
   }
 
-  // --- Otros Manejadores ---
   function handleItemClick(item: SchemaMetadata) {
     if (isProcessingAction || editingItemId === item.id) return;
     if (item.type === 'folder') {
@@ -171,10 +157,10 @@
       await directoryService.updateItemMetadata(item.id, {
         title: trimmedTitle,
       });
-      toast.success(`'${oldTitle}' renombrado a '${trimmedTitle}'.`);
+      toast.success($t('file_explorer.toast.renamed', { oldTitle, newTitle: trimmedTitle }));
     } catch (e: any) {
-      toast.error(e.message || 'No se pudo renombrar el ítem.');
-      if (itemIndex !== -1) items[itemIndex].title = oldTitle; // Rollback
+      toast.error(e.message || $t('file_explorer.toast.rename_failed'));
+      if (itemIndex !== -1) items[itemIndex].title = oldTitle;
       errorService.reportError(e, {
         operation: 'commitRename',
         itemId: item.id,
@@ -196,17 +182,17 @@
   function handleDeleteItem(item: SchemaMetadata) {
     contextMenu = null;
     if (isProcessingAction) return;
-    const itemType = item.type === 'folder' ? 'La carpeta' : 'El esquema';
-    toast.warning(`¿Eliminar "${item.title}"?`, {
-      description: `${itemType} y todo su contenido se eliminarán permanentemente.`,
+    const itemType = item.type === 'folder' ? $t('file_explorer.item_type.folder') : $t('file_explorer.item_type.schema');
+    toast.warning($t('file_explorer.delete_confirm.title', { title: item.title }), {
+      description: $t('file_explorer.delete_confirm.description', { itemType }),
       action: {
-        label: 'Eliminar',
+        label: $t('file_explorer.delete_confirm.action'),
         onClick: async () => {
           isProcessingAction = true;
           try {
             await directoryService.deleteItem(item.id);
             await fetchItemsForParent(currentParentId);
-            toast.success('Ítem eliminado.');
+            toast.success($t('file_explorer.toast.item_deleted'));
             if (get(documentStore).docId === item.id) {
               const allSchemas = (await directoryService.getAllItems()).filter(
                 (i) => i.type === 'schema'
@@ -215,14 +201,14 @@
                 await documentStore.loadDocument(allSchemas[0].id);
               } else {
                 await documentStore.createNewDocument(
-                  'Mi Primer Esquema',
+                  $t('file_explorer.default_schema_name'),
                   undefined,
                   null
                 );
               }
             }
           } catch (e: any) {
-            toast.error(e.message || 'No se pudo eliminar el ítem.');
+            toast.error(e.message || $t('file_explorer.toast.delete_failed'));
             errorService.reportError(e, {
               operation: 'handleDeleteItem',
               itemId: item.id,
@@ -283,9 +269,9 @@
     items = items.filter((i) => i.id !== draggedItemId);
     try {
       await directoryService.moveItem(draggedItemId, targetFolderId);
-      toast.success(`"${movedItem?.title}" movido.`);
+      toast.success($t('file_explorer.toast.item_moved', { title: movedItem?.title }));
     } catch (e: any) {
-      toast.error(e.message || 'No se pudo mover el ítem.');
+      toast.error(e.message || $t('file_explorer.toast.move_failed'));
       await fetchItemsForParent(currentParentId);
     } finally {
       resetDragState();
@@ -317,7 +303,7 @@
       }}
     >
       <Icon name="folder" size={16} />
-      <span>Abrir</span>
+      <span>{$t('file_explorer.context_menu.open')}</span>
     </button>
     <hr />
     <button
@@ -327,7 +313,7 @@
       }}
     >
       <Icon name="edit-3" size={16} />
-      <span>Renombrar</span>
+      <span>{$t('file_explorer.context_menu.rename')}</span>
     </button>
     <button
       onclick={() => {
@@ -336,7 +322,7 @@
       }}
     >
       <Icon name="trash-2" size={16} />
-      <span>Eliminar</span>
+      <span>{$t('file_explorer.context_menu.delete')}</span>
     </button>
   </ContextMenu>
 {/if}
@@ -344,7 +330,7 @@
 <header
   class="list-header"
   role="group"
-  aria-label="Zona para soltar en la raíz"
+  aria-label={$t('file_explorer.header.drop_zone_aria_label')}
   ondragover={(e) => e.preventDefault()}
   ondrop={(e) => {
     e.preventDefault();
@@ -356,7 +342,7 @@
   <div class="breadcrumbs">
     <button
       onclick={() => navigateToBreadcrumb(null, 0)}
-      disabled={isProcessingAction}>Raíz</button
+      disabled={isProcessingAction}>{$t('file_explorer.header.root_breadcrumb')}</button
     >
     {#each breadcrumbs as crumb, i (crumb.id)}
       <span>/</span>
@@ -374,7 +360,7 @@
       disabled={isProcessingAction}
     >
       <Icon name="plus" size={14} />
-      <span>Nuevo Esquema</span>
+      <span>{$t('file_explorer.header.new_schema_button')}</span>
     </Button>
     <Button
       onclick={() => startCreatingItem('folder')}
@@ -383,7 +369,7 @@
       disabled={isProcessingAction}
     >
       <Icon name="folder" size={14} />
-      <span>Nueva Carpeta</span>
+      <span>{$t('file_explorer.header.new_folder_button')}</span>
     </Button>
   </div>
 </header>
@@ -392,15 +378,15 @@
   {#if isLoading}
     <div class="state-message is-loading" transition:fade>
       <Icon name="loader" size={24} />
-      <span>Cargando...</span>
+      <span>{$t('file_explorer.state.loading')}</span>
     </div>
   {:else if error}
     <div class="state-message error" transition:fade>{error}</div>
   {:else if items.length === 0 && !itemBeingCreated}
     <div class="state-message empty-state" transition:fade|local>
       <Icon name="folder" size={32} />
-      <h3>Carpeta Vacía</h3>
-      <p>Crea un nuevo esquema o carpeta para empezar.</p>
+      <h3>{$t('file_explorer.state.empty_folder_title')}</h3>
+      <p>{$t('file_explorer.state.empty_folder_message')}</p>
     </div>
   {/if}
 
@@ -415,7 +401,7 @@
           type="text"
           class="rename-input"
           class:input-error={inputError}
-          placeholder={`Nombre del ${itemBeingCreated}...`}
+          placeholder={$t('file_explorer.new_item_placeholder', { type: itemBeingCreated })}
           bind:value={newItemName}
           bind:this={newItemInput}
           onblur={commitNewItem}
@@ -446,7 +432,7 @@
         e.preventDefault();
         handleDrop(item.id);
       }}
-      class:is-dragging={draggedItemId === item.id}
+      class:is-dragging={draggedItemId === item..id}
       oncontextmenu={(e) => openContextMenu(e, item)}
     >
       <div
@@ -470,7 +456,7 @@
               onkeydown={(e) => handleRenameKeyDown(e, item)}
               onclick={(event) => event.stopPropagation()}
               disabled={isProcessingAction}
-              aria-label={`Nuevo nombre para ${item.title}`}
+              aria-label={$t('file_explorer.rename_input_aria_label', { title: item.title })}
             />
           </div>
         {:else}
@@ -497,7 +483,7 @@
                 startEditing(item);
               }}
               disabled={isProcessingAction}
-              aria-label="Renombrar"
+              aria-label={$t('file_explorer.item_actions.rename')}
             >
               <Icon name="edit-3" size={16} />
             </button>
@@ -508,7 +494,7 @@
                 handleDeleteItem(item);
               }}
               disabled={isProcessingAction}
-              aria-label="Eliminar"
+              aria-label={$t('file_explorer.item_actions.delete')}
             >
               <Icon name="trash-2" size={16} />
             </button>
@@ -527,12 +513,11 @@
     disabled={isProcessingAction}
   >
     <Icon name="x" size={18} />
-    <span>Volver al menú principal</span>
+    <span>{$t('file_explorer.footer.back_to_main_menu')}</span>
   </button>
 </footer>
 
 <style>
-  /* --- ESTILOS PARA SCROLLBARS --- */
   :global(.panel .action-list.list-view) {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -553,7 +538,6 @@
     }
   }
 
-  /* --- CONTENEDORES PRINCIPALES --- */
   .list-header,
   .panel-footer {
     flex-shrink: 0;
@@ -576,7 +560,6 @@
     overflow-y: auto;
   }
 
-  /* --- CABECERA Y BREADCRUMBS --- */
   .header-actions {
     display: flex;
     gap: var(--space-sm);
@@ -619,7 +602,6 @@
     color: var(--color-gray-500);
   }
 
-  /* --- ESTILOS DE ÍTEMS DE LA LISTA --- */
   .schema-item {
     color: var(--color-text);
     display: flex;
@@ -663,7 +645,6 @@
     text-overflow: ellipsis;
   }
 
-  /* --- ACCIONES HOVER Y EDICIÓN --- */
   .schema-actions {
     display: flex;
     align-items: center;
@@ -729,7 +710,6 @@
     caret-color: var(--color-accent);
   }
 
-  /* --- MENSAJES DE ESTADO (CARGANDO, VACÍO, ERROR) --- */
   .state-message {
     position: absolute;
     top: 50%;
@@ -770,7 +750,6 @@
     color: var(--color-danger);
   }
 
-  /* --- ESTILOS DE DRAG & DROP --- */
   .is-dragging {
     opacity: 0.5;
   }
@@ -788,7 +767,6 @@
       outline 0.2s ease-in-out;
   }
 
-  /* --- FOOTER Y MODO OSCURO --- */
   .separator {
     border: none;
     height: 1px;

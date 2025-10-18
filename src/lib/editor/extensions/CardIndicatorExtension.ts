@@ -14,7 +14,7 @@ interface CardIndicatorState {
 }
 
 /**
- * Esta extensión muestra un indicador visual en los nodos del editor que tienen tarjetas de estudio asociadas.
+ * This extension displays a visual indicator on editor nodes that have associated study cards.
  */
 export const CardIndicatorExtension = Extension.create({
   name: 'cardIndicator',
@@ -34,9 +34,9 @@ export const CardIndicatorExtension = Extension.create({
             if (meta) {
               return { ...value, ...meta };
             }
-            // Mapeamos las decoraciones si el documento cambia para que no se pierdan.
+            // We map the decorations if the document changes so they are not lost.
             if (tr.docChanged) {
-              // Simplemente retornamos el valor, las decoraciones se recalcularán en `props.decorations`
+              // We simply return the value; the decorations will be recalculated in `props.decorations`
             }
             return value;
           },
@@ -57,7 +57,7 @@ export const CardIndicatorExtension = Extension.create({
               currentState &&
               setsAreEqual(currentState.nodeIdsWithCards, nodeIds)
             ) {
-              return; // No hay cambios, no hacemos nada.
+              return; // No changes, we do nothing.
             }
 
             const tr = view.state.tr.setMeta(CARD_INDICATOR_PLUGIN_KEY, {
@@ -66,15 +66,15 @@ export const CardIndicatorExtension = Extension.create({
             view.dispatch(tr);
           };
 
-          // *** INICIO DE LA SOLUCIÓN: Carga inicial con retraso ***
-          // Esperamos un instante para asegurar que la extensión NodeIdExtension
-          // haya tenido tiempo de asignar los IDs iniciales.
+          // *** START OF THE SOLUTION: Initial load with delay ***
+          // We wait a moment to ensure that the NodeIdExtension
+          // has had time to assign the initial IDs.
           setTimeout(updateNodeIds, 100);
-          // *** FIN DE LA SOLUCIÓN ***
+          // *** END OF THE SOLUTION ***
 
-          // Nos suscribimos a los cambios en el editor de tarjetas
+          // We subscribe to changes in the card editor
           cardStoreUnsubscriber = cardEditorStore.subscribe((storeState) => {
-            // Si el panel se acaba de cerrar, actualizamos los indicadores.
+            // If the panel has just been closed, we update the indicators.
             if (lastIsOpen === true && !storeState.isOpen) {
               updateNodeIds();
             }
@@ -106,11 +106,11 @@ export const CardIndicatorExtension = Extension.create({
               ) {
                 const firstParagraph = node.firstChild;
                 if (firstParagraph) {
-                  // Posicionamos el icono al final del primer párrafo (el término).
+                  // We position the icon at the end of the first paragraph (the term).
                   const widgetPos = pos + 1 + firstParagraph.nodeSize;
                   const icon = document.createElement('span');
                   icon.className = 'card-indicator-icon';
-                  icon.setAttribute('aria-label', 'Tiene tarjetas');
+                  icon.setAttribute('aria-label', 'Has cards');
                   decorations.push(
                     Decoration.widget(widgetPos, icon, { side: 1 })
                   );

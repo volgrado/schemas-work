@@ -1,10 +1,10 @@
-<!-- src/lib/components/editor/FormulaEditModal.svelte -->
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import katex from 'katex';
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { debounce } from '$lib/utils/debounce';
+  import { t } from '$lib/services/i18n';
 
   export let show: boolean;
   export let initialAttrs: { formula: string };
@@ -22,7 +22,7 @@
           displayMode: true,
         });
       } catch (e) {
-        previewEl.textContent = 'Error rendering formula.';
+        previewEl.textContent = $t('formula_editor.error_rendering');
       }
     }
   }, 200);
@@ -38,31 +38,43 @@
   }
 </script>
 
-<Modal title="Edit Formula" {show} {onClose}>
+<Modal title={$t('formula_editor.title')} {show} {onClose}>
   <div class="formula-editor-grid">
     <div class="editor-pane">
-      <label for="formula-input">KaTeX Formula</label>
+      <label for="formula-input">{$t('formula_editor.label')}</label>
       <textarea id="formula-input" bind:value={formulaText} rows="4"></textarea>
       <div class="modal-actions">
-        <Button on:click={onClose} variant="secondary">Cancel</Button>
-        <Button on:click={handleSave}>Save Formula</Button>
+        <Button on:click={onClose} variant="secondary">
+          {$t('formula_editor.cancel_button')}
+        </Button>
+        <Button on:click={handleSave}>{$t('formula_editor.save_button')}</Button>
       </div>
     </div>
     <div class="right-pane">
       <div class="preview-pane">
-        <h4>Preview</h4>
+        <h4>{$t('formula_editor.preview_title')}</h4>
         <div class="preview-box" bind:this={previewEl}></div>
       </div>
       <div class="help-pane">
-        <h4>Quick Help</h4>
+        <h4>{$t('formula_editor.help_title')}</h4>
         <ul>
-          <li>{'Fractions: '}<code>{String.raw`\frac{a}{b}`}</code></li>
-          <li>{'Superscript: '}<code>{'x^2'}</code></li>
-          <li>{'Subscript: '}<code>{'H_2O'}</code></li>
-          <li>{'Square Root: '}<code>{String.raw`\sqrt{x}`}</code></li>
-          <li>{'Summation: '}<code>{String.raw`\sum_{i=1}^n`}</code></li>
           <li>
-            {'Greek Letters: '}<code>{String.raw`\alpha, \beta, \gamma`}</code>
+            {$t('formula_editor.help.fractions')} <code>{String.raw`\frac{a}{b}`}</code>
+          </li>
+          <li>
+            {$t('formula_editor.help.superscript')} <code>{'x^2'}</code>
+          </li>
+          <li>
+            {$t('formula_editor.help.subscript')} <code>{'H_2O'}</code>
+          </li>
+          <li>
+            {$t('formula_editor.help.square_root')} <code>{String.raw`\sqrt{x}`}</code>
+          </li>
+          <li>
+            {$t('formula_editor.help.summation')} <code>{String.raw`\sum_{i=1}^n`}</code>
+          </li>
+          <li>
+            {$t('formula_editor.help.greek_letters')} <code>{String.raw`\alpha, \beta, \gamma`}</code>
           </li>
         </ul>
       </div>

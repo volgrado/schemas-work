@@ -47,7 +47,7 @@ export const ChangeToneAiResponseSchema = z.object({
   rewrittenText: z.string().min(1, 'The rewritten text cannot be empty.'),
 });
 
-// --- NUEVOS ESQUEMAS PARA TARJETAS POLIMÓRFICAS ---
+// --- NEW SCHEMAS FOR POLYMORPHIC CARDS ---
 
 const basicCardContentSchema = z.object({
   question: z.string().min(1),

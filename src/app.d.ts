@@ -1,6 +1,6 @@
 // src/app.d.ts
 
-// Importamos los tipos de los comandos que vamos a añadir
+// Import the types of the commands we are going to add
 import type { Commands as BoldCommands } from '@tiptap/extension-bold';
 import type { Commands as ItalicCommands } from '@tiptap/extension-italic';
 import type { Commands as HeadingCommands } from '@tiptap/extension-heading';
@@ -18,20 +18,20 @@ declare global {
   }
 }
 
-// Aquí es donde ampliamos el módulo de Tiptap
+// This is where we extend the Tiptap module
 declare module '@tiptap/core' {
-  // Le decimos a TypeScript que la interfaz 'Commands' ahora también incluye
-  // todos los comandos de nuestras extensiones.
+  // We tell TypeScript that the 'Commands' interface now also includes
+  // all the commands from our extensions.
   interface Commands<ReturnType>
     extends BoldCommands<ReturnType>,
       ItalicCommands<ReturnType>,
       HeadingCommands<ReturnType>,
       BulletListCommands<ReturnType> {
-    // ELIMINADO: Ya no gestionamos las tarjetas directamente en el nodo.
+    // REMOVED: We no longer manage cards directly in the node.
     schemaNode: {
       /**
-       * Divide un `schemaNode` actual, asegurando que el nuevo nodo
-       * también tenga la estructura `schemaTerm`.
+       * Splits a current `schemaNode`, ensuring that the new node
+       * also has the `schemaTerm` structure.
        */
       splitSchemaNode: () => ReturnType;
     };

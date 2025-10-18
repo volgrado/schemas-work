@@ -1,36 +1,36 @@
-# Arquitectura de Estilos (`/src/lib/styles`)
+# Style Architecture (`/src/lib/styles`)
 
-Este directorio contiene todos los estilos globales de la aplicación. Nuestra filosofía es utilizar CSS moderno, modular y mantenible, aprovechando las variables de CSS (Custom Properties) para crear un sistema de diseño cohesivo y fácil de personalizar.
+This directory contains all the global styles of the application. Our philosophy is to use modern, modular, and maintainable CSS, taking advantage of CSS variables (Custom Properties) to create a cohesive and easy-to-customize design system.
 
-## Filosofía de Diseño
+## Design Philosophy
 
-1.  **Variables CSS para Todo**: El núcleo de nuestro sistema de diseño se basa en las variables de CSS definidas en `global.css`. En lugar de usar valores hardcodeados (e.g., `#FFFFFF`, `16px`), utilizamos variables semánticas (e.g., `var(--color-background)`, `var(--font-size-base)`). Esto permite una consistencia total y facilita enormemente los cambios de tema (como un modo oscuro).
+1.  **CSS Variables for Everything**: The core of our design system is based on the CSS variables defined in `global.css`. Instead of using hardcoded values (e.g., `#FFFFFF`, `16px`), we use semantic variables (e.g., `var(--color-background)`, `var(--font-size-base)`). This allows for total consistency and makes theme changes (such as a dark mode) much easier.
 
-2.  **Estilos Globales Mínimos**: `global.css` establece los estilos base para elementos HTML (`body`, `h1`, `p`, etc.) y define todas las variables del sistema de diseño. Sin embargo, evitamos escribir estilos de componentes específicos aquí. La idea es establecer un "lienzo" predeterminado y un conjunto de herramientas (variables) para que los componentes las usen.
+2.  **Minimal Global Styles**: `global.css` sets the base styles for HTML elements (`body`, `h1`, `p`, etc.) and defines all the design system variables. However, we avoid writing specific component styles here. The idea is to establish a default "canvas" and a set of tools (variables) for the components to use.
 
-3.  **Estilos por Componente (Scoped)**: La gran mayoría de nuestros estilos se escriben directamente dentro de los componentes de Svelte (`<style>`). Svelte procesa estos estilos para que sean "scoped" por defecto, lo que significa que solo se aplican al componente actual. Esto previene conflictos de selectores y hace que los componentes sean verdaderamente autocontenidos.
+3.  **Per-Component Styles (Scoped)**: The vast majority of our styles are written directly within the Svelte components (`<style>`). Svelte processes these styles to be "scoped" by default, which means they only apply to the current component. This prevents selector conflicts and makes the components truly self-contained.
 
-4.  **No se utilizan Preprocesadores (Sass/Less)**: Hemos optado por utilizar CSS nativo moderno. Las variables de CSS, junto con características como `calc()`, `clamp()` y selectores avanzados, nos proporcionan la mayor parte del poder que ofrecen los preprocesadores, pero sin la necesidad de una dependencia adicional o un paso de compilación.
+4.  **No Preprocessors (Sass/Less)**: We have chosen to use modern native CSS. CSS variables, along with features like `calc()`, `clamp()`, and advanced selectors, provide us with most of the power that preprocessors offer, but without the need for an additional dependency or a compilation step.
 
-## Estructura de Archivos
+## File Structure
 
--   `global.css`: El archivo más importante. Define:
-    -   **Variables de Color**: Nombres semánticos para todos los colores usados en la aplicación (e.g., `--color-primary`, `--color-text`, `--color-background`).
-    -   **Tipografía**: Variables para familias de fuentes, tamaños (`--font-size-sm`, `--font-size-base`, etc.), grosores y alturas de línea.
-    -   **Espaciado y Tamaños**: Una escala de espaciado (`--space-xs`, `--space-sm`, etc.) para `margin`, `padding` y `gap`. Esto asegura un ritmo vertical y horizontal consistente.
-    -   **Bordes y Sombras**: Variables para `border-radius` y `box-shadow` para mantener una apariencia uniforme en todos los componentes.
-    -   **Z-Index**: Una pila de `z-index` para gestionar las capas de la interfaz (`--z-modal`, `--z-header`).
-    -   **Resets y Estilos Base**: Un reset de CSS simple (a menudo basado en `modern-normalize`) y estilos predeterminados para el `body`, enlaces, etc.
+-   `global.css`: The most important file. It defines:
+    -   **Color Variables**: Semantic names for all the colors used in the application (e.g., `--color-primary`, `--color-text`, `--color-background`).
+    -   **Typography**: Variables for font families, sizes (`--font-size-sm`, `--font-size-base`, etc.), weights, and line heights.
+    -   **Spacing and Sizing**: A spacing scale (`--space-xs`, `--space-sm`, etc.) for `margin`, `padding`, and `gap`. This ensures a consistent vertical and horizontal rhythm.
+    -   **Borders and Shadows**: Variables for `border-radius` and `box-shadow` to maintain a uniform appearance across all components.
+    -   **Z-Index**: A `z-index` stack to manage the layers of the interface (`--z-modal`, `--z-header`).
+    -   **Resets and Base Styles**: A simple CSS reset (often based on `modern-normalize`) and default styles for the `body`, links, etc.
 
--   `tiptap.css`: Contiene estilos específicos para anular o complementar los estilos predeterminados del editor Tiptap/ProseMirror. Esto incluye la apariencia del cursor, la selección, los placeholders y los estilos para los nodos personalizados.
+-   `tiptap.css`: Contains specific styles to override or supplement the default styles of the Tiptap/ProseMirror editor. This includes the appearance of the cursor, selection, placeholders, and styles for custom nodes.
 
-## Cómo Usar el Sistema de Diseño
+## How to Use the Design System
 
-Dentro de un bloque `<style>` de un componente de Svelte, simplemente se hace referencia a las variables definidas en `global.css`.
+Within a `<style>` block of a Svelte component, you simply reference the variables defined in `global.css`.
 
 ```svelte
 <style>
-  .mi-boton {
+  .my-button {
     background-color: var(--color-primary);
     color: var(--color-on-primary);
     padding: var(--space-sm) var(--space-md);
@@ -39,10 +39,10 @@ Dentro de un bloque `<style>` de un componente de Svelte, simplemente se hace re
     box-shadow: var(--shadow-sm);
   }
 
-  .mi-boton:hover {
+  .my-button:hover {
     background-color: var(--color-primary-hover);
   }
 </style>
 ```
 
-Este enfoque garantiza que si se decide cambiar el color primario de la marca, solo es necesario modificar la variable `--color-primary` en `global.css`, y todos los componentes que la utilizan se actualizarán automáticamente.
+This approach ensures that if you decide to change the brand's primary color, you only need to modify the `--color-primary` variable in `global.css`, and all the components that use it will be updated automatically.

@@ -1,7 +1,8 @@
-<!-- src/lib/components/ui/ErrorDiagnosticModal.svelte -->
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
+  import { t } from '$lib/services/i18n'; // Import the t function
 
   // --- Componentes de UI ---
   import Modal from '$lib/components/ui/Modal.svelte';
@@ -19,9 +20,6 @@
   // --- Estado Local ---
   let logs: ErrorLog[] = [];
 
-  // Usamos una variable reactiva `$:`. Se ejecutará cada vez que `show` cambie.
-  // Si `show` es true, cargamos los logs. Esto es más eficiente que `onMount`
-  // porque asegura que los logs están actualizados cada vez que se abre el modal.
   $: if (show) {
     loadLogs();
   }
@@ -32,7 +30,7 @@
 
   async function copyLogs() {
     if (logs.length === 0) {
-      toast.info('No hay nada que copiar.');
+      toast.info($t('toast.info.nothing_to_copy'));
       return;
     }
     const report = `
@@ -45,30 +43,25 @@ ${JSON.stringify(logs, null, 2)}
 `;
     try {
       await navigator.clipboard.writeText(report.trim());
-      toast.success('Informe de diagnóstico copiado al portapapeles.');
+      toast.success($t('toast.success.diagnostic_report_copied'));
     } catch (error) {
       errorService.reportError(error, { operation: 'copyDiagnosticLogs' });
-      toast.error('No se pudo copiar el informe.');
+      toast.error($t('toast.error.could_not_copy_report'));
     }
   }
 
   function clearLogs() {
     errorService.clearLogs();
-    loadLogs(); // Recargamos la lista para que la UI se actualice
-    toast.info('Se han limpiado los registros de errores.');
+    loadLogs(); 
+    toast.info($t('toast.info.error_logs_cleared'));
   }
 </script>
 
-<Modal title="Diagnóstico de Errores" {show} {onClose}>
+<Modal title={$t('error_diagnostic.title')} {show} {onClose}>
   <div class="diagnostic-container">
     <p class="explanation">
-      Aquí se muestra una lista de los errores técnicos que han ocurrido en la
-      aplicación. Si tienes un problema, copia este informe y compártelo con el
-      equipo de soporte.
-      <strong
-        >Tus datos personales o el contenido de tus esquemas no se incluyen
-        aquí.</strong
-      >
+      {$t('error_diagnostic.explanation')}
+      <strong>{$t('error_diagnostic.explanation.privacy')}</strong>
     </p>
 
     <div class="log-area">
@@ -87,8 +80,7 @@ ${JSON.stringify(logs, null, 2)}
       {:else}
         <div class="empty-state">
           <Icon name="check-circle" size={24} />
-          <!-- Usamos un ícono que no existe, lo crearemos en Icon.svelte -->
-          <p>¡Todo en orden! No se han registrado errores.</p>
+          <p>{$t('error_diagnostic.empty_state')}</p>
         </div>
       {/if}
     </div>
@@ -100,7 +92,7 @@ ${JSON.stringify(logs, null, 2)}
         disabled={logs.length === 0}
       >
         <Icon name="trash-2" size={16} />
-        Limpiar Registros
+        {$t('error_diagnostic.clear_logs')}
       </Button>
       <Button
         on:click={copyLogs}
@@ -108,7 +100,7 @@ ${JSON.stringify(logs, null, 2)}
         disabled={logs.length === 0}
       >
         <Icon name="copy" size={16} />
-        Copiar Informe
+        {$t('error_diagnostic.copy_report')}
       </Button>
     </footer>
   </div>

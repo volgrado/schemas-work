@@ -1,0 +1,107 @@
+{
+  "slashCommands": {
+    "groups": {
+      "basic": "Basic",
+      "formatting": "Formatting",
+      "media": "Media",
+      "ai": "AI",
+      "utilities": "Utilities"
+    },
+    "term": {
+      "title": "Term",
+      "description": "Add a new concept or term."
+    },
+    "list": {
+      "title": "List",
+      "description": "Create a bulleted list."
+    },
+    "numberedList": {
+      "title": "Numbered List",
+      "description": "Create an ordered list (1, 2, 3...)"
+    },
+    "h1": {
+      "title": "Heading 1",
+      "description": "The main title of the schema."
+    },
+    "h2": {
+      "title": "Heading 2",
+      "description": "Add a section subtitle."
+    },
+    "h3": {
+      "title": "Heading 3",
+      "description": "Add a nested subtitle."
+    },
+    "separator": {
+      "title": "Separator",
+      "description": "Add a horizontal line."
+    },
+    "bold": {
+      "title": "Bold",
+      "description": "Highlight the selected text."
+    },
+    "italic": {
+      "title": "Italic",
+      "description": "Emphasize the selected text."
+    },
+    "image": {
+      "title": "Image",
+      "description": "Add an image from a URL."
+    },
+    "youtube": {
+      "title": "YouTube Video",
+      "description": "Embed a YouTube video."
+    },
+    "mathBlock": {
+      "title": "Formula (Block)",
+      "description": "Add a mathematical formula (KaTeX)."
+    },
+    "mathInline": {
+      "title": "Formula (Inline)",
+      "description": "Add a formula in the same line."
+    },
+    "expandNode": {
+      "title": "Expand Node (AI)",
+      "description": "Generate sub-points for the current node.",
+      "error": "To expand, first select a node in the schema."
+    },
+    "generateCards": {
+      "title": "Generate Cards (AI)",
+      "description": "Create study cards for this node.",
+      "error": "To generate cards, first select a node."
+    },
+    "readNode": {
+      "title": "Read Node",
+      "description": "Start reading aloud from here.",
+      "error": "Select a node to start reading."
+    },
+    "editCards": {
+      "title": "Edit Cards",
+      "description": "Open the card editor for this node.",
+      "error": "Select a node to edit its cards.",
+      "errorNoId": "This node does not have a valid ID to associate cards with."
+    }
+  },
+  "appHeader": {
+    "aria": {
+      "returnToWelcome": "Return to the welcome screen"
+    },
+    "shortcuts": {
+      "menu": "Menu",
+      "editCards": "Edit Cards"
+    }
+  },
+  "review": {
+    "inputPlaceholder": "Type your answer...",
+    "correctAnswer": "Correct answer:",
+    "correctSequence": "Correct sequence!",
+    "correctSequenceIs": "The correct sequence is:",
+    "showAnswer": "Show Answer",
+    "evaluating": "Evaluating...",
+    "check": "Check",
+    "again": "Again",
+    "hard": "Hard",
+    "easy": "Easy",
+    "goToSource": "Go to source",
+    "finishReview": "Finish Review"
+  }
+}

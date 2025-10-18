@@ -1,34 +1,34 @@
-# Funciones de Utilidad (`/src/lib/utils`)
+# Utility Functions (`/src/lib/utils`)
 
-Este directorio es un contenedor para funciones pequeñas, reutilizables y, en su mayoría, puras, que no encajan en ninguna otra categoría de la arquitectura del proyecto.
+This directory is a container for small, reusable, and mostly pure functions that do not fit into any other category of the project's architecture.
 
-## Filosofía
+## Philosophy
 
-El propósito de las utilidades es evitar la duplicación de código y abstraer lógica común en funciones simples y fáciles de probar.
+The purpose of utilities is to avoid code duplication and abstract common logic into simple, easy-to-test functions.
 
-1.  **Pureza y sin Efectos Secundarios**: Idealmente, una función de utilidad debe ser una función pura. Esto significa que, para la misma entrada, siempre producirá la misma salida y no tendrá efectos secundarios observables (como modificar el estado global o hacer una llamada de red).
+1.  **Purity and No Side Effects**: Ideally, a utility function should be a pure function. This means that for the same input, it will always produce the same output and have no observable side effects (such as modifying the global state or making a network call).
 
-2.  **Reutilización**: Las funciones aquí deben ser lo suficientemente genéricas como para ser utilizadas en múltiples lugares de la aplicación. Si una función solo se usa en un componente o servicio, es mejor mantenerla local en ese archivo.
+2.  **Reusability**: The functions here should be generic enough to be used in multiple places in the application. If a function is only used in one component or service, it is better to keep it local to that file.
 
-3.  **Simplicidad**: Las utilidades deben ser pequeñas y tener una única responsabilidad. Si una función de utilidad comienza a crecer en complejidad, es una señal de que podría necesitar ser refactorizada o movida a un servicio si contiene lógica de negocio.
+3.  **Simplicity**: Utilities should be small and have a single responsibility. If a utility function starts to grow in complexity, it is a sign that it may need to be refactored or moved to a service if it contains business logic.
 
-## ¿Qué va aquí?
+## What Goes Here?
 
--   **Formateadores**: Funciones para formatear fechas, números o cadenas de texto (e.g., `formatDate(date)`).
--   **Ayudantes de Manipulación de Datos**: Funciones para trabajar con arrays, objetos o cadenas que no son proporcionadas de forma nativa por JavaScript (e.g., `groupBy(array, key)`).
--   **Funciones de Temporización**: Implementaciones de `debounce` y `throttle` para controlar la frecuencia con la que se ejecutan las funciones.
--   **Generadores**: Funciones que generan valores, como IDs únicos (e.g., un simple envoltorio alrededor de `uuid`).
+-   **Formatters**: Functions for formatting dates, numbers, or strings (e.g., `formatDate(date)`).
+-   **Data Manipulation Helpers**: Functions for working with arrays, objects, or strings that are not provided natively by JavaScript (e.g., `groupBy(array, key)`).
+-   **Timing Functions**: Implementations of `debounce` and `throttle` to control the frequency with which functions are executed.
+-   **Generators**: Functions that generate values, such as unique IDs (e.g., a simple wrapper around `uuid`).
 
-## ¿Qué NO va aquí?
+## What Does NOT Go Here?
 
--   **Lógica de Negocio**: Cualquier lógica que sea específica del dominio de la aplicación (e.g., calcular la próxima fecha de revisión de una tarjeta) pertenece a un servicio en `/src/lib/services`.
--   **Lógica de Estado**: Cualquier función que necesite leer o escribir en un Svelte Store. Esa lógica pertenece al propio store.
--   **Llamadas de API**: La comunicación con sistemas externos es responsabilidad de los servicios.
--   **Código Específico de un Componente**: La lógica que manipula directamente el estado o los props de un componente debe permanecer dentro de ese componente.
+-   **Business Logic**: Any logic that is specific to the application's domain (e.g., calculating the next review date of a card) belongs in a service in `/src/lib/services`.
+-   **State Logic**: Any function that needs to read from or write to a Svelte Store. That logic belongs in the store itself.
+-   **API Calls**: Communication with external systems is the responsibility of the services.
+-   **Component-Specific Code**: Logic that directly manipulates a component's state or props should remain within that component.
 
-## Ejemplo de Uso
+## Usage Example
 
-Un caso de uso clásico es la función `debounce`, que retrasa la ejecución de una función hasta que ha pasado un cierto tiempo sin que se llame de nuevo. Es útil para evitar llamadas excesivas a funciones en eventos como el `input` o el redimensionamiento de la ventana.
+A classic use case is the `debounce` function, which delays the execution of a function until a certain amount of time has passed without it being called again. It is useful for avoiding excessive calls to functions on events such as `input` or window resizing.
 
 ```javascript
 // src/lib/utils/debounce.ts
@@ -43,12 +43,12 @@ export function debounce(func, delay) {
 ```
 
 ```svelte
-// En un componente
+// In a component
 <script>
   import { debounce } from '$lib/utils/debounce';
 
   function handleInput(event) {
-    console.log('Buscando:', event.target.value);
+    console.log('Searching for:', event.target.value);
   }
 
   const debouncedHandleInput = debounce(handleInput, 300);

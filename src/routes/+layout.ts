@@ -4,36 +4,36 @@ import { browser } from '$app/environment';
 import type { LayoutLoad } from './$types';
 
 /**
- * La clave única en localStorage utilizada para recordar si el usuario ya ha
- * visto y superado la pantalla de bienvenida.
+ * The unique key in localStorage used to remember if the user has already
+ * seen and bypassed the welcome screen.
  */
 const WELCOME_KEY = 'schemas-work-has-seen-welcome';
 
 export const ssr = false;
 
 /**
- * La función `load` de SvelteKit se ejecuta en el servidor y/o en el cliente
- * antes de que el componente `+layout.svelte` se renderice. Su propósito es
- * proporcionar datos al layout y a todas las páginas anidadas.
+ * The SvelteKit `load` function runs on the server and/or the client
+ * before the `+layout.svelte` component is rendered. Its purpose is
+ * to provide data to the layout and all nested pages.
  *
- * En este caso, su única responsabilidad es comprobar si es la primera visita
- * del usuario para decidir si se debe mostrar la pantalla de onboarding.
+ * In this case, its sole responsibility is to check if it is the user's
+ * first visit to decide whether to show the onboarding screen.
  */
 export const load: LayoutLoad = () => {
   let showWelcome = false;
 
-  // Esta lógica solo puede ejecutarse en el navegador, donde localStorage
-  // está disponible. Durante el renderizado en servidor (SSR), `browser` es `false`.
+  // This logic can only run in the browser, where localStorage
+  // is available. During server-side rendering (SSR), `browser` is `false`.
   if (browser) {
-    // Si NO se encuentra la clave en localStorage, significa que el usuario
-    // nunca ha hecho clic en el botón "Comenzar" de la pantalla de bienvenida.
+    // If the key is NOT found in localStorage, it means the user
+    // has never clicked the "Get Started" button on the welcome screen.
     if (!localStorage.getItem(WELCOME_KEY)) {
       showWelcome = true;
     }
   }
 
-  // El objeto devuelto aquí estará disponible en `+layout.svelte` y `+page.svelte`
-  // a través de la prop `export let data`.
+  // The object returned here will be available in `+layout.svelte` and `+page.svelte`
+  // through the `export let data` prop.
   return {
     showWelcome,
   };

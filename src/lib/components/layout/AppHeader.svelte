@@ -1,9 +1,10 @@
-<!-- src/lib/components/layout/AppHeader.svelte (VERSIÓN FINAL CON AYUDA INTEGRADA) -->
+<!-- src/lib/components/layout/AppHeader.svelte (FINAL VERSION WITH INTEGRATED HELP) -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import Logo from '$lib/components/ui/Logo.svelte';
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte'; // Importamos Icon para el kbd
+  import Icon from '$lib/components/ui/Icon.svelte'; // Import Icon for the kbd
+  import { t } from '$lib/utils/i18n';
 
   const dispatch = createEventDispatcher();
 
@@ -11,24 +12,24 @@
     dispatch('showWelcome');
   }
 
-  // Permite que el padre pase clases dinámicas (ej. para animaciones de entrada)
+  // Allows the parent to pass dynamic classes (e.g., for entrance animations)
   let className = '';
   export { className as class };
 </script>
 
 <header class="app-header {className}">
   <div class="header-content">
-    <!-- Sección Izquierda: Un placeholder para futuras acciones como 'Menú' o 'Atrás' -->
+    <!-- Left Section: A placeholder for future actions like 'Menu' or 'Back' -->
     <div class="header-section left">
       <slot />
     </div>
 
-    <!-- Sección Central: La marca, centrada perfectamente -->
+    <!-- Center Section: The brand, perfectly centered -->
     <div class="header-section center">
       <button
         class="brand-button"
         on:click={showWelcome}
-        aria-label="Volver a la pantalla de bienvenida"
+        aria-label={$t('appHeader.aria.returnToWelcome')}
       >
         <div class="logo-wrapper">
           <Logo size={28} />
@@ -39,27 +40,27 @@
       </button>
     </div>
 
-    <!-- Sección Derecha: Contiene acciones globales como la ayuda -->
+    <!-- Right Section: Contains global actions like help -->
     <div class="header-section right">
-      <!-- Ocultamos el tooltip en pantallas táctiles pequeñas donde no es útil -->
+      <!-- We hide the tooltip on small touch screens where it is not useful -->
       <div class="desktop-only-tooltip">
         <HelpTooltip>
-          <!-- *** INICIO DE LA SOLUCIÓN: MEJORA VISUAL DEL TOOLTIP *** -->
+          <!-- *** START OF THE SOLUTION: VISUAL IMPROVEMENT OF THE TOOLTIP *** -->
           <div class="shortcuts">
             <div class="shortcut-item">
-              <span>Menú</span>
+              <span>{$t('appHeader.shortcuts.menu')}</span>
               <div class="keys">
                 <kbd>Ctrl</kbd><span>+</span><kbd>K</kbd>
               </div>
             </div>
             <div class="shortcut-item">
-              <span>Editar Tarjetas</span>
+              <span>{$t('appHeader.shortcuts.editCards')}</span>
               <div class="keys">
                 <kbd>Ctrl</kbd><span>+</span><kbd>'</kbd>
               </div>
             </div>
           </div>
-          <!-- *** FIN DE LA SOLUCIÓN *** -->
+          <!-- *** END OF THE SOLUTION *** -->
         </HelpTooltip>
       </div>
     </div>
@@ -86,10 +87,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 36px; /* Altura fija para consistencia */
+    height: 36px; /* Fixed height for consistency */
   }
 
-  /* --- Estructura de 3 Columnas --- */
+  /* --- 3-Column Structure --- */
   .header-section {
     flex: 1;
     display: flex;
@@ -105,7 +106,7 @@
     justify-content: flex-end;
   }
 
-  /* --- Estilos de la Marca --- */
+  /* --- Brand Styles --- */
   .brand-button {
     display: flex;
     align-items: center;
@@ -145,9 +146,9 @@
     color: var(--color-accent);
   }
 
-  /* --- Estilos del Tooltip de Ayuda --- */
+  /* --- Help Tooltip Styles --- */
 
-  /* *** INICIO DE LA SOLUCIÓN: NUEVOS ESTILOS PARA EL TOOLTIP *** */
+  /* *** START OF THE SOLUTION: NEW STYLES FOR THE TOOLTIP *** */
   :global(.shortcuts) {
     display: flex;
     flex-direction: column;
@@ -180,7 +181,7 @@
     border: 1px solid var(--color-gray-200);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   }
-  /* *** FIN DE LA SOLUCIÓN *** */
+  /* *** END OF THE SOLUTION *** */
 
   @media (max-width: 768px) {
     .desktop-only-tooltip {

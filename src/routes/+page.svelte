@@ -1,15 +1,8 @@
-<!-- src/routes/+page.svelte -->
-<!-- NO CHANGES NEEDED IN THIS FILE. -->
-<!-- With the updated `modalStore.ts`, the errors here are resolved. -->
-
 <script lang="ts">
-  // --- Svelte Core y Entorno ---
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { browser } from '$app/environment';
   import { Toaster } from 'svelte-sonner';
-
-  // --- Componentes ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import DocumentView from '$lib/components/editor/DocumentView.svelte';
@@ -24,11 +17,8 @@
   import SchemaTree from '$lib/components/views/SchemaTree.svelte';
   import type { TreeNodeData } from '$lib/components/views/SchemaTree.svelte';
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
-  // --- NEW: Modal Imports ---
   import FormulaEditModal from '$lib/components/editor/FormulaEditModal.svelte';
   import MediaEditModal from '$lib/components/editor/MediaEditModal.svelte';
-
-  // --- Stores y Servicios ---
   import { documentStore } from '$lib/stores/documentStore';
   import { editorStore } from '$lib/stores/editorStore';
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
@@ -37,10 +27,9 @@
   import * as directoryService from '$lib/services/core/directoryService';
   import * as schemaService from '$lib/services/features/schemaService';
   import { reviewStore } from '$lib/stores/reviewStore';
-  // --- NEW: Modal Store Import ---
   import { modalStore } from '$lib/stores/modalStore';
+  import { t } from '$lib/services/i18n';
 
-  // --- PROPS Y ESTADO LOCAL ---
   let { data }: { data: { showWelcome: boolean } } = $props();
 
   let showWelcome = $state(data.showWelcome);
@@ -49,7 +38,6 @@
   let nodeToFocus = $state<number | null>(null);
   let isMobile = $state(browser ? window.innerWidth <= 768 : false);
 
-  // --- ESTADO DERIVADO REACTIVO (CON REACTIVIDAD EXPLÍCITA) ---
   let treeData = $state<TreeNodeData | null>(null);
 
   $effect(() => {
@@ -73,7 +61,6 @@
 
   let hasNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
-  // --- EFECTOS SECUNDARIOS Y CICLO DE VIDA ---
   onMount(() => {
     if (!showWelcome) {
       loadInitialDocument();
@@ -86,7 +73,6 @@
     };
   });
 
-  // --- MANEJADORES DE EVENTOS Y ACCIONES ---
   function handleGlobalKeydown(event: KeyboardEvent) {
     if ((event.metaKey || event.ctrlKey) && event.key === "'") {
       event.preventDefault();
@@ -145,20 +131,17 @@
       await documentStore.loadDocument(docToLoadId);
     } else {
       await documentStore.createNewDocument(
-        'Mi Primer Esquema',
+        $t('file_explorer.default_schema_name'),
         undefined,
         null
       );
     }
   }
 
-  // --- Modal Save Handlers ---
   function handleModalSave(event: CustomEvent) {
     const { nodePos, newAttrs } = event.detail;
     const editor = get(editorStore).instance;
     if (!editor) return;
-    // TypeScript now knows that `config` in the store has a `nodePos` property
-    // because both FormulaModalConfig and MediaModalConfig have it.
     const pos = get(modalStore).config?.nodePos;
     if (pos === undefined) return;
 
@@ -180,11 +163,9 @@
 
 <Toaster position="bottom-center" theme="system" />
 
-<!-- Render Modals based on modalStore -->
 {#if $modalStore.isOpen}
   {@const config = $modalStore.config}
   {#if config?.type === 'formula'}
-    <!-- TS now understands `config.attrs` is `{ formula: string }` -->
     <FormulaEditModal
       show={true}
       initialAttrs={config.attrs as { formula: string }}
@@ -193,7 +174,6 @@
       on:save={handleModalSave}
     />
   {:else if config?.type === 'media'}
-    <!-- TS now understands `config.nodeType` exists and `config.attrs` is `{ src: string, mediaType: ... }` -->
     <MediaEditModal
       show={true}
       initialAttrs={config.attrs as {
@@ -219,8 +199,8 @@
         onclick={() =>
           (currentView = currentView === 'editor' ? 'tree' : 'editor')}
         aria-label={currentView === 'editor'
-          ? 'Cambiar a vista de árbol'
-          : 'Cambiar a vista de editor'}
+          ? $t('page.view_toggle.aria_label.to_tree')
+          : $t('page.view_toggle.aria_label.to_editor')}
       >
         <Icon
           name={currentView === 'editor' ? 'git-branch' : 'edit-3'}
@@ -256,7 +236,7 @@
         {#if $documentStore.status === 'loading' || $documentStore.status === 'idle'}
           <div class="status-container">
             <Icon name="loader" size={24} class="spinner" />
-            <p>Cargando esquema...</p>
+            <p>{$t('page.status.loading_schema')}</p>
           </div>
         {:else if $documentStore.status === 'ready' && $documentStore.ydoc}
           {#key $documentStore.docId}
@@ -269,7 +249,7 @@
           {/key}
         {:else if $documentStore.status === 'error'}
           <div class="status-container">
-            <p>Hubo un error al cargar el documento.</p>
+            <p>{$t('page.status.load_error')}</p>
           </div>
         {/if}
       {/if}
@@ -290,11 +270,8 @@
       </div>
     {:else if !showWelcome && $documentStore.status === 'ready'}
       <div class="status-container">
-        <p>Tu esquema debe contener una lista para generar la visualización.</p>
-        <span
-          >Empieza a escribir y usa '*' o '-' seguido de un espacio para crear
-          un ítem.</span
-        >
+        <p>{$t('page.status.empty_schema.message')}</p>
+        <span>{$t('page.status.empty_schema.hint')}</span>
       </div>
     {/if}
   </div>
@@ -310,21 +287,21 @@
   {#if isMobile}
     <FloatingActionButton
       icon={currentView === 'editor' ? 'git-branch' : 'edit-3'}
-      label={currentView === 'editor' ? 'Árbol' : 'Editor'}
+      label={currentView === 'editor' ? $t('page.fab.tree') : $t('page.fab.editor')}
       position="right"
       on:click={() =>
         (currentView = currentView === 'editor' ? 'tree' : 'editor')}
     />
     <FloatingActionButton
       icon="command"
-      label="Menú"
+      label={$t('page.fab.menu')}
       position="center"
       on:click={openCommandBar}
     />
     {#if hasNodeSelected && currentView === 'editor'}
       <FloatingActionButton
         icon="pen-tool"
-        label="Tarjetas"
+        label={$t('page.fab.cards')}
         position="left"
         on:click={openCardEditor}
       />
@@ -397,7 +374,7 @@
   .tree-view-content {
     width: 100%;
     height: 100%;
-    opacity: 0;
+    opacity: .0;
   }
   .main-content,
   :global(.app-header) {

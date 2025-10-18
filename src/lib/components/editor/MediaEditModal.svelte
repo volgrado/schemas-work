@@ -1,8 +1,8 @@
-<!-- src/lib/components/editor/MediaEditModal.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import { t } from '$lib/services/i18n';
 
   export let show: boolean;
   export let initialAttrs: { src: string; mediaType: 'image' | 'youtube' };
@@ -11,10 +11,16 @@
   const dispatch = createEventDispatcher();
   let src = initialAttrs.src;
 
-  const title =
-    initialAttrs.mediaType === 'image' ? 'Edit Image URL' : 'Edit YouTube URL';
-  const label =
-    initialAttrs.mediaType === 'image' ? 'Image URL' : 'YouTube Video URL';
+  const title = $derived(
+    initialAttrs.mediaType === 'image'
+      ? $t('media_editor.title.image')
+      : $t('media_editor.title.youtube')
+  );
+  const label = $derived(
+    initialAttrs.mediaType === 'image'
+      ? $t('media_editor.label.image')
+      : $t('media_editor.label.youtube')
+  );
 
   function handleSave() {
     dispatch('save', { newAttrs: { src } });
@@ -32,12 +38,14 @@
     />
 
     {#if initialAttrs.mediaType === 'image' && src}
-      <img {src} alt="Preview" class="image-preview" />
+      <img src={src} alt={$t('media_editor.preview.alt')} class="image-preview" />
     {/if}
 
     <div class="modal-actions">
-      <Button on:click={onClose} variant="secondary">Cancel</Button>
-      <Button on:click={handleSave}>Save</Button>
+      <Button on:click={onClose} variant="secondary">
+        {$t('media_editor.cancel_button')}
+      </Button>
+      <Button on:click={handleSave}>{$t('media_editor.save_button')}</Button>
     </div>
   </div>
 </Modal>

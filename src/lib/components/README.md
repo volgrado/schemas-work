@@ -1,35 +1,35 @@
-# Arquitectura de Componentes (`/src/lib/components`)
+# Component Architecture (`/src/lib/components`)
 
-Este directorio contiene todos los componentes de Svelte que conforman la interfaz de usuario de la aplicación. La estructura y filosofía están diseñadas para maximizar la reutilización, la mantenibilidad y la clara separación de responsabilidades.
+This directory contains all the Svelte components that make up the application's user interface. The structure and philosophy are designed to maximize reuse, maintainability, and a clear separation of responsibilities.
 
-## Principios Fundamentales
+## Fundamental Principles
 
-1.  **Separación de Lógica y Presentación**: Este es el principio más importante. Los componentes se dividen principalmente en dos categorías:
-    *   **Componentes de UI (`/ui`)**: Son componentes "tontos" y reutilizables centrados en la apariencia y la interacción del usuario a bajo nivel (e.g., `Button`, `Modal`, `Input`). No contienen lógica de negocio.
-    *   **Componentes de Características (`/features`)**: Son componentes "inteligentes" que orquestan la lógica de una funcionalidad específica (e.g., `CardEditorPanel`, `ReviewPanel`). Se conectan a los Svelte Stores para gestionar el estado.
+1.  **Separation of Logic and Presentation**: This is the most important principle. Components are mainly divided into two categories:
+    *   **UI Components (`/ui`)**: These are "dumb" and reusable components focused on appearance and low-level user interaction (e.g., `Button`, `Modal`, `Input`). They do not contain business logic.
+    *   **Feature Components (`/features`)**: These are "smart" components that orchestrate the logic of a specific functionality (e.g., `CardEditorPanel`, `ReviewPanel`). They connect to Svelte Stores to manage state.
 
-2.  **Estado Centralizado en Stores**: Los componentes, especialmente los de características, no deben gestionar un estado complejo internamente. En su lugar, se suscriben a los stores (`/src/lib/stores`). Los componentes leen el estado de los stores para renderizarse y llaman a las funciones de los stores para ejecutar acciones. Esto sigue un patrón de flujo de datos unidireccional y hace que el estado de la aplicación sea predecible y fácil de depurar.
+2.  **Centralized State in Stores**: Components, especially feature components, should not manage complex state internally. Instead, they subscribe to the stores (`/src/lib/stores`). Components read the state from the stores to render and call the store's functions to execute actions. This follows a unidirectional data flow pattern and makes the application's state predictable and easy to debug.
 
-3.  **Mínima Invocación Directa de Servicios**: Los componentes rara vez deben invocar servicios (`/src/lib/services`) directamente. La lógica de negocio y las llamadas a servicios (e.g., para persistencia o cálculos complejos) deben ser manejadas dentro de los stores. Los componentes simplemente desencadenan acciones en el store (e.g., `reviewStore.startReview()`).
+3.  **Minimal Direct Service Invocation**: Components should rarely invoke services (`/src/lib/services`) directly. Business logic and service calls (e.g., for persistence or complex calculations) should be handled within the stores. Components simply trigger actions in the store (e.g., `reviewStore.startReview()`).
 
-## Estructura de Directorios
+## Directory Structure
 
-La organización está inspirada en una mezcla de diseño atómico y clasificación por funcionalidad:
+The organization is inspired by a mixture of atomic design and classification by functionality:
 
--   **/core**: Contiene componentes fundamentales para la estructura y experiencia de la aplicación que no son específicos de una sola característica. Orquestan otras partes de la UI y a menudo se conectan a stores centrales como `documentStore` o `editorStore`.
-    -   *Ejemplo*: `DocumentView.svelte`, `Sidebar.svelte`.
+-   **/core**: Contains fundamental components for the structure and experience of the application that are not specific to a single feature. They orchestrate other parts of the UI and often connect to central stores such as `documentStore` or `editorStore`.
+    -   *Example*: `DocumentView.svelte`, `Sidebar.svelte`.
 
--   **/features**: Cada subdirectorio aquí corresponde a una funcionalidad principal de la aplicación. Estos componentes suelen estar estrechamente acoplados a un store de característica dedicado.
-    -   *Ejemplo*: `cardEditor/CardEditorPanel.svelte` (asociado a `cardEditorStore`), `review/ReviewPanel.svelte` (asociado a `reviewStore`).
+-   **/features**: Each subdirectory here corresponds to a main functionality of the application. These components are usually tightly coupled to a dedicated feature store.
+    -   *Example*: `cardEditor/CardEditorPanel.svelte` (associated with `cardEditorStore`), `review/ReviewPanel.svelte` (associated with `reviewStore`).
 
--   **/layout**: Componentes que definen la estructura principal de la página, como cabeceras, pies de página y áreas de contenido principal.
-    -   *Ejemplo*: `MainLayout.svelte`, `Header.svelte`.
+-   **/layout**: Components that define the main structure of the page, such as headers, footers, and main content areas.
+    -   *Example*: `MainLayout.svelte`, `Header.svelte`.
 
--   **/ui**: La "biblioteca de componentes" de la aplicación. Son componentes genéricos, reutilizables y de presentación. Se estilizan mediante variables CSS globales (`/src/lib/styles`) y pueden tener variantes, pero no conocen la lógica de negocio.
-    -   *Ejemplo*: `Button.svelte`, `Input.svelte`, `Modal.svelte`.
+-   **/ui**: The application's "component library". They are generic, reusable, and presentation components. They are styled using global CSS variables (`/src/lib/styles`) and can have variants, but they are not aware of business logic.
+    -   *Example*: `Button.svelte`, `Input.svelte`, `Modal.svelte`.
 
-## Patrones de Interacción
+## Interaction Patterns
 
--   **Componente -> Store**: Un componente de característica invoca una acción en un store. Por ejemplo, al hacer clic en un botón, se llama a `commandBarStore.open()`.
--   **Store -> Componente**: El store actualiza su estado. El componente, al estar suscrito (`$commandBarStore`), reacciona automáticamente al nuevo estado y se vuelve a renderizar para mostrar la barra de comandos.
--   **Componente -> Componente (Local)**: Para interacciones simples entre padre e hijo que no necesitan un estado global, se utilizan props y el reenvío de eventos de Svelte (`createEventDispatcher`). Esto evita la sobrecarga de crear un store para un estado puramente local.
+-   **Component -> Store**: A feature component invokes an action in a store. for example, clicking a button calls `commandBarStore.open()`.
+-   **Store -> Component**: The store updates its state. The component, being subscribed (`$commandBarStore`), automatically reacts to the new state and re-renders to show the command bar.
+-   **Component -> Component (Local)**: for simple interactions between parent and child that do not need a global state, props and Svelte's event forwarding (`createEventDispatcher`) are used. This avoids the overhead of creating a store for a purely local state.

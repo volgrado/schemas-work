@@ -1,4 +1,4 @@
-<!-- src/lib/components/review/CardEditorPanel.svelte (Versión FINAL) -->
+<!-- src/lib/components/review/CardEditorPanel.svelte (FINAL Version) -->
 <script lang="ts">
   // --- Svelte Core ---
   import { fade, fly } from 'svelte/transition';
@@ -7,24 +7,24 @@
   import { toast } from 'svelte-sonner';
   import { onMount, onDestroy } from 'svelte';
 
-  // --- Lógica de la Aplicación ---
+  // --- Application Logic ---
   import { cardEditorStore } from '$lib/stores/cardEditorStore';
   import type { Card, CardType } from '$lib/types';
   import { debounce } from '$lib/utils/debounce';
   import { autosize } from '$lib/actions/autosize';
 
-  // --- Componentes de UI ---
+  // --- UI Components ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte'; // Asegúrate que este sea el componente mejorado
+  import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte'; // Make sure this is the improved component
 
-  // --- Estado y Variables ---
+  // --- State and Variables ---
   let showAddMenu = $state(false);
   let cardElements = new Map<string, HTMLElement>();
   let draggedItemIndex = $state<number | null>(null);
   let dropTargetIndex = $state<number | null>(null);
 
-  // --- Lógica para popover dinámico ---
+  // --- Logic for dynamic popover ---
   let addCardContainerEl = $state<HTMLElement | undefined>();
   let addMenuEl = $state<HTMLElement | undefined>();
   let menuOpensDown = $state(false);
@@ -79,13 +79,13 @@
     showAddMenu = false;
   }
 
-  // --- RESTAURADO: Función para eliminar con opción de deshacer ---
+  // --- RESTORED: Function to delete with undo option ---
   async function removeCard(cardId: string) {
     const deletedCard = await cardEditorStore.deleteCard(cardId);
     if (deletedCard) {
-      toast.success('Tarjeta eliminada.', {
+      toast.success('Card deleted.', {
         action: {
-          label: 'Deshacer',
+          label: 'Undo',
           onClick: () => cardEditorStore.restoreCard(deletedCard),
         },
       });
@@ -110,7 +110,7 @@
     cardEditorStore.close();
   }
 
-  // Lógica de Drag and Drop
+  // Drag and Drop Logic
   function handleDragStart(index: number, event: DragEvent) {
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -175,20 +175,19 @@
     <header class="header">
       <div class="header-left">
         <div class="header-title">
-          <h3 id="panel-title">Tarjetas de Estudio</h3>
+          <h3 id="panel-title">Study Cards</h3>
           <HelpTooltip>
-            Crea preguntas y respuestas para este nodo. Úsalas en el "Modo
-            Repaso" para memorizar conceptos clave.
+            Create questions and answers for this node. Use them in "Review Mode" to memorize key concepts.
           </HelpTooltip>
         </div>
         {#if $cardEditorStore.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
             {#if $cardEditorStore.status === 'saving'}
               <Icon name="loader" size={14} class="spinner" />
-              <span>Guardando...</span>
+              <span>Saving...</span>
             {:else if $cardEditorStore.status === 'saved'}
               <Icon name="check-circle" size={14} />
-              <span>Guardado</span>
+              <span>Saved</span>
             {/if}
           </div>
         {/if}
@@ -201,7 +200,7 @@
             size="sm"
             onclick={() => (showAddMenu = !showAddMenu)}
           >
-            <Icon name="plus" size={16} />Añadir Tarjeta
+            <Icon name="plus" size={16} />Add Card
           </Button>
           {#if showAddMenu}
             <div
@@ -211,26 +210,26 @@
               transition:fade={{ duration: 100 }}
             >
               <button on:click={() => addCard('basic')}
-                ><Icon name="pen-tool" size={16} /> Básica (P/R)</button
+                ><Icon name="pen-tool" size={16} /> Basic (Q/A)</button
               >
               <button on:click={() => addCard('input')}
-                ><Icon name="edit-3" size={16} /> Rellenar Hueco</button
+                ><Icon name="edit-3" size={16} /> Fill in the Blank</button
               >
               <button on:click={() => addCard('sequencing')}
-                ><Icon name="list" size={16} /> Secuencia</button
+                ><Icon name="list" size={16} /> Sequence</button
               >
             </div>
           {/if}
         </div>
-        <Button onclick={handleClose} variant="primary" size="sm">Hecho</Button>
+        <Button onclick={handleClose} variant="primary" size="sm">Done</Button>
       </div>
     </header>
 
     <div class="editor-content">
       {#if $cardEditorStore.fetchStatus === 'loading'}
-        <!-- Estado de Carga -->
+        <!-- Loading State -->
       {:else if $cardEditorStore.fetchStatus === 'error'}
-        <!-- Estado de Error -->
+        <!-- Error State -->
       {:else if $cardEditorStore.cards.length > 0}
         <div class="cards-list">
           {#each $cardEditorStore.cards as card (card.id)}
@@ -248,23 +247,23 @@
                 {card.type}
               </div>
               <div class="card-inputs">
-                <!-- RESTAURADO: Lógica completa para cada tipo de tarjeta -->
+                <!-- RESTORED: Complete logic for each card type -->
                 {#if card.type === 'basic'}
                   <div class="field">
-                    <label for="q-{card.id}">Pregunta</label>
+                    <label for="q-{card.id}">Question</label>
                     <input
                       id="q-{card.id}"
                       type="text"
-                      placeholder="Escribe la pregunta..."
+                      placeholder="Write the question..."
                       bind:value={card.content.question}
                       on:input={() => handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
-                    <label for="a-{card.id}">Respuesta</label>
+                    <label for="a-{card.id}">Answer</label>
                     <textarea
                       id="a-{card.id}"
-                      placeholder="Escribe la respuesta..."
+                      placeholder="Write the answer..."
                       bind:value={card.content.answer}
                       on:input={() => handleUpdate(card)}
                       use:autosize
@@ -273,33 +272,33 @@
                 {:else if card.type === 'input'}
                   <div class="field">
                     <label for="p-{card.id}"
-                      >Enunciado (usa {'{{...}}'} para el hueco)</label
+                      >Prompt (use {'{{...}}'} for the blank)</label
                     >
                     <input
                       id="p-{card.id}"
                       type="text"
-                      placeholder={'Ej: La capital de Francia es {{...}}'}
+                      placeholder={'e.g., The capital of France is {{...}}'}
                       bind:value={card.content.prompt}
                       on:input={() => handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
-                    <label for="e-{card.id}">Respuesta Esperada</label>
+                    <label for="e-{card.id}">Expected Answer</label>
                     <input
                       id="e-{card.id}"
                       type="text"
-                      placeholder="Ej: París"
+                      placeholder="e.g., Paris"
                       bind:value={card.content.expected}
                       on:input={() => handleUpdate(card)}
                     />
                   </div>
                 {:else if card.type === 'sequencing'}
                   <div class="field">
-                    <label for="s-{card.id}">Instrucción</label>
+                    <label for="s-{card.id}">Instruction</label>
                     <input
                       id="s-{card.id}"
                       type="text"
-                      placeholder="Ej: Ordena los siguientes pasos..."
+                      placeholder="e.g., Order the following steps..."
                       bind:value={card.content.prompt}
                       on:input={() => handleUpdate(card)}
                     />
@@ -324,7 +323,7 @@
                         <span class="drag-handle">::</span>
                         <input
                           type="text"
-                          placeholder="Ítem de la secuencia..."
+                          placeholder="Sequence item..."
                           bind:value={card.content.items[itemIndex]}
                           on:input={() => handleUpdate(card)}
                         />
@@ -339,7 +338,7 @@
                   <button
                     class="add-item-button"
                     on:click={() => addSequenceItem(card)}
-                    ><Icon name="plus" size={14} /> Añadir Ítem</button
+                    ><Icon name="plus" size={14} /> Add Item</button
                   >
                 {/if}
               </div>
@@ -352,15 +351,15 @@
           {/each}
         </div>
       {:else}
-        <!-- Estado Vacío -->
+        <!-- Empty State -->
       {/if}
     </div>
   </div>
 {/if}
 
 <style>
-  /* El CSS de la respuesta anterior es perfecto y no necesita cambios. 
-     Se mantiene aquí por completitud. */
+  /* The CSS from the previous response is perfect and does not need changes. 
+     It is kept here for completeness. */
   .panel {
     --theme-bg-primary: #1e1f22;
     --theme-bg-secondary: #2b2c31;

@@ -1,13 +1,8 @@
-<!-- src/lib/components/editor/DocumentView.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
-
-  // --- Tiptap Core ---
   import { Editor, findParentNode } from '@tiptap/core';
   import * as Y from 'yjs';
-
-  // --- Tiptap Extensions (Nativas) ---
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
   import Text from '@tiptap/extension-text';
@@ -20,11 +15,8 @@
   import BulletList from '@tiptap/extension-bullet-list';
   import OrderedList from '@tiptap/extension-ordered-list';
   import HorizontalRule from '@tiptap/extension-horizontal-rule';
-  // --- NEW: Media Extensions ---
   import Image from '@tiptap/extension-image';
   import YouTube from '@tiptap/extension-youtube';
-
-  // --- Tiptap Extensions (Personalizadas) ---
   import { RoleExtension } from '$lib/editor/extensions/RoleExtension';
   import { SmartEnter } from '$lib/editor/extensions/SmartEnter';
   import { DynamicHighlighter } from '$lib/editor/extensions/DynamicHighlighter';
@@ -32,17 +24,13 @@
   import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
   import { CardIndicatorExtension } from '$lib/editor/extensions/CardIndicatorExtension';
-  // --- NEW: Math Extensions ---
   import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
-
-  // --- Stores y Lógica de la Aplicación ---
   import { editorStore } from '$lib/stores/editorStore';
   import { documentStore } from '$lib/stores/documentStore';
   import { debounce } from '$lib/utils/debounce';
-  // --- NEW: Modal Store ---
   import { modalStore } from '$lib/stores/modalStore';
+  import { t } from '$lib/services/i18n';
 
-  // --- Props y Eventos ---
   let {
     ydoc,
     initialContent = null,
@@ -59,7 +47,6 @@
   let editor = $state<Editor | null>(null);
 
   const syncTitleWithStore = debounce((editorInstance: Editor) => {
-    // ... existing syncTitleWithStore logic ...
     if (!editorInstance || editorInstance.isDestroyed) return;
 
     const firstNode = editorInstance.state.doc.firstChild;
@@ -69,7 +56,7 @@
       firstNode.type.name === 'heading' &&
       firstNode.attrs.level === 1
     ) {
-      const newTitle = firstNode.textContent.trim() || 'Esquema sin título';
+      const newTitle = firstNode.textContent.trim() || $t('doc_view.untitled_schema');
 
       const currentTitleInStore = get(documentStore).metadata?.title;
 
@@ -78,15 +65,14 @@
       }
     } else {
       const currentTitleInStore = get(documentStore).metadata?.title;
-      if (currentTitleInStore !== 'Esquema sin título') {
-        documentStore.updateTitle('Esquema sin título');
+      if (currentTitleInStore !== $t('doc_view.untitled_schema')) {
+        documentStore.updateTitle($t('doc_view.untitled_schema'));
       }
     }
   }, 750);
 
   $effect(() => {
     if (focusedNodePos !== null && editor && editor.isEditable) {
-      // ... existing focus logic ...
       const currentSelection = editor.state.selection;
       const parentListItem = findParentNode(
         (node) => node.type.name === 'listItem'
@@ -120,15 +106,14 @@
         NodeIdExtension,
         CardIndicatorExtension,
         Placeholder.configure({
-          // ... existing placeholder logic ...
           placeholder: ({ editor, node, pos }) => {
             if (node.type.name === 'heading' && node.attrs.level === 1) {
-              return '¿Cuál es el título de tu esquema?';
+              return $t('doc_view.placeholder.title');
             }
             if (node.type.name === 'paragraph' && !node.textContent) {
               const parent = editor.state.doc.resolve(pos).parent;
               if (parent.firstChild === node) {
-                return 'Escribe un término... (usa / para comandos)';
+                return $t('doc_view.placeholder.term');
               }
             }
             if (
@@ -136,7 +121,7 @@
               !node.textContent &&
               node.attrs.role === 'description'
             ) {
-              return 'Añade una descripción (opcional)';
+              return $t('doc_view.placeholder.description');
             }
             return '';
           },
@@ -144,10 +129,7 @@
         DynamicHighlighter,
         SlashCommandExtension,
         Collaboration.configure({ document: ydoc }),
-
-        // --- NEW EXTENSIONS ---
         Image.extend({
-          // --- NEW: Custom Node View for Image ---
           addNodeView() {
             return ({ node, getPos, editor }) => {
               const container = document.createElement('div');
@@ -160,7 +142,7 @@
               if (editor.isEditable) {
                 const button = document.createElement('button');
                 button.classList.add('edit-button');
-                button.innerText = 'Edit';
+                button.innerText = $t('doc_view.media.edit_button');
                 button.addEventListener('click', () => {
                   const pos = getPos();
                   if (pos === undefined) return;
@@ -236,7 +218,7 @@
 <style>
   .document-layout-container {
     width: 100%;
-    max-width: 960px; /* Alineado con el header */
+    max-width: 960px;
     margin: 0 auto;
     padding: var(--space-xxl) var(--space-md) 50vh var(--space-md);
   }

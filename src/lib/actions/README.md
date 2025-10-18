@@ -1,22 +1,22 @@
-# Acciones de Svelte (`/src/lib/actions`)
+# Svelte Actions (`/src/lib/actions`)
 
-Este directorio contiene acciones personalizadas de Svelte. Las acciones son una característica poderosa de Svelte que permite adjuntar lógica de comportamiento a los elementos del DOM. Son una forma limpia de reutilizar interacciones del DOM sin tener que encapsularlas en componentes completos.
+This directory contains custom Svelte actions. Actions are a powerful feature of Svelte that allow you to attach behavioral logic to DOM elements. They are a clean way to reuse DOM interactions without having to encapsulate them in full components.
 
-## Filosofía
+## Philosophy
 
-Utilizamos las acciones para encapsular interacciones complejas o repetitivas con el DOM que no son adecuadas para ser un componente. Esto nos ayuda a mantener nuestro código de componentes más limpio y declarativo. Las acciones son ideales para:
+We use actions to encapsulate complex or repetitive interactions with the DOM that are not suitable for being a component. This helps us keep our component code cleaner and more declarative. Actions are ideal for:
 
--   Interactuar con bibliotecas de terceros que manipulan el DOM.
--   Gestionar eventos del DOM personalizados o complejos.
--   Añadir comportamiento dinámico que depende del ciclo de vida de un elemento.
+-   Interacting with third-party libraries that manipulate the DOM.
+-   Managing custom or complex DOM events.
+-   Adding dynamic behavior that depends on the lifecycle of an element.
 
-## Acciones Disponibles
+## Available Actions
 
 ### `clickOutside`
 
--   **Propósito**: Ejecutar una función de callback cuando el usuario hace clic *fuera* del elemento al que se aplica la acción.
--   **Uso Típico**: Cerrar menús desplegables, modales o paneles cuando el usuario interactúa con otra parte de la aplicación. Esto es fundamental para una experiencia de usuario fluida e intuitiva.
--   **Implementación**: La acción adjunta un detector de eventos al objeto `window`. Cuando ocurre un clic, comprueba si el `event.target` está contenido dentro del nodo al que se adjunta la acción. Si no lo está, invoca la función de callback.
+-   **Purpose**: To execute a callback function when the user clicks *outside* of the element to which the action is applied.
+-   **Typical Use**: Closing dropdown menus, modals, or panels when the user interacts with another part of the application. This is essential for a fluid and intuitive user experience.
+-   **Implementation**: The action attaches an event listener to the `window` object. When a click occurs, it checks if the `event.target` is contained within the node to which the action is attached. If it is not, it invokes the callback function.
 
     ```svelte
     <script>
@@ -29,16 +29,16 @@ Utilizamos las acciones para encapsular interacciones complejas o repetitivas co
 
     {#if isOpen}
       <div use:clickOutside on:click_outside={close}>
-        <p>Contenido del menú...</p>
+        <p>Menu content...</p>
       </div>
     {/if}
     ```
 
 ### `portal`
 
--   **Propósito**: Renderizar un elemento del DOM en una ubicación diferente del árbol del DOM, generalmente en el `document.body`.
--   **Uso Típico**: Esencial para componentes que deben "escapar" de sus contenedores padres para evitar problemas de `z-index`, `overflow: hidden` o posicionamiento. Se usa para modales, tooltips y menús flotantes.
--   **Implementación**: La acción simplemente toma el nodo y lo mueve a `document.body` cuando el elemento se monta en el DOM. También se encarga de limpiar y eliminar el nodo del `body` cuando el elemento se destruye, previniendo fugas de memoria.
+-   **Purpose**: To render a DOM element in a different location in the DOM tree, usually in the `document.body`.
+-   **Typical Use**: Essential for components that need to "escape" their parent containers to avoid issues with `z-index`, `overflow: hidden`, or positioning. It is used for modals, tooltips, and floating menus.
+-   **Implementation**: The action simply takes the node and moves it to `document.body` when the element is mounted in the DOM. It also takes care of cleaning up and removing the node from the `body` when the element is destroyed, preventing memory leaks.
 
     ```svelte
     <script>
@@ -46,6 +46,6 @@ Utilizamos las acciones para encapsular interacciones complejas o repetitivas co
     </script>
 
     <div use:portal>
-      <p>Este modal se renderizará en el body, no donde está declarado.</p>
+      <p>This modal will be rendered in the body, not where it is declared.</p>
     </div>
     ```

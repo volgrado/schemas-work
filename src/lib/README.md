@@ -1,46 +1,46 @@
-# Arquitectura del Proyecto (`/src/lib`)
+# Project Architecture (`/src/lib`)
 
-Bienvenido al corazón de la aplicación. El directorio `/src/lib` contiene todo el código fuente principal, organizado de manera modular para promover la mantenibilidad, escalabilidad y una clara separación de responsabilidades.
+Welcome to the heart of the application. The `/src/lib` directory contains all the main source code, organized in a modular way to promote maintainability, scalability, and a clear separation of responsibilities.
 
-Esta documentación sirve como una guía de alto nivel de la arquitectura. Para obtener detalles más profundos, consulta los archivos `README.md` dentro de cada subdirectorio.
+This documentation serves as a high-level guide to the architecture. for more details, see the `README.md` files within each subdirectory.
 
-## Filosofía Arquitectónica General
+## General Architectural Philosophy
 
-La aplicación sigue un patrón de diseño inspirado en la **arquitectura por capas** y el **estado centralizado**, adaptado al ecosistema de SvelteKit.
+The application follows a design pattern inspired by **layered architecture** and **centralized state**, adapted to the SvelteKit ecosystem.
 
--   **Flujo de Datos Unidireccional**: La interfaz de usuario (componentes de Svelte) reacciona a los cambios en los almacenes de estado (Svelte Stores). Las interacciones del usuario en los componentes desencadenan acciones en los stores, que a su vez actualizan el estado, y la UI se actualiza en consecuencia. `UI -> Store -> UI`.
--   **Separación de Responsabilidades**: Cada directorio tiene un propósito claro. Los componentes no contienen lógica de negocio compleja; los stores orquestan el estado y la lógica de las características; y los servicios encapsulan la comunicación con sistemas externos (como bases de datos o APIs).
+-   **Unidirectional Data Flow**: The user interface (Svelte components) reacts to changes in the state stores (Svelte Stores). User interactions in the components trigger actions in the stores, which in turn update the state, and the UI is updated accordingly. `UI -> Store -> UI`.
+-   **Separation of Responsibilities**: Each directory has a clear purpose. Components do not contain complex business logic; stores orchestrate state and feature logic; and services encapsulate communication with external systems (such as databases or APIs).
 
-## Mapa de Directorios
+## Directory Map
 
-A continuación se describe el propósito de cada directorio principal dentro de `src/lib`:
+The purpose of each main directory within `src/lib` is described below:
 
 ### [`/actions`](./actions/README.md)
-Contiene acciones personalizadas de Svelte (`use:action`). Estas son funciones reutilizables que encapsulan lógica de manipulación del DOM, como detectar un clic fuera de un elemento o crear un portal.
+Contains custom Svelte actions (`use:action`). These are reusable functions that encapsulate DOM manipulation logic, such as detecting a click outside of an element or creating a portal.
 
 ### [`/assets`](./assets/README.md)
-Almacena todos los activos estáticos como iconos SVG, imágenes y fuentes. Vite/SvelteKit los procesa y optimiza automáticamente.
+Stores all static assets such as SVG icons, images, and fonts. Vite/SvelteKit automatically processes and optimizes them.
 
 ### [`/components`](./components/README.md)
-El hogar de todos nuestros componentes de Svelte. Está subdividido en `core`, `features`, `layout` y `ui` para una clara separación entre componentes de presentación (tontos) y componentes de características (inteligentes).
+The home of all our Svelte components. It is subdivided into `core`, `features`, `layout`, and `ui` for a clear separation between presentation (dumb) components and feature (smart) components.
 
 ### [`/editor`](./editor/README.md)
-Encapsula toda la configuración y la lógica del editor de texto Tiptap/ProseMirror. Define nodos personalizados y extensiones que añaden la funcionalidad principal de la aplicación, como la creación de tarjetas y los comandos slash.
+Encapsulates all the configuration and logic of the Tiptap/ProseMirror text editor. It defines custom nodes and extensions that add the main functionality of the application, such as creating cards and slash commands.
 
 ### [`/schemas`](./schemas/README.md)
-Define esquemas de validación (usando Zod) para las interacciones con la API de IA. Esto garantiza que los datos recibidos de los modelos de lenguaje sean estructurados y seguros a nivel de tipos.
+Defines validation schemas (using Zod) for interactions with the AI API. This ensures that the data received from the language models is structured and type-safe.
 
 ### [`/services`](./services/README.md)
-Contiene la lógica de negocio y la comunicación con el exterior. Se divide en servicios de `core` (autenticación, errores), `features` (lógica específica de una característica como el cálculo de revisión espaciada) y `api` (clientes para APIs externas como la base de datos o la IA).
+Contains the business logic and communication with the outside world. It is divided into `core` services (authentication, errors), `features` (logic specific to a feature such as the calculation of spaced repetition), and `api` (clients for external APIs such as the database or the AI).
 
 ### [`/stores`](./stores/README.md)
-El cerebro de la aplicación. Contiene todos los Svelte Stores que gestionan el estado de la aplicación. Los stores son el "pegamento" que conecta la UI con la lógica de negocio, siguiendo un patrón reactivo.
+The brain of the application. It contains all the Svelte Stores that manage the state of the application. The stores are the "glue" that connects the UI with the business logic, following a reactive pattern.
 
 ### [`/styles`](./styles/README.md)
-Define el sistema de diseño de la aplicación a través de CSS. `global.css` establece todas las variables CSS (colores, tipografía, espaciado) que garantizan una apariencia consistente en toda la UI.
+Defines the application's design system through CSS. `global.css` sets all the CSS variables (colors, typography, spacing) that ensure a consistent look and feel throughout the UI.
 
 ### [`/types`](./types/README.md)
-Contiene definiciones de tipos globales de TypeScript utilizadas en toda la aplicación. Esto ayuda a mantener la consistencia y la seguridad de tipos.
+Contains global TypeScript type definitions used throughout the application. This helps maintain consistency and type safety.
 
 ### [`/utils`](./utils/README.md)
-Una colección de funciones de utilidad puras y reutilizables que no encajan en ninguna otra categoría. Por ejemplo, formateadores de fecha, funciones de debounce, etc.
+A collection of pure, reusable utility functions that do not fit into any other category. For example, date formatters, debounce functions, etc.

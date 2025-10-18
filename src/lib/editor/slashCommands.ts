@@ -12,6 +12,7 @@ import {
   type MediaModalConfig,
   type FormulaModalConfig,
 } from '$lib/stores/modalStore';
+import { gett } from '$lib/utils/i18n';
 
 export interface CommandItem {
   title: string;
@@ -23,263 +24,266 @@ export interface CommandItem {
 
 const hasNodeSelected = () => get(editorStore).selectedNodePos !== null;
 
-export const getCommands = (): CommandItem[] => [
-  // --- Grupo: Básico ---
-  {
-    title: 'Término',
-    description: 'Añadir un nuevo concepto o término.',
-    group: 'Básico',
-    icon: 'pen-tool',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleBulletList().run();
+export const getCommands = (): CommandItem[] => {
+  const t = gett();
+  return [
+    // --- Group: Basic ---
+    {
+      title: t('slashCommands.term.title'),
+      description: t('slashCommands.term.description'),
+      group: t('slashCommands.groups.basic'),
+      icon: 'pen-tool',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).toggleBulletList().run();
+      },
     },
-  },
-  {
-    title: 'Lista',
-    description: 'Crear una lista con viñetas.',
-    group: 'Básico',
-    icon: 'list',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleBulletList().run();
+    {
+      title: t('slashCommands.list.title'),
+      description: t('slashCommands.list.description'),
+      group: t('slashCommands.groups.basic'),
+      icon: 'list',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).toggleBulletList().run();
+      },
     },
-  },
-  {
-    title: 'Lista Numerada',
-    description: 'Crear una lista ordenada (1, 2, 3...).',
-    group: 'Básico',
-    icon: 'list', // Re-using icon for now
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+    {
+      title: t('slashCommands.numberedList.title'),
+      description: t('slashCommands.numberedList.description'),
+      group: t('slashCommands.groups.basic'),
+      icon: 'list-ordered',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+      },
     },
-  },
 
-  // --- Grupo: Formato ---
-  {
-    title: 'Título 1',
-    description: 'El título principal del esquema.',
-    group: 'Formato',
-    icon: 'type',
-    command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode('heading', { level: 1 })
-        .run();
+    // --- Group: Formatting ---
+    {
+      title: t('slashCommands.h1.title'),
+      description: t('slashCommands.h1.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 1 })
+          .run();
+      },
     },
-  },
-  {
-    title: 'Título 2',
-    description: 'Añadir un subtítulo de sección.',
-    group: 'Formato',
-    icon: 'type',
-    command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode('heading', { level: 2 })
-        .run();
+    {
+      title: t('slashCommands.h2.title'),
+      description: t('slashCommands.h2.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 2 })
+          .run();
+      },
     },
-  },
-  {
-    title: 'Título 3',
-    description: 'Añadir un subtítulo anidado.',
-    group: 'Formato',
-    icon: 'type',
-    command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode('heading', { level: 3 })
-        .run();
+    {
+      title: t('slashCommands.h3.title'),
+      description: t('slashCommands.h3.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 3 })
+          .run();
+      },
     },
-  },
-  {
-    title: 'Separador',
-    description: 'Añadir una línea horizontal.',
-    group: 'Formato',
-    icon: 'minus',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setHorizontalRule().run();
+    {
+      title: t('slashCommands.separator.title'),
+      description: t('slashCommands.separator.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'minus',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).setHorizontalRule().run();
+      },
     },
-  },
-  {
-    title: 'Negrita',
-    description: 'Resaltar el texto seleccionado.',
-    group: 'Formato',
-    icon: 'bold',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setMark('bold').run();
+    {
+      title: t('slashCommands.bold.title'),
+      description: t('slashCommands.bold.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'bold',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).setMark('bold').run();
+      },
     },
-  },
-  {
-    title: 'Cursiva',
-    description: 'Enfatizar el texto seleccionado.',
-    group: 'Formato',
-    icon: 'italic',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setMark('italic').run();
+    {
+      title: t('slashCommands.italic.title'),
+      description: t('slashCommands.italic.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'italic',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).setMark('italic').run();
+      },
     },
-  },
-  // --- NEW: Media Group ---
-  {
-    title: 'Imagen',
-    description: 'Añadir una imagen desde una URL.',
-    group: 'Media',
-    icon: 'image',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const pos = range.from;
-      editor
-        .chain()
-        .insertContentAt(pos, { type: 'image', attrs: { src: null } })
-        .run();
-      const node = editor.state.doc.nodeAt(pos);
-      if (node) {
-        const config: MediaModalConfig = {
-          type: 'media',
-          nodeType: 'image',
-          nodePos: pos,
-          attrs: node.attrs,
-        };
-        modalStore.open(config);
-      }
+    // --- NEW: Media Group ---
+    {
+      title: t('slashCommands.image.title'),
+      description: t('slashCommands.image.description'),
+      group: t('slashCommands.groups.media'),
+      icon: 'image',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const pos = range.from;
+        editor
+          .chain()
+          .insertContentAt(pos, { type: 'image', attrs: { src: null } })
+          .run();
+        const node = editor.state.doc.nodeAt(pos);
+        if (node) {
+          const config: MediaModalConfig = {
+            type: 'media',
+            nodeType: 'image',
+            nodePos: pos,
+            attrs: node.attrs,
+          };
+          modalStore.open(config);
+        }
+      },
     },
-  },
-  {
-    title: 'Video de YouTube',
-    description: 'Incrustar un video de YouTube.',
-    group: 'Media',
-    icon: 'video',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const pos = range.from;
-      editor
-        .chain()
-        .insertContentAt(pos, { type: 'youtube', attrs: { src: null } })
-        .run();
-      const node = editor.state.doc.nodeAt(pos);
-      if (node) {
-        const config: MediaModalConfig = {
-          type: 'media',
-          nodeType: 'youtube',
-          nodePos: pos,
-          attrs: node.attrs,
-        };
-        modalStore.open(config);
-      }
+    {
+      title: t('slashCommands.youtube.title'),
+      description: t('slashCommands.youtube.description'),
+      group: t('slashCommands.groups.media'),
+      icon: 'video',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const pos = range.from;
+        editor
+          .chain()
+          .insertContentAt(pos, { type: 'youtube', attrs: { src: null } })
+          .run();
+        const node = editor.state.doc.nodeAt(pos);
+        if (node) {
+          const config: MediaModalConfig = {
+            type: 'media',
+            nodeType: 'youtube',
+            nodePos: pos,
+            attrs: node.attrs,
+          };
+          modalStore.open(config);
+        }
+      },
     },
-  },
-  {
-    title: 'Fórmula (Bloque)',
-    description: 'Añadir una fórmula matemática (KaTeX).',
-    group: 'Media',
-    icon: 'plus-slash-minus',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const pos = range.from;
-      editor.chain().insertContentAt(pos, { type: 'mathBlock' }).run();
-      const node = editor.state.doc.nodeAt(pos);
-      if (node) {
-        const config: FormulaModalConfig = {
-          type: 'formula',
-          nodePos: pos,
-          attrs: node.attrs as { formula: string },
-        };
-        modalStore.open(config);
-      }
+    {
+      title: t('slashCommands.mathBlock.title'),
+      description: t('slashCommands.mathBlock.description'),
+      group: t('slashCommands.groups.media'),
+      icon: 'plus-slash-minus',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const pos = range.from;
+        editor.chain().insertContentAt(pos, { type: 'mathBlock' }).run();
+        const node = editor.state.doc.nodeAt(pos);
+        if (node) {
+          const config: FormulaModalConfig = {
+            type: 'formula',
+            nodePos: pos,
+            attrs: node.attrs as { formula: string },
+          };
+          modalStore.open(config);
+        }
+      },
     },
-  },
-  {
-    title: 'Fórmula (En línea)',
-    description: 'Añadir una fórmula en la misma línea.',
-    group: 'Media',
-    icon: 'plus-slash-minus',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const pos = range.from;
-      editor.chain().insertContentAt(pos, { type: 'mathInline' }).run();
-      const node = editor.state.doc.nodeAt(pos);
-      if (node) {
-        const config: FormulaModalConfig = {
-          type: 'formula',
-          nodePos: pos,
-          attrs: node.attrs as { formula: string },
-        };
-        modalStore.open(config);
-      }
+    {
+      title: t('slashCommands.mathInline.title'),
+      description: t('slashCommands.mathInline.description'),
+      group: t('slashCommands.groups.media'),
+      icon: 'plus-slash-minus',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const pos = range.from;
+        editor.chain().insertContentAt(pos, { type: 'mathInline' }).run();
+        const node = editor.state.doc.nodeAt(pos);
+        if (node) {
+          const config: FormulaModalConfig = {
+            type: 'formula',
+            nodePos: pos,
+            attrs: node.attrs as { formula: string },
+          };
+          modalStore.open(config);
+        }
+      },
     },
-  },
 
-  // --- Grupo: IA ---
-  {
-    title: 'Expandir Nodo (IA)',
-    description: 'Generar sub-puntos para el nodo actual.',
-    group: 'IA',
-    icon: 'sparkles',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      if (!hasNodeSelected()) {
-        toast.error('Para expandir, primero selecciona un nodo en el esquema.');
-        return;
-      }
-      commandBarStore.openAiHelper('expand-node');
+    // --- Group: AI ---
+    {
+      title: t('slashCommands.expandNode.title'),
+      description: t('slashCommands.expandNode.description'),
+      group: t('slashCommands.groups.ai'),
+      icon: 'sparkles',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        if (!hasNodeSelected()) {
+          toast.error(t('slashCommands.expandNode.error'));
+          return;
+        }
+        commandBarStore.openAiHelper('expand-node');
+      },
     },
-  },
-  {
-    title: 'Generar Tarjetas (IA)',
-    description: 'Crear tarjetas de estudio para este nodo.',
-    group: 'IA',
-    icon: 'zap',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      if (!hasNodeSelected()) {
-        toast.error('Para generar tarjetas, primero selecciona un nodo.');
-        return;
-      }
-      commandBarStore.openAiHelper('generate-flashcards');
+    {
+      title: t('slashCommands.generateCards.title'),
+      description: t('slashCommands.generateCards.description'),
+      group: t('slashCommands.groups.ai'),
+      icon: 'zap',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        if (!hasNodeSelected()) {
+          toast.error(t('slashCommands.generateCards.error'));
+          return;
+        }
+        commandBarStore.openAiHelper('generate-flashcards');
+      },
     },
-  },
 
-  // --- Grupo: Utilidades ---
-  {
-    title: 'Leer Nodo',
-    description: 'Iniciar la lectura en voz alta desde aquí.',
-    group: 'Utilidades',
-    icon: 'volume-2',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const state = get(editorStore);
-      if (state.selectedNodePos === null) {
-        toast.error('Selecciona un nodo para empezar a leer.');
-        return;
-      }
-      const node = editor.state.doc.nodeAt(state.selectedNodePos);
-      if (node?.attrs.nodeId) {
-        ttsStore.startReadingFromNode(node.attrs.nodeId);
-      }
+    // --- Group: Utilities ---
+    {
+      title: t('slashCommands.readNode.title'),
+      description: t('slashCommands.readNode.description'),
+      group: t('slashCommands.groups.utilities'),
+      icon: 'volume-2',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const state = get(editorStore);
+        if (state.selectedNodePos === null) {
+          toast.error(t('slashCommands.readNode.error'));
+          return;
+        }
+        const node = editor.state.doc.nodeAt(state.selectedNodePos);
+        if (node?.attrs.nodeId) {
+          ttsStore.startReadingFromNode(node.attrs.nodeId);
+        }
+      },
     },
-  },
-  {
-    title: 'Editar Tarjetas',
-    description: 'Abrir el editor de tarjetas para este nodo.',
-    group: 'Utilidades',
-    icon: 'edit-3',
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      const state = get(editorStore);
-      if (state.selectedNodePos === null) {
-        toast.error('Selecciona un nodo para editar sus tarjetas.');
-        return;
-      }
-      const node = editor.state.doc.nodeAt(state.selectedNodePos);
-      if (node?.attrs.nodeId) {
-        cardEditorStore.open(node.attrs.nodeId);
-      } else {
-        toast.error('Este nodo no tiene un ID válido para asociar tarjetas.');
-      }
+    {
+      title: t('slashCommands.editCards.title'),
+      description: t('slashCommands.editCards.description'),
+      group: t('slashCommands.groups.utilities'),
+      icon: 'edit-3',
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        const state = get(editorStore);
+        if (state.selectedNodePos === null) {
+          toast.error(t('slashCommands.editCards.error'));
+          return;
+        }
+        const node = editor.state.doc.nodeAt(state.selectedNodePos);
+        if (node?.attrs.nodeId) {
+          cardEditorStore.open(node.attrs.nodeId);
+        } else {
+          toast.error(t('slashCommands.editCards.errorNoId'));
+        }
+      },
     },
-  },
-];
+  ];
+};

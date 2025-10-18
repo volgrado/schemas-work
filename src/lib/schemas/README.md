@@ -1,38 +1,38 @@
-# Esquemas de IA (`/src/lib/schemas`)
+# AI Schemas (`/src/lib/schemas`)
 
-Este directorio define las estructuras de datos (`schemas`) que se utilizan para guiar y validar las respuestas de los modelos de lenguaje grandes (LLMs) con los que interactúa la aplicación.
+This directory defines the data structures (`schemas`) that are used to guide and validate the responses of the large language models (LLMs) with which the application interacts.
 
-## Propósito y Filosofía
+## Purpose and Philosophy
 
-El objetivo principal de este directorio es asegurar que las interacciones con la IA sean **estructuradas, predecibles y fiables**. En lugar de depender de respuestas de texto libre del LLM, le proporcionamos un esquema Zod que define la estructura JSON exacta que esperamos recibir.
+The main objective of this directory is to ensure that interactions with the AI are **structured, predictable, and reliable**. Instead of relying on free-text responses from the LLM, we provide it with a Zod schema that defines the exact JSON structure we expect to receive.
 
-Esto ofrece varias ventajas clave:
+This offers several key advantages:
 
-1.  **Fiabilidad**: Al forzar al LLM a responder con un JSON que se ajusta a un esquema, reducimos drásticamente la probabilidad de obtener respuestas malformadas o inesperadas.
+1.  **Reliability**: By forcing the LLM to respond with a JSON that conforms to a schema, we drastically reduce the probability of obtaining malformed or unexpected responses.
 
-2.  **Validación y Seguridad de Tipos**: Usamos Zod para validar en tiempo de ejecución que la respuesta del LLM se ajusta a nuestro esquema. Esto nos proporciona seguridad de tipos (`type-safety`) en nuestro código TypeScript, permitiéndonos autocompletar y evitar errores de `runtime`.
+2.  **Validation and Type Safety**: We use Zod to validate at runtime that the LLM's response conforms to our schema. This provides us with type safety in our TypeScript code, allowing us to autocomplete and avoid runtime errors.
 
-3.  **Desacoplamiento**: Define un "contrato" claro entre nuestra aplicación y el servicio de IA. Si la lógica de la aplicación cambia, solo necesitamos actualizar el esquema, y el `prompt` se ajustará en consecuencia.
+3.  **Decoupling**: It defines a clear "contract" between our application and the AI service. If the application logic changes, we only need to update the schema, and the `prompt` will be adjusted accordingly.
 
-4.  **Ingeniería de Prompts Simplificada**: En lugar de describir textualmente el formato de salida deseado en el prompt, podemos simplemente inyectar la definición del esquema, lo que a menudo conduce a resultados más precisos por parte del LLM.
+4.  **Simplified Prompt Engineering**: Instead of textually describing the desired output format in the prompt, we can simply inject the schema definition, which often leads to more accurate results from the LLM.
 
-## Estructura de un Esquema
+## Schema Structure
 
-Cada archivo en este directorio generalmente exporta:
+Each file in this directory generally exports:
 
--   **Un esquema Zod (`zod schema`)**: Define la estructura, los tipos de datos y las restricciones de la respuesta JSON que esperamos.
--   **Un tipo de TypeScript (`type`)**: Inferido automáticamente del esquema Zod. Este es el tipo que usamos en el resto de nuestra aplicación.
+-   **A Zod schema**: Defines the structure, data types, and constraints of the JSON response we expect.
+-   **A TypeScript type**: Automatically inferred from the Zod schema. This is the type we use in the rest of our application.
 
-### Ejemplo: `createCardSchema`
+### Example: `createCardSchema`
 
--   **`createCardSchema.ts`**: Define el esquema para la creación de una tarjeta de estudio a partir de una selección de texto.
+-   **`createCardSchema.ts`**: Defines the schema for creating a study card from a text selection.
 
-    -   **Esquema Zod**: Especifica que la respuesta debe ser un objeto con dos propiedades:
-        -   `question`: una cadena de texto, que será la pregunta de la tarjeta.
-        -   `answer`: una cadena de texto, que será la respuesta.
+    -   **Zod Schema**: Specifies that the response must be an object with two properties:
+        -   `question`: a string, which will be the question on the card.
+        -   `answer`: a string, which will be the answer.
 
-    -   **Prompt de IA Asociado (conceptual)**: Cuando un usuario pide crear una tarjeta, el `prompt` enviado al LLM incluirá una instrucción como:
+    -   **Associated AI Prompt (conceptual)**: When a user asks to create a card, the `prompt` sent to the LLM will include an instruction such as:
 
-        > "Basado en el siguiente texto, genera una pregunta y una respuesta concisa. Formatea tu salida como un objeto JSON que se ajuste al siguiente esquema: `{"type":"object","properties":{"question":{"type":"string"},"answer":{"type":"string"}},"required":["question","answer"]}`"
+        > "Based on the following text, generate a concise question and answer. Format your output as a JSON object that conforms to the following schema: `{"type":"object","properties":{"question":{"type":"string"},"answer":{"type":"string"}},"required":["question","answer"]}`"
 
-    -   **Uso en la Aplicación**: El servicio que llama a la IA (`aiService`) recibe la respuesta JSON, la valida con `createCardSchema.parse(response)`, y si tiene éxito, obtiene un objeto `CreateCard` fuertemente tipado que puede pasar de forma segura al `cardService` para crear la tarjeta en la base de datos.
+    -   **Usage in the Application**: The service that calls the AI (`aiService`) receives the JSON response, validates it with `createCardSchema.parse(response)`, and if successful, obtains a strongly typed `CreateCard` object that can be safely passed to the `cardService` to create the card in the database.

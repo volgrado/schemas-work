@@ -1,22 +1,4 @@
 <script lang="ts">
-  /**
-   * CommandBar.svelte (Shell Component)
-   *
-   * Este componente actúa como el "shell" o contenedor principal para la barra de comandos.
-   * Su arquitectura es de vanguardia, siguiendo el Principio de Responsabilidad Única.
-   *
-   * Responsabilidades del Shell:
-   * 1.  **Orquestar Vistas:** Renderiza el componente de vista activo (`MainView`, `AiView`, etc.)
-   * basado en el estado del `commandBarStore`. No contiene la lógica de esas vistas.
-   * 2.  **Gestionar Modales:** Es el "dueño" de todos los modales que se superponen a la aplicación
-   * (IA, Contraseña, Diagnóstico), incluyendo su configuración y lógica de envío.
-   * 3.  **Manejar Eventos Globales:** Captura eventos de teclado globales (como Ctrl+K y Escape)
-   * para controlar la visibilidad y navegación de la barra de comandos.
-   * 4.  **Proveer Estilos Compartidos:** Define los estilos base para el panel, overlay y
-   * elementos comunes como `.action-button` para asegurar una apariencia consistente.
-   */
-
-  // --- Svelte Core y UI ---
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { get } from 'svelte/store';
@@ -26,13 +8,9 @@
   import Button from '$lib/components/ui/Button.svelte';
   import AIHelperModal from '$lib/components/ai/AIHelperModal.svelte';
   import ErrorDiagnosticModal from '$lib/components/ui/ErrorDiagnosticModal.svelte';
-
-  // --- Vistas Hijas Especializadas ---
   import MainView from './command-bar/MainView.svelte';
   import AiView from './command-bar/AiView.svelte';
   import FileExplorerView from './command-bar/FileExplorerView.svelte';
-
-  // --- Lógica de la Aplicación (Stores y Servicios) ---
   import {
     commandBarStore,
     type AiHelperAction,
@@ -46,28 +24,27 @@
   import * as cardService from '$lib/services/features/cardService';
   import * as errorService from '$lib/services/core/errorService';
   import type { Card } from '$lib/types';
+  import { t } from '$lib/services/i18n';
 
   const state = commandBarStore;
 
-  // --- REFACTORIZACIÓN: Mapa de configuración para el Asistente de IA ---
-  // Se abstrae la lógica de configuración fuera del componente.
   const aiHelperConfigs = {
     'create-schema-from-text': {
-      title: 'Asistente: Crear Esquema desde Texto',
+      title: $t('command_bar.ai_helper.create_schema.title'),
       prompt: Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
         '{{TEXT_INPUT}}',
-        'Pega aquí tu texto para convertirlo en un esquema auto-explicativo...'
+        $t('command_bar.ai_helper.create_schema.prompt_placeholder')
       ),
       validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
       onApply: (data: any) => {
-        const title = data.content?.[0]?.content?.[0]?.text || 'Nuevo Esquema';
+        const title = data.content?.[0]?.content?.[0]?.text || 'New Schema';
         const parentId = get(state).currentParentId;
         documentStore.createNewDocument(title, data, parentId);
-        toast.success(`Esquema "${title}" creado con IA.`);
+        toast.success($t('command_bar.ai_helper.create_schema.success', { title }));
       },
     },
     'expand-node': {
-      title: 'Asistente: Expandir Nodo',
+      title: $t('command_bar.ai_helper.expand_node.title'),
       prompt: Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL, // Prompt base
       validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
       onApply: (data: any) => {
@@ -84,12 +61,12 @@
             .focus()
             .insertContentAt(currentPos + node.nodeSize - 1, data)
             .run();
-          toast.success(`Nodo expandido con nuevas ideas.`);
+          toast.success($t('command_bar.ai_helper.expand_node.success'));
         }
       },
     },
     'generate-flashcards': {
-      title: 'Asistente: Generar Tarjetas de Estudio',
+      title: $t('command_bar.ai_helper.generate_flashcards.title'),
       prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Prompt base
       validationSchema: aiSchemas.FlashcardResponseSchema,
       onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
@@ -102,23 +79,22 @@
             : null;
 
         if (!node?.attrs.nodeId) {
-          toast.error('No se puede generar tarjetas para un nodo sin ID.');
+          toast.error($t('command_bar.ai_helper.generate_flashcards.error.no_node_id'));
           return;
         }
         try {
           await cardService.addCards(node.attrs.nodeId, data);
-          toast.success(`${data.length} nuevas tarjetas generadas con IA.`);
+          toast.success($t('command_bar.ai_helper.generate_flashcards.success', { count: data.length }));
         } catch (err) {
           errorService.reportError(err, {
             operation: 'aiGenerateCards.onApply',
           });
-          toast.error('No se pudieron guardar las tarjetas generadas.');
+          toast.error($t('command_bar.ai_helper.generate_flashcards.error.save_failed'));
         }
       },
     },
   };
 
-  // --- Estado y Lógica que PERMANECEN en el Shell ---
   let passwordInput = '';
   let helperConfig = {
     title: '',
@@ -133,12 +109,10 @@
     }
   }
 
-  // --- REFACTORIZACIÓN: Función de configuración simplificada ---
   function configureAiHelper(actionId: AiHelperAction) {
     const config = aiHelperConfigs[actionId];
     if (!config) return;
 
-    // Clonamos la configuración para no mutar el objeto original
     let finalConfig = { ...config };
 
     const editorState = get(editorStore);
@@ -149,10 +123,9 @@
         ? editor.state.doc.nodeAt(currentPos)
         : null;
 
-    // Lógica dinámica que depende del estado del editor
     if (actionId === 'expand-node') {
       if (!node || !editor || currentPos === null) {
-        toast.error('Para expandir, primero selecciona un nodo en el esquema.');
+        toast.error($t('command_bar.ai_helper.expand_node.error.no_node_selected'));
         commandBarStore.closeAiHelper();
         return;
       }
@@ -165,7 +138,7 @@
         .replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
     } else if (actionId === 'generate-flashcards') {
       if (!node) {
-        toast.error('Para generar tarjetas, primero selecciona un nodo.');
+        toast.error($t('command_bar.ai_helper.generate_flashcards.error.no_node_selected'));
         commandBarStore.closeAiHelper();
         return;
       }
@@ -183,17 +156,17 @@
     try {
       if ($state.passwordModalAction === 'export') {
         await backupService.exportVault(passwordInput);
-        toast.success('Bóveda exportada correctamente.');
+        toast.success($t('command_bar.export_success'));
       } else {
         await backupService.importVault(passwordInput);
       }
     } catch (error) {
       console.error(
-        `Error durante la operación de ${$state.passwordModalAction}:`,
+        `Error during operation ${$state.passwordModalAction}:`,
         error
       );
-      toast.error('La operación ha fallado.', {
-        description: 'Revisa la consola para más detalles.',
+      toast.error($t('command_bar.operation_failed'), {
+        description: $t('command_bar.operation_failed_details'),
       });
     } finally {
       commandBarStore.closePasswordModal();
@@ -221,39 +194,38 @@
   onDestroy(() => window.removeEventListener('keydown', handleKeydown));
 </script>
 
-<!-- Modales: Su visibilidad y configuración son controladas por el CommandBar Shell -->
 <ErrorDiagnosticModal
   show={$state.isDiagnosticModalOpen}
   onClose={commandBarStore.closeDiagnosticModal}
 />
 <Modal
   title={$state.passwordModalAction === 'export'
-    ? 'Encriptar Bóveda'
-    : 'Importar Bóveda'}
+    ? $t('command_bar.password_modal.title.export')
+    : $t('command_bar.password_modal.title.import')}
   show={$state.isPasswordModalOpen}
   onClose={commandBarStore.closePasswordModal}
 >
   <form on:submit|preventDefault={handlePasswordSubmit}>
     <p>
       {$state.passwordModalAction === 'export'
-        ? 'Introduce una contraseña segura para proteger tu respaldo. Necesitarás esta contraseña para importarlo.'
-        : 'Introduce la contraseña con la que se encriptó este respaldo.'}
+        ? $t('command_bar.password_modal.description.export')
+        : $t('command_bar.password_modal.description.import')}
     </p>
     <input
       type="password"
       bind:value={passwordInput}
-      placeholder="Contraseña"
+      placeholder={$t('command_bar.password_modal.password_placeholder')}
       required
       autocomplete="new-password"
     />
     <div class="modal-actions">
       <Button on:click={commandBarStore.closePasswordModal} variant="secondary"
-        >Cancelar</Button
+        >{$t('command_bar.password_modal.cancel_button')}</Button
       >
       <Button type="submit">
         {$state.passwordModalAction === 'export'
-          ? 'Exportar y Descargar'
-          : 'Importar'}
+          ? $t('command_bar.password_modal.confirm_button.export')
+          : $t('command_bar.password_modal.confirm_button.import')}
       </Button>
     </div>
   </form>
@@ -270,13 +242,12 @@
   on:close={commandBarStore.closeAiHelper}
 />
 
-<!-- Interfaz Principal de la CommandBar -->
 {#if $state.isOpen}
   <button
     class="overlay"
     on:click={commandBarStore.close}
     transition:fade={{ duration: 150 }}
-    aria-label="Cerrar menú de comandos"
+    aria-label={$t('command_bar.close_aria_label')}
   ></button>
 
   <div
@@ -287,7 +258,6 @@
     aria-modal="true"
     aria-labelledby="commandbar-title"
   >
-    <!-- El Shell actúa como un "router" que renderiza la vista activa -->
     {#if $state.currentView === 'main'}
       <MainView />
     {:else if $state.currentView === 'ai-actions'}
@@ -299,7 +269,6 @@
 {/if}
 
 <style>
-  /* === Variables y Estilos Globales/Compartidos === */
   :global(:root) {
     --panel-bg-light: rgba(255, 255, 255, 0.85);
     --panel-bg-dark: rgba(28, 28, 30, 0.85);
@@ -345,10 +314,6 @@
     padding: var(--space-xs);
   }
 
-  /*
-    :global() se usa para que los componentes hijos puedan heredar
-    estos estilos de botón y lista, evitando la duplicación de CSS.
-  */
   :global(.panel .action-list) {
     display: flex;
     flex-direction: column;
@@ -420,7 +385,6 @@
     cursor: not-allowed;
   }
 
-  /* --- Estilos para los Modales --- */
   .modal-actions {
     margin-top: var(--space-md);
     display: flex;
@@ -449,12 +413,6 @@
     box-shadow: 0 0 0 3px rgba(var(--color-accent), 0.2);
   }
 
-  /* === Adaptación a Móvil === */
-  @media (max-width: 768px) {
-    /* ... (sin cambios) */
-  }
-
-  /* === Tema Oscuro === */
   @media (prefers-color-scheme: dark) {
     :global(.panel .action-list) {
       scrollbar-color: var(--scrollbar-thumb-dark) transparent;

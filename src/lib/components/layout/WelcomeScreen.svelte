@@ -1,6 +1,7 @@
-<!-- src/lib/components/layout/WelcomeScreen.svelte (VERSIÓN MEJORADA Y COMPLETA) -->
+
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t, setLocale } from '$lib/services/i18n'; // Import the t function
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import OrganicCanvas from '../ui/OrganicCanvas.svelte';
@@ -18,72 +19,51 @@
 
   <div class="content-panel">
     <header class="header">
-      <h1 class="title">
-        Schemas<span class="accent-word">.Work</span>
-      </h1>
-      <!-- CAMBIO: Subtítulo más evocador que alude a la conexión y crecimiento de ideas. -->
-      <p class="subtitle">
-        Donde tus ideas echan raíces, se conectan y florecen.
-      </p>
+      <h1 class="title">Schemas<span class="accent-word">.Work</span></h1>
+      <p class="subtitle">{$t('welcome.tagline')}</p>
     </header>
 
-    <!-- CAMBIO: La parrilla de características ha sido reescrita y expandida para cubrir más funcionalidades clave. -->
     <main class="features-grid">
       <div class="feature">
         <Icon name="sparkles" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Estructura con IA</h2>
-          <p>
-            Transforma texto en bruto en esquemas jerárquicos y expande tus
-            nodos con nuevas ideas usando el asistente de IA.
-          </p>
+          <h2 class="feature-title">{$t('feature.ai_structure.title')}</h2>
+          <p>{$t('feature.ai_structure.description')}</p>
         </div>
       </div>
 
       <div class="feature">
         <Icon name="git-branch" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Visualiza tus Conexiones</h2>
-          <p>
-            Explora tu conocimiento como un árbol de ideas interactivo,
-            revelando la estructura profunda de tus esquemas de un vistazo.
-          </p>
+          <h2 class="feature-title">{$t('feature.visualize.title')}</h2>
+          <p>{$t('feature.visualize.description')}</p>
         </div>
       </div>
 
       <div class="feature">
         <Icon name="zap" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Aprende de Verdad</h2>
-          <p>
-            Genera tarjetas de estudio y memoriza conceptos clave con un sistema
-            de repetición espaciada (SRS) integrado.
-          </p>
+          <h2 class="feature-title">{$t('feature.learn.title')}</h2>
+          <p>{$t('feature.learn.description')}</p>
         </div>
       </div>
 
       <div class="feature">
         <Icon name="lock" size={24} />
         <div class="feature-text">
-          <h2 class="feature-title">Tu Conocimiento es Tuyo</h2>
-          <p>
-            Funciona 100% en tu navegador, sin servidores. Realiza copias de
-            seguridad de todo tu trabajo con encriptación protegida por tu
-            propia contraseña.
-          </p>
+          <h2 class="feature-title">{$t('feature.privacy.title')}</h2>
+          <p>{$t('feature.privacy.description')}</p>
         </div>
       </div>
     </main>
 
     <footer class="footer">
       <Button on:click={handleStart} size="lg" variant="primary">
-        Comenzar a Cultivar
+        {$t('welcome.cta')}
       </Button>
-      <!-- CAMBIO: Texto de apoyo que crea una transición suave a la aplicación. -->
-      <p class="cta-support-text">
-        Tu primer lienzo, "Mi Primer Esquema", te está esperando.
-      </p>
+      <p class="cta-support-text">{$t('welcome.cta_support')}</p>
     </footer>
+    
   </div>
 </div>
 
@@ -210,29 +190,9 @@
   @media (max-width: 480px) {
     .feature {
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: var(--space-sm);
-    }
+      align-items/g, vars[k]);
+    });
 
-    .title {
-      font-size: 2rem;
-    }
-
-    .subtitle {
-      font-size: 1rem;
-    }
+    return text;
   }
-
-  :global(.exiting) .content-panel {
-    will-change: opacity, transform;
-    animation: fadeOutUp 0.7s ease-in forwards;
-  }
-
-  @keyframes fadeOutUp {
-    to {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-  }
-</style>
+);

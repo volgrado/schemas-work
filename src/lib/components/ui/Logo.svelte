@@ -2,17 +2,17 @@
   @component
   Logo.svelte
 
-  Este componente encapsula el código SVG del logo de la aplicación.
+  This component encapsulates the SVG code of the application logo.
 
-  Responsabilidades:
-  - Renderizar el gráfico vectorial del logo.
-  - Aceptar una `prop` `size` para controlar sus dimensiones de forma dinámica.
-  - Usar `fill="currentColor"` para que su color pueda ser controlado
-    fácilmente a través de CSS desde su componente padre.
+  Responsibilities:
+  - Render the vector graphic of the logo.
+  - Accept a `size` prop to dynamically control its dimensions.
+  - Use `fill="currentColor"` so that its color can be easily
+    controlled via CSS from its parent component.
 -->
 <script lang="ts">
   /**
-   * El tamaño (ancho y alto) del logo en píxeles.
+   * The size (width and height) of the logo in pixels.
    * @type {number}
    */
   export let size: number = 24;

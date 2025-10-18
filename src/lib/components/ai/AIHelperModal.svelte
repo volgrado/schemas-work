@@ -6,8 +6,9 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
 
-  import * as errorService from '$lib/services/core/errorService'; // *** 1. IMPORTAR ***
+  import * as errorService from '$lib/services/core/errorService'; // *** 1. IMPORT ***
   import { toast } from 'svelte-sonner';
+  import { t } from '$lib/utils/i18n';
 
   export let show: boolean = false;
   export let title: string;
@@ -31,29 +32,29 @@
         if (validation.success) {
           parseResult = { success: true, data: validation.data };
         } else {
-          // *** NUEVO: Reportar el error de validación de Zod ***
+          // *** NEW: Report the Zod validation error ***
           errorService.reportError(validation.error, {
             operation: 'parseAiJsonResponse.zodValidation',
-            rawInput: jsonInput, // Logueamos lo que el usuario pegó
+            rawInput: jsonInput, // Log what the user pasted
           });
 
           const firstError = validation.error.issues[0];
-          const errorMessage = `Error en '${firstError.path.join('.')}': ${firstError.message}`;
+          const errorMessage = `Error in '${firstError.path.join('.')}': ${firstError.message}`;
           parseResult = {
             success: false,
-            error: errorMessage || 'El formato del JSON es incorrecto.',
+            error: errorMessage || $t('aiHelper.errors.jsonFormatIncorrect'),
           };
         }
       } catch (e) {
-        // *** NUEVO: Reportar el error de parseo de JSON ***
+        // *** NEW: Report the JSON parsing error ***
         errorService.reportError(e, {
           operation: 'parseAiJsonResponse.jsonParse',
-          rawInput: jsonInput, // Logueamos lo que el usuario pegó
+          rawInput: jsonInput, // Log what the user pasted
         });
 
         parseResult = {
           success: false,
-          error: 'El texto no es un JSON válido.',
+          error: $t('aiHelper.errors.notValidJson'),
         };
       }
     }
@@ -73,41 +74,41 @@
   async function copyPrompt() {
     try {
       await navigator.clipboard.writeText(prompt);
-      // *** MEJORA: Dar feedback al usuario ***
-      toast.success('¡Prompt copiado al portapapeles!');
+      // *** IMPROVEMENT: Give feedback to the user ***
+      toast.success($t('aiHelper.promptCopied'));
     } catch (err) {
-      // *** 2. REEMPLAZAR console.error ***
+      // *** 2. REPLACE console.error ***
       errorService.reportError(err, { operation: 'copyPrompt' });
-      toast.error('No se pudo copiar el texto.');
+      toast.error($t('aiHelper.copyError'));
     }
   }
 </script>
 
 <Modal {title} {show} onClose={handleClose}>
   <div class="assistant-container">
-    <!-- PASO 1 -->
+    <!-- STEP 1 -->
     <div class="step">
       <div class="step-header">
-        <h4>Paso 1: Copiar este Prompt</h4>
+        <h4>{$t('aiHelper.step1.title')}</h4>
         <Button on:click={copyPrompt} size="sm" variant="secondary">
           <Icon name="copy" size={14} />
-          Copiar
+          {$t('common.copy')}
         </Button>
       </div>
-      <p>Pega esto en tu servicio de IA preferido (ChatGPT, Claude, etc.).</p>
+      <p>{$t('aiHelper.step1.description')}</p>
       <textarea readonly rows="8">{prompt}</textarea>
     </div>
 
-    <!-- PASO 2 -->
+    <!-- STEP 2 -->
     <div class="step">
       <div class="step-header">
-        <h4>Paso 2: Pegar la Respuesta JSON</h4>
+        <h4>{$t('aiHelper.step2.title')}</h4>
       </div>
-      <p>Copia la respuesta JSON generada por la IA y pégala aquí abajo.</p>
+      <p>{$t('aiHelper.step2.description')}</p>
       <textarea
         bind:value={jsonInput}
         rows="8"
-        placeholder="Pega aquí el objeto o array JSON..."
+        placeholder={$t('aiHelper.step2.placeholder')}
         class:is-invalid={!parseResult.success && jsonInput.trim() !== ''}
       ></textarea>
       {#if !parseResult.success && jsonInput.trim() !== ''}
@@ -116,9 +117,9 @@
     </div>
 
     <footer class="modal-actions">
-      <Button on:click={handleClose} variant="secondary">Cancelar</Button>
+      <Button on:click={handleClose} variant="secondary">{$t('common.cancel')}</Button>
       <Button on:click={handleApply} disabled={!parseResult.success}>
-        Aplicar Cambios
+        {$t('common.applyChanges')}
       </Button>
     </footer>
   </div>
