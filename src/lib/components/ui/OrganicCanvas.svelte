@@ -5,17 +5,15 @@
   This component renders a dynamic, multi-layered cosmic background.
   It creates an immersive "living universe" effect suitable for a deep-focus application.
 
-  V17 Features (Refined Themes):
-  - Pulsar Theme Removed: Focus streamlined to the 6 most impactful static themes.
-  - Increased Theme Frequency: Black Hole, Cosmic Reef, and other themes now appear more often.
-  - Hybrid Rendering Engine: Combines a static, pre-rendered background with a dynamic animation layer for the Pulsar, ensuring ultra-high performance with a living feel.
-  - Enhanced Detail & Depth: Added more fine details, color variations, and secondary dust lanes to all themes.
-  - Theme-Aware: Automatically detects light/dark mode and adjusts all colors for perfect visibility and aesthetics.
-  - Sharper Stars: Brightest stars now feature a crisp, beautiful flare effect.
-  - Richer Nebulae with Blending: Uses advanced canvas blending modes.
+  V19 Update (Theme Reactivity):
+  - Theme-Aware Rendering: This component now subscribes to the global `themeStore`. When the theme changes, it triggers a full re-render of the canvas, generating a distinct and beautiful background for both light and dark modes.
+  - No CSS Filters: The light mode effect is no longer achieved with a CSS `filter`. The component now draws a native light-themed canvas, providing much better visual results.
+  - System Theme Support: It correctly listens for OS-level theme changes when the 'system' theme is selected.
 -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
+  import { theme as themeStore, type Theme } from '$lib/stores/themeStore';
 
   export let isExiting: boolean = false;
 
@@ -50,13 +48,8 @@
   function init() {
     if (!canvasEl) return;
 
-    // Theme detection
-    const bodyBg = getComputedStyle(document.documentElement).getPropertyValue(
-      'background-color'
-    );
-    const colorVals = bodyBg.match(/\d+/g)?.map(Number) ?? [0, 0, 0];
-    currentTheme =
-      (colorVals[0] + colorVals[1] + colorVals[2]) / 3 > 128 ? 'light' : 'dark';
+    // The `currentTheme` is now updated reactively by the onMount subscription.
+    // This `init` function will be called whenever the theme changes.
 
     canvasEl.width = window.innerWidth;
     canvasEl.height = window.innerHeight;
@@ -737,16 +730,52 @@
   }
 
   onMount(() => {
+    // Helper to resolve 'system' theme to 'light' or 'dark'
+    const resolveTheme = (theme: Theme) => {
+      if (theme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      }
+      return theme;
+    };
+
+    // Initial setup
+    currentTheme = resolveTheme(get(themeStore));
     init();
     animate();
+
+    // Subscribe to theme store for any subsequent changes
+    const unsubscribeTheme = themeStore.subscribe((newTheme) => {
+      const effectiveTheme = resolveTheme(newTheme);
+      // Only re-initialize if the effective theme has actually changed
+      if (effectiveTheme !== currentTheme) {
+        init();
+      }
+    });
+
+    // Also listen for OS-level theme changes when in 'system' mode
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      if (get(themeStore) === 'system') {
+        init(); // Re-run init to get the new system theme
+      }
+    };
+    mediaQuery.addEventListener('change', handleSystemChange);
+
+    // Standard event listeners
     window.addEventListener('resize', init);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-  });
-  onDestroy(() => {
-    cancelAnimationFrame(animationFrameId);
-    clearInterval(shootingStarInterval);
-    window.removeEventListener('resize', init);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      // Cleanup all listeners and timers
+      unsubscribeTheme();
+      mediaQuery.removeEventListener('change', handleSystemChange);
+      window.removeEventListener('resize', init);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cancelAnimationFrame(animationFrameId);
+      clearInterval(shootingStarInterval);
+    };
   });
 </script>
 
@@ -769,6 +798,9 @@
     display: block;
     width: 100%;
     height: 100%;
-    background-color: var(--background, #000); /* Fallback */
+    background-color: var(
+      --color-page-background,
+      #f8f9fa
+    ); /* Fallback to light theme page bg */
   }
 </style>

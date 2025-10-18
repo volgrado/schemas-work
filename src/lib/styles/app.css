@@ -2,7 +2,7 @@
  * src/lib/styles/app.css
  *
  * ========================================================================
- * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V3.0)
+ * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V3.1 - Cool Light Theme)
  * ========================================================================
  *
  * METHODOLOGY:
@@ -28,48 +28,47 @@
 }
 
 /**
- * 1.2. Design Tokens (CSS Variables)
+ * 1.2. Design Tokens (CSS Variables) - REFINED LIGHT THEME
  * -------------------------------------------------------------------------- */
 :root {
-  /* --- Primary Colors --- */
+  /* --- NEW COOL LIGHT THEME PALETTE --- */
   --color-background: #ffffff;
-  --color-page-background: #f8f9fa; /* Slightly adjusted for a cleaner base */
-  --color-text: #18191a; /* Not pure black for better readability */
-  --color-text-secondary: #5a626f; /* Softer gray */
-  --color-text-tertiary: #8b929b; /* Lighter tertiary text */
-  --color-accent: #d9534f;
-  --color-accent-hover: #c9302c;
-  --color-accent-hsl: 16 84% 53%;
-  --color-accent-rgb: 217, 83, 79;
-  --color-border: #e0e0e0; /* Made slightly more visible */
+  --color-page-background: #f7f9fc; /* A very light, cool gray */
+  --color-text: #2d3748; /* Dark grayish blue */
+  --color-text-secondary: #4a5568;
+  --color-text-tertiary: #718096;
+  --color-accent: #4299e1; /* A nice, friendly blue */
+  --color-accent-hover: #3182ce;
+  --color-accent-hsl: 204 70% 53%;
+  --color-accent-rgb: 66, 153, 225;
+  --color-border: #e2e8f0;
 
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
   --color-background-elevated: #ffffff;
-  /* Made panels fully opaque in light mode for max contrast */
-  --color-background-translucent: #ffffff;
-  --color-border-input: var(--color-gray-200);
-  --btn-hover-bg: var(--color-gray-100);
+  --color-background-translucent: rgba(255, 255, 255, 0.85);
+  --color-border-input: #cbd5e0;
+  --btn-hover-bg: #edf2f7;
 
   /* --- Feedback Colors --- */
   --color-danger: #e53e3e;
-  --color-danger-bg: #fee2e2;
-  --color-danger-text: #991b1b;
-  --color-danger-border: #fca5a5;
-  --color-success-bg: #dcfce7;
-  --color-success-text: #166534;
-  --color-success-border: #86efac;
-  --color-blue-500: #3b82f6;
-  --color-green-500: #22c55e;
-  --color-orange-500: #f97316;
+  --color-danger-bg: #fed7d7;
+  --color-danger-text: #9b2c2c;
+  --color-danger-border: #feb2b2;
+  --color-success-bg: #c6f6d5;
+  --color-success-text: #2f855a;
+  --color-success-border: #9ae6b4;
+  --color-blue-500: #4299e1;
+  --color-green-500: #48bb78;
+  --color-orange-500: #ed8936;
 
-  /* --- Grayscale Palette --- */
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
+  /* --- Grayscale Palette (Cool Gray) --- */
+  --color-gray-50: #f7fafc;
+  --color-gray-100: #edf2f7;
+  --color-gray-200: #e2e8f0;
+  --color-gray-400: #a0aec0;
+  --color-gray-500: #718096;
+  --color-gray-600: #4a5568;
 
   /* --- Typography --- */
   --font-main:
@@ -87,25 +86,26 @@
   --space-xl: 32px;
   --space-xxl: 64px;
 
-  /* --- Shadows --- */
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* --- Shadows (more subtle for the light theme) --- */
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
   --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
   --shadow-xl:
-    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.07);
 
   /* --- Misc & Overlays --- */
-  --overlay-bg: rgba(0, 0, 0, 0.5);
-  --color-background-faint: hsla(0, 0%, 50%, 0.1);
+  --overlay-bg: rgba(30, 41, 59, 0.5); /* Use a cool-toned overlay */
+  --color-background-faint: hsla(220, 13%, 50%, 0.1);
 
-  /* --- Animation Colors --- */
+  /* --- Animation Colors (not used by canvas anymore) --- */
   --color-background-main: var(--color-page-background);
   --color-primary-accent-light: hsl(var(--color-accent-hsl) / 0.2);
 
   /* --- Toasts & Notifications --- */
   --toast-background: var(--color-background);
   --toast-color: var(--color-text);
-  --toast-border: var(--color-gray-100);
+  --toast-border: var(--color-gray-200);
   --toast-button-hover-background: var(--color-gray-100);
 
   /* --- Command Bar & Panels --- */
@@ -506,6 +506,26 @@ input[type='range']::-webkit-slider-thumb {
   display: none !important;
 }
 
+/**
+ * 6.5. Organic Canvas Background
+ * Styles for the animated background canvas integrated in the main layout.
+ * V19: The canvas now renders its own theme. No CSS filter is needed.
+ * -------------------------------------------------------------------------- */
+:global(.organic-canvas) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4; /* A subtle opacity for the light theme canvas */
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* In dark mode, make the canvas even more subtle to not distract from the content. */
+.dark-theme :global(.organic-canvas) {
+  opacity: 0.2;
+}
+
 /* 7. STATES
    ========================================================================== */
 
@@ -586,25 +606,4 @@ li:hover .card-indicator-icon {
   position: absolute;
   width: 1px;
   white-space: nowrap;
-}
-
-/**
- * 6.5. Organic Canvas Background
- * Styles for the animated background canvas integrated in the main layout.
- * -------------------------------------------------------------------------- */
-:global(.organic-canvas) {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1; /* Ensures it's always in the background */
-  pointer-events: none; /* Prevents it from interfering with clicks */
-  opacity: 0.2; /* Further reduced opacity for light mode */
-  transition: opacity 0.5s ease-in-out;
-}
-
-/* In dark mode, we reduce the opacity to make it more subtle. */
-.dark-theme :global(.organic-canvas) {
-  opacity: 0.2;
-  /* Optional: a filter to blend it better with the dark background */
-  filter: saturate(0.5);
 }
