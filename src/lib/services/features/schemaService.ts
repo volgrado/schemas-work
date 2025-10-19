@@ -1,3 +1,4 @@
+// src/lib/services/features/schemaService.ts
 /**
  * @file Provides business logic for interpreting and transforming schema documents.
  *
@@ -27,7 +28,7 @@ import type { TreeNodeData } from '$lib/types/tree';
  *
  * @param doc The root node of the ProseMirror document, typically retrieved from `editor.state.doc`.
  * @returns A `TreeNodeData` object representing the full schema hierarchy, or `null` if the
- *          document is empty or a valid list structure cannot be found.
+ * document is empty or a valid list structure cannot be found.
  */
 export function documentToTreeData(
   doc: ProseMirrorNode | null
@@ -129,15 +130,23 @@ export function documentToTreeData(
       const paragraphForContent = termParagraph || firstParagraphFallback;
 
       if (paragraphForContent) {
-        const pos = listItem.attrs.pos;
-        if (pos === null || pos === undefined) {
-          return; // The position attribute is crucial for creating a stable and unique ID.
+        // --- MODIFICATION START ---
+        const nodeId = listItem.attrs.nodeId; // Use nodeId
+        if (!nodeId) {
+          // Check for nodeId
+          console.warn(
+            'List item found without a nodeId during tree generation.'
+          );
+          return; // The nodeId attribute is crucial for creating a stable and unique ID.
         }
+        // --- MODIFICATION END ---
 
         const content =
           paragraphForContent.textContent.trim() || '(Untitled Node)';
         const newNode: TreeNodeData = {
-          id: `node-${pos}`,
+          // --- MODIFICATION START ---
+          id: nodeId, // Use nodeId directly
+          // --- MODIFICATION END ---
           content: content,
           children: [],
         };

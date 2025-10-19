@@ -45,7 +45,6 @@
   import { SmartEnter } from '$lib/editor/extensions/SmartEnter';
   import { DynamicHighlighter } from '$lib/editor/extensions/DynamicHighlighter';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
-  import { PositionSyncExtension } from '$lib/editor/extensions/PositionSyncExtension';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
   import { CardIndicatorExtension } from '$lib/editor/extensions/CardIndicatorExtension';
   import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
@@ -141,7 +140,6 @@
         // --- Custom Application Extensions ---
         RoleExtension, // Adds a 'role' attribute to nodes (e.g., 'description').
         SmartEnter, // Custom logic for Enter key presses.
-        PositionSyncExtension, // Syncs editor position with a store.
         NodeIdExtension, // Ensures every node has a unique, persistent ID.
         CardIndicatorExtension, // Displays an icon on nodes that have flashcards.
         DynamicHighlighter, // Applies dynamic highlights based on certain criteria.
