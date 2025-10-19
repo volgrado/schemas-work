@@ -252,12 +252,12 @@ function handleWordBoundary(
 
   if (currentWord) {
     const wordDeco = Decoration.inline(currentWord.from, currentWord.to, {
-      class: 'tts-highlight-word',
+      class: 'is-current-tts-word',
     });
     const nodeDeco = Decoration.node(
       currentNode.pos,
       currentNode.pos + currentNode.node.nodeSize,
-      { class: 'tts-highlight-node' }
+      { class: 'is-current-tts-node' }
     );
     update((s) => ({
       ...s,
@@ -282,7 +282,7 @@ function highlightCurrentNode() {
   const deco = Decoration.node(
     currentNode.pos,
     currentNode.pos + currentNode.node.nodeSize,
-    { class: 'tts-highlight-node' }
+    { class: 'is-current-tts-node' }
   );
   update((s) => ({
     ...s,
@@ -297,6 +297,7 @@ function highlightCurrentNode() {
  */
 function stopReading(reset: boolean) {
   ttsService.cancel();
+  document.body.classList.remove('is-reading-aloud'); // IMPROVEMENT: Remove global state class
   if (reset) {
     set(initialState);
   } else {
@@ -398,6 +399,7 @@ export const ttsStore = {
       return;
     }
 
+    document.body.classList.add('is-reading-aloud'); // IMPROVEMENT: Add global state class
     update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
     speakNodeAtIndex(0);
   },
@@ -419,6 +421,7 @@ export const ttsStore = {
       return;
     }
 
+    document.body.classList.add('is-reading-aloud'); // IMPROVEMENT: Add global state class
     update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
     speakNodeAtIndex(startIndex);
   },
