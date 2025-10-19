@@ -24,15 +24,17 @@ export function debounce<T extends (...args: any[]) => void>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: number | undefined;
+  // Use a more universal type for the timeout identifier
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   return function (this: any, ...args: Parameters<T>) {
     // When the debounced function is called, any previously scheduled execution is cancelled.
+    // Use the global clearTimeout, which works in both Node.js and browsers.
     clearTimeout(timeoutId);
 
     // A new timer is set to execute the original function after the specified delay.
-    // `window.setTimeout` is used to be explicit about running in a browser environment.
-    timeoutId = window.setTimeout(() => {
+    // Use the global setTimeout.
+    timeoutId = setTimeout(() => {
       // `apply` is used to preserve the original `this` context and arguments for the function call.
       func.apply(this, args);
     }, delay);

@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "lib": ["esnext", "dom", "dom.iterable"]
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["vitest/globals"]
   }
 }
