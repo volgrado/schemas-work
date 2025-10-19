@@ -19,6 +19,8 @@
  *     parsing errors) to prevent it from becoming a source of new problems.
  */
 
+import { ERROR_LOGS_STORAGE_KEY, MAX_ERROR_LOGS } from '$lib/constants';
+
 /**
  * Defines the structure for a single error entry in the log.
  */
@@ -32,9 +34,6 @@ export interface ErrorLog {
   /** Additional context about the error. */
   context?: Record<string, any>;
 }
-
-const ERROR_LOGS_STORAGE_KEY = 'schemas-work-error-logs';
-const MAX_LOGS = 50;
 
 /**
  * Retrieves all stored error logs from `localStorage`.
@@ -74,7 +73,7 @@ export function reportError(
 
   const existingLogs = getLogs();
   const updatedLogs = [newLog, ...existingLogs];
-  const trimmedLogs = updatedLogs.slice(0, MAX_LOGS);
+  const trimmedLogs = updatedLogs.slice(0, MAX_ERROR_LOGS);
 
   try {
     localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));

@@ -18,12 +18,10 @@
   import { slashMenuStore } from '$lib/stores/slashMenuStore';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { t } from '$lib/utils/i18n';
+  import { VIEWPORT_PADDING, CURSOR_OFFSET } from '$lib/constants';
 
   let menuElement = $state<HTMLElement | undefined>();
   let style = $state('');
-
-  const VIEWPORT_PADDING = 10; // Minimum space between the menu and the edge of the window.
-  const CURSOR_OFFSET = 5; // Vertical offset from the cursor.
 
   /**
    * This effect hook is the core of the component's dynamic positioning.

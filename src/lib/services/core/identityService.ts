@@ -15,12 +15,7 @@
 
 import type { Identity } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
-
-/**
- * The key used to store the user's identity object as a JSON string in `localStorage`.
- * @internal
- */
-const IDENTITY_STORAGE_KEY = 'schemas-work-identity';
+import { IDENTITY_STORAGE_KEY } from '$lib/constants';
 
 /**
  * Retrieves the user's cryptographic identity from `localStorage`. If no identity

@@ -1,9 +1,8 @@
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
+import { THEME_STORAGE_KEY } from '$lib/constants';
 
 export type Theme = 'light' | 'dark' | 'system';
-
-const THEME_STORAGE_KEY = 'schemas-work-theme';
 
 // Function to get the initial theme from localStorage or default to 'system'
 function getInitialTheme(): Theme {

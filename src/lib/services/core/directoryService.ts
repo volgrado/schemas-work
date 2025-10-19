@@ -27,9 +27,7 @@ import { writable } from 'svelte/store';
 import { v4 as uuidv4 } from 'uuid';
 import type { SchemaMetadata } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
-
-const DIRECTORY_STORAGE_KEY = 'schemas-work-directory';
-const LAST_ACTIVE_DOC_KEY = 'schemas-work-last-active';
+import { DIRECTORY_STORAGE_KEY, LAST_ACTIVE_DOC_KEY } from '$lib/constants';
 
 /**
  * A writable Svelte store that emits events when the directory is modified.
