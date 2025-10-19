@@ -18,7 +18,8 @@ import { documentStore } from '$lib/stores/documentStore';
 import { editorStore } from '$lib/stores/editorStore';
 import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
-import { t } from '$lib/utils/i18n';
+import { locale, t } from '$lib/utils/i18n'; // Add this import
+import { goto } from '$app/navigation'; // Add this import
 
 /**
  * Retrieves the list of primary commands available in the command bar.
@@ -47,6 +48,15 @@ export function getCommands(): Command[] {
       icon: 'folder',
       action: () => {
         commandBarStore.setView('list-schemas');
+      },
+    },
+    {
+      id: 'study-hub',
+      label: get(t)('command.study_hub'), // You'll need to add this to your i18n files
+      icon: 'book-open',
+      action: () => {
+        goto(`/${get(locale)}/study`);
+        commandBarStore.close();
       },
     },
     {

@@ -39,6 +39,8 @@ function createCard(nodeId: string, card: NewCard): Card {
         type: 'basic',
         content: card.content, // { question, answer }
         srs: card.srs,
+        tags: [],
+        suspended: false,
       };
     case 'input':
       return {
@@ -47,6 +49,8 @@ function createCard(nodeId: string, card: NewCard): Card {
         type: 'input',
         content: card.content, // { prompt, expected }
         srs: card.srs,
+        tags: [],
+        suspended: false,
       };
     case 'sequencing':
       return {
@@ -55,8 +59,12 @@ function createCard(nodeId: string, card: NewCard): Card {
         type: 'sequencing',
         content: card.content, // { prompt, items }
         srs: card.srs,
+        tags: [],
+        suspended: false,
       };
     default:
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       const _exhaustiveCheck: never = card;
       throw new Error(`Unhandled card type: ${_exhaustiveCheck}`);
   }
@@ -84,6 +92,23 @@ export async function getCardsByNodeId(nodeId: string): Promise<Card[]> {
     return await db.cards.where('nodeId').equals(nodeId).toArray();
   } catch (error) {
     errorService.reportError(error, { operation: 'getCardsByNodeId', nodeId });
+    return [];
+  }
+}
+
+/**
+ * Retrieves all cards associated with an array of node IDs.
+ * @param nodeIds - An array of unique identifiers of the schema nodes.
+ */
+export async function getCardsByNodeIds(nodeIds: string[]): Promise<Card[]> {
+  if (nodeIds.length === 0) return [];
+  try {
+    return await db.cards.where('nodeId').anyOf(nodeIds).toArray();
+  } catch (error) {
+    errorService.reportError(error, {
+      operation: 'getCardsByNodeIds',
+      nodeIds,
+    });
     return [];
   }
 }

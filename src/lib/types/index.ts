@@ -68,7 +68,7 @@ export interface SrsData {
 /**
  * A union of all possible card types.
  */
-export type CardType = 'basic' | 'input' | 'sequencing';
+export type CardType = 'basic' | 'input' | 'sequencing'; // Add 'cloze' here later
 
 // --- Individual Card Type Definitions ---
 
@@ -80,6 +80,10 @@ interface CardBase {
   nodeId: string;
   /** The SRS data object that tracks the learning state of this card. */
   srs: SrsData;
+  /** An array of tags for organization. */
+  tags: string[];
+  /** Whether the card is suspended from review. */
+  suspended: boolean;
 }
 
 /** A simple question-and-answer card. */

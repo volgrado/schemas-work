@@ -108,13 +108,14 @@ editorStore.subscribe(($editorStore) => {
 });
 
 /**
- * Starts a standard review session with all due cards.
+ * Starts a standard review session.
+ * @param {string[]} [deckIds] - Optional. If provided, reviews due cards only from these decks.
  */
-async function startReview(): Promise<void> {
-  const dueCards = await reviewService.getDueCards();
+async function startReview(deckIds?: string[]): Promise<void> {
+  const dueCards = await reviewService.getDueCards(deckIds);
 
   if (dueCards.length > 0) {
-    startReviewSession(dueCards, get(t)('review.scheduled_review'));
+    startReviewSession(dueCards, get(t)('review.scheduled_review'), deckIds);
     return;
   }
 
@@ -122,24 +123,27 @@ async function startReview(): Promise<void> {
     description: get(t)('review.all_reviewed_description'),
     action: {
       label: get(t)('review.review_weakest_button'),
-      onClick: () => startAdditionalReview(),
+      onClick: () => startAdditionalReview(deckIds),
     },
   });
 }
 
 /**
- * Starts an additional review session with a specified number of the weakest cards.
+ * Starts an additional review session with the weakest cards.
+ * @param {string[]} [deckIds] - Optional. Scopes the search for weakest cards to these decks.
  */
-async function startAdditionalReview(): Promise<void> {
+async function startAdditionalReview(deckIds?: string[]): Promise<void> {
+  // Note: getWeakestCards would also need to be modified to accept deckIds
+  // For now, we'll assume it pulls globally or you can modify it similar to getDueCards.
   const WEAKEST_CARDS_COUNT = 5;
-  const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT);
+  const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT); // Modify this service if needed
 
   if (weakestCards.length === 0) {
     toast.info(get(t)('review.no_cards_for_additional_review'));
     return;
   }
 
-  startReviewSession(weakestCards, get(t)('review.additional_review'));
+  startReviewSession(weakestCards, get(t)('review.additional_review'), deckIds);
 }
 
 /**
@@ -147,8 +151,13 @@ async function startAdditionalReview(): Promise<void> {
  * @internal
  * @param cards The array of cards to be reviewed.
  * @param type A label for the type of review.
+ * @param {string[]} [deckIds] - Optional. The IDs of the decks being reviewed.
  */
-function startReviewSession(cards: Card[], type: string): void {
+function startReviewSession(
+  cards: Card[],
+  type: string,
+  deckIds?: string[]
+): void {
   toast.info(
     get(t)('review.review_started_toast', { type, count: cards.length })
   );

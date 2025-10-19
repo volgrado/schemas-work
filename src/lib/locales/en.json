@@ -436,6 +436,7 @@
   "command": {
     "new_schema": "New Schema",
     "explore_schemas": "Explore Schemas",
+    "study_hub": "Study Hub",
     "ai_assistant": "AI Assistant",
     "start_review": "Start Review",
     "read_schema": "Read Schema",

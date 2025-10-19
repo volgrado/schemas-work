@@ -11,6 +11,7 @@
 
 import type { Card, ReviewQuality, SrsData } from '$lib/types';
 import * as cardService from '$lib/services/features/cardService';
+import * as directoryService from '$lib/services/core/directoryService'; // Add this import
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -67,16 +68,64 @@ export function calculateNextReview(card: Card, quality: ReviewQuality): Card {
 }
 
 /**
- * Retrieves all cards from the database that are currently due for review.
+ * Retrieves all cards that are currently due for review, optionally scoped to specific decks.
+ * @param {string[]} [deckIds] - Optional array of document IDs to scope the search.
  * @returns {Promise<Card[]>} A promise that resolves to an array of due `Card` objects.
  */
-export async function getDueCards(): Promise<Card[]> {
-  const allCards = await cardService.getAllCards();
+export async function getDueCards(deckIds?: string[]): Promise<Card[]> {
+  const allCards = deckIds
+    ? await cardService.getCardsByNodeIds(deckIds)
+    : await cardService.getAllCards();
+
   const now = Date.now();
 
   return allCards.filter(
-    (card) => !card.srs || !card.srs.dueDate || card.srs.dueDate <= now
+    (card) =>
+      !card.suspended &&
+      (!card.srs || !card.srs.dueDate || card.srs.dueDate <= now)
   );
+}
+
+/**
+ * Gathers statistics (due count, new count) for all documents that contain cards.
+ * @returns {Promise<Map<string, { title: string; due: number; new: number }>>}
+ */
+export async function getAllDeckStats(): Promise<
+  Map<string, { title: string; due: number; new: number }>
+> {
+  const allDocs = await directoryService.getAllItems();
+  const allCards = await cardService.getAllCards();
+  const now = Date.now();
+
+  const stats = new Map<string, { title: string; due: number; new: number }>();
+
+  // Create a map for quick document title lookup
+  const docTitleMap = new Map(allDocs.map((doc) => [doc.id, doc.title]));
+
+  for (const card of allCards) {
+    if (!stats.has(card.nodeId)) {
+      stats.set(card.nodeId, {
+        title: docTitleMap.get(card.nodeId) || 'Untitled',
+        due: 0,
+        new: 0,
+      });
+    }
+
+    const deckStat = stats.get(card.nodeId)!;
+
+    if (!card.suspended) {
+      // A card is "new" if it has 0 repetitions.
+      if (!card.srs || card.srs.repetitions === 0) {
+        deckStat.new++;
+      }
+      // A card is "due" if its due date is in the past. New cards are also due.
+      if (!card.srs || !card.srs.dueDate || card.srs.dueDate <= now) {
+        deckStat.due++;
+      }
+    }
+  }
+
+  return stats;
 }
 
 /**
