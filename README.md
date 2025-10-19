@@ -1,6 +1,6 @@
-# SchemaScribe
+# SchemasWork
 
-SchemaScribe is a modern, offline-first, and privacy-focused knowledge management tool designed to help you build and visualize complex schemas and conceptual frameworks. It leverages a powerful text editor and AI-driven features to streamline the process of learning, brainstorming, and documenting.
+SchemasWork is a modern, offline-first, and privacy-focused knowledge management tool designed to help you build and visualize complex schemas and conceptual frameworks. It leverages a powerful text editor and AI-driven features to streamline the process of learning, brainstorming, and documenting.
 
 ## Core Features
 
@@ -34,8 +34,8 @@ SchemaScribe is a modern, offline-first, and privacy-focused knowledge managemen
 1.  **Clone the repository:**
 
     ```sh
-    git clone https://github.com/your-username/schemascribe.git
-    cd schemascribe
+    git clone https://github.com/your-username/SchemasWork.git
+    cd SchemasWork
     ```
 
 2.  **Install dependencies:**
