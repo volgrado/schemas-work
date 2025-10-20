@@ -63,6 +63,8 @@ export interface SrsData {
   repetitions: number;
   /** The timestamp when the card is next due for review. */
   dueDate: number;
+  /** Index of the current learning step (e.g., 0 for '1m', 1 for '10m'). 0 means graduated. */
+  learningStep: number;
 }
 
 /**

@@ -31,6 +31,11 @@ const db = new CardDB();
 function createCard(nodeId: string, card: NewCard): Card {
   const id = uuidv4();
 
+  const baseSrs = {
+    ...card.srs,
+    learningStep: 1, // Start at step 1 of the learning phase
+  };
+
   switch (card.type) {
     case 'basic':
       return {
@@ -38,7 +43,7 @@ function createCard(nodeId: string, card: NewCard): Card {
         nodeId,
         type: 'basic',
         content: card.content, // { question, answer }
-        srs: card.srs,
+        srs: baseSrs,
         tags: [],
         suspended: false,
       };
@@ -48,7 +53,7 @@ function createCard(nodeId: string, card: NewCard): Card {
         nodeId,
         type: 'input',
         content: card.content, // { prompt, expected }
-        srs: card.srs,
+        srs: baseSrs,
         tags: [],
         suspended: false,
       };
@@ -58,7 +63,7 @@ function createCard(nodeId: string, card: NewCard): Card {
         nodeId,
         type: 'sequencing',
         content: card.content, // { prompt, items }
-        srs: card.srs,
+        srs: baseSrs,
         tags: [],
         suspended: false,
       };

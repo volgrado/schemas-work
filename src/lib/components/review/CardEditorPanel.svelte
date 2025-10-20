@@ -1,21 +1,4 @@
-<!--
-  @component
-  CardEditorPanel
-
-  This component provides a full-featured, slide-up panel for creating, editing, and managing
-  all the flashcards associated with a specific document node. It acts as a self-contained
-  editing environment, handling multiple card types, real-time updates, and complex UI interactions.
-
-  Key Features:
-  - Manages its own state via the `cardEditorStore`, fetching and saving cards for a given node.
-  - Supports the creation and editing of `basic`, `input`, and `sequencing` card types.
-  - Uses a debounced update mechanism (`debounce`) to save changes automatically and efficiently as the user types.
-  - Implements an "undo" feature for card deletion using `svelte-sonner` toasts.
-  - Employs the `flip` animation from `svelte/animate` for smooth reordering of cards.
-  - Uses a custom `autosize` Svelte action for textareas.
-  - Manages focus and scrolling, automatically bringing new or selected cards into view.
-  - Includes drag-and-drop functionality for reordering items within a `sequencing` card.
--->
+<!-- src/lib/components/review/CardEditorPanel.svelte -->
 <script lang="ts">
   // --- Svelte Core & UI Libraries ---
   import { fade, fly } from 'svelte/transition';
@@ -35,6 +18,7 @@
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
+  import TagInput from '$lib/components/ui/TagInput.svelte';
 
   // --- Component State (Svelte 5 Runes) ---
   let showAddMenu = $state(false);
@@ -49,29 +33,20 @@
   let addMenuEl = $state<HTMLElement | undefined>();
   let menuOpensDown = $state(false);
 
-  /**
-   * Calculates whether the "Add Card" menu should open upwards or downwards
-   * based on the available space in the viewport.
-   */
   function calculateMenuDirection() {
     if (!addCardContainerEl || !addMenuEl) return;
     const containerRect = addCardContainerEl.getBoundingClientRect();
     const menuHeight = addMenuEl.offsetHeight;
     const spaceAbove = containerRect.top;
-    // If there isn't enough space above for the menu, open it downwards.
     menuOpensDown = spaceAbove < menuHeight + 20;
   }
 
-  // Recalculate menu direction when it opens.
   $effect(() => {
     if (showAddMenu) {
-      setTimeout(calculateMenuDirection, 0); // Use timeout to wait for DOM rendering
+      setTimeout(calculateMenuDirection, 0);
     }
   });
 
-  /**
-   * Handles clicks outside the "Add Card" menu to close it.
-   */
   function handleClickOutside(event: MouseEvent) {
     if (
       showAddMenu &&
@@ -87,10 +62,6 @@
     document.removeEventListener('click', handleClickOutside, true)
   );
 
-  /**
-   * Registers a card's root DOM element against its ID for later retrieval.
-   * Used for scrolling the card into view.
-   */
   function register(node: HTMLElement, id: string) {
     cardElements.set(id, node);
     return {
@@ -100,9 +71,6 @@
     };
   }
 
-  // --- Card Data Operations ---
-
-  // Debounce card updates to prevent excessive saving while the user is typing.
   const debouncedUpdateCard = debounce(
     (card: Card) => cardEditorStore.updateCard(card),
     500
@@ -117,10 +85,6 @@
     showAddMenu = false;
   }
 
-  /**
-   * Deletes a card and shows a toast notification with an "Undo" action.
-   * @param {string} cardId - The ID of the card to delete.
-   */
   async function removeCard(cardId: string) {
     const deletedCard = await cardEditorStore.deleteCard(cardId);
     if (deletedCard) {
@@ -133,12 +97,10 @@
     }
   }
 
-  // --- Sequencing Card Specific Logic ---
-
   function addSequenceItem(card: Card) {
     if (card.type === 'sequencing') {
       card.content.items.push('');
-      card.content.items = card.content.items; // Trigger reactivity
+      card.content.items = card.content.items;
       handleUpdate(card);
     }
   }
@@ -146,12 +108,10 @@
   function removeSequenceItem(card: Card, itemIndex: number) {
     if (card.type === 'sequencing') {
       card.content.items.splice(itemIndex, 1);
-      card.content.items = card.content.items; // Trigger reactivity
+      card.content.items = card.content.items;
       handleUpdate(card);
     }
   }
-
-  // --- Drag & Drop for Sequence Items ---
 
   function handleDragStart(index: number, event: DragEvent) {
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -187,10 +147,6 @@
     dropTargetIndex = null;
   }
 
-  /**
-   * This effect hook manages scrolling and focusing on newly added cards.
-   * When `lastAddedCardId` changes, it finds the corresponding element and brings it into view.
-   */
   $effect(() => {
     const newCardId = $cardEditorStore.lastAddedCardId;
     if (newCardId) {
@@ -201,33 +157,33 @@
           HTMLInputElement | HTMLTextAreaElement
         >('input, textarea');
         firstInput?.focus();
-        cardEditorStore.clearLastAdded(); // Reset the trigger
+        cardEditorStore.clearLastAdded();
       }
     }
   });
 </script>
 
 {#if $cardEditorStore.isOpen}
-  <!-- Overlay to capture clicks and close the panel -->
-  <div
+  <!-- ACCESSIBILITY FIX: Use a styled button for the overlay -->
+  <button
     class="overlay"
-    on:click={() => cardEditorStore.close()}
+    onclick={() => cardEditorStore.close()}
     transition:fade={{ duration: 150 }}
-  ></div>
+    aria-label="Close card editor"
+  ></button>
 
   <div
     class="panel"
     transition:fly={{ y: 100, duration: 250, easing: quintOut }}
     role="dialog"
+    aria-labelledby="panel-title"
   >
-    <!-- Panel Header: Title, Save Status, and Actions -->
     <header class="header">
       <div class="header-left">
         <div class="header-title">
           <h3 id="panel-title">{$t('card_editor_panel.title')}</h3>
           <HelpTooltip>{$t('card_editor_panel.tooltip')}</HelpTooltip>
         </div>
-        <!-- Live save status indicator -->
         {#if $cardEditorStore.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
             {#if $cardEditorStore.status === 'saving'}
@@ -242,7 +198,6 @@
       </div>
 
       <div class="header-actions">
-        <!-- "Add Card" button and dynamic popover menu -->
         <div class="add-card-container" bind:this={addCardContainerEl}>
           <Button
             variant="secondary"
@@ -258,18 +213,18 @@
               bind:this={addMenuEl}
               transition:fade={{ duration: 100 }}
             >
-              <button on:click={() => addCard('basic')}
-                ><Icon name="pen-tool" size={16} />
-                {$t('card_editor_panel.add_basic')}</button
-              >
-              <button on:click={() => addCard('input')}
-                ><Icon name="edit-3" size={16} />
-                {$t('card_editor_panel.add_input')}</button
-              >
-              <button on:click={() => addCard('sequencing')}
-                ><Icon name="list" size={16} />
-                {$t('card_editor_panel.add_sequence')}</button
-              >
+              <button onclick={() => addCard('basic')}>
+                <Icon name="pen-tool" size={16} />
+                {$t('card_editor_panel.add_basic')}
+              </button>
+              <button onclick={() => addCard('input')}>
+                <Icon name="edit-3" size={16} />
+                {$t('card_editor_panel.add_input')}
+              </button>
+              <button onclick={() => addCard('sequencing')}>
+                <Icon name="list" size={16} />
+                {$t('card_editor_panel.add_sequence')}
+              </button>
             </div>
           {/if}
         </div>
@@ -281,14 +236,11 @@
       </div>
     </header>
 
-    <!-- Main content area for the card list -->
     <div class="editor-content">
       {#if $cardEditorStore.fetchStatus === 'loading'}
         <p>{$t('card_editor_panel.loading')}</p>
-        <!-- Basic loading state -->
       {:else if $cardEditorStore.fetchStatus === 'error'}
         <p>{$t('card_editor_panel.load_error')}</p>
-        <!-- Basic error state -->
       {:else if $cardEditorStore.cards.length > 0}
         <div class="cards-list">
           {#each $cardEditorStore.cards as card (card.id)}
@@ -306,86 +258,90 @@
                 {card.type}
               </div>
               <div class="card-inputs">
-                <!-- Card Type: Basic Q&A -->
                 {#if card.type === 'basic'}
                   <div class="field">
                     <label for="q-{card.id}"
                       >{$t('card_editor_panel.question_label')}</label
-                    ><input
+                    >
+                    <input
                       id="q-{card.id}"
                       type="text"
                       placeholder={$t('card_editor_panel.question_placeholder')}
                       bind:value={card.content.question}
-                      on:input={() => handleUpdate(card)}
+                      oninput={() => handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
                     <label for="a-{card.id}"
                       >{$t('card_editor_panel.answer_label')}</label
-                    ><textarea
+                    >
+                    <textarea
                       id="a-{card.id}"
                       placeholder={$t('card_editor_panel.answer_placeholder')}
                       bind:value={card.content.answer}
-                      on:input={() => handleUpdate(card)}
+                      oninput={() => handleUpdate(card)}
                       use:autosize
                     ></textarea>
                   </div>
-
-                  <!-- Card Type: Input -->
                 {:else if card.type === 'input'}
                   <div class="field">
                     <label for="p-{card.id}"
                       >{$t('card_editor_panel.prompt_label')}</label
-                    ><input
+                    >
+                    <input
                       id="p-{card.id}"
                       type="text"
                       placeholder={$t('card_editor_panel.prompt_placeholder')}
                       bind:value={card.content.prompt}
-                      on:input={() => handleUpdate(card)}
+                      oninput={() => handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
                     <label for="e-{card.id}"
                       >{$t('card_editor_panel.expected_answer_label')}</label
-                    ><input
+                    >
+                    <input
                       id="e-{card.id}"
                       type="text"
                       placeholder={$t(
                         'card_editor_panel.expected_answer_placeholder'
                       )}
                       bind:value={card.content.expected}
-                      on:input={() => handleUpdate(card)}
+                      oninput={() => handleUpdate(card)}
                     />
                   </div>
-
-                  <!-- Card Type: Sequencing -->
                 {:else if card.type === 'sequencing'}
                   <div class="field">
                     <label for="s-{card.id}"
                       >{$t('card_editor_panel.instruction_label')}</label
-                    ><input
+                    >
+                    <input
                       id="s-{card.id}"
                       type="text"
                       placeholder={$t(
                         'card_editor_panel.instruction_placeholder'
                       )}
                       bind:value={card.content.prompt}
-                      on:input={() => handleUpdate(card)}
+                      oninput={() => handleUpdate(card)}
                     />
                   </div>
-                  <div class="sequence-items">
+                  <!-- ACCESSIBILITY FIX: Add role="list" to the container -->
+                  <div class="sequence-items" role="list">
                     {#each card.content.items as item, itemIndex (itemIndex)}
+                      <!-- ACCESSIBILITY FIX: Change role to "listitem" -->
                       <div
                         class="sequence-item"
-                        role="option"
+                        role="listitem"
                         tabindex="0"
                         animate:flip={{ duration: 250 }}
                         draggable="true"
-                        on:dragstart={(e) => handleDragStart(itemIndex, e)}
-                        on:dragover={(e) => handleDragOver(itemIndex, e)}
-                        on:drop|preventDefault={(e) =>
-                          handleDrop(itemIndex, card)}
-                        on:dragend={resetDragState}
+                        ondragstart={(e) => handleDragStart(itemIndex, e)}
+                        ondragover={(e) => handleDragOver(itemIndex, e)}
+                        ondrop={(e) => {
+                          e.preventDefault();
+                          handleDrop(itemIndex, card);
+                        }}
+                        ondragend={resetDragState}
                         class:is-dragging={draggedItemIndex === itemIndex}
                         class:drop-target={dropTargetIndex === itemIndex &&
                           draggedItemIndex !== itemIndex}
@@ -397,11 +353,11 @@
                             'card_editor_panel.sequence_item_placeholder'
                           )}
                           bind:value={card.content.items[itemIndex]}
-                          on:input={() => handleUpdate(card)}
+                          oninput={() => handleUpdate(card)}
                         />
                         <button
                           class="remove-item-button"
-                          on:click={() => removeSequenceItem(card, itemIndex)}
+                          onclick={() => removeSequenceItem(card, itemIndex)}
                           ><Icon name="x" size={14} /></button
                         >
                       </div>
@@ -409,22 +365,31 @@
                   </div>
                   <button
                     class="add-item-button"
-                    on:click={() => addSequenceItem(card)}
+                    onclick={() => addSequenceItem(card)}
                     ><Icon name="plus" size={14} />
                     {$t('card_editor_panel.add_item')}</button
                   >
                 {/if}
+
+                <div class="field">
+                  <label for="tags-{card.id}">Tags</label>
+                  <TagInput
+                    id="tags-{card.id}"
+                    tags={card.tags}
+                    oninput={() => handleUpdate(card)}
+                  />
+                </div>
               </div>
               <button
                 class="remove-card-button"
-                on:click={() => removeCard(card.id)}
+                onclick={() => removeCard(card.id)}
+                aria-label="Delete card"
                 ><Icon name="trash-2" size={16} /></button
               >
             </div>
           {/each}
         </div>
       {:else}
-        <!-- Empty state when no cards have been created yet -->
         <div class="empty-state">
           <Icon name="plus-square" size={40} />
           <h4>{$t('card_editor_panel.empty_title')}</h4>
@@ -438,11 +403,13 @@
 <style>
   /* --- Main Panel & Overlay --- */
   .overlay {
+    all: unset; /* Reset button styles */
+    display: block; /* Make it a block element */
     position: fixed;
     inset: 0;
     background: var(--overlay-bg);
     z-index: var(--z-card-editor);
-    border: none;
+    cursor: default;
   }
   .panel {
     position: fixed;

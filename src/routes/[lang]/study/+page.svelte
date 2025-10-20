@@ -3,14 +3,17 @@
   import { onMount } from 'svelte';
   import { reviewStore } from '$lib/stores/reviewStore';
   import * as reviewService from '$lib/services/features/reviewService';
-  import CardBrowser from '$lib/components/study/CardBrowser.svelte'; // We will create this next
+  import CardBrowser from '$lib/components/study/CardBrowser.svelte';
+  import StatisticsView from '$lib/components/study/StatisticsView.svelte'; // 1. Import
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import DeckOptionsModal from '$lib/components/study/DeckOptionsModal.svelte';
 
   type DeckStat = { title: string; due: number; new: number };
   let deckStats = $state<Map<string, DeckStat>>(new Map());
-  let currentView: 'decks' | 'browser' = $state('decks');
+  let currentView: 'decks' | 'browser' | 'stats' = $state('decks'); // 2. Update type
   let selectedDecks = $state<Set<string>>(new Set());
+  let optionsDeckId = $state<string | null>(null);
 
   onMount(async () => {
     deckStats = await reviewService.getAllDeckStats();
@@ -28,10 +31,16 @@
   function startSelectedReview() {
     if (selectedDecks.size > 0) {
       reviewStore.startReview(Array.from(selectedDecks));
-      // You might want to navigate away or have the reviewStore handle UI changes
     }
   }
 </script>
+
+{#if optionsDeckId}
+  <DeckOptionsModal
+    deckId={optionsDeckId}
+    onclose={() => (optionsDeckId = null)}
+  />
+{/if}
 
 <div class="study-hub">
   <header class="hub-header">
@@ -44,6 +53,11 @@
       <Button
         variant={currentView === 'browser' ? 'primary' : 'secondary'}
         onclick={() => (currentView = 'browser')}>Card Browser</Button
+      >
+      <!-- 3. Add Statistics Button -->
+      <Button
+        variant={currentView === 'stats' ? 'primary' : 'secondary'}
+        onclick={() => (currentView = 'stats')}>Statistics</Button
       >
     </div>
   </header>
@@ -74,23 +88,34 @@
                   <span>New: <strong class="new">{stats.new}</strong></span>
                 </div>
               </div>
-              <Button
-                onclick={() => reviewStore.startReview([deckId])}
-                size="sm"
-                variant="secondary">Study</Button
-              >
+              <div class="deck-actions">
+                <Button
+                  onclick={() => (optionsDeckId = deckId)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Icon name="settings" size={16} />
+                </Button>
+                <Button
+                  onclick={() => reviewStore.startReview([deckId])}
+                  size="sm"
+                  variant="secondary">Study</Button
+                >
+              </div>
             </div>
           {/each}
         </div>
       </div>
-    {:else}
+    {:else if currentView === 'browser'}
       <CardBrowser />
+      <!-- 4. Add block for Statistics View -->
+    {:else if currentView === 'stats'}
+      <StatisticsView />
     {/if}
   </main>
 </div>
 
 <style>
-  /* Add styling for your study hub */
   .study-hub {
     padding: var(--space-lg);
     max-width: 800px;
@@ -140,5 +165,9 @@
   }
   .bulk-actions {
     margin-bottom: var(--space-md);
+  }
+  .deck-actions {
+    display: flex;
+    gap: var(--space-xs);
   }
 </style>

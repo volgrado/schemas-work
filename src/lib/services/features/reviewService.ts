@@ -1,70 +1,121 @@
 /**
  * @file Implements the business logic for the spaced repetition learning (SRS) feature.
  * @module reviewService
- *
- * @remarks
- * This service is the core of the spaced repetition system. It uses a modified SM-2
- * algorithm to calculate the optimal time to present a card for review again, aiming
- * to maximize learning and retention. The service is responsible for calculating review
- * schedules, identifying due cards, and finding the user's weakest cards.
  */
 
 import type { Card, ReviewQuality, SrsData } from '$lib/types';
 import * as cardService from '$lib/services/features/cardService';
-import * as directoryService from '$lib/services/core/directoryService'; // Add this import
+import * as directoryService from '$lib/services/core/directoryService';
+import type { DeckOptions } from '$lib/services/features/deckService'; // Import DeckOptions
+import { parseTime } from '$lib/utils/time'; // Import the time parser
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Calculates the next review state for a card using a modified SM-2 algorithm.
- *
- * @param {Card} card The card that was just reviewed.
- * @param {ReviewQuality} quality A numeric score (0-5) representing the user's recall quality.
- * @returns {Card} A new `Card` object with updated SRS data.
+ * Calculates the next review state for a card using a modern algorithm with learning steps.
+ * @param card The card that was just reviewed.
+ * @param quality A numeric score representing recall quality (0-5).
+ * @param options The deck options for the current session.
+ * @returns A new `Card` object with updated SRS data.
  */
-export function calculateNextReview(card: Card, quality: ReviewQuality): Card {
-  const srsData = card.srs || {
+export async function calculateNextReview(
+  card: Card,
+  quality: ReviewQuality,
+  options: Omit<DeckOptions, 'deckId'>
+): Promise<Card> {
+  const srs = card.srs || {
     repetitions: 0,
     interval: 0,
     easeFactor: 2.5,
     dueDate: 0,
+    learningStep: 1, // Start in learning phase
   };
 
-  if (quality < 3) {
+  const learningStepsMs = options.learningSteps.split(' ').map(parseTime);
+
+  // --- State 1: Card is in the learning phase ---
+  if (srs.learningStep > 0) {
+    if (quality >= 3) {
+      // "Good" or "Easy"
+      const currentStepIndex = srs.learningStep - 1;
+      if (currentStepIndex < learningStepsMs.length - 1) {
+        // Advance to the next learning step
+        return {
+          ...card,
+          srs: {
+            ...srs,
+            learningStep: srs.learningStep + 1,
+            dueDate: Date.now() + learningStepsMs[srs.learningStep],
+          },
+        };
+      } else {
+        // Graduate the card
+        return {
+          ...card,
+          srs: {
+            ...srs,
+            learningStep: 0, // 0 means graduated
+            interval: options.graduatingInterval,
+            dueDate: Date.now() + options.graduatingInterval * ONE_DAY_MS,
+            repetitions: 1, // First successful "review" repetition
+          },
+        };
+      }
+    } else {
+      // "Again"
+      // Reset to the first learning step
+      return {
+        ...card,
+        srs: {
+          ...srs,
+          learningStep: 1,
+          repetitions: 0,
+          dueDate: Date.now() + learningStepsMs[0],
+        },
+      };
+    }
+  }
+
+  // --- State 2: Card is in the review phase (graduated) ---
+  if (quality >= 3) {
+    // "Good" or "Easy"
+    let newInterval: number;
+    let newRepetitions: number;
+
+    if (srs.repetitions === 0) {
+      // Fallback for an odd state
+      newInterval = options.graduatingInterval;
+      newRepetitions = 1;
+    } else if (srs.repetitions === 1) {
+      newInterval = 6; // Standard second interval
+      newRepetitions = 2;
+    } else {
+      newInterval = Math.round(srs.interval * srs.easeFactor);
+      newRepetitions = srs.repetitions + 1;
+    }
+
+    const newEaseFactor =
+      srs.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+
+    const finalSrs: SrsData = {
+      repetitions: newRepetitions,
+      interval: newInterval,
+      easeFactor: Math.max(1.3, newEaseFactor),
+      dueDate: Date.now() + newInterval * ONE_DAY_MS,
+      learningStep: 0,
+    };
+    return { ...card, srs: finalSrs };
+  } else {
+    // "Again" - Card lapses, re-enter learning phase
     const newSrs: SrsData = {
       repetitions: 0,
-      interval: 1,
-      easeFactor: Math.max(1.3, srsData.easeFactor - 0.2),
-      dueDate: Date.now() + ONE_DAY_MS,
+      interval: 0, // Interval is now controlled by learning steps
+      easeFactor: Math.max(1.3, srs.easeFactor - 0.2),
+      dueDate: Date.now() + learningStepsMs[0],
+      learningStep: 1, // Re-enter learning at step 1
     };
     return { ...card, srs: newSrs };
   }
-
-  let newInterval: number;
-  let newRepetitions: number;
-
-  if (srsData.repetitions === 0) {
-    newInterval = 1;
-    newRepetitions = 1;
-  } else if (srsData.repetitions === 1) {
-    newInterval = 6;
-    newRepetitions = 2;
-  } else {
-    newInterval = Math.round(srsData.interval * srsData.easeFactor);
-    newRepetitions = srsData.repetitions + 1;
-  }
-
-  const newEaseFactor =
-    srsData.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-
-  const finalSrs: SrsData = {
-    repetitions: newRepetitions,
-    interval: newInterval,
-    easeFactor: Math.max(1.3, newEaseFactor),
-    dueDate: Date.now() + newInterval * ONE_DAY_MS,
-  };
-
-  return { ...card, srs: finalSrs };
 }
 
 /**
@@ -114,8 +165,12 @@ export async function getAllDeckStats(): Promise<
     const deckStat = stats.get(card.nodeId)!;
 
     if (!card.suspended) {
-      // A card is "new" if it has 0 repetitions.
-      if (!card.srs || card.srs.repetitions === 0) {
+      // A card is "new" if it has 0 repetitions OR is in a learning step.
+      if (
+        !card.srs ||
+        card.srs.repetitions === 0 ||
+        card.srs.learningStep > 0
+      ) {
         deckStat.new++;
       }
       // A card is "due" if its due date is in the past. New cards are also due.
