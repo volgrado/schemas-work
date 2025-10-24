@@ -1,4 +1,23 @@
-<!-- src/routes/[lang]/study/+page.svelte -->
+<!--
+  @file src/routes/[lang]/study/+page.svelte
+  @description This page serves as the "Study Hub," a central dashboard for all study-related activities.
+  It provides multiple views for users to manage their learning materials and track their progress.
+
+  Key Features:
+  - **View Toggling**: The user can switch between three main views:
+    1.  **Decks View**: Lists all documents that contain flashcards, showing the number of due and new cards for each.
+        Users can select multiple decks for a combined study session or start a review for a single deck. They can
+        also access per-deck settings from here.
+    2.  **Card Browser View**: Renders the `<CardBrowser />` component, a powerful table-based interface for
+        viewing, filtering, sorting, and editing every card in the user's collection.
+    3.  **Statistics View**: Renders the `<StatisticsView />` component, which displays charts and metrics
+        about the user's study history and performance.
+  - **State Management**: It uses Svelte 5 runes (`$state`) for its local component state, such as the `currentView`
+    and the set of `selectedDecks`.
+  - **Service Integration**: It fetches deck statistics from the `reviewService` on mount to populate the Decks view.
+  - **Store Interaction**: It interacts with the `reviewStore` to initiate study sessions based on the user's
+    deck selections.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { reviewStore } from '$lib/stores/reviewStore';

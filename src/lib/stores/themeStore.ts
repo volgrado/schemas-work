@@ -1,7 +1,15 @@
+/**
+ * @file Manages the application's theme (light, dark, system) and applies it to the DOM.
+ * @module themeStore
+ */
+
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import { THEME_STORAGE_KEY } from '$lib/constants';
 
+/**
+ * Defines the possible theme settings for the application.
+ */
 export type Theme = 'light' | 'dark' | 'system';
 
 // Function to get the initial theme from localStorage or default to 'system'
@@ -16,6 +24,10 @@ function getInitialTheme(): Theme {
 }
 
 const initialTheme = getInitialTheme();
+/**
+ * A writable Svelte store that holds the current theme setting.
+ * It is initialized from localStorage and syncs back to it on change.
+ */
 export const theme = writable<Theme>(initialTheme);
 
 // Update localStorage whenever the theme store changes

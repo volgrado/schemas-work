@@ -1,7 +1,20 @@
+/**
+ * @file src/routes/sitemap.xml/+server.ts
+ * @description This file is a SvelteKit "server" route that dynamically generates a `sitemap.xml` file
+ * for the website. A sitemap is a crucial file for search engine optimization (SEO), as it provides
+ * search engines like Google with a structured list of all the pages on a site, making it easier
+ * for them to discover and index the content.
+ *
+ * This implementation generates a sitemap that includes:
+ * 1.  **Static Pages**: Core, manually defined pages like the language-specific homepages ('/en', '/es', etc.).
+ * 2.  **Dynamic Pages**: All the schema documents created by users. It fetches the list of schemas
+ *     from the `directoryService` and creates a URL entry for each one.
+ *
+ * The route sets the appropriate XML content type and caching headers to ensure the sitemap is
+ * delivered efficiently to search engine crawlers.
+ */
 import * as directoryService from '$lib/services/core/directoryService';
 import type { RequestHandler } from './$types';
-
-// This is your website's public URL. Update this before deploying to production.
 const siteUrl = 'https://schemas.work';
 
 export const GET: RequestHandler = async () => {

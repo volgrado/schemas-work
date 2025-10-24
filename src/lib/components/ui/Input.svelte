@@ -1,12 +1,35 @@
-<!-- src/lib/components/ui/Input.svelte -->
+<!--
+  @component
+  Input
+
+  A standardized, reusable text input component. It provides consistent styling
+  for form inputs across the application, including focus states and dark mode support.
+
+  This component is designed to be a thin wrapper around the native `<input>` element,
+  allowing for two-way binding on the `value` prop and forwarding all other standard
+  HTML input attributes.
+
+  Props:
+  - `value`: {string | number} - The value of the input. This prop is bindable.
+  - `class`: {string} - Additional CSS classes to apply to the input element.
+
+  @restProps All other standard HTML attributes (e.g., `placeholder`, `type`, `disabled`) are passed
+  directly to the underlying `<input>` element.
+-->
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
-  // 1. REMOVE the incorrect import for $bindable. It is not needed.
 
-  // 2. Use $bindable() directly to mark the 'value' prop for two-way binding.
-  // It's globally available in Svelte files thanks to the compiler.
   let {
+    /**
+     * @prop {string | number} [value='']
+     * The input's value. Can be bound to a variable in the parent component.
+     * @bindable
+     */
     value = $bindable(''),
+    /**
+     * @prop {string} [class='']
+     * Optional CSS classes to add to the input element for custom styling.
+     */
     class: additionalClasses = '',
     ...rest
   } = $props<

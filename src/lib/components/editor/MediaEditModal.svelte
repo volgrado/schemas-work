@@ -21,8 +21,24 @@
   import { t } from '$lib/utils/i18n';
 
   // --- Component Properties (Svelte 5 Runes) ---
-  // FIX: Replaced `export let` with the `$props()` rune.
-  let { show, initialAttrs, onClose } = $props<{
+  let {
+    /**
+     * @prop {boolean} show
+     * Controls the visibility of the modal.
+     * @bindable
+     */
+    show,
+    /**
+     * @prop {{ src: string; mediaType: 'image' | 'youtube' }} initialAttrs
+     * The initial attributes of the media to edit.
+     */
+    initialAttrs,
+    /**
+     * @prop {() => void} onClose
+     * Callback function to close the modal.
+     */
+    onClose,
+  } = $props<{
     show: boolean;
     initialAttrs: { src: string; mediaType: 'image' | 'youtube' };
     onClose: () => void;

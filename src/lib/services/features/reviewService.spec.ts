@@ -9,6 +9,7 @@ import {
 } from 'vitest';
 import type { Card, ReviewQuality, SrsData } from '$lib/types';
 import * as reviewService from './reviewService';
+import { defaultDeckOptions } from './deckService';
 
 // --- MOCK CONSTANTS ---
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -55,82 +56,87 @@ describe('reviewService', () => {
   describe('calculateNextReview', () => {
     it.each([0, 1, 2])(
       'should reset repetitions to 0 and interval to 1 day for quality = %i',
-      (quality) => {
+        async (quality) => {
         const initialCard = createCardFixture('c1', {
           repetitions: 5,
           interval: 10,
           easeFactor: 2.5,
         });
-        const updatedCard = reviewService.calculateNextReview(
+          const updatedCard = await reviewService.calculateNextReview(
           initialCard,
-          quality as ReviewQuality
+            quality as ReviewQuality,
+            defaultDeckOptions
         );
         expect(updatedCard.srs!.repetitions).toBe(0);
-        expect(updatedCard.srs!.interval).toBe(1);
-        expect(updatedCard.srs!.dueDate).toBe(MOCK_CURRENT_TIME + ONE_DAY_MS);
+        expect(updatedCard.srs!.interval).toBe(0);
+        expect(updatedCard.srs!.dueDate).toBe(MOCK_CURRENT_TIME + 60000); // 1 minute
       }
     );
 
-    it('should decrease ease factor by a fixed amount when quality is low (2)', () => {
-      const initialCard = createCardFixture('c1', { easeFactor: 2.0 });
-      const updatedCard = reviewService.calculateNextReview(
+    it('should decrease ease factor but still reset to first learning step on failure', async () => {
+      const initialCard = createCardFixture('c1', {
+        easeFactor: 2.0,
+        learningStep: 0,
+      });
+      const updatedCard = await reviewService.calculateNextReview(
         initialCard,
-        2 as ReviewQuality
+        2 as ReviewQuality,
+        defaultDeckOptions
       );
       expect(updatedCard.srs!.easeFactor).toBe(1.8);
+      expect(updatedCard.srs!.learningStep).toBe(1); // Reset to learning
     });
 
-    it('should clamp the ease factor at 1.3 on failure', () => {
-      const initialCard = createCardFixture('c1', { easeFactor: 1.4 });
-      const updatedCard = reviewService.calculateNextReview(
+    it('should clamp the ease factor at 1.3 on failure', async () => {
+      const initialCard = createCardFixture('c1', {
+        easeFactor: 1.4,
+        learningStep: 0,
+      });
+      const updatedCard = await reviewService.calculateNextReview(
         initialCard,
-        1 as ReviewQuality
+        1 as ReviewQuality,
+        defaultDeckOptions
       );
       expect(updatedCard.srs!.easeFactor).toBe(1.3);
     });
 
-    it('should calculate the next review step for a new card (R=0 -> R=1, I=1)', () => {
-      const initialCard = createCardFixture('c1', {
-        repetitions: 0,
-        interval: 0,
-      });
-      const updatedCard = reviewService.calculateNextReview(
+    it('should graduate a card from learning to review', async () => {
+      const initialCard = createCardFixture('c1', { learningStep: 2 });
+      const updatedCard = await reviewService.calculateNextReview(
         initialCard,
-        5 as ReviewQuality
+        5 as ReviewQuality,
+        defaultDeckOptions
       );
+      expect(updatedCard.srs!.learningStep).toBe(0); // Graduated
+      expect(updatedCard.srs!.interval).toBe(1); // Graduating interval
       expect(updatedCard.srs!.repetitions).toBe(1);
-      expect(updatedCard.srs!.interval).toBe(1);
-      expect(updatedCard.srs!.dueDate).toBe(MOCK_CURRENT_TIME + ONE_DAY_MS);
-      expect(updatedCard.srs!.easeFactor).toBeGreaterThan(2.5);
     });
 
-    it('should calculate the next review step for a learned card (R=1 -> R=2, I=6)', () => {
-      const initialCard = createCardFixture('c1', {
-        repetitions: 1,
-        interval: 1,
-        easeFactor: 2.5,
-      });
-      const updatedCard = reviewService.calculateNextReview(
+    it('should advance a card to the next learning step', async () => {
+      const initialCard = createCardFixture('c1', { learningStep: 1 });
+      const updatedCard = await reviewService.calculateNextReview(
         initialCard,
-        5 as ReviewQuality
+        4 as ReviewQuality,
+        defaultDeckOptions
       );
-      expect(updatedCard.srs!.repetitions).toBe(2);
-      expect(updatedCard.srs!.interval).toBe(6);
-      expect(updatedCard.srs!.dueDate).toBe(MOCK_CURRENT_TIME + 6 * ONE_DAY_MS);
+      expect(updatedCard.srs!.learningStep).toBe(2);
+      expect(updatedCard.srs!.dueDate).toBe(MOCK_CURRENT_TIME + 10 * 60 * 1000); // 10 minutes
     });
 
-    it('should calculate future interval based on ease factor (R>=2)', () => {
+    it('should calculate future interval for a graduated card', async () => {
       const initialCard = createCardFixture('c1', {
+        learningStep: 0,
         repetitions: 2,
         interval: 6,
         easeFactor: 2.5,
       });
-      const updatedCard = reviewService.calculateNextReview(
+      const updatedCard = await reviewService.calculateNextReview(
         initialCard,
-        5 as ReviewQuality
+        5 as ReviewQuality,
+        defaultDeckOptions
       );
       expect(updatedCard.srs!.repetitions).toBe(3);
-      expect(updatedCard.srs!.interval).toBe(15);
+      expect(updatedCard.srs!.interval).toBe(15); // 6 * 2.5
       expect(updatedCard.srs!.dueDate).toBe(
         MOCK_CURRENT_TIME + 15 * ONE_DAY_MS
       );

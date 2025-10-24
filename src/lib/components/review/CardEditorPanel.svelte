@@ -1,4 +1,21 @@
-<!-- src/lib/components/review/CardEditorPanel.svelte -->
+<!--
+  @component
+  CardEditorPanel
+
+  This component provides a comprehensive UI for creating, editing, and managing
+  review cards associated with a specific document node. It appears as a panel
+  that slides up from the bottom of the screen, controlled by the `cardEditorStore`.
+
+  Key Features:
+  - Manages different card types: Basic (Q&A), Input (prompt/expected answer), and Sequencing.
+  - Handles CRUD operations for cards, communicating with the `cardEditorStore`.
+  - Supports drag-and-drop reordering for items within a sequencing card.
+  - Provides real-time save status feedback (saving, saved).
+  - Includes a debounced update mechanism to avoid excessive writes while typing.
+  - Features an "undo" toast notification after deleting a card.
+  - Dynamically focuses new cards or input fields for a smooth workflow.
+  - Follows accessibility best practices by using appropriate roles and attributes.
+-->
 <script lang="ts">
   // --- Svelte Core & UI Libraries ---
   import { fade, fly } from 'svelte/transition';

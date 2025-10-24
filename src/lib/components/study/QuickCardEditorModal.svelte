@@ -1,4 +1,20 @@
-<!-- src/lib/components/study/QuickCardEditorModal.svelte -->
+<!--
+  @component
+  QuickCardEditorModal
+
+  A modal for quickly editing the contents of any type of flashcard. It provides a
+  unified interface to modify a card's fields, tags, and suspended status.
+
+  This component is used from the `CardBrowser` to allow for rapid, focused edits
+  without needing to navigate to the source document.
+
+  Props:
+  - `card`: {Card} - The card object to be edited.
+  - `onclose`: {() => void} - Callback fired when the modal is closed.
+  - `onupdate`: {(card: Card) => void} - Callback fired when the card is successfully updated.
+  - `ondelete`: {(cardId: string) => void} - Callback fired when the card is deleted.
+  - `onchangeSource`: {(card: Card) => void} - Callback to initiate the source-changing workflow.
+-->
 <script lang="ts">
   import type { Card } from '$lib/types';
   import * as cardService from '$lib/services/features/cardService';
@@ -14,7 +30,6 @@
   import NodeSelectorModal from './NodeSelectorModal.svelte';
   import TagInput from '$lib/components/ui/TagInput.svelte';
 
-  // Svelte 5 Event Prop Definition
   type Events = {
     close: () => void;
     update: (card: Card) => void;
@@ -22,7 +37,33 @@
     changeSource: (card: Card) => void;
   };
 
-  let { card, onclose, onupdate, ondelete, onchangeSource } = $props<{
+  let {
+    /**
+     * @prop {Card} card
+     * The card object to be edited.
+     */
+    card,
+    /**
+     * @prop {() => void} [onclose]
+     * Callback fired when the modal is closed.
+     */
+    onclose,
+    /**
+     * @prop {(card: Card) => void} [onupdate]
+     * Callback fired when the card is successfully updated.
+     */
+    onupdate,
+    /**
+     * @prop {(cardId: string) => void} [ondelete]
+     * Callback fired when the card is deleted.
+     */
+    ondelete,
+    /**
+     * @prop {(card: Card) => void} [onchangeSource]
+     * Callback to initiate the source-changing workflow.
+     */
+    onchangeSource,
+  } = $props<{
     card: Card;
     onclose?: Events['close'];
     onupdate?: Events['update'];

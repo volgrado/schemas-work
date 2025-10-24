@@ -15,6 +15,10 @@
   import { get } from 'svelte/store';
   import { theme as themeStore, type Theme } from '$lib/stores/themeStore';
 
+  /**
+   * @prop {boolean} [isExiting=false]
+   * A boolean that controls the fade-out transition of the canvas.
+   */
   export let isExiting: boolean = false;
 
   // Main visible canvas

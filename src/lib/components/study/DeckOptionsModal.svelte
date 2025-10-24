@@ -1,4 +1,18 @@
-<!-- src/lib/components/study/DeckOptionsModal.svelte -->
+<!--
+  @component
+  DeckOptionsModal
+
+  A modal dialog for configuring the spaced repetition settings for a specific deck.
+  It allows users to customize parameters like the maximum number of new cards and reviews per day,
+  learning steps, and the graduating interval for new cards.
+
+  The component fetches the current settings for the given `deckId` when it mounts,
+  and saves any changes back to the `deckService`.
+
+  Props:
+  - `deckId`: {string} - The ID of the deck whose options are being edited.
+  - `onclose`: {() => void} - A callback function invoked when the modal is closed.
+-->
 <script lang="ts">
   import { toast } from 'svelte-sonner';
   import type { DeckOptions } from '$lib/services/features/deckService';
@@ -8,12 +22,22 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
 
-  // --- Svelte 5 Event Prop Definition ---
   type Events = {
     close: () => void;
   };
 
-  let { deckId, onclose } = $props<{
+  let {
+    /**
+     * @prop {string} deckId
+     * The ID of the deck whose options are being edited.
+     */
+    deckId,
+    /**
+     * @prop {() => void} [onclose]
+     * A callback function invoked when the modal is closed.
+     */
+    onclose,
+  } = $props<{
     deckId: string;
     onclose?: Events['close'];
   }>();

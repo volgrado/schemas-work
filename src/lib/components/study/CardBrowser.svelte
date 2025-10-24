@@ -1,4 +1,18 @@
-<!-- src/lib/components/study/CardBrowser.svelte -->
+<!--
+  @component
+  CardBrowser
+
+  A comprehensive table-based view for browsing, filtering, and sorting all the flashcards
+  in the user's collection. It provides a "power user" interface for managing cards outside
+  of the main editor view.
+
+  Features:
+  - Displays all cards in a sortable, filterable table.
+  - Columns include Deck (document title), Question, Answer, Due Date, and Ease Factor.
+  - Clicking a card opens a `QuickCardEditorModal` for fast edits.
+  - Supports full-text filtering across card content and deck titles.
+  - Asynchronously loads and maps document titles for displaying deck names.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Card } from '$lib/types';

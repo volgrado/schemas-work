@@ -1,3 +1,13 @@
+<!--
+  @file src/routes/+layout.svelte
+  @description This is the root layout for the entire application. It acts as a shell that wraps every page.
+  Its primary responsibility in this app is to handle the initial language-based redirect for users
+  landing on the root URL ('/'). Based on the user's browser language, it redirects them to the
+  appropriate language-specific path (e.g., '/en' or '/es'), ensuring they see the site in their
+  preferred language from the start. This redirect logic has been moved to `+page.svelte` to
+  centralize the root index functionality. This layout now simply renders the content of the
+  matched route.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';

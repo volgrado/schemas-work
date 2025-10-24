@@ -1,3 +1,24 @@
+<!--
+  @file src/routes/[lang]/+layout.svelte
+  @description This layout applies to all pages within a specific language context (e.g., /en, /es).
+  It is responsible for setting up global application concerns that are language- and client-dependent.
+
+  Key Responsibilities:
+  1.  **Language Synchronization**: It uses a Svelte 5 `$effect` to reactively synchronize the application's
+      i18n `locale` store and the document's `lang` attribute with the `lang` parameter from the URL.
+      This ensures that all parts of the app have access to the current language.
+  2.  **Theme Application**: It subscribes to the `themeStore` and applies the correct theme class
+      (e.g., 'dark-theme') to the document root, making the theming system reactive.
+  3.  **Global Error Handling**: It sets up global `window.onerror` and `window.onunhandledrejection`
+      handlers to catch any uncaught exceptions in the application. These errors are then reported
+      to the `errorService` for centralized logging and diagnostics.
+  4.  **Persistent Background**: It renders the `<OrganicCanvas />` component, providing a consistent,
+      animated background across all pages.
+  5.  **Transition Management**: The `{#key data.pathname}` block is a crucial Svelte technique. It
+      tells Svelte to treat navigations to different paths as distinct instances of the slot's
+      content, ensuring that page transitions (like `fade` or `fly`) are correctly triggered
+      when the user navigates between pages.
+-->
 <script lang="ts">
   import { browser } from '$app/environment';
   import '$lib/styles/app.css';

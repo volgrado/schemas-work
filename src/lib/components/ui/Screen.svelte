@@ -1,3 +1,23 @@
+<!--
+  @component
+  Screen
+
+  A top-level container for a major UI view (like the main editor or a welcome screen).
+  It handles the mounting and unmounting of its content with a consistent set of
+  enter and exit transitions.
+
+  This component solves a common problem in Svelte where you might want to coordinate
+  animations between a parent and a child. By exposing the `isExiting` state via a
+  slot prop, child components can be made aware that their parent container is in the
+  process of unmounting, allowing them to play their own exit animations simultaneously.
+
+  Props:
+  - `show`: {boolean} - Controls the visibility of the screen.
+
+  Slots:
+  - `default`: The content of the screen.
+    - `isExiting`: {boolean} - A boolean that is `true` when the screen is playing its exit animation.
+-->
 <script lang="ts">
   import { quintOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';

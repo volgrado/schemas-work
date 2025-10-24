@@ -1,12 +1,34 @@
-<!-- src/lib/components/ui/Toggle.svelte -->
+<!--
+  @component
+  Toggle
+
+  A standard switch-style toggle component. It's a styled wrapper around a native
+  checkbox input, providing a common UI pattern for turning a setting on or off.
+
+  Accessibility is handled by associating the visual `<label>` with the hidden `<input>`
+  via the `for` and `id` attributes.
+
+  Props:
+  - `checked`: {boolean} - The state of the toggle. This prop is bindable.
+  - `id`: {string} - A unique ID is required to link the label to the input for accessibility.
+
+  @restProps All other standard HTML attributes are passed directly to the underlying `<input>` element.
+-->
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
-  // 1. REMOVE the incorrect import for $bindable. It is not needed.
 
-  // Use $bindable() directly to mark the 'checked' prop for two-way binding.
   let {
+    /**
+     * @prop {boolean} [checked=false]
+     * The state of the toggle (on/off). Can be bound to a variable in the parent component.
+     * @bindable
+     */
     checked = $bindable(false),
-    id, // The id is required to link the label for accessibility
+    /**
+     * @prop {string} id
+     * A unique ID is required to associate the label with the input, which is crucial for accessibility.
+     */
+    id,
     ...rest
   } = $props<
     {

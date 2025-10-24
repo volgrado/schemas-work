@@ -1,3 +1,27 @@
+<!--
+  @file src/routes/[lang]/+page.svelte
+  @description This is the main page component of the application, serving as the central hub for all user interactions.
+  It acts as a "controller" component, orchestrating a large number of child components and stores to create the
+  complete user experience.
+
+  Key Responsibilities:
+  - **Component Composition**: It imports and renders almost all major UI components, including the main `DocumentView`
+    (the editor), the `AppHeader`, the `SchemaTree` for visualization, and all floating panels like the `CommandBar`,
+    `CardEditorPanel`, and `TTSController`.
+  - **State Management**: It is the primary consumer of many global Svelte stores (`documentStore`, `editorStore`,
+    `modalStore`, etc.). It uses Svelte 5 runes (`$derived`, `$effect`) to reactively derive state (like `pageTitle`
+    or `treeData`) and trigger side effects when the store values change.
+  - **View Switching**: It manages the `currentView` state, allowing the user to toggle between the main editor
+    (`DocumentView`) and the hierarchical tree visualization (`SchemaTree`).
+  - **Initial Load Logic**: It handles the initial document loading sequence. If the user has not seen the welcome
+    animation, it displays that first. Otherwise, it calls `loadInitialDocument` to either load the last active
+    document or create a new one, ensuring the user always has a document to work with.
+  - **Event Handling**: It contains a rich set of event handlers for user interactions, from global keydown events
+    (e.g., for opening the card editor) to custom events from child components (e.g., clicking a node in the tree).
+  - **SEO and Metadata**: It dynamically manages the page's metadata using `<svelte:head>`, including the title,
+    description, canonical URL, Open Graph tags, and structured data (JSON-LD), all of which are reactively
+    updated based on the current document's content.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
