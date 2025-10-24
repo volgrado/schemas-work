@@ -124,6 +124,23 @@ describe('slashCommands', () => {
     mockEditorStore.set({ selectedNodePos: null });
   });
 
+  describe('getCommands', () => {
+    it('should return a list of commands with the correct structure', () => {
+      const commands = getCommands();
+      expect(commands).toBeInstanceOf(Array);
+      expect(commands.length).toBeGreaterThan(0);
+
+      commands.forEach((command) => {
+        expect(command).toHaveProperty('title');
+        expect(command).toHaveProperty('description');
+        expect(command).toHaveProperty('group');
+        expect(command).toHaveProperty('icon');
+        expect(command).toHaveProperty('command');
+        expect(typeof command.command).toBe('function');
+      });
+    });
+  });
+
   describe('Formatting Commands', () => {
     it('should execute "Heading 1" command correctly', () => {
       const command = findCommand('slashCommands.h1.title');

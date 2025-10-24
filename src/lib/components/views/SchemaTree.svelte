@@ -22,14 +22,23 @@
 
   // --- Props and Events ---
   let {
+    /**
+     * @prop {TreeNodeData | null} treeData
+     * The hierarchical data for the tree. When this prop changes, the tree will re-render.
+     */
     treeData,
+    /**
+     * @prop {string | null} selectedNodeId
+     * The ID of the currently selected node. The tree will highlight this node.
+     */
     selectedNodeId,
   }: {
     treeData: TreeNodeData | null;
     selectedNodeId: string | null;
   } = $props();
 
-  const dispatch = createEventDispatcher<{ nodeClick: { id: string } }>();
+  const dispatch = createEventDispatcher<{ nodeClick: { id:string } }>();
+
   // --- Local State ---
   let svgEl = $state<SVGSVGElement | undefined>();
   let gEl = $state<SVGGElement | undefined>();

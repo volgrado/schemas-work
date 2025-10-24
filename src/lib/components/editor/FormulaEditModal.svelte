@@ -23,9 +23,22 @@
   import { t } from '$lib/utils/i18n';
 
   // --- Component Properties ---
-  export let show: boolean; // Controls the visibility of the modal.
-  export let initialAttrs: { formula: string }; // The initial formula to edit.
-  export let onClose: () => void; // Callback function to close the modal.
+  /**
+   * @prop {boolean} show
+   * Controls the visibility of the modal.
+   * @bindable
+   */
+  export let show: boolean;
+  /**
+   * @prop {{ formula: string }} initialAttrs
+   * The initial formula to edit.
+   */
+  export let initialAttrs: { formula: string };
+  /**
+   * @prop {() => void} onClose
+   * Callback function to close the modal.
+   */
+  export let onClose: () => void;
 
   const dispatch = createEventDispatcher<{
     save: { newAttrs: { formula: string } };

@@ -1,4 +1,21 @@
-<!-- src/lib/components/study/NodeSelectorModal.svelte -->
+<!--
+  @component
+  NodeSelectorModal
+
+  A modal dialog that allows the user to select a specific content node (a `listItem`) from any
+  document in their entire collection. This is used for re-linking a flashcard to a new source node.
+
+  It works by:
+  1. Fetching all documents.
+  2. For each document, it loads the Yjs document and traverses the ProseMirror XML structure
+     to find all `listItem` nodes that have a `nodeId`.
+  3. It then displays a grouped list of these nodes, organized by their parent document.
+
+  Props:
+  - `show`: {boolean} - Controls the visibility of the modal.
+  - `onselect`: {(detail: { nodeId: string; nodeText: string }) => void} - Callback fired when a node is selected.
+  - `onclose`: {() => void} - Callback fired when the modal is closed.
+-->
 <script lang="ts">
   import Modal from '$lib/components/ui/Modal.svelte';
   import * as directoryService from '$lib/services/core/directoryService';
@@ -7,22 +24,32 @@
   import { toast } from 'svelte-sonner';
   import * as Y from 'yjs';
 
-  // --- Svelte 5 Event Prop Definition ---
   type Events = {
     select: (detail: { nodeId: string; nodeText: string }) => void;
     close: () => void;
   };
 
   let {
+    /**
+     * @prop {boolean} show
+     * Controls the visibility of the modal.
+     */
     show,
-    onselect, // This is now a function prop
-    onclose, // This is now a function prop
+    /**
+     * @prop {(detail: { nodeId: string; nodeText: string }) => void} [onselect]
+     * Callback fired when a node is selected.
+     */
+    onselect,
+    /**
+     * @prop {() => void} [onclose]
+     * Callback fired when the modal is closed.
+     */
+    onclose,
   } = $props<{
     show: boolean;
     onselect?: Events['select'];
     onclose?: Events['close'];
   }>();
-  // --- No createEventDispatcher needed ---
 
   type NodeInfo = { id: string; text: string };
   type DocWithNodes = { doc: SchemaMetadata; nodes: NodeInfo[] };

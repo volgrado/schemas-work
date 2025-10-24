@@ -26,7 +26,11 @@ class CardDB extends Dexie {
 const db = new CardDB();
 
 /**
- * Helper: Create a fully-typed card from a NewCard + nodeId.
+ * Creates a fully-typed card from a `NewCard` object and a `nodeId`.
+ * @param nodeId - The ID of the node to associate the card with.
+ * @param card - The card data to add.
+ * @returns {Card} - The newly created card.
+ * @internal
  */
 function createCard(nodeId: string, card: NewCard): Card {
   const id = uuidv4();

@@ -35,10 +35,23 @@
   import { t } from '$lib/utils/i18n';
 
   // --- Component Properties ---
+  /**
+   * @prop {boolean} show - Controls the visibility of the modal.
+   * @bindable
+   */
   export let show: boolean = false;
+  /**
+   * @prop {string} title - The title displayed in the modal's header.
+   */
   export let title: string;
-  export let prompt: string; // The AI prompt to be copied.
-  export let validationSchema: z.ZodSchema; // The Zod schema to validate the JSON against.
+  /**
+   * @prop {string} prompt - The AI prompt to be copied.
+   */
+  export let prompt: string;
+  /**
+   * @prop {z.ZodSchema} validationSchema - The Zod schema to validate the JSON against.
+   */
+  export let validationSchema: z.ZodSchema;
 
   // FIX: Changed the type for the 'close' event from `new () => any` to `void`
   const dispatch = createEventDispatcher<{ apply: any; close: void }>();

@@ -1,4 +1,16 @@
-<!-- src/lib/components/study/RelinkCardModal.svelte -->
+<!--
+  @component
+  RelinkCardModal
+
+  A modal that allows a user to change the source document (node) of a flashcard.
+  It presents a list of all available documents, and upon selection, updates the card's `nodeId`
+  to link it to the new document.
+
+  Props:
+  - `card`: {Card} - The card to be re-linked.
+  - `onclose`: {() => void} - Callback fired when the modal is closed.
+  - `onupdate`: {(card: Card) => void} - Callback fired with the updated card upon a successful re-link.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Card, SchemaMetadata } from '$lib/types';
@@ -10,18 +22,32 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
 
-  // --- Svelte 5 Event Prop Definition ---
   type Events = {
     close: () => void;
     update: (card: Card) => void;
   };
 
-  let { card, onclose, onupdate } = $props<{
+  let {
+    /**
+     * @prop {Card} card
+     * The card to be re-linked.
+     */
+    card,
+    /**
+     * @prop {() => void} [onclose]
+     * Callback fired when the modal is closed.
+     */
+    onclose,
+    /**
+     * @prop {(card: Card) => void} [onupdate]
+     * Callback fired with the updated card upon a successful re-link.
+     */
+    onupdate,
+  } = $props<{
     card: Card;
     onclose?: Events['close'];
     onupdate?: Events['update'];
   }>();
-  // --- No createEventDispatcher needed ---
 
   let schemas = $state<SchemaMetadata[]>([]);
   let selectedSchemaId = $state<string | null>(null);

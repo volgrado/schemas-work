@@ -63,6 +63,10 @@ editorStore.subscribe(($editorStore) => {
   }
 });
 
+/**
+ * Initiates a standard review session, fetching due cards and applying deck options.
+ * @param [deckIds] - Optional array of deck IDs to limit the review scope.
+ */
 async function startReview(deckIds?: string[]): Promise<void> {
   const options =
     deckIds && deckIds.length > 0
@@ -108,6 +112,10 @@ async function startReview(deckIds?: string[]): Promise<void> {
   });
 }
 
+/**
+ * Initiates a "cram" session with the user's weakest cards.
+ * @param [deckIds] - Optional array of deck IDs to scope the search for weakest cards.
+ */
 async function startAdditionalReview(deckIds?: string[]): Promise<void> {
   const WEAKEST_CARDS_COUNT = 5;
   const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT);
@@ -126,6 +134,14 @@ async function startAdditionalReview(deckIds?: string[]): Promise<void> {
   );
 }
 
+/**
+ * Initializes the store's state for a new review session.
+ * @param cards - The array of cards to be reviewed.
+ * @param type - A string indicating the type of review (e.g., "Scheduled", "Additional").
+ * @param [deckIds] - The deck IDs being reviewed.
+ * @param [options] - The deck options for this session.
+ * @internal
+ */
 function startReviewSession(
   cards: Card[],
   type: string,
@@ -143,10 +159,17 @@ function startReviewSession(
   }));
 }
 
+/**
+ * Reveals the answer for the current `basic` card.
+ */
 function showAnswer(): void {
   update((state) => ({ ...state, isAnswerShown: true }));
 }
 
+/**
+ * Submits the result of an automatically evaluated card ('input' or 'sequencing').
+ * @param isCorrect - Whether the user's answer was correct.
+ */
 async function submitInteractiveAnswer(isCorrect: boolean): Promise<void> {
   update((s) => ({ ...s, isAnswerShown: true, lastAnswerCorrect: isCorrect }));
 }
@@ -163,6 +186,10 @@ function getCardState(
   return quality < 3 ? 'relearn' : 'review';
 }
 
+/**
+ * Submits a user's self-assessed review quality, updates the card's SRS data, and advances the session.
+ * @param quality - The user's assessment of their recall (0-5).
+ */
 async function submitReview(quality: ReviewQuality): Promise<void> {
   const state = get(store);
   if (!state.isReviewing) return;
@@ -216,10 +243,16 @@ async function submitReview(quality: ReviewQuality): Promise<void> {
   }
 }
 
+/**
+ * Ends the current review session and resets the store.
+ */
 function finishReview(): void {
   set(initialState);
 }
 
+/**
+ * Jumps the editor view to the source node of the current card and ends the review.
+ */
 async function jumpToSource(): Promise<void> {
   const state = get(store);
   const editor = get(editorStore).instance;

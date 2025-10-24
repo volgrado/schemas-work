@@ -1,7 +1,23 @@
-// src/lib/services/features/deckService.ts
+/**
+ * @file Manages the settings and options for individual study decks.
+ * @module deckService
+ *
+ * @remarks
+ * This service provides a persistence layer for `DeckOptions`, which are the user-configurable
+ * parameters for the spaced repetition algorithm applied to a specific deck (a "deck" is
+ * conceptually equivalent to a schema document).
+ *
+ * It uses Dexie.js to manage an IndexedDB table (`deckOptions`) where each entry is keyed
+ * by the `deckId` (which is the same as the `docId`). This allows for per-deck customization
+ * of the learning experience.
+ */
 import Dexie, { type Table } from 'dexie';
 import * as errorService from '$lib/services/core/errorService';
 
+/**
+ * @interface DeckOptions
+ * Defines the user-configurable settings for a study deck.
+ */
 export interface DeckOptions {
   deckId: string; // Primary key (corresponds to docId)
   maxNewCardsPerDay: number;
@@ -23,6 +39,11 @@ class DeckDB extends Dexie {
 
 const db = new DeckDB();
 
+/**
+ * @const {Omit<DeckOptions, 'deckId'>} defaultDeckOptions
+ * The default settings for a new deck. These values are used when no specific
+ * options have been saved for a given deckId.
+ */
 export const defaultDeckOptions: Omit<DeckOptions, 'deckId'> = {
   maxNewCardsPerDay: 20,
   maxReviewsPerDay: 100,

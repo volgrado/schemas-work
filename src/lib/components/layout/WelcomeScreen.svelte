@@ -1,3 +1,17 @@
+<!--
+  @component
+  WelcomeScreen
+
+  The main welcome and feature overview screen for the application.
+  It displays the brand name, a tagline, a grid of key features,
+  and a primary call-to-action button to enter the main application.
+
+  This component is purely presentational. Its only interactive element is the
+  "Start Creating" button, which fires a `start` event to its parent.
+
+  Events:
+  - `start`: Fired when the user clicks the main call-to-action button.
+-->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 

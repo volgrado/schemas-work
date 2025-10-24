@@ -139,7 +139,11 @@ describe('reviewStore', () => {
       await reviewStore.startReview();
       expect(reviewService.getDueCards).toHaveBeenCalled();
       expect(getState().isReviewing).toBe(true);
-      expect(getState().cardsToReview).toEqual(MOCK_CARDS);
+      // The order is randomized, so check for content and length
+      expect(getState().cardsToReview).toHaveLength(MOCK_CARDS.length);
+      expect(getState().cardsToReview).toEqual(
+        expect.arrayContaining(MOCK_CARDS)
+      );
       expect(__mockToastInfo).toHaveBeenCalledWith(
         'review.review_started_toast'
       );
@@ -171,21 +175,26 @@ describe('reviewStore', () => {
     });
 
     it('advances to next card on quality >= 3', async () => {
+      const initialCard = getState().cardsToReview[0];
       await reviewStore.submitReview(5);
+
       expect(reviewService.calculateNextReview).toHaveBeenCalledWith(
-        MOCK_CARD_1,
-        5
+        initialCard,
+        5,
+        expect.any(Object)
       );
       expect(cardService.updateCard).toHaveBeenCalled();
       expect(getState().cardsToReview).toHaveLength(1);
-      expect(getState().cardsToReview[0].id).toBe('c2');
+      expect(getState().cardsToReview[0].id).not.toBe(initialCard.id);
     });
 
     it('re-queues card to end on quality < 3', async () => {
+      const initialCard = getState().cardsToReview[0];
       await reviewStore.submitReview(0);
+
       expect(getState().cardsToReview).toHaveLength(2);
-      expect(getState().cardsToReview[0].id).toBe('c2');
-      expect(getState().cardsToReview[1].id).toBe('c1');
+      expect(getState().cardsToReview[0].id).not.toBe(initialCard.id);
+      expect(getState().cardsToReview[1].id).toBe(initialCard.id);
       expect(__mockToastInfo).toHaveBeenCalledWith(
         'review.card_will_reappear_toast'
       );
@@ -223,10 +232,11 @@ describe('reviewStore', () => {
   describe('jumpToSource', () => {
     it('closes review and updates editor selection', async () => {
       await reviewStore.startReview();
+      const currentCard = getState().cardsToReview[0];
 
       (__mockEditorInstance.state.doc.descendants as Mock).mockImplementation(
         (cb: (node: { attrs: { nodeId: string } }, pos: number) => void) => {
-          cb({ attrs: { nodeId: 'n1' } }, 100);
+          cb({ attrs: { nodeId: currentCard.nodeId } }, 100);
           return false;
         }
       );

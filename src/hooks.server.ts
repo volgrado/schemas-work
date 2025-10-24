@@ -1,8 +1,22 @@
 // src/hooks.server.ts
-
+/**
+ * @file Server-side hooks for SvelteKit.
+ *
+ * This file configures server-side hooks that are used to intercept and modify
+ * requests and responses. This is primarily used for setting the `lang` attribute
+ * on the HTML element based on the current route.
+ */
 import { building } from '$app/environment';
 import type { Handle } from '@sveltejs/kit';
 
+/**
+ * Handles incoming requests and sets the language attribute on the HTML element.
+ *
+ * @param {object} params - The request handler parameters.
+ * @param {Request} params.event - The request event object.
+ * @param {function} params.resolve - The function to resolve the request.
+ * @returns {Promise<Response>} The response.
+ */
 export const handle: Handle = async ({ event, resolve }) => {
   const lang = event.url.pathname.split('/')[1];
 

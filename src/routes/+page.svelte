@@ -1,8 +1,11 @@
-<!-- src/routes/+page.svelte -->
 <!--
-  This page exists only at the root of the site (/).
-  Its sole purpose is to redirect the user to their preferred language
-  path as soon as the page loads in the browser.
+  @file src/routes/+page.svelte
+  @description This page component exclusively handles the root URL ('/'). Its single responsibility
+  is to perform a client-side redirect to the user's preferred language path (e.g., '/en' or '/es').
+  It inspects the browser's `navigator.language` to determine the best initial locale for the user,
+  then uses SvelteKit's `goto` function to navigate them to the correct starting page. This approach
+  ensures a smooth, automatic localization experience for first-time visitors. A simple "Loading..."
+  message is displayed while the redirect is processed.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

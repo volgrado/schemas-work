@@ -1,4 +1,16 @@
-<!-- src/lib/components/study/StatisticsView.svelte -->
+<!--
+  @component
+  StatisticsView
+
+  This component provides a dashboard for visualizing the user's study statistics.
+  It fetches all review logs and calculates and displays several key metrics.
+
+  Key Features:
+  - Displays summary cards for total reviews and overall retention rate.
+  - Renders a bar chart showing the number of reviews completed per day for the last 30 days.
+  - Uses Svelte 5's `$derived` rune for efficient, reactive calculations from the raw log data.
+  - Shows a clear loading state while fetching data and an empty state if no reviews have been completed.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as reviewLogService from '$lib/services/features/reviewLogService';

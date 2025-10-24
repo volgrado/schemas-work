@@ -1,12 +1,32 @@
-<!-- src/lib/components/ui/Textarea.svelte -->
+<!--
+  @component
+  Textarea
+
+  A standardized, reusable textarea component that automatically resizes to fit its content.
+  It provides consistent styling for form inputs across the application.
+
+  Props:
+  - `value`: {string} - The value of the textarea. This prop is bindable.
+  - `class`: {string} - Additional CSS classes to apply to the textarea element.
+
+  @restProps All other standard HTML attributes (e.g., `placeholder`, `rows`, `disabled`) are passed
+  directly to the underlying `<textarea>` element.
+-->
 <script lang="ts">
   import type { HTMLTextareaAttributes } from 'svelte/elements';
-  // 1. REMOVE the incorrect import for $bindable
-  import { autosize } from '$lib/actions/autosize'; // Optional: if you have this action
+  import { autosize } from '$lib/actions/autosize';
 
-  // Use $bindable() directly. It's globally available thanks to the Svelte compiler.
   let {
+    /**
+     * @prop {string} [value='']
+     * The textarea's value. Can be bound to a variable in the parent component.
+     * @bindable
+     */
     value = $bindable(''),
+    /**
+     * @prop {string} [class='']
+     * Optional CSS classes to add to the textarea element for custom styling.
+     */
     class: additionalClasses = '',
     ...rest
   } = $props<{ value?: string; class?: string } & HTMLTextareaAttributes>();

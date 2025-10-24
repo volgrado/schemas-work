@@ -58,9 +58,21 @@
 
   // --- Component Properties ---
   let {
-    ydoc, // The Yjs document for collaborative editing.
-    initialContent = null, // The content to load if the Yjs doc is empty.
-    focusedNodePos = null, // The position to focus on when the component mounts.
+    /**
+     * @prop {Y.Doc} ydoc
+     * The Yjs document for collaborative editing.
+     */
+    ydoc,
+    /**
+     * @prop {object | null} [initialContent=null]
+     * The content to load if the Yjs doc is empty.
+     */
+    initialContent = null,
+    /**
+     * @prop {number | null} [focusedNodePos=null]
+     * The position to focus on when the component mounts.
+     */
+    focusedNodePos = null,
   }: {
     ydoc: Y.Doc;
     initialContent?: object | null;

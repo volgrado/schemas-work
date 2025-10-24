@@ -1,3 +1,18 @@
+<!--
+  @component
+  WelcomeAnimator
+
+  This component acts as a state machine and transition manager for the welcome screen.
+  It controls the mounting and unmounting of the `WelcomeScreen` component, orchestrating
+  the fade-in and fade-out animations.
+
+  Its primary responsibility is to listen for the `start` event from the `WelcomeScreen`
+  and then manage a timed exit sequence, finally notifying its parent via the `animationComplete`
+  event that the welcome process is finished.
+
+  Events:
+  - `animationComplete`: Fired after the exit animation has completed.
+-->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import WelcomeScreen from './WelcomeScreen.svelte';

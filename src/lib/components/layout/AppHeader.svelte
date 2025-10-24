@@ -1,3 +1,25 @@
+<!--
+  @component
+  AppHeader
+
+  The main application header, which is fixed at the top of the viewport.
+  It provides a consistent layout with three sections: left, center, and right.
+
+  - The center section contains the main brand logo and name, which also acts as a button
+    to return to the welcome screen.
+  - The right section contains the language switcher, theme toggle, and a help tooltip with
+    keyboard shortcuts.
+  - The left section is an open slot for contextual actions or components.
+
+  Props:
+  - `show`: {boolean} - Controls the visibility of the header.
+
+  Events:
+  - `showWelcome`: Fired when the user clicks the brand logo/name.
+
+  Slots:
+  - `default`: Content to be placed in the left section of the header.
+-->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
