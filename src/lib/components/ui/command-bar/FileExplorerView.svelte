@@ -66,6 +66,7 @@
   let inputError = $state(false);
 
   // Input element bindings for focusing
+  // FIX: These are not state, just element bindings. Let Svelte handle them.
   let renameInput: HTMLInputElement;
   let newItemInput: HTMLInputElement;
 

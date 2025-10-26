@@ -8,6 +8,7 @@ import type { Editor, Range } from '@tiptap/core';
 import type { IconName } from '$lib/types/iconName';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { editorStore } from '$lib/stores/editorStore';
+import { documentStore } from '$lib/stores/documentStore'; // MODIFIED: Add import
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { ttsStore } from '$lib/stores/ttsStore';
@@ -304,16 +305,13 @@ export const getCommands = (): CommandItem[] => {
       icon: 'edit-3',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        const state = get(editorStore);
-        if (state.selectedNodePos === null) {
-          toast.error(t('slashCommands.editCards.error'));
-          return;
-        }
-        const node = editor.state.doc.nodeAt(state.selectedNodePos);
-        if (node?.attrs.nodeId) {
-          cardEditorStore.open(node.attrs.nodeId);
+        const docId = get(documentStore).docId;
+
+        if (docId) {
+          cardEditorStore.open(docId);
         } else {
-          toast.error(t('slashCommands.editCards.errorNoId'));
+          toast.error(t('slashCommands.editCards.error')); // Re-use generic error
+          return;
         }
       },
     },

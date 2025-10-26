@@ -47,9 +47,9 @@ export interface Vault {
 
 /**
  * Represents the quality of the user's response during a card review session.
- * 0: "Again", 3: "Good", 5: "Easy".
+ * 0: Again, 3: Hard, 4: Good, 5: Easy.
  */
-export type ReviewQuality = 0 | 3 | 5;
+export type ReviewQuality = 0 | 3 | 4 | 5;
 
 /**
  * The core data structure for the Spaced Repetition System (SRS) algorithm.
@@ -78,8 +78,8 @@ export type CardType = 'basic' | 'input' | 'sequencing'; // Add 'cloze' here lat
 interface CardBase {
   /** The unique identifier for the card itself. */
   id: string;
-  /** The ID of the ProseMirror node from which this card was generated. */
-  nodeId: string;
+  /** The ID of the document (deck) this card belongs to. */
+  deckId: string;
   /** The SRS data object that tracks the learning state of this card. */
   srs: SrsData;
   /** An array of tags for organization. */
@@ -136,9 +136,9 @@ export interface TreeNodeData {
 /**
  * Represents the shape of a new card (before it is stored in the database).
  */
-export type NewBasicCard = Omit<BasicCard, 'id' | 'nodeId'>;
-export type NewInputCard = Omit<InputCard, 'id' | 'nodeId'>;
-export type NewSequencingCard = Omit<SequencingCard, 'id' | 'nodeId'>;
+export type NewBasicCard = Omit<BasicCard, 'id' | 'deckId'>;
+export type NewInputCard = Omit<InputCard, 'id' | 'deckId'>;
+export type NewSequencingCard = Omit<SequencingCard, 'id' | 'deckId'>;
 
 export type NewCard = NewBasicCard | NewInputCard | NewSequencingCard;
 

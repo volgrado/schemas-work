@@ -1,3 +1,5 @@
+// src/lib/stores/documentStore.txt
+
 /**
  * @file Manages the lifecycle, state, and persistence of the active schema document.
  * @module documentStore
@@ -168,6 +170,20 @@ async function createNewDocument(
           attrs: { level: 1 },
           content: [{ type: 'text', text: title }],
         },
+        {
+          type: 'bulletList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  attrs: { role: 'term' },
+                },
+              ],
+            },
+          ],
+        },
       ],
     };
 
@@ -302,4 +318,7 @@ export const documentStore = {
   clearInitialContent,
   /** Updates the title of the currently active document. */
   updateTitle,
+
+  /** Closes the current document and resets the state. */
+  closeDocument: cleanup,
 };

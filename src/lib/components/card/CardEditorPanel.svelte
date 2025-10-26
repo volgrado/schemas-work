@@ -181,7 +181,6 @@
 </script>
 
 {#if $cardEditorStore.isOpen}
-  <!-- ACCESSIBILITY FIX: Use a styled button for the overlay -->
   <button
     class="overlay"
     onclick={() => cardEditorStore.close()}
@@ -204,7 +203,7 @@
         {#if $cardEditorStore.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
             {#if $cardEditorStore.status === 'saving'}
-              <Icon name="loader" size={14} class="spinner" />
+              <Icon name="loader" size={14} />
               <span>{$t('card_editor_panel.saving')}</span>
             {:else if $cardEditorStore.status === 'saved'}
               <Icon name="check-circle" size={14} />
@@ -342,14 +341,12 @@
                       oninput={() => handleUpdate(card)}
                     />
                   </div>
-                  <!-- ACCESSIBILITY FIX: Add role="list" to the container -->
                   <div class="sequence-items" role="list">
                     {#each card.content.items as item, itemIndex (itemIndex)}
-                      <!-- ACCESSIBILITY FIX: Change role to "listitem" -->
+                      <!-- FIX: tabindex="0" removed from non-interactive element -->
                       <div
                         class="sequence-item"
                         role="listitem"
-                        tabindex="0"
                         animate:flip={{ duration: 250 }}
                         draggable="true"
                         ondragstart={(e) => handleDragStart(itemIndex, e)}
@@ -474,6 +471,9 @@
     font-size: 0.8rem;
     color: var(--color-text-secondary);
   }
+  .save-status :global(.icon-wrapper) {
+    animation: spin 1s linear infinite;
+  }
   @keyframes spin {
     from {
       transform: rotate(0deg);
@@ -481,9 +481,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-  .spinner {
-    animation: spin 1s linear infinite;
   }
 
   /* --- Add Card Menu --- */

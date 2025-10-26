@@ -18,7 +18,7 @@ class CardDB extends Dexie {
   constructor() {
     super('CardDatabase');
     this.version(1).stores({
-      cards: '++id, nodeId',
+      cards: '++id, deckId', // MODIFIED: Index by deckId instead of nodeId
     });
   }
 }
@@ -26,13 +26,13 @@ class CardDB extends Dexie {
 const db = new CardDB();
 
 /**
- * Creates a fully-typed card from a `NewCard` object and a `nodeId`.
- * @param nodeId - The ID of the node to associate the card with.
+ * Creates a fully-typed card from a `NewCard` object and a `deckId`.
+ * @param deckId - The ID of the deck to associate the card with.
  * @param card - The card data to add.
  * @returns {Card} - The newly created card.
  * @internal
  */
-function createCard(nodeId: string, card: NewCard): Card {
+function createCard(deckId: string, card: NewCard): Card {
   const id = uuidv4();
 
   const baseSrs = {
@@ -44,7 +44,7 @@ function createCard(nodeId: string, card: NewCard): Card {
     case 'basic':
       return {
         id,
-        nodeId,
+        deckId,
         type: 'basic',
         content: card.content, // { question, answer }
         srs: baseSrs,
@@ -54,7 +54,7 @@ function createCard(nodeId: string, card: NewCard): Card {
     case 'input':
       return {
         id,
-        nodeId,
+        deckId,
         type: 'input',
         content: card.content, // { prompt, expected }
         srs: baseSrs,
@@ -64,7 +64,7 @@ function createCard(nodeId: string, card: NewCard): Card {
     case 'sequencing':
       return {
         id,
-        nodeId,
+        deckId,
         type: 'sequencing',
         content: card.content, // { prompt, items }
         srs: baseSrs,
@@ -93,30 +93,30 @@ export async function getAllCards(): Promise<Card[]> {
 }
 
 /**
- * Retrieves all cards associated with a specific schema node ID.
- * @param nodeId - The unique identifier of the schema node.
+ * Retrieves all cards associated with a specific deck (document) ID.
+ * @param deckId - The unique identifier of the deck.
  */
-export async function getCardsByNodeId(nodeId: string): Promise<Card[]> {
+export async function getCardsByDeckId(deckId: string): Promise<Card[]> {
   try {
-    return await db.cards.where('nodeId').equals(nodeId).toArray();
+    return await db.cards.where('deckId').equals(deckId).toArray();
   } catch (error) {
-    errorService.reportError(error, { operation: 'getCardsByNodeId', nodeId });
+    errorService.reportError(error, { operation: 'getCardsByDeckId', deckId });
     return [];
   }
 }
 
 /**
- * Retrieves all cards associated with an array of node IDs.
- * @param nodeIds - An array of unique identifiers of the schema nodes.
+ * Retrieves all cards associated with an array of deck IDs.
+ * @param deckIds - An array of unique identifiers of the decks.
  */
-export async function getCardsByNodeIds(nodeIds: string[]): Promise<Card[]> {
-  if (nodeIds.length === 0) return [];
+export async function getCardsByDeckIds(deckIds: string[]): Promise<Card[]> {
+  if (deckIds.length === 0) return [];
   try {
-    return await db.cards.where('nodeId').anyOf(nodeIds).toArray();
+    return await db.cards.where('deckId').anyOf(deckIds).toArray();
   } catch (error) {
     errorService.reportError(error, {
-      operation: 'getCardsByNodeIds',
-      nodeIds,
+      operation: 'getCardsByDeckIds',
+      deckIds,
     });
     return [];
   }
@@ -124,35 +124,35 @@ export async function getCardsByNodeIds(nodeIds: string[]): Promise<Card[]> {
 
 /**
  * Adds a single new card to the database.
- * @param nodeId - The ID of the node to associate the card with.
+ * @param deckId - The ID of the deck to associate the card with.
  * @param card - The card data to add.
  * @returns {Promise<Card>} - The newly created card.
  */
-export async function addCard(nodeId: string, card: NewCard): Promise<Card> {
-  const newCard = createCard(nodeId, card);
+export async function addCard(deckId: string, card: NewCard): Promise<Card> {
+  const newCard = createCard(deckId, card);
   try {
     await db.cards.add(newCard);
     return newCard;
   } catch (error) {
-    errorService.reportError(error, { operation: 'addCard', nodeId });
+    errorService.reportError(error, { operation: 'addCard', deckId });
     throw error;
   }
 }
 
 /**
- * Adds multiple cards for a specific node in a single transaction.
- * @param nodeId - The ID of the node to associate the cards with.
+ * Adds multiple cards for a specific deck in a single transaction.
+ * @param deckId - The ID of the deck to associate the cards with.
  * @param cards - An array of card data to add.
  */
 export async function addCards(
-  nodeId: string,
+  deckId: string,
   cards: NewCard[]
 ): Promise<void> {
-  const newCards = cards.map((card) => createCard(nodeId, card));
+  const newCards = cards.map((card) => createCard(deckId, card));
   try {
     await db.cards.bulkAdd(newCards);
   } catch (error) {
-    errorService.reportError(error, { operation: 'addCards', nodeId });
+    errorService.reportError(error, { operation: 'addCards', deckId });
     throw error;
   }
 }

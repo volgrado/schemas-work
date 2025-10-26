@@ -100,8 +100,8 @@
     },
     "editCards": {
       "title": "Editar Tarjetas",
-      "description": "Abrir el editor de tarjetas para este nodo.",
-      "error": "Selecciona un nodo para editar sus tarjetas.",
+      "description": "Abrir el editor de tarjetas para este documento.",
+      "error": "No se pudo abrir el editor de tarjetas para este documento.",
       "errorNoId": "Este nodo no tiene un ID válido para asociar tarjetas."
     }
   },
@@ -151,7 +151,7 @@
   },
   "card_editor_panel": {
     "title": "Tarjetas de Estudio",
-    "tooltip": "Crea preguntas y respuestas para este nodo. Úsalas en el \"Modo de Repaso\" para memorizar conceptos clave.",
+    "tooltip": "Crea preguntas y respuestas para este documento. Úsalas en el \"Modo de Repaso\" para memorizar conceptos clave.",
     "saving": "Guardando...",
     "saved": "Guardado",
     "add_card": "Añadir Tarjeta",
@@ -160,7 +160,7 @@
     "add_sequence": "Secuencia",
     "done": "Hecho",
     "loading": "Cargando tarjetas...",
-    "load_error": "No se pudieron cargar las tarjetas para este nodo.",
+    "load_error": "No se pudieron cargar las tarjetas para este documento.",
     "question_label": "Pregunta",
     "question_placeholder": "Escribe la pregunta...",
     "answer_label": "Respuesta",
@@ -176,7 +176,7 @@
     "card_deleted_toast": "Tarjeta eliminada.",
     "undo_button": "Deshacer",
     "empty_title": "Aún no hay tarjetas",
-    "empty_message": "Añade tu primera tarjeta de estudio para este nodo para empezar."
+    "empty_message": "Añade tu primera tarjeta de estudio para este documento para empezar."
   },
   "document": {
     "invalid_document_error": "El elemento no es un documento válido: {docId}",
@@ -270,7 +270,7 @@
         "title": "Generar Tarjetas de Estudio con IA",
         "success": "{count, plural, =1 {1 tarjeta de estudio generada} other {# tarjetas de estudio generadas}}.",
         "error": {
-          "no_node_id": "No se pudieron generar las tarjetas. El nodo seleccionado no tiene un ID válido.",
+          "no_node_id": "No se pudieron generar las tarjetas. El documento actual no tiene un ID válido.",
           "save_failed": "Error al guardar las tarjetas generadas.",
           "no_node_selected": "Para generar tarjetas, primero debes seleccionar un nodo en el editor."
         }

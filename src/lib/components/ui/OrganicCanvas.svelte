@@ -623,7 +623,7 @@
       const r =
         outerRadius * 0.3 + Math.pow(Math.random(), 1.5) * (outerRadius * 0.7);
       const angle = Math.random() * Math.PI * 2;
-      const size = (1 - r / outerRadius) * 2 + 0.5;
+      const size = (1 - r / r) * 2 + 0.5;
       ctx.beginPath();
       ctx.arc(
         r * Math.cos(angle),
@@ -789,7 +789,9 @@
 </script>
 
 <div class="canvas-container" class:is-exiting={isExiting}>
-  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true" />
+  <!-- FIX: Correct self-closing tag for <canvas> -->
+  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true"
+  ></canvas>
 </div>
 
 <style>

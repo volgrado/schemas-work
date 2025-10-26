@@ -35,6 +35,10 @@
   import MainView from './command-bar/MainView.svelte';
   import AiView from './command-bar/AiView.svelte';
   import FileExplorerView from './command-bar/FileExplorerView.svelte';
+  import StudyHubView from './command-bar/StudyHubView.svelte';
+  import VaultView from './command-bar/VaultView.svelte';
+  import DeckOptionsView from './command-bar/DeckOptionsView.svelte';
+  import StatisticsView from './command-bar/StatisticsView.svelte'; // Import new view
 
   // --- Stores ---
   import {
@@ -103,9 +107,10 @@
       title: $t('command_bar.ai_helper.generate_flashcards.title'),
       prompt: Prompts.GENERATE_FLASHCARDS_V2_PROMPT, // Base prompt, context is added later
       validationSchema: aiSchemas.FlashcardResponseSchema,
-      onApply: async (data: Omit<Card, 'id' | 'nodeId'>[]) => {
+      onApply: async (data: Omit<Card, 'id' | 'deckId'>[]) => {
         const { selectedNode: node } = get(editorStore);
-        if (!node?.attrs.nodeId) {
+        const docId = get(documentStore).docId;
+        if (!docId) {
           toast.error(
             $t('command_bar.ai_helper.generate_flashcards.error.no_node_id')
           );
@@ -115,7 +120,7 @@
           // MODIFIED: Use a type assertion to satisfy the stricter `NewCard[]` type.
           // This is safe because the Zod schema has already validated the data structure.
           await cardService.addCards(
-            node.attrs.nodeId,
+            docId, // Use the document ID as the deckId
             data as unknown as NewCard[]
           );
           toast.success(
@@ -239,7 +244,9 @@
 
     // 'Escape' key behavior: go back one view or close the bar.
     if (event.key === 'Escape' && $state.isOpen) {
-      if ($state.currentView !== 'main') {
+      if ($state.currentView === 'deck-options') {
+        commandBarStore.setView('study-hub');
+      } else if ($state.currentView !== 'main') {
         commandBarStore.setView('main');
       } else {
         commandBarStore.close();
@@ -325,6 +332,14 @@
       <AiView />
     {:else if $state.currentView === 'list-schemas'}
       <FileExplorerView />
+    {:else if $state.currentView === 'study-hub'}
+      <StudyHubView />
+    {:else if $state.currentView === 'vault'}
+      <VaultView />
+    {:else if $state.currentView === 'deck-options' && $state.deckOptionsId}
+      <DeckOptionsView deckId={$state.deckOptionsId} />
+    {:else if $state.currentView === 'statistics'}
+      <StatisticsView />
     {/if}
   </div>
 {/if}

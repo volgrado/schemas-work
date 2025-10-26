@@ -27,7 +27,6 @@
   import Textarea from '$lib/components/ui/Textarea.svelte';
   import Toggle from '$lib/components/ui/Toggle.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
-  import NodeSelectorModal from './NodeSelectorModal.svelte';
   import TagInput from '$lib/components/ui/TagInput.svelte';
 
   type Events = {
@@ -72,7 +71,6 @@
   }>();
 
   let editableCard = $state<Card>(JSON.parse(JSON.stringify(card)));
-  let showNodeSelector = $state(false);
 
   async function saveCardChanges(cardToSave: Card) {
     try {
@@ -104,18 +102,9 @@
     }
   }
 
-  function handleChangeSourceSelect(detail: {
-    nodeId: string;
-    nodeText: string;
-  }) {
-    editableCard.nodeId = detail.nodeId;
-    editableCard = editableCard; // Trigger reactivity
-    saveCardChanges(editableCard);
-    showNodeSelector = false;
-  }
-
   function openChangeSource() {
-    showNodeSelector = true;
+    // Let the parent component handle this event
+    onchangeSource?.(card);
   }
 
   // Sequencing Card Helpers
@@ -220,13 +209,6 @@
     </div>
   </div>
 </Modal>
-
-<!-- The node selector modal, controlled by the main modal -->
-<NodeSelectorModal
-  show={showNodeSelector}
-  onclose={() => (showNodeSelector = false)}
-  onselect={handleChangeSourceSelect}
-/>
 
 <style>
   .card-editor-content {

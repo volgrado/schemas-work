@@ -18,8 +18,7 @@ import { documentStore } from '$lib/stores/documentStore';
 import { editorStore } from '$lib/stores/editorStore';
 import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
-import { locale, t } from '$lib/utils/i18n'; // Add this import
-import { goto } from '$app/navigation'; // Add this import
+import { t } from '$lib/utils/i18n';
 
 /**
  * Retrieves the list of primary commands available in the command bar.
@@ -51,12 +50,11 @@ export function getCommands(): Command[] {
       },
     },
     {
-      id: 'study-hub',
-      label: get(t)('command.study_hub'), // You'll need to add this to your i18n files
+      id: 'study-decks',
+      label: get(t)('command.study_decks'),
       icon: 'book-open',
       action: () => {
-        goto(`/${get(locale)}/study`);
-        commandBarStore.close();
+        commandBarStore.setView('study-hub');
       },
     },
     {
@@ -68,17 +66,6 @@ export function getCommands(): Command[] {
       },
     },
     {
-      id: 'start-review',
-      label: get(t)('command.start_review'),
-      icon: 'zap',
-      action: () => {
-        reviewStore.startReview();
-        commandBarStore.close();
-      },
-      // This command is only enabled if a review session is not already in progress.
-      isEnabled: () => !get(reviewStore).isReviewing,
-    },
-    {
       id: 'read-aloud',
       label: get(t)('command.read_schema'),
       icon: 'volume-2',
@@ -86,23 +73,14 @@ export function getCommands(): Command[] {
         ttsStore.startReading();
         commandBarStore.close();
       },
-      // This command is disabled if text-to-speech is already playing.
       isEnabled: () => get(ttsStore).status !== 'playing',
     },
     {
-      id: 'export-vault',
-      label: get(t)('command.export_vault'),
-      icon: 'download-cloud',
+      id: 'vault-management',
+      label: get(t)('command.vault_management'),
+      icon: 'lock',
       action: () => {
-        commandBarStore.openPasswordModal('export');
-      },
-    },
-    {
-      id: 'import-vault',
-      label: get(t)('command.import_vault'),
-      icon: 'upload-cloud',
-      action: () => {
-        commandBarStore.openPasswordModal('import');
+        commandBarStore.setView('vault');
       },
     },
     {

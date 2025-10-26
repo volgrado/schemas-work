@@ -125,7 +125,7 @@ export async function calculateNextReview(
  */
 export async function getDueCards(deckIds?: string[]): Promise<Card[]> {
   const allCards = deckIds
-    ? await cardService.getCardsByNodeIds(deckIds)
+    ? await cardService.getCardsByDeckIds(deckIds)
     : await cardService.getAllCards();
 
   const now = Date.now();
@@ -138,45 +138,44 @@ export async function getDueCards(deckIds?: string[]): Promise<Card[]> {
 }
 
 /**
- * Gathers statistics (due count, new count) for all documents that contain cards.
- * @returns {Promise<Map<string, { title: string; due: number; new: number }>>}
+ * Gathers Anki-style statistics (new, learning, due) for all decks.
+ * @returns {Promise<Map<string, { title: string; new: number; learning: number; due: number }>>}
  */
 export async function getAllDeckStats(): Promise<
-  Map<string, { title: string; due: number; new: number }>
+  Map<string, { title: string; new: number; learning: number; due: number }>
 > {
   const allDocs = await directoryService.getAllItems();
   const allCards = await cardService.getAllCards();
   const now = Date.now();
 
-  const stats = new Map<string, { title: string; due: number; new: number }>();
+  const stats = new Map<
+    string,
+    { title: string; new: number; learning: number; due: number }
+  >();
 
-  // Create a map for quick document title lookup
   const docTitleMap = new Map(allDocs.map((doc) => [doc.id, doc.title]));
 
   for (const card of allCards) {
-    if (!stats.has(card.nodeId)) {
-      stats.set(card.nodeId, {
-        title: docTitleMap.get(card.nodeId) || 'Untitled',
-        due: 0,
+    if (card.suspended) continue;
+
+    if (!stats.has(card.deckId)) {
+      stats.set(card.deckId, {
+        title: docTitleMap.get(card.deckId) || 'Untitled',
         new: 0,
+        learning: 0,
+        due: 0,
       });
     }
 
-    const deckStat = stats.get(card.nodeId)!;
+    const deckStat = stats.get(card.deckId)!;
+    const srs = card.srs;
 
-    if (!card.suspended) {
-      // A card is "new" if it has 0 repetitions OR is in a learning step.
-      if (
-        !card.srs ||
-        card.srs.repetitions === 0 ||
-        card.srs.learningStep > 0
-      ) {
-        deckStat.new++;
-      }
-      // A card is "due" if its due date is in the past. New cards are also due.
-      if (!card.srs || !card.srs.dueDate || card.srs.dueDate <= now) {
-        deckStat.due++;
-      }
+    if (!srs || srs.repetitions === 0) {
+      deckStat.new++;
+    } else if (srs.learningStep > 0 && srs.dueDate <= now) {
+      deckStat.learning++;
+    } else if (srs.dueDate <= now) {
+      deckStat.due++;
     }
   }
 
@@ -215,8 +214,8 @@ export async function evaluateAnswer(
   const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
 
   if (normalizedUserAnswer === normalizedCorrectAnswer) {
-    return 5; // Perfect recall
+    return 5; // Perfect recall -> Easy
   }
 
-  return 0; // Incorrect
+  return 0; // Incorrect -> Again
 }

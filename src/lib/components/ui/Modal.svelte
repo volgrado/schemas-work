@@ -18,9 +18,7 @@
   - `show`: {boolean} - Controls the visibility of the modal. Bind to this prop from the parent.
   - `title`: {string | null} - An optional string for the modal's header title. If provided, the header is displayed.
   - `onClose`: {() => void} - A required callback function that is invoked when the modal is requested to be closed.
-
-  Slots:
-  - `default`: The main content of the modal is passed into this slot.
+  - `showOverlay`: {boolean} - Determines whether to render the background overlay. Defaults to `true`.
 -->
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
@@ -34,6 +32,8 @@
   export let title: string | null = null;
   /** @prop {() => void} onClose - The callback function to close the modal. */
   export let onClose: () => void;
+  /** @prop {boolean} [showOverlay=true] - Whether to show the background overlay. */
+  export let showOverlay: boolean = true;
 
   /**
    * A wrapper function that calls the `onClose` prop.
@@ -62,21 +62,15 @@
 </script>
 
 {#if show}
-  <!-- 
-    The overlay covers the entire viewport, providing focus to the modal.
-    Clicking it will trigger the close function.
-  -->
-  <div
-    class="modal-overlay"
-    on:click={close}
-    transition:fade={{ duration: 150 }}
-    aria-label={$t('modal.close_aria_label')}
-  ></div>
+  {#if showOverlay}
+    <button
+      class="modal-overlay"
+      on:click={close}
+      transition:fade={{ duration: 150 }}
+      aria-label={$t('modal.close_aria_label')}
+    ></button>
+  {/if}
 
-  <!-- 
-    The main modal panel. `role="dialog"` and `aria-modal="true"` are crucial for accessibility.
-    It traps focus and is announced by screen readers.
-  -->
   <div
     class="modal-panel"
     role="dialog"
@@ -84,7 +78,6 @@
     aria-label={title || $t('modal.default_aria_label')}
     transition:fly={{ y: 20, duration: 200 }}
   >
-    <!-- The header is only rendered if a title is provided. -->
     {#if title}
       <header class="modal-header">
         <h2 class="modal-title">{title}</h2>
@@ -98,7 +91,6 @@
       </header>
     {/if}
 
-    <!-- The main content area, populated by the default slot. -->
     <main class="modal-content">
       <slot />
     </main>
@@ -107,10 +99,13 @@
 
 <style>
   .modal-overlay {
+    all: unset; /* Reset button styles */
+    display: block;
     position: fixed;
     inset: 0;
     background-color: var(--overlay-bg);
     z-index: var(--z-modal-overlay);
+    cursor: default;
   }
 
   .modal-panel {

@@ -25,13 +25,11 @@
   };
 
   /**
-   * Navigates to the corresponding URL for the selected language.
+   * Updates the global locale store with the new language.
    * @param {string} lang - The language code to switch to (e.g., 'en', 'es').
    */
   const changeLanguage = (lang: string) => {
-    const { pathname } = $page.url;
-    const newPathname = pathname.replace(/^\/[^/]+/, `/${lang}`);
-    goto(newPathname);
+    locale.set(lang);
     showLangMenu = false;
   };
 </script>
@@ -43,7 +41,7 @@
     aria-haspopup="true"
     aria-expanded={showLangMenu}
   >
-    {$t(`languages.${$locale}`)}
+    {$locale.toUpperCase()}
   </button>
 
   <!-- The language selection menu, shown when `showLangMenu` is true. -->

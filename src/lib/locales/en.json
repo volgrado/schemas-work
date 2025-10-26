@@ -100,8 +100,8 @@
     },
     "editCards": {
       "title": "Edit Cards",
-      "description": "Open the card editor for this node.",
-      "error": "Select a node to edit its cards.",
+      "description": "Open the card editor for this document.",
+      "error": "Could not open the card editor for this document.",
       "errorNoId": "This node does not have a valid ID to associate cards with."
     }
   },
@@ -124,6 +124,7 @@
     "check": "Check",
     "again": "Again",
     "hard": "Hard",
+    "good": "Good",
     "easy": "Easy",
     "goToSource": "Go to source",
     "finishReview": "Finish Review",
@@ -151,7 +152,7 @@
   },
   "card_editor_panel": {
     "title": "Study Cards",
-    "tooltip": "Create questions and answers for this node. Use them in \"Review Mode\" to memorize key concepts.",
+    "tooltip": "Create questions and answers for this document. Use them in \"Review Mode\" to memorize key concepts.",
     "saving": "Saving...",
     "saved": "Saved",
     "add_card": "Add Card",
@@ -160,7 +161,7 @@
     "add_sequence": "Sequence",
     "done": "Done",
     "loading": "Loading cards...",
-    "load_error": "Could not load the cards for this node.",
+    "load_error": "Could not load the cards for this document.",
     "question_label": "Question",
     "question_placeholder": "Write the question...",
     "answer_label": "Answer",
@@ -176,7 +177,7 @@
     "card_deleted_toast": "Card deleted.",
     "undo_button": "Undo",
     "empty_title": "No Cards Yet",
-    "empty_message": "Add your first study card for this node to begin."
+    "empty_message": "Add your first study card for this document to begin."
   },
   "document": {
     "invalid_document_error": "Item is not a valid document: {docId}",
@@ -270,7 +271,7 @@
         "title": "Generate Study Cards with AI",
         "success": "{count, plural, =1 {1 study card} other {# study cards}} generated.",
         "error": {
-          "no_node_id": "Could not generate cards. The selected node does not have a valid ID.",
+          "no_node_id": "Could not generate cards. The current document does not have a valid ID.",
           "save_failed": "Failed to save the generated cards.",
           "no_node_selected": "To generate cards, you must first select a node in the editor."
         }
@@ -382,6 +383,13 @@
     "back_button_aria_label": "Back to main menu",
     "back_button_label": "Back"
   },
+  "vault_view": {
+    "title": "Vault Management",
+    "export_button": "Export Encrypted Vault",
+    "import_button": "Import Encrypted Vault",
+    "back_button_aria_label": "Back to main menu",
+    "back_button_label": "Back"
+  },
   "page": {
     "view_toggle": {
       "aria_label": {
@@ -436,12 +444,10 @@
   "command": {
     "new_schema": "New Schema",
     "explore_schemas": "Explore Schemas",
-    "study_hub": "Study Hub",
+    "study_decks": "Study Decks",
     "ai_assistant": "AI Assistant",
-    "start_review": "Start Review",
     "read_schema": "Read Schema",
-    "export_vault": "Export Vault",
-    "import_vault": "Import Vault",
+    "vault_management": "Vault Management",
     "diagnostics_and_error_report": "Diagnostics & Error Report",
     "create_schema_from_text": "Create Schema From Text",
     "generate_study_cards": "Generate Study Cards",

@@ -1,28 +1,38 @@
 <!--
   @file src/routes/+layout.svelte
-  @description This is the root layout for the entire application. It acts as a shell that wraps every page.
-  Its primary responsibility in this app is to handle the initial language-based redirect for users
-  landing on the root URL ('/'). Based on the user's browser language, it redirects them to the
-  appropriate language-specific path (e.g., '/en' or '/es'), ensuring they see the site in their
-  preferred language from the start. This redirect logic has been moved to `+page.svelte` to
-  centralize the root index functionality. This layout now simply renders the content of the
-  matched route.
+  @description The root layout for the entire single-page application.
+  It provides the global "app shell" components that persist across all UI states.
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
+  import { browser } from '$app/environment';
+  import { Toaster } from 'svelte-sonner';
+  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
+  import CommandBar from '$lib/components/ui/CommandBar.svelte';
+  import { theme, applyTheme } from '$lib/stores/themeStore';
 
-  onMount(() => {
-    // Only run this on the initial load of the root page
-    if ($page.route.id === '/') {
-      const browserLang = navigator.language.split('-')[0];
-      // Default to 'en' if the browser language is not 'es'
-      const lang = browserLang === 'es' ? 'es' : 'en';
-      // Use replaceState to avoid adding a back-button entry for the redirect
-      goto(`/${lang}`, { replaceState: true });
-    }
-  });
+  // --- STYLES ---
+  // This is the crucial import that links the entire application's stylesheet.
+  import '$lib/styles/app.css';
+
+  // Apply the theme class to the root element whenever the theme store changes.
+  $: if (browser && $theme) {
+    applyTheme($theme);
+  }
 </script>
 
+<svelte:head>
+  <title>Schemas.Work</title>
+</svelte:head>
+
+<!-- Global toast notification component -->
+<Toaster position="bottom-center" />
+
+<!-- Animated background, always present -->
+<OrganicCanvas />
+
+<!-- The main content of the application, rendered by +page.svelte -->
 <slot />
+
+<!-- GLOBAL UI OVERLAYS -->
+<!-- The CommandBar is a global overlay that can be triggered from anywhere. -->
+<CommandBar />

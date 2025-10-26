@@ -41,7 +41,6 @@ import { editorStore } from './editorStore';
 import * as errorService from '$lib/services/core/errorService';
 import * as cardService from '$lib/services/features/cardService';
 import { toast } from 'svelte-sonner';
-import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import { t } from '$lib/utils/i18n';
 
 /**
@@ -60,9 +59,9 @@ export type FetchStatus = 'idle' | 'loading' | 'loaded' | 'error';
 export interface CardEditorState {
   /** Indicates whether the card editor panel is visible. */
   isOpen: boolean;
-  /** The unique ID of the ProseMirror node being edited. */
-  nodeId: string | null;
-  /** The array of `Card` objects for the active `nodeId`. */
+  /** The unique ID of the document being edited. */
+  docId: string | null;
+  /** The array of `Card` objects for the active `docId`. */
   cards: Card[];
   /** The current status of the initial card fetching operation. */
   fetchStatus: FetchStatus;
@@ -78,7 +77,7 @@ export interface CardEditorState {
  */
 const initialState: CardEditorState = {
   isOpen: false,
-  nodeId: null,
+  docId: null,
   cards: [],
   fetchStatus: 'idle',
   status: 'idle',
@@ -89,19 +88,19 @@ const store = writable<CardEditorState>(initialState);
 const { subscribe, update, set } = store;
 
 /**
- * Opens the card editor panel for a specific ProseMirror node and fetches its cards.
- * @param nodeId The unique identifier of the node for which to load cards.
+ * Opens the card editor panel for a specific document and fetches its cards.
+ * @param docId The unique identifier of the document for which to load cards.
  */
-async function open(nodeId: string): Promise<void> {
+async function open(docId: string): Promise<void> {
   update((state) => ({
     ...initialState,
     isOpen: true,
     fetchStatus: 'loading',
-    nodeId: nodeId,
+    docId: docId,
   }));
 
   try {
-    const cards = await cardService.getCardsByNodeId(nodeId);
+    const cards = await cardService.getCardsByDeckId(docId);
     update((state) => ({
       ...state,
       cards: cards,
@@ -110,7 +109,7 @@ async function open(nodeId: string): Promise<void> {
   } catch (err) {
     errorService.reportError(err, {
       operation: 'cardEditorStore.open',
-      nodeId,
+      docId,
     });
     toast.error(get(t)('card_editor.load_error'));
     update((state) => ({ ...state, fetchStatus: 'error' }));
@@ -135,36 +134,30 @@ function close(): void {
  */
 async function addCard(type: CardType): Promise<void> {
   const state = get(store);
-  if (!state.nodeId) return;
+  if (!state.docId) return;
 
   update((s) => ({ ...s, lastAddedCardId: null }));
-
-  const editorState = get(editorStore);
-  const node = editorState.doc
-    ? findNodeById(editorState.doc, state.nodeId)
-    : null;
 
   const defaultSrs: SrsData = {
     easeFactor: 2.5,
     interval: 0,
     repetitions: 0,
     dueDate: Date.now(),
+    learningStep: 1, // Start in learning phase
   };
 
-  let newCardData: Omit<Card, 'id' | 'nodeId'>;
+  let newCardData: Omit<Card, 'id' | 'deckId'>;
   switch (type) {
     case 'input':
       newCardData = {
         type: 'input',
         content: {
-          prompt: node?.textContent
-            ? get(t)('card_editor.input_prompt_template', {
-                content: node.textContent,
-              })
-            : get(t)('card_editor.input_prompt_fallback'),
+          prompt: get(t)('card_editor.input_prompt_fallback'),
           expected: '',
         },
         srs: defaultSrs,
+        tags: [],
+        suspended: false,
       };
       break;
     case 'sequencing':
@@ -175,6 +168,8 @@ async function addCard(type: CardType): Promise<void> {
           items: ['Item 1', 'Item 2'],
         },
         srs: defaultSrs,
+        tags: [],
+        suspended: false,
       };
       break;
     case 'basic':
@@ -182,10 +177,12 @@ async function addCard(type: CardType): Promise<void> {
       newCardData = {
         type: 'basic',
         content: {
-          question: node?.textContent || get(t)('card_editor.new_question'),
+          question: get(t)('card_editor.new_question'),
           answer: '',
         },
         srs: defaultSrs,
+        tags: [],
+        suspended: false,
       };
       break;
   }
@@ -193,7 +190,7 @@ async function addCard(type: CardType): Promise<void> {
   try {
     // MODIFIED: Assert the type of newCardData to satisfy the service's requirement.
     const newCard = await cardService.addCard(
-      state.nodeId,
+      state.docId,
       newCardData as NewCard
     );
     update((s) => ({
@@ -277,28 +274,6 @@ async function restoreCard(cardToRestore: Card): Promise<void> {
     });
     toast.error(get(t)('card_editor.restore_error'));
   }
-}
-
-/**
- * Helper utility to find a ProseMirror node by its `nodeId` attribute.
- * @internal
- * @param doc The ProseMirror document node to search.
- * @param id The `nodeId` to find.
- * @returns The found ProseMirror node, or `null`.
- */
-function findNodeById(
-  doc: ProseMirrorNode | null,
-  id: string
-): ProseMirrorNode | null {
-  if (!doc) return null;
-  let foundNode: ProseMirrorNode | null = null;
-  doc.descendants((node: ProseMirrorNode) => {
-    if (node.attrs.nodeId === id) {
-      foundNode = node;
-      return false; // Stop traversing once found
-    }
-  });
-  return foundNode;
 }
 
 /**

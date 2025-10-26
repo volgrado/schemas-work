@@ -2,52 +2,52 @@
   @component
   ReviewController
 
-  This component is the core UI for the spaced repetition review feature. It presents flashcards
-  to the user, manages their interactions, and orchestrates the review flow based on the card type.
-
-  It handles three distinct types of flashcards:
-  - `basic`: A standard question-and-answer card where the user self-assesses their recall.
-  - `input`: A card that prompts the user for a text-based answer, which is automatically evaluated for correctness.
-  - `sequencing`: An interactive card where the user must arrange items into the correct order via drag-and-drop.
-
-  The component is driven by the `reviewStore` for its state and uses the `reviewService` to evaluate answers.
-  It uses local state (managed with Svelte 5 Runes) for user inputs and interaction states.
+  Core UI del sistema de repetición espaciada.
+  Gestiona tarjetas tipo 'basic', 'input' y 'sequencing'.
 -->
 <script lang="ts">
-  // --- Svelte and UI Imports ---
+  // --- Importaciones principales ---
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import { get } from 'svelte/store';
 
-  // --- Stores and Services ---
   import { t } from '$lib/utils/i18n';
   import { reviewStore } from '$lib/stores/reviewStore';
   import { evaluateAnswer } from '$lib/services/features/reviewService';
 
-  // --- Components ---
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
-
-  // --- Utilities and Types ---
   import type { ReviewQuality } from '$lib/types';
-  import deepEqual from 'deep-eql'; // Used for comparing sequence arrays
+  import deepEqual from 'deep-eql';
 
   const review = reviewStore;
 
-  // --- Local Reactive State ---
+  // --- Estado local reactivo ---
   let userInput = $state('');
   let userSequence = $state<string[]>([]);
   let draggedItemIndex = $state<number | null>(null);
-  let isSubmitting = $state(false); // Prevents multiple submissions for automatic evaluation
+  let isSubmitting = $state(false);
 
-  /**
-   * This effect hook resets the local state whenever a new card is presented.
-   * It shuffles the items for sequencing cards to ensure a fresh challenge each time.
-   */
+  // --- Variables derivadas reactivas ---
+  const currentCard = $derived(
+    $reviewStore.cardsToReview[$reviewStore.currentCardIndex]
+  );
+
+  const sessionProgress = $derived({
+    new: $reviewStore.cardsToReview.filter(
+      (c) => !c.srs || c.srs.repetitions === 0
+    ).length,
+    learning: [
+      ...$reviewStore.cardsToReview,
+      ...$reviewStore.failedQueue,
+    ].filter((c) => c.srs?.learningStep > 0).length,
+    due: $reviewStore.cardsToReview.filter(
+      (c) => c.srs?.repetitions > 0 && c.srs.learningStep === 0
+    ).length,
+  });
+
+  // --- Efecto: reinicia el estado al mostrar una nueva tarjeta ---
   $effect(() => {
-    const currentCard = $review.cardsToReview[$review.currentCardIndex];
     if (currentCard && currentCard.type === 'sequencing') {
-      // Create a shuffled version of the sequence for the user to solve.
       userSequence = [...currentCard.content.items].sort(
         () => Math.random() - 0.5
       );
@@ -55,284 +55,279 @@
       userSequence = [];
     }
     userInput = '';
-    isSubmitting = false; // Reset submission lock on new card
+    isSubmitting = false;
   });
 
-  // --- Event Handlers ---
-
-  /**
-   * Handles the answer submission for 'input' type cards.
-   * It calls an AI service to evaluate the answer, shows immediate visual feedback,
-   * and then automatically submits the review after a short delay.
-   */
+  // --- Manejadores de eventos ---
   async function handleCheckInput() {
-    const currentCard = $review.cardsToReview[$review.currentCardIndex];
-    if (currentCard.type !== 'input' || isSubmitting) return;
-
+    if (!currentCard || currentCard.type !== 'input' || isSubmitting) return;
     isSubmitting = true;
 
     const quality = await evaluateAnswer(
       userInput,
       currentCard.content.expected
     );
-
-    // 1. Show immediate feedback (Correct/Incorrect) to the user.
     review.submitInteractiveAnswer(quality >= 3);
 
-    // 2. Automatically submit the actual review quality after a delay to allow the user to read the feedback.
-    setTimeout(() => {
-      review.submitReview(quality);
-    }, 2000); // 2-second delay for feedback visibility
+    setTimeout(() => review.submitReview(quality), 2000);
   }
 
-  /**
-   * Checks if the user-ordered sequence is correct for 'sequencing' cards.
-   */
   function handleCheckSequence() {
-    const currentCard = $review.cardsToReview[$review.currentCardIndex];
-    if (currentCard.type !== 'sequencing') return;
+    if (!currentCard || currentCard.type !== 'sequencing') return;
     const isCorrect = deepEqual(userSequence, currentCard.content.items);
     review.submitInteractiveAnswer(isCorrect);
   }
 
-  /**
-   * Submits the user's self-assessed review quality for a card.
-   * @param {ReviewQuality} quality - The user's rating of how well they knew the answer.
-   */
   function submitReview(quality: ReviewQuality) {
     review.submitReview(quality);
   }
 
-  // --- Drag and Drop Logic for Sequencing Cards ---
-
+  // Lógica de arrastrar y soltar
   function handleDragStart(index: number) {
     draggedItemIndex = index;
   }
-
   function handleDragOver(event: DragEvent) {
-    event.preventDefault(); // Necessary to allow a drop event.
+    event.preventDefault();
   }
-
   function handleDrop(targetIndex: number) {
     if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
       draggedItemIndex = null;
       return;
     }
-
-    // Reorder the sequence array based on the drop.
     const newSequence = [...userSequence];
     const [draggedItem] = newSequence.splice(draggedItemIndex, 1);
     newSequence.splice(targetIndex, 0, draggedItem);
-
     userSequence = newSequence;
     draggedItemIndex = null;
   }
 </script>
 
-<!-- The entire review panel is only rendered when a review session is active. -->
-{#if $review.isReviewing}
-  {@const currentCard = $review.cardsToReview[$review.currentCardIndex]}
-  <div
-    class="panel"
-    transition:fly={{ y: 20, duration: 300, easing: quintOut }}
-  >
-    {#if currentCard}
-      <div class="card">
-        <div class="card-content">
-          <!-- Render content based on the current card's type -->
+<div
+  class="review-screen"
+  transition:fade={{ duration: 300, easing: quintOut }}
+>
+  {#if $reviewStore.isFinished}
+    <div class="completion-screen">
+      <h2>Congratulations!</h2>
+      <p>
+        You have finished this study session. You reviewed {$reviewStore.sessionCardCount}
+        cards.
+      </p>
+      <Button onclick={review.finishReview} size="lg">Finish</Button>
+    </div>
+  {:else if currentCard}
+    <div class="global-controls">
+      <div class="session-progress">
+        <span class="new" title="New cards">{sessionProgress.new}</span>
+        <span class="learning" title="Learning cards"
+          >{sessionProgress.learning}</span
+        >
+        <span class="due" title="Cards to review">{sessionProgress.due}</span>
+      </div>
+      <Button
+        onclick={review.jumpToSource}
+        variant="ghost"
+        size="sm"
+        aria-label={$t('review.goToSource')}
+      >
+        <Icon name="file-text" size={16} />
+        <span>{$t('review.goToSource')}</span>
+      </Button>
+      <Button onclick={review.finishReview} variant="ghost" size="sm">
+        {$t('review.finishReview')}
+      </Button>
+    </div>
 
-          <!-- Basic Q&A Card -->
-          {#if currentCard.type === 'basic'}
-            <p class="question">{currentCard.content.question}</p>
-            {#if $review.isAnswerShown}
-              <div class="answer" transition:fade>
-                <p>{currentCard.content.answer}</p>
-              </div>
-            {/if}
-
-            <!-- Input Card -->
-          {:else if currentCard.type === 'input'}
-            <p class="question">{currentCard.content.prompt}</p>
-            <input
-              type="text"
-              class="input-field"
-              placeholder={$t('review.inputPlaceholder')}
-              bind:value={userInput}
-              disabled={$review.isAnswerShown || isSubmitting}
-            />
-            {#if $review.isAnswerShown}
-              <div
-                class="feedback"
-                class:correct={$review.lastAnswerCorrect}
-                class:incorrect={!$review.lastAnswerCorrect}
-                transition:fade
-              >
-                {$t('review.correctAnswer')}
-                <strong>{currentCard.content.expected}</strong>
-              </div>
-            {/if}
-
-            <!-- Sequencing Card -->
-          {:else if currentCard.type === 'sequencing'}
-            <p class="question">{currentCard.content.prompt}</p>
-            <div class="sequence-container" role="list">
-              {#each userSequence as item, i (item)}
-                <div
-                  class="sequence-item"
-                  draggable="true"
-                  ondragstart={() => handleDragStart(i)}
-                  ondragover={handleDragOver}
-                  ondrop={() => handleDrop(i)}
-                  class:is-dragging={draggedItemIndex === i}
-                  role="listitem"
-                >
-                  {item}
-                </div>
-              {/each}
+    <div class="card-panel">
+      <div class="card-content">
+        {#if currentCard.type === 'basic'}
+          <p class="question">{currentCard.content.question}</p>
+          {#if $reviewStore.isAnswerShown}
+            <div class="answer" transition:fade>
+              <p>{currentCard.content.answer}</p>
             </div>
-            {#if $review.isAnswerShown}
+          {/if}
+        {:else if currentCard.type === 'input'}
+          <p class="question">{currentCard.content.prompt}</p>
+          <input
+            type="text"
+            class="input-field"
+            placeholder={$t('review.inputPlaceholder')}
+            bind:value={userInput}
+            disabled={$reviewStore.isAnswerShown || isSubmitting}
+          />
+          {#if $reviewStore.isAnswerShown}
+            <div
+              class="feedback"
+              class:correct={$reviewStore.lastAnswerCorrect}
+              class:incorrect={!$reviewStore.lastAnswerCorrect}
+              transition:fade
+            >
+              {$t('review.correctAnswer')}
+              <strong>{currentCard.content.expected}</strong>
+            </div>
+          {/if}
+        {:else if currentCard.type === 'sequencing'}
+          <p class="question">{currentCard.content.prompt}</p>
+          <div class="sequence-container" role="list">
+            {#each userSequence as item, i (item)}
               <div
-                class="feedback"
-                class:correct={$review.lastAnswerCorrect}
-                class:incorrect={!$review.lastAnswerCorrect}
-                transition:fade
+                class="sequence-item"
+                draggable="true"
+                ondragstart={() => handleDragStart(i)}
+                ondragover={handleDragOver}
+                ondrop={() => handleDrop(i)}
+                class:is-dragging={draggedItemIndex === i}
+                role="listitem"
               >
-                {#if $review.lastAnswerCorrect}
-                  {$t('review.correctSequence')}
-                {:else}
-                  <p>{$t('review.correctSequenceIs')}</p>
-                  <ol>
-                    {#each currentCard.content.items as item}
-                      <li>{item}</li>
-                    {/each}
-                  </ol>
-                {/if}
+                {item}
               </div>
-            {/if}
+            {/each}
+          </div>
+          {#if $reviewStore.isAnswerShown}
+            <div
+              class:correct={$reviewStore.lastAnswerCorrect}
+              class:incorrect={!$reviewStore.lastAnswerCorrect}
+              class="feedback"
+              transition:fade
+            >
+              {#if $reviewStore.lastAnswerCorrect}
+                {$t('review.correctSequence')}
+              {:else}
+                <p>{$t('review.correctSequenceIs')}</p>
+                <ol>
+                  {#each currentCard.content.items as item}
+                    <li>{item}</li>
+                  {/each}
+                </ol>
+              {/if}
+            </div>
           {/if}
-        </div>
-
-        <!-- Card Actions: Buttons change based on interaction state -->
-        <div class="card-actions">
-          {#if !$review.isAnswerShown}
-            <!-- Initial state: User has not yet answered -->
-            {#if currentCard.type === 'basic'}
-              <Button onclick={review.showAnswer} size="md"
-                >{$t('review.showAnswer')}</Button
-              >
-            {:else if currentCard.type === 'input'}
-              <Button
-                onclick={handleCheckInput}
-                size="md"
-                disabled={isSubmitting}
-              >
-                {#if isSubmitting}{$t('review.evaluating')}{:else}{$t(
-                    'review.check'
-                  )}{/if}
-              </Button>
-            {:else if currentCard.type === 'sequencing'}
-              <Button onclick={handleCheckSequence} size="md"
-                >{$t('review.check')}</Button
-              >
-            {/if}
-          {:else}
-            <!-- Answer shown state: User provides self-assessment -->
-            <!-- For 'input' cards, review is automatic, so no buttons are needed here. -->
-            {#if currentCard.type !== 'input'}
-              <div class="review-buttons">
-                <Button
-                  onclick={() => submitReview(0)}
-                  size="md"
-                  variant="secondary">{$t('review.again')}</Button
-                >
-                <Button
-                  onclick={() => submitReview(3)}
-                  size="md"
-                  variant="secondary">{$t('review.hard')}</Button
-                >
-                <Button
-                  onclick={() => submitReview(5)}
-                  size="md"
-                  variant="primary">{$t('review.easy')}</Button
-                >
-              </div>
-            {/if}
-          {/if}
-        </div>
+        {/if}
       </div>
 
-      <!-- Global Controls: Available throughout the review -->
-      <div class="global-controls">
-        <Button
-          onclick={review.jumpToSource}
-          variant="ghost"
-          size="sm"
-          aria-label={$t('review.goToSource')}
-        >
-          <Icon name="file-text" size={16} />
-        </Button>
-        <Button onclick={review.finishReview} variant="ghost" size="sm"
-          >{$t('review.finishReview')}</Button
-        >
+      <div class="card-actions">
+        {#if !$reviewStore.isAnswerShown}
+          {#if currentCard.type === 'basic'}
+            <Button onclick={review.showAnswer} size="lg">
+              {$t('review.showAnswer')}
+            </Button>
+          {:else if currentCard.type === 'input'}
+            <Button
+              onclick={handleCheckInput}
+              size="lg"
+              disabled={isSubmitting}
+            >
+              {#if isSubmitting}{$t('review.evaluating')}{:else}{$t(
+                  'review.check'
+                )}{/if}
+            </Button>
+          {:else if currentCard.type === 'sequencing'}
+            <Button onclick={handleCheckSequence} size="lg">
+              {$t('review.check')}
+            </Button>
+          {/if}
+        {:else if currentCard.type !== 'input'}
+          <div class="review-buttons">
+            <Button
+              onclick={() => submitReview(0)}
+              size="md"
+              variant="secondary"
+            >
+              {$t('review.again')}
+            </Button>
+            <Button
+              onclick={() => submitReview(3)}
+              size="md"
+              variant="secondary"
+            >
+              {$t('review.hard')}
+            </Button>
+            <Button onclick={() => submitReview(4)} size="md" variant="primary">
+              {$t('review.good')}
+            </Button>
+            <Button onclick={() => submitReview(5)} size="md" variant="primary">
+              {$t('review.easy')}
+            </Button>
+          </div>
+        {/if}
       </div>
-    {/if}
-  </div>
-{/if}
+    </div>
+  {/if}
+</div>
 
 <style>
-  .panel {
+  .review-screen {
     position: fixed;
-    bottom: var(--space-lg);
-    left: 50%;
-    transform: translateX(-50%);
+    inset: 0;
     z-index: 100;
+    background-color: var(--color-page-background);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-sm);
-    width: 90%;
-    max-width: 600px;
+    justify-content: center;
+    padding: var(--space-lg);
   }
-  .card {
+  .global-controls {
+    position: absolute;
+    top: var(--space-lg);
+    left: var(--space-lg);
+    right: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .session-progress {
+    display: flex;
+    gap: var(--space-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .session-progress .new {
+    color: var(--color-blue-500);
+  }
+  .session-progress .learning {
+    color: var(--color-danger);
+  }
+  .session-progress .due {
+    color: var(--color-green-500);
+  }
+
+  .card-panel {
     background-color: var(--color-background-raised);
     border-radius: var(--space-md);
     box-shadow: var(--shadow-xl);
     width: 100%;
+    max-width: 600px;
     border: 1px solid var(--color-border);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .card-content {
     padding: var(--space-lg);
+    flex-grow: 1;
   }
   .question {
     font-size: 1.2rem;
     font-weight: 600;
-    margin: 0 0 var(--space-md) 0;
-    line-height: 1.4;
+    margin-bottom: var(--space-md);
   }
   .answer {
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
-    line-height: 1.6;
-  }
-  .answer p {
-    margin: 0;
   }
   .card-actions {
     background-color: var(--color-background);
     border-top: 1px solid var(--color-border);
     padding: var(--space-sm) var(--space-lg);
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
   }
   .review-buttons {
     display: flex;
     gap: var(--space-sm);
   }
-  .input-field {
-    margin-top: var(--space-sm);
-  }
-
   .feedback {
     margin-top: var(--space-md);
     padding: var(--space-sm);
@@ -350,7 +345,6 @@
     color: var(--color-danger-text);
     border-color: var(--color-danger-border);
   }
-
   .sequence-container {
     display: flex;
     flex-direction: column;
@@ -374,26 +368,20 @@
     background-color: hsl(var(--color-accent-hsl) / 0.1);
     box-shadow: var(--shadow-lg);
   }
-
-  .global-controls {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0 var(--space-xs);
+  .completion-screen {
+    text-align: center;
   }
 
-  :global(.dark-theme) .card {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .answer {
+  :global(.dark-theme) .card-panel,
+  :global(.dark-theme) .answer,
+  :global(.dark-theme) .card-actions,
+  :global(.dark-theme) .sequence-item {
     border-color: var(--color-border-dark);
   }
   :global(.dark-theme) .card-actions {
     background-color: var(--color-background-dark-raised);
-    border-color: var(--color-border-dark);
   }
   :global(.dark-theme) .sequence-item {
     background-color: var(--color-background-dark);
-    border-color: var(--color-border-dark);
   }
 </style>

@@ -3,13 +3,14 @@
   AppHeader
 
   The main application header, which is fixed at the top of the viewport.
-  It provides a consistent layout with three sections: left, center, and right.
+  It provides a responsive layout with three sections.
 
-  - The center section contains the main brand logo and name, which also acts as a button
-    to return to the welcome screen.
-  - The right section contains the language switcher, theme toggle, and a help tooltip with
-    keyboard shortcuts.
-  - The left section is an open slot for contextual actions or components.
+  - The left section contains the brand logo and name.
+  - The center section is a slot for contextual action buttons.
+  - The right section contains the language switcher and theme toggle.
+
+  On small screens, text labels next to icons are hidden to save space.
+  Text-only buttons remain visible.
 
   Props:
   - `show`: {boolean} - Controls the visibility of the header.
@@ -18,17 +19,22 @@
   - `showWelcome`: Fired when the user clicks the brand logo/name.
 
   Slots:
-  - `default`: Content to be placed in the left section of the header.
+  - `default`: Content to be placed in the center section of the header.
 -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
   // --- UI Components & Utilities ---
   import Logo from '$lib/components/ui/Logo.svelte';
-  import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
   import { t } from '$lib/utils/i18n';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
   import ThemeToggleButton from '$lib/components/ui/ThemeToggleButton.svelte';
+  // --- MODIFICATION: Import documentStore to check for an active document ---
+  import { documentStore } from '$lib/stores/documentStore';
+  // --- MODIFICATION: Import stores to reset app state ---
+  import { ttsStore } from '$lib/stores/ttsStore';
+  import { cardEditorStore } from '$lib/stores/cardEditorStore';
+  import { reviewStore } from '$lib/stores/reviewStore';
 
   const dispatch = createEventDispatcher<{ showWelcome: void }>();
   /**
@@ -40,6 +46,10 @@
    * Dispatches the 'showWelcome' event to the parent component.
    */
   function showWelcome() {
+    documentStore.closeDocument();
+    ttsStore.stopReading();
+    cardEditorStore.close();
+    reviewStore.finishReview();
     dispatch('showWelcome');
   }
 
@@ -49,14 +59,11 @@
   export { className as class };
 </script>
 
-{#if show}
+<!-- MODIFICATION: Only show the header if the 'show' prop is true AND a document is loaded. -->
+{#if show && $documentStore.docId}
   <header class="app-header {className}" transition:fade={{ duration: 300 }}>
     <div class="header-content">
       <div class="header-section left">
-        <slot />
-      </div>
-
-      <div class="header-section center">
         <button
           class="brand-button"
           on:click={showWelcome}
@@ -69,27 +76,13 @@
         </button>
       </div>
 
+      <div class="header-section center">
+        <slot />
+      </div>
+
       <div class="header-section right">
         <LanguageSwitcher />
         <ThemeToggleButton />
-        <div class="desktop-only-tooltip">
-          <HelpTooltip>
-            <div class="shortcuts">
-              <div class="shortcut-item">
-                <span>{$t('appHeader.shortcuts.menu')}</span>
-                <div class="keys">
-                  <kbd>Ctrl</kbd><span>+</span><kbd>K</kbd>
-                </div>
-              </div>
-              <div class="shortcut-item">
-                <span>{$t('appHeader.shortcuts.editCards')}</span>
-                <div class="keys">
-                  <kbd>Ctrl</kbd><span>+</span><kbd>'</kbd>
-                </div>
-              </div>
-            </div>
-          </HelpTooltip>
-        </div>
       </div>
     </div>
   </header>
@@ -112,15 +105,14 @@
     max-width: 960px;
     margin: 0 auto;
     padding: 0 var(--space-md);
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     height: 36px; /* Fixed height for consistency */
   }
 
   /* --- 3-Column Structure --- */
   .header-section {
-    flex: 1;
     display: flex;
     align-items: center;
     gap: var(--space-sm);
@@ -130,6 +122,8 @@
   }
   .header-section.center {
     justify-content: center;
+    /* This prevents the center column from disappearing if its content is too wide */
+    min-width: 0;
   }
   .header-section.right {
     justify-content: flex-end;
@@ -170,40 +164,26 @@
     color: var(--color-accent);
   }
 
-  /* --- Help Tooltip Styles --- */
-  :global(.shortcuts) {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-xs);
-  }
-  :global(.shortcut-item) {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    gap: var(--space-lg);
-  }
-  :global(.keys) {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  :global(.shortcuts kbd) {
-    font-family: var(--font-main);
-    font-size: 0.75rem;
-    font-weight: 600;
-    background-color: var(--color-gray-100);
-    color: var(--color-text);
-    padding: 3px 6px;
-    border-radius: 6px;
-    border: 1px solid var(--color-gray-200);
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  }
-
-  @media (max-width: 768px) {
-    .desktop-only-tooltip {
+  /* --- Responsive Adjustments for Small Screens --- */
+  @media (max-width: 600px) {
+    .brand-name,
+    /* THE FIX: This selector now only hides the <span> if it's a direct sibling following an <svg> */
+    :global(.header-section .btn > svg + span) {
       display: none;
+    }
+    .brand-button {
+      gap: 0; /* Remove gap when text is hidden */
+    }
+    .header-content {
+      padding: 0 var(--space-sm);
+    }
+    .header-section.center,
+    .header-section.right {
+      gap: var(--space-xs); /* Reduce gap between controls */
+    }
+    /* Ensure icon-only buttons don't have extra padding */
+    :global(.header-section .btn) {
+      padding: 0 var(--space-sm);
     }
   }
 
@@ -215,10 +195,5 @@
   }
   :global(.dark-theme) .brand-button:hover {
     background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) :global(.shortcuts kbd) {
-    background-color: var(--color-gray-700);
-    border-color: var(--color-gray-600);
-    color: var(--color-text-dark);
   }
 </style>

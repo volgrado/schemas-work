@@ -64,13 +64,13 @@
       toast.error('Please select a new document.');
       return;
     }
-    if (selectedSchemaId === card.nodeId) {
+    if (selectedSchemaId === card.deckId) {
       toast.info('Card is already in this document.');
       onclose?.();
       return;
     }
 
-    const updatedCard = { ...card, nodeId: selectedSchemaId };
+    const updatedCard = { ...card, deckId: selectedSchemaId };
 
     try {
       await cardService.updateCard(updatedCard);

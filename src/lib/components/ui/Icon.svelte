@@ -1,12 +1,10 @@
 <!--
-  @component
-  Icon
+@component
+Icon
 
-  This component acts as a dynamic wrapper for rendering icons from the `svelte-feather-icons`
-  library. It allows you to render a specific icon by passing its name as a prop, abstracting
-  away the need to import each icon component individually in every file.
-
-  It provides a consistent interface for sizing, styling, and customizing icons throughout the application.
+Dynamic wrapper for rendering icons from `svelte-feather-icons`.
+Allows rendering a specific icon by passing its name as a prop.
+Provides consistent sizing, styling, and customization.
 -->
 <script lang="ts">
   import type { SvelteComponent, ComponentType } from 'svelte';
@@ -34,8 +32,10 @@
     SunIcon,
     MoonIcon,
     MonitorIcon,
+    SettingsIcon,
 
     // Media & Audio
+    BookOpenIcon,
     PlayIcon,
     PauseIcon,
     MicIcon,
@@ -66,10 +66,7 @@
     class?: string;
   }
 
-  /**
-   * A mapping of string names to their corresponding Svelte icon components.
-   * This allows for dynamic icon rendering based on the `name` prop.
-   */
+  // --- Icon mapping ---
   const icons: Record<
     string,
     ComponentType<SvelteComponent<FeatherIconProps>>
@@ -95,6 +92,7 @@
     sun: SunIcon,
     moon: MoonIcon,
     monitor: MonitorIcon,
+    settings: SettingsIcon,
 
     // Media & Audio
     play: PlayIcon,
@@ -114,26 +112,29 @@
     list: ListIcon,
 
     // Conceptual & App-Specific
-    zap: ZapIcon, // Often used for AI or automation
-    sparkles: StarIcon, // A common alias for special features
-    'git-branch': GitBranchIcon, // For visualization/branching concepts
+    'book-open': BookOpenIcon,
+    zap: ZapIcon,
+    sparkles: StarIcon,
+    'git-branch': GitBranchIcon,
     'download-cloud': DownloadCloudIcon,
     'upload-cloud': UploadCloudIcon,
 
-    // Special alias
-    'plus-slash-minus': MinusIcon, // An example of a custom alias
+    // Custom alias
+    'plus-slash-minus': MinusIcon,
   };
 
-  /** @prop {keyof typeof icons} name - The name of the icon to render. */
+  /** @prop {keyof typeof icons} name - Icon name */
   export let name: keyof typeof icons;
-  /** @prop {string | number} [size='16'] - The size of the icon in pixels. */
+
+  /** @prop {string | number} [size='16'] - Icon size in pixels */
   export let size: string | number = '16';
-  /** @prop {number} [strokeWidth=2] - The stroke width for the icon lines. */
+
+  /** @prop {number} [strokeWidth=2] - Stroke width */
   export let strokeWidth: number = 2;
 </script>
 
 <span
-  class="icon-wrapper {$$props.class || ''}"
+  class="icon-wrapper {$$restProps.class || ''}"
   aria-hidden="true"
   style="width: {size}px; height: {size}px;"
   {...$$restProps}
@@ -146,6 +147,6 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    line-height: 1; /* Prevents extra space below the icon */
+    line-height: 1; /* Prevent extra space below icon */
   }
 </style>

@@ -32,7 +32,14 @@ import { writable } from 'svelte/store';
 /**
  * Defines the possible views that can be displayed within the command bar.
  */
-export type CommandBarView = 'main' | 'list-schemas' | 'ai-actions';
+export type CommandBarView =
+  | 'main'
+  | 'list-schemas'
+  | 'ai-actions'
+  | 'study-hub'
+  | 'vault'
+  | 'deck-options'
+  | 'statistics'; // Add new view
 
 /**
  * Defines the vault-related actions that require a password.
@@ -67,6 +74,8 @@ export interface CommandBarState {
   isDiagnosticModalOpen: boolean;
   /** The ID of the parent folder when browsing schemas. */
   currentParentId: string | null;
+  /** The ID of the deck whose options are being edited. */
+  deckOptionsId: string | null;
 }
 
 /**
@@ -82,6 +91,7 @@ const initialState: CommandBarState = {
   aiHelperAction: null,
   isDiagnosticModalOpen: false,
   currentParentId: null,
+  deckOptionsId: null,
 };
 
 /**
@@ -112,9 +122,18 @@ function createCommandBarStore() {
     /**
      * Sets the active view within the command bar.
      * @param view The view to display.
+     * @param context An optional ID for context (e.g., deckId for deck-options).
      */
-    setView: (view: CommandBarView) => {
-      update((state) => ({ ...state, currentView: view }));
+    setView: (view: CommandBarView, context?: string) => {
+      update((state) => {
+        const newState = { ...state, currentView: view };
+        if (view === 'deck-options' && context) {
+          newState.deckOptionsId = context;
+        } else if (view !== 'deck-options') {
+          newState.deckOptionsId = null; // Clear context when leaving
+        }
+        return newState;
+      });
     },
 
     /**
