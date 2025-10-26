@@ -21,6 +21,7 @@
   import ReviewController from '$lib/components/review/ReviewController.svelte';
   import CardEditorPanel from '$lib/components/card/CardEditorPanel.svelte';
   import TTSController from '$lib/components/tts/TTSController.svelte';
+  import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
 
   // --- Stores & Services ---
   import { documentStore } from '$lib/stores/documentStore';
@@ -255,6 +256,7 @@
 
       <CardEditorPanel />
       <TTSController />
+      <SlashMenuController />
     </div>
   {/if}
 {/if}
