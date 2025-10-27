@@ -9,6 +9,7 @@
   } from '$lib/services/features/statisticsService';
   import { commandBarStore } from '$lib/stores/commandBarStore';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import { t } from '$lib/utils/i18n';
 
   import PieChart from '$lib/components/ui/PieChart.svelte';
 
@@ -70,12 +71,12 @@
 </script>
 
 <nav class="action-list stats-view" aria-labelledby="stats-title">
-  <h2 id="stats-title" class="visually-hidden">Study Statistics</h2>
+  <h2 id="stats-title" class="visually-hidden">{$t('statistics.title')}</h2>
 
   {#if isLoading}
-    <div class="state-message">Calculating statistics...</div>
+    <div class="state-message">{$t('statistics.loading')}</div>
   {:else if !stats || !cardDistribution}
-    <div class="state-message">No data found.</div>
+    <div class="state-message">{$t('statistics.noData')}</div>
   {:else}
     <div in:fade={{ duration: 300 }}>
       <!-- Stat Cards -->
@@ -84,14 +85,14 @@
           <div class="stat-icon"><Icon name="check-square" size={24} /></div>
           <div class="stat-content">
             <span class="value">{stats.reviewsToday}</span>
-            <span class="label">Reviews Today</span>
+            <span class="label">{$t('statistics.reviewsToday')}</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon"><Icon name="archive" size={24} /></div>
           <div class="stat-content">
             <span class="value">{stats.totalReviews}</span>
-            <span class="label">Total Reviews</span>
+            <span class="label">{$t('statistics.totalReviews')}</span>
           </div>
         </div>
         <div class="stat-card">
@@ -100,7 +101,7 @@
             <span class="value {getRetentionColor(youngRetention())}">
               {youngRetention().toFixed(1)}%
             </span>
-            <span class="label">Young Card Retention</span>
+            <span class="label">{$t('statistics.youngRetention')}</span>
           </div>
         </div>
         <div class="stat-card">
@@ -109,20 +110,20 @@
             <span class="value {getRetentionColor(matureRetention())}">
               {matureRetention().toFixed(1)}%
             </span>
-            <span class="label">Mature Card Retention</span>
+            <span class="label">{$t('statistics.matureRetention')}</span>
           </div>
         </div>
       </div>
 
       <!-- Native Pie Chart Section -->
-      <h3 class="section-title">Card Collection Breakdown</h3>
+      <h3 class="section-title">{$t('statistics.breakdownTitle')}</h3>
       <div class="chart-container">
         <!-- --- THIS IS THE FIX --- -->
         {#if pieChartData().length > 0}
           <PieChart data={pieChartData()} />
         {:else}
           <div class="state-message chart-empty">
-            Add some cards to see your collection breakdown.
+            {$t('statistics.chartEmpty')}
           </div>
         {/if}
       </div>
@@ -137,7 +138,7 @@
   onclick={() => commandBarStore.setView('study-hub')}
 >
   <Icon name="x" size={18} />
-  <span>Back to Decks</span>
+  <span>{$t('statistics.backToDecks')}</span>
 </button>
 
 <style>

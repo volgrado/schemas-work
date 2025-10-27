@@ -96,7 +96,8 @@
     "readNode": {
       "title": "Ανάγνωση Κόμβου",
       "description": "Έναρξη φωνητικής ανάγνωσης από τον επιλεγμένο κόμβο.",
-      "error": "Επιλέξτε έναν κόμβο για να ξεκινήσει η ανάγνωση."
+      "error": "Επιλέξτε έναν κόμβο για να ξεκινήσει η ανάγνωση.",
+      "errorNoId": "Δεν βρέθηκε έγκυρο αναγνωριστικό για αυτόν τον κόμβο για να ξεκινήσει η ανάγνωση."
     },
     "editCards": {
       "title": "Επεξεργασία Καρτών",
@@ -108,10 +109,6 @@
   "appHeader": {
     "aria": {
       "returnToWelcome": "Επιστροφή στην αρχική οθόνη"
-    },
-    "shortcuts": {
-      "menu": "Μενού",
-      "editCards": "Επεξεργασία Καρτών"
     }
   },
   "review": {
@@ -122,8 +119,9 @@
     "showAnswer": "Εμφάνιση Απάντησης",
     "evaluating": "Αξιολόγηση...",
     "check": "Έλεγχος",
-    "again": "Επανάληψη",
+    "again": "Ξανά",
     "hard": "Δύσκολο",
+    "good": "Καλό",
     "easy": "Εύκολο",
     "goToSource": "Μετάβαση στην Πηγή",
     "finishReview": "Ολοκλήρωση",
@@ -134,7 +132,7 @@
     "no_cards_for_additional_review": "Δεν υπάρχουν διαθέσιμες κάρτες για πρόσθετη επανάληψη.",
     "additional_review": "Επιπλέον Επανάληψη",
     "review_started_toast": "Ξεκίνησε η {type} με {count, plural, =1 {1 κάρτα} other {# κάρτες}}.",
-    "card_will_reappear_toast": "Η κάρτα θα εμφανιστεί ξανά.",
+    "card_will_reappear_toast": "Η κάρτα θα εμφανιστεί ξανά σε αυτή τη συνεδρία.",
     "review_complete_toast": "Η επανάληψη ολοκληρώθηκε!",
     "review_complete_description": "Μελετήσατε {count, plural, =1 {1 κάρτα} other {# κάρτες}}."
   },
@@ -382,6 +380,13 @@
     "back_button_aria_label": "Πίσω στο κύριο μενού",
     "back_button_label": "Πίσω"
   },
+  "vault_view": {
+    "title": "Διαχείριση Vault",
+    "export_button": "Εξαγωγή Κρυπτογραφημένου Vault",
+    "import_button": "Εισαγωγή Κρυπτογραφημένου Vault",
+    "back_button_aria_label": "Πίσω στο κύριο μενού",
+    "back_button_label": "Πίσω"
+  },
   "page": {
     "view_toggle": {
       "aria_label": {
@@ -436,14 +441,90 @@
   "command": {
     "new_schema": "Νέο Σχήμα",
     "explore_schemas": "Εξερεύνηση Σχημάτων",
+    "study_decks": "Μελέτη Τράπουλας",
     "ai_assistant": "Βοηθός AI",
-    "start_review": "Έναρξη Επανάληψης",
     "read_schema": "Ανάγνωση Σχήματος",
-    "export_vault": "Εξαγωγή Vault",
-    "import_vault": "Εισαγωγή Vault",
+    "vault_management": "Διαχείριση Vault",
     "diagnostics_and_error_report": "Διαγνωστικά & Αναφορά Σφαλμάτων",
     "create_schema_from_text": "Δημιουργία Σχήματος από Κείμενο",
     "generate_study_cards": "Δημιουργία Καρτών Μελέτης",
     "expand_this_node": "Ανάπτυξη αυτού του Κόμβου"
+  },
+  "theme": {
+    "aria": {
+      "switchToDark": "Εναλλαγή σε σκούρο θέμα",
+      "switchToSystem": "Εναλλαγή σε θέμα συστήματος",
+      "switchToLight": "Εναλλαγή σε ανοιχτό θέμα"
+    }
+  },
+  "statistics": {
+    "title": "Στατιστικά Μελέτης",
+    "loading": "Υπολογισμός στατιστικών...",
+    "noData": "Δεν βρέθηκαν δεδομένα.",
+    "reviewsToday": "Επαναλήψεις Σήμερα",
+    "totalReviews": "Συνολικές Επαναλήψεις",
+    "youngRetention": "Διατήρηση Νέων Καρτών",
+    "matureRetention": "Διατήρηση Ώριμων Καρτών",
+    "breakdownTitle": "Ανάλυση Συλλογής Καρτών",
+    "chartEmpty": "Προσθέστε κάρτες για να δείτε την ανάλυση της συλλογής σας.",
+    "backToDecks": "Πίσω στις Τράπουλες",
+    "viewStatistics": "Προβολή Στατιστικών"
+  },
+  "deckOptions": {
+    "title": "Ρυθμίσεις Τράπουλας",
+    "maxNew": "Μέγ. Νέες Κάρτες / Ημέρα",
+    "maxReviews": "Μέγ. Επαναλήψεις / Ημέρα",
+    "learningSteps": "Βήματα Εκμάθησης (π.χ. \"1m 10m 1d\")",
+    "graduatingInterval": "Διάστημα Αποφοίτησης (ημέρες)",
+    "cancel": "Άκυρο",
+    "saveAndClose": "Αποθήκευση & Κλείσιμο",
+    "loading": "Φόρτωση ρυθμίσεων...",
+    "saveSuccess": "Οι ρυθμίσεις της τράπουλας αποθηκεύτηκαν.",
+    "saveFailed": "Αποτυχία αποθήκευσης ρυθμίσεων."
+  },
+  "studyHub": {
+    "title": "Τράπουλες Μελέτης",
+    "viewStatistics": "Προβολή Στατιστικών",
+    "loading": "Φόρτωση τραπουλών...",
+    "empty": "Δεν βρέθηκαν τράπουλες με κάρτες. Προσθέστε κάρτες σε ένα έγγραφο για να ξεκινήσετε.",
+    "deckHeader": "Τράπουλα",
+    "newHeader": "Νέες",
+    "learningHeader": "Εκμάθηση",
+    "reviewHeader": "Προς Επανάληψη",
+    "settingsAria": "Ρυθμίσεις Τράπουλας"
+  },
+  "quickCardEditor": {
+    "title": "Επεξεργασία Κάρτας",
+    "questionLabel": "Ερώτηση",
+    "answerLabel": "Απάντηση",
+    "promptLabel": "Οδηγία (χρησιμοποιήστε {{...}} για το κενό)",
+    "expectedLabel": "Αναμενόμενη Απάντηση",
+    "instructionLabel": "Οδηγία",
+    "sequenceGroupLabel": "Στοιχεία Ακολουθίας (σε σωστή σειρά)",
+    "sequenceItemPlaceholder": "Στοιχείο {i}",
+    "addItem": "Προσθήκη Στοιχείου",
+    "removeItemAria": "Αφαίρεση στοιχείου",
+    "tagsLabel": "Ετικέτες",
+    "suspendLabel": "Αναστολή Κάρτας",
+    "changeSource": "Αλλαγή Πηγής",
+    "delete": "Διαγραφή",
+    "cancel": "Άκυρο",
+    "save": "Αποθήκευση Αλλαγών",
+    "updateSuccess": "Η κάρτα ενημερώθηκε με επιτυχία.",
+    "updateFailed": "Αποτυχία αποθήκευσης των αλλαγών της κάρτας.",
+    "deleteConfirm": "Είστε βέβαιοι ότι θέλετε να διαγράψετε οριστικά αυτή την κάρτα;",
+    "deleteSuccess": "Η κάρτα διαγράφηκε.",
+    "deleteFailed": "Αποτυχία διαγραφής της κάρτας."
+  },
+  "relinkCard": {
+    "title": "Αλλαγή Πηγής Κάρτας",
+    "description": "Επιλέξτε ένα νέο έγγραφο για να συσχετίσετε αυτή την κάρτα.",
+    "loading": "Φόρτωση εγγράφων...",
+    "cancel": "Άκυρο",
+    "confirm": "Επιβεβαίωση Αλλαγής",
+    "noSelectionError": "Παρακαλώ επιλέξτε ένα νέο έγγραφο.",
+    "alreadyInDocInfo": "Η κάρτα βρίσκεται ήδη σε αυτό το έγγραφο.",
+    "updateSuccess": "Η πηγή της κάρτας ενημερώθηκε με επιτυχία.",
+    "updateFailed": "Αποτυχία ενημέρωσης της πηγής της κάρτας."
   }
 }

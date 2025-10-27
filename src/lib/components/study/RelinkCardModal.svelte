@@ -17,6 +17,7 @@
   import * as directoryService from '$lib/services/core/directoryService';
   import * as cardService from '$lib/services/features/cardService';
   import { toast } from 'svelte-sonner';
+  import { t } from '$lib/utils/i18n';
 
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
@@ -61,11 +62,11 @@
 
   async function handleRelink() {
     if (!selectedSchemaId) {
-      toast.error('Please select a new document.');
+      toast.error($t('relinkCard.noSelectionError'));
       return;
     }
     if (selectedSchemaId === card.deckId) {
-      toast.info('Card is already in this document.');
+      toast.info($t('relinkCard.alreadyInDocInfo'));
       onclose?.();
       return;
     }
@@ -74,24 +75,24 @@
 
     try {
       await cardService.updateCard(updatedCard);
-      toast.success('Card source updated successfully.');
+      toast.success($t('relinkCard.updateSuccess'));
       onupdate?.(updatedCard); // Call prop directly
       onclose?.(); // Call prop directly
     } catch (error) {
-      toast.error('Failed to update card source.');
+      toast.error($t('relinkCard.updateFailed'));
       console.error(error);
     }
   }
 </script>
 
-=<Modal onClose={() => onclose?.()} title="Change Card Source">
+<Modal onClose={() => onclose?.()} title={$t('relinkCard.title')}>
   <div class="relink-content">
     <p class="description">
-      Select a new document to associate this card with.
+      {$t('relinkCard.description')}
     </p>
 
     {#if isLoading}
-      <p>Loading documents...</p>
+      <p>{$t('relinkCard.loading')}</p>
     {:else}
       <ul class="schema-list">
         {#each schemas as schema (schema.id)}
@@ -111,9 +112,11 @@
   </div>
 
   <footer class="modal-footer">
-    <Button variant="secondary" onclick={() => onclose?.()}>Cancel</Button>
+    <Button variant="secondary" onclick={() => onclose?.()}
+      >{$t('relinkCard.cancel')}</Button
+    >
     <Button onclick={handleRelink} disabled={!selectedSchemaId}
-      >Confirm Change</Button
+      >{$t('relinkCard.confirm')}</Button
     >
   </footer>
 </Modal>

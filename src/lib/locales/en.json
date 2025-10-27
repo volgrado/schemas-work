@@ -96,7 +96,8 @@
     "readNode": {
       "title": "Read Node",
       "description": "Start reading aloud from here.",
-      "error": "Select a node to start reading."
+      "error": "Select a node to start reading.",
+      "errorNoId": "Could not find a valid ID for this node to start reading."
     },
     "editCards": {
       "title": "Edit Cards",
@@ -108,10 +109,6 @@
   "appHeader": {
     "aria": {
       "returnToWelcome": "Return to the welcome screen"
-    },
-    "shortcuts": {
-      "menu": "Menu",
-      "editCards": "Edit Cards"
     }
   },
   "review": {
@@ -452,5 +449,82 @@
     "create_schema_from_text": "Create Schema From Text",
     "generate_study_cards": "Generate Study Cards",
     "expand_this_node": "Expand This Node"
+  },
+  "theme": {
+    "aria": {
+      "switchToDark": "Switch to dark theme",
+      "switchToSystem": "Switch to system theme",
+      "switchToLight": "Switch to light theme"
+    }
+  },
+  "statistics": {
+    "title": "Study Statistics",
+    "loading": "Calculating statistics...",
+    "noData": "No data found.",
+    "reviewsToday": "Reviews Today",
+    "totalReviews": "Total Reviews",
+    "youngRetention": "Young Card Retention",
+    "matureRetention": "Mature Card Retention",
+    "breakdownTitle": "Card Collection Breakdown",
+    "chartEmpty": "Add some cards to see your collection breakdown.",
+    "backToDecks": "Back to Decks",
+    "viewStatistics": "View Statistics"
+  },
+  "deckOptions": {
+    "title": "Deck Options",
+    "maxNew": "Max New Cards / Day",
+    "maxReviews": "Max Reviews / Day",
+    "learningSteps": "Learning Steps (e.g., \"1m 10m 1d\")",
+    "graduatingInterval": "Graduating Interval (days)",
+    "cancel": "Cancel",
+    "saveAndClose": "Save & Close",
+    "loading": "Loading options...",
+    "saveSuccess": "Deck options saved.",
+    "saveFailed": "Failed to save options."
+  },
+  "studyHub": {
+    "title": "Study Decks",
+    "viewStatistics": "View Statistics",
+    "loading": "Loading decks...",
+    "empty": "No decks with cards found. Add cards to a document to get started.",
+    "deckHeader": "Deck",
+    "newHeader": "New",
+    "learningHeader": "Learning",
+    "reviewHeader": "To Review",
+    "settingsAria": "Deck Settings"
+  },
+  "quickCardEditor": {
+    "title": "Edit Card",
+    "questionLabel": "Question",
+    "answerLabel": "Answer",
+    "promptLabel": "Prompt (use {{...}} for the blank)",
+    "expectedLabel": "Expected Answer",
+    "instructionLabel": "Instruction",
+    "sequenceGroupLabel": "Sequence Items (in correct order)",
+    "sequenceItemPlaceholder": "Item {i}",
+    "addItem": "Add Item",
+    "removeItemAria": "Remove item",
+    "tagsLabel": "Tags",
+    "suspendLabel": "Suspend Card",
+    "changeSource": "Change Source",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "updateSuccess": "Card updated successfully.",
+    "updateFailed": "Failed to save card changes.",
+    "deleteConfirm": "Are you sure you want to permanently delete this card?",
+    "deleteSuccess": "Card deleted.",
+    "deleteFailed": "Failed to delete card."
+  },
+  "relinkCard": {
+    "title": "Change Card Source",
+    "description": "Select a new document to associate this card with.",
+    "loading": "Loading documents...",
+    "cancel": "Cancel",
+    "confirm": "Confirm Change",
+    "noSelectionError": "Please select a new document.",
+    "alreadyInDocInfo": "Card is already in this document.",
+    "updateSuccess": "Card source updated successfully.",
+    "updateFailed": "Failed to update card source."
   }
 }

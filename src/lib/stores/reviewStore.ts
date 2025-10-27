@@ -231,6 +231,11 @@ async function submitReview(quality: ReviewQuality): Promise<void> {
 
   if (newCardsToReview.length === 0) {
     update((s) => ({ ...s, isFinished: true }));
+    toast.success(get(t)('review.review_complete_toast'), {
+      description: get(t)('review.review_complete_description', {
+        count: state.sessionCardCount,
+      }),
+    });
   } else {
     update((s) => ({
       ...s,

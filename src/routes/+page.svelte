@@ -146,40 +146,41 @@
           showWelcomeUI = true;
         }}
       >
-        <!-- Content for the center slot -->
+        <!-- Content for the center slot: Now with icon-only buttons -->
         <div class="header-actions">
+          <!-- View Toggle Button -->
           <Button
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            iconOnly
             on:click={toggleView}
             aria-label={currentView === 'editor'
               ? $t('page.view_toggle.aria_label.to_tree')
               : $t('page.view_toggle.aria_label.to_editor')}
           >
             {#if currentView === 'editor'}
-              <Icon name="git-branch" size={16} />
-              <span>{$t('page.fab.tree')}</span>
+              <Icon name="git-branch" size={18} />
             {:else}
-              <Icon name="file-text" size={16} />
-              <span>{$t('page.fab.editor')}</span>
+              <Icon name="file-text" size={18} />
             {/if}
           </Button>
+
+          <!-- Study and Cards Buttons -->
           {#if $documentStore.docId && !$reviewStore.isReviewing}
             <Button
-              variant="secondary"
-              size="sm"
-              onclick={() => reviewStore.startReview([$documentStore.docId!])}
+              variant="ghost"
+              iconOnly
+              aria-label={$t('page.header_actions.study')}
+              on:click={() => reviewStore.startReview([$documentStore.docId!])}
             >
-              <Icon name="zap" size={16} />
-              <span>Study</span>
+              <Icon name="zap" size={18} />
             </Button>
             <Button
-              variant="secondary"
-              size="sm"
-              onclick={() => cardEditorStore.open($documentStore.docId!)}
+              variant="ghost"
+              iconOnly
+              aria-label={$t('page.header_actions.cards')}
+              on:click={() => cardEditorStore.open($documentStore.docId!)}
             >
-              <Icon name="edit-3" size={16} />
-              <span>Cards</span>
+              <Icon name="edit-3" size={18} />
             </Button>
           {/if}
         </div>

@@ -19,6 +19,7 @@
   import type { Card } from '$lib/types';
   import * as cardService from '$lib/services/features/cardService';
   import { toast } from 'svelte-sonner';
+  import { t } from '$lib/utils/i18n';
 
   // UI Components
   import Modal from '$lib/components/ui/Modal.svelte';
@@ -75,10 +76,10 @@
   async function saveCardChanges(cardToSave: Card) {
     try {
       await cardService.updateCard(cardToSave);
-      toast.success('Card updated successfully.');
+      toast.success($t('quickCardEditor.updateSuccess'));
       onupdate?.(cardToSave);
     } catch (error) {
-      toast.error('Failed to save card changes.');
+      toast.error($t('quickCardEditor.updateFailed'));
       console.error(error);
     }
   }
@@ -89,14 +90,14 @@
   }
 
   async function handleDelete() {
-    if (confirm('Are you sure you want to permanently delete this card?')) {
+    if (confirm($t('quickCardEditor.deleteConfirm'))) {
       try {
         await cardService.deleteCard(card.id);
-        toast.success('Card deleted.');
+        toast.success($t('quickCardEditor.deleteSuccess'));
         ondelete?.(card.id);
         onclose?.();
       } catch (error) {
-        toast.error('Failed to delete card.');
+        toast.error($t('quickCardEditor.deleteFailed'));
         console.error(error);
       }
     }
@@ -123,46 +124,51 @@
 </script>
 
 <!-- The main edit modal -->
-<Modal onClose={() => onclose?.()} title="Edit Card">
+<Modal onClose={() => onclose?.()} title={$t('quickCardEditor.title')}>
   <div class="card-editor-content">
     <!-- Card-specific fields -->
     {#if editableCard.type === 'basic'}
       {@const c = editableCard.content}
       <div class="field">
-        <label for="question">Question</label>
+        <label for="question">{$t('quickCardEditor.questionLabel')}</label>
         <Textarea id="question" bind:value={c.question} rows={3} />
       </div>
       <div class="field">
-        <label for="answer">Answer</label>
+        <label for="answer">{$t('quickCardEditor.answerLabel')}</label>
         <Textarea id="answer" bind:value={c.answer} rows={3} />
       </div>
     {:else if editableCard.type === 'input'}
       {@const c = editableCard.content}
       <div class="field">
-        <label for="prompt">Prompt (use {'{{...}}'} for the blank)</label>
+        <label for="prompt">{$t('quickCardEditor.promptLabel')}</label>
         <Textarea id="prompt" bind:value={c.prompt} rows={3} />
       </div>
       <div class="field">
-        <label for="expected">Expected Answer</label>
+        <label for="expected">{$t('quickCardEditor.expectedLabel')}</label>
         <Input id="expected" bind:value={c.expected} />
       </div>
     {:else if editableCard.type === 'sequencing'}
       {@const c = editableCard.content}
       <div class="field">
-        <label for="prompt-seq">Instruction</label>
+        <label for="prompt-seq">{$t('quickCardEditor.instructionLabel')}</label>
         <Textarea id="prompt-seq" bind:value={c.prompt} rows={2} />
       </div>
-      <div class="group-label">Sequence Items (in correct order)</div>
+      <div class="group-label">{$t('quickCardEditor.sequenceGroupLabel')}</div>
       <div class="sequence-items-list">
         {#each c.items as item, i}
           <div class="sequence-item">
             <span class="item-number">{i + 1}.</span>
-            <Input bind:value={c.items[i]} placeholder={`Item ${i + 1}`} />
+            <Input
+              bind:value={c.items[i]}
+              placeholder={$t('quickCardEditor.sequenceItemPlaceholder', {
+                i: i + 1,
+              })}
+            />
             <Button
               onclick={() => removeItem(i)}
               variant="ghost"
               size="sm"
-              aria-label="Remove item"
+              aria-label={$t('quickCardEditor.removeItemAria')}
             >
               <Icon name="x" size={16} />
             </Button>
@@ -175,36 +181,42 @@
         size="sm"
         class="add-item-btn"
       >
-        <Icon name="plus" size={14} /> Add Item
+        <Icon name="plus" size={14} />
+        {$t('quickCardEditor.addItem')}
       </Button>
     {/if}
 
     <!-- Tag Input Field -->
     <div class="field">
-      <label for="tags">Tags</label>
+      <label for="tags">{$t('quickCardEditor.tagsLabel')}</label>
       <TagInput id="tags" tags={editableCard.tags} />
     </div>
   </div>
 
   <div class="card-actions-footer">
     <div class="suspend-toggle">
-      <label for="suspend">Suspend Card</label>
+      <label for="suspend">{$t('quickCardEditor.suspendLabel')}</label>
       <Toggle id="suspend" bind:checked={editableCard.suspended} />
     </div>
     <div class="footer-buttons">
       <div class="left-actions">
         <Button onclick={openChangeSource} variant="secondary" size="sm">
-          <Icon name="git-branch" size={14} /> Change Source
+          <Icon name="git-branch" size={14} />
+          {$t('quickCardEditor.changeSource')}
         </Button>
         <Button
           onclick={handleDelete}
           variant="secondary"
-          class="destructive-btn">Delete</Button
+          class="destructive-btn">{$t('quickCardEditor.delete')}</Button
         >
       </div>
       <div class="right-actions">
-        <Button onclick={() => onclose?.()} variant="secondary">Cancel</Button>
-        <Button onclick={handleSaveAndClose}>Save Changes</Button>
+        <Button onclick={() => onclose?.()} variant="secondary"
+          >{$t('quickCardEditor.cancel')}</Button
+        >
+        <Button onclick={handleSaveAndClose}
+          >{$t('quickCardEditor.save')}</Button
+        >
       </div>
     </div>
   </div>

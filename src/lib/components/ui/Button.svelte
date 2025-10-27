@@ -9,6 +9,7 @@
   Props:
   - `variant`: The visual style of the button. Can be 'primary', 'secondary', or 'ghost'. Defaults to 'primary'.
   - `size`: The size of the button. Can be 'sm', 'md', or 'lg'. Defaults to 'md'.
+  - `iconOnly`: If true, styles the button as a square, ideal for holding a single icon. Defaults to false.
 
   Slots:
   - `default`: The content to be displayed inside the button (e.g., text, an icon).
@@ -28,6 +29,12 @@
    * The size of the button.
    */
   export let size: 'sm' | 'md' | 'lg' = 'md';
+
+  /**
+   * @prop {boolean} [iconOnly=false]
+   * If true, applies styling for a square button, perfect for icons.
+   */
+  export let iconOnly: boolean = false;
 </script>
 
 <button
@@ -38,6 +45,7 @@
   class:btn-sm={size === 'sm'}
   class:btn-md={size === 'md'}
   class:btn-lg={size === 'lg'}
+  class:btn-icon={iconOnly}
   on:click
   {...$$restProps}
 >
@@ -94,6 +102,23 @@
     height: 48px;
     padding: 0 var(--space-lg);
     font-size: 1rem;
+  }
+
+  /* --- Icon-Only Modifier --- */
+  /* Removes padding and gap for a clean icon container. */
+  .btn-icon {
+    padding: 0;
+    gap: 0;
+  }
+  /* Sets the width to match the height for a perfect square shape. */
+  .btn-icon.btn-sm {
+    width: 32px;
+  }
+  .btn-icon.btn-md {
+    width: 40px;
+  }
+  .btn-icon.btn-lg {
+    width: 48px;
   }
 
   /* --- Variant (Color) Modifiers --- */

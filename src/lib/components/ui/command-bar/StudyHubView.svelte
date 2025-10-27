@@ -18,8 +18,6 @@
   // --- UI Components ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  // REMOVED: No longer importing a modal
-  // import DeckOptionsModal from '$lib/components/study/DeckOptionsModal.svelte';
 
   // --- Stores & Services ---
   import { commandBarStore } from '$lib/stores/commandBarStore';
@@ -31,8 +29,6 @@
   // --- Component State ---
   let deckStats = $state<Map<string, DeckStat>>(new Map());
   let isLoading = $state(true);
-  // REMOVED: This state is not needed because the commandBarStore handles the current view
-  // let optionsDeckId = $state<string | null>(null);
 
   onMount(async () => {
     isLoading = true;
@@ -46,43 +42,34 @@
   }
 </script>
 
-<!-- REMOVED: This entire block was incorrect for a view-swapping system -->
-<!--
-{#if optionsDeckId}
-  <DeckOptionsModal
-    deckId={optionsDeckId}
-    onclose={() => (optionsDeckId = null)}
-    showOverlay={false}
-  />
-{/if}
--->
-
 <nav class="action-list study-hub-view" aria-labelledby="study-hub-title">
   <div class="hub-header">
-    <h2 id="study-hub-title" class="visually-hidden">Study Decks</h2>
+    <h2 id="study-hub-title" class="visually-hidden">{$t('studyHub.title')}</h2>
     <Button
       variant="secondary"
       size="sm"
       onclick={() => commandBarStore.setView('statistics')}
     >
       <Icon name="activity" size={14} />
-      View Statistics
+      {$t('studyHub.viewStatistics')}
     </Button>
   </div>
 
   {#if isLoading}
-    <div class="state-message">Loading decks...</div>
+    <div class="state-message">{$t('studyHub.loading')}</div>
   {:else if deckStats.size === 0}
     <div class="state-message">
-      No decks with cards found. Add cards to a document to get started.
+      {$t('studyHub.empty')}
     </div>
   {:else}
     <div class="deck-grid">
       <!-- Header Row -->
-      <div class="deck-header-title">Deck</div>
-      <div class="deck-header-count new">New</div>
-      <div class="deck-header-count learning">Learning</div>
-      <div class="deck-header-count due">To Review</div>
+      <div class="deck-header-title">{$t('studyHub.deckHeader')}</div>
+      <div class="deck-header-count new">{$t('studyHub.newHeader')}</div>
+      <div class="deck-header-count learning">
+        {$t('studyHub.learningHeader')}
+      </div>
+      <div class="deck-header-count due">{$t('studyHub.reviewHeader')}</div>
       <div></div>
       <!-- Empty cell for alignment -->
 
@@ -107,7 +94,7 @@
             }}
             size="sm"
             variant="ghost"
-            aria-label="Deck Settings"
+            aria-label={$t('studyHub.settingsAria')}
           >
             <Icon name="settings" size={16} />
           </Button>

@@ -31,22 +31,24 @@
     if (!options) return;
     try {
       await deckService.saveDeckOptions(options);
-      toast.success('Deck options saved.');
+      toast.success($t('deckOptions.saveSuccess'));
       commandBarStore.setView('study-hub'); // Go back to the deck list
     } catch (error) {
-      toast.error('Failed to save options.');
+      toast.error($t('deckOptions.saveFailed'));
       console.error(error);
     }
   }
 </script>
 
 <nav class="action-list options-view" aria-labelledby="deck-options-title">
-  <h2 id="deck-options-title" class="visually-hidden">Deck Options</h2>
+  <h2 id="deck-options-title" class="visually-hidden">
+    {$t('deckOptions.title')}
+  </h2>
 
   {#if options}
     <div class="options-form">
       <div class="form-field">
-        <label for="maxNew">Max New Cards / Day</label>
+        <label for="maxNew">{$t('deckOptions.maxNew')}</label>
         <Input
           id="maxNew"
           type="number"
@@ -54,7 +56,7 @@
         />
       </div>
       <div class="form-field">
-        <label for="maxReviews">Max Reviews / Day</label>
+        <label for="maxReviews">{$t('deckOptions.maxReviews')}</label>
         <Input
           id="maxReviews"
           type="number"
@@ -62,7 +64,7 @@
         />
       </div>
       <div class="form-field">
-        <label for="learningSteps">Learning Steps (e.g., "1m 10m 1d")</label>
+        <label for="learningSteps">{$t('deckOptions.learningSteps')}</label>
         <Input
           id="learningSteps"
           type="text"
@@ -70,7 +72,9 @@
         />
       </div>
       <div class="form-field">
-        <label for="graduatingInterval">Graduating Interval (days)</label>
+        <label for="graduatingInterval"
+          >{$t('deckOptions.graduatingInterval')}</label
+        >
         <Input
           id="graduatingInterval"
           type="number"
@@ -80,13 +84,14 @@
       <div class="form-actions">
         <Button
           variant="secondary"
-          onclick={() => commandBarStore.setView('study-hub')}>Cancel</Button
+          onclick={() => commandBarStore.setView('study-hub')}
+          >{$t('deckOptions.cancel')}</Button
         >
-        <Button onclick={handleSave}>Save & Close</Button>
+        <Button onclick={handleSave}>{$t('deckOptions.saveAndClose')}</Button>
       </div>
     </div>
   {:else}
-    <div class="loading-state">Loading options...</div>
+    <div class="loading-state">{$t('deckOptions.loading')}</div>
   {/if}
 </nav>
 

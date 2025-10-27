@@ -96,7 +96,8 @@
     "readNode": {
       "title": "Leer Nodo",
       "description": "Iniciar la lectura en voz alta desde aquí.",
-      "error": "Selecciona un nodo para empezar a leer."
+      "error": "Selecciona un nodo para empezar a leer.",
+      "errorNoId": "No se pudo encontrar un ID válido para este nodo para iniciar la lectura."
     },
     "editCards": {
       "title": "Editar Tarjetas",
@@ -108,10 +109,6 @@
   "appHeader": {
     "aria": {
       "returnToWelcome": "Volver a la pantalla de bienvenida"
-    },
-    "shortcuts": {
-      "menu": "Menú",
-      "editCards": "Editar Tarjetas"
     }
   },
   "review": {
@@ -124,6 +121,7 @@
     "check": "Comprobar",
     "again": "De nuevo",
     "hard": "Difícil",
+    "good": "Bien",
     "easy": "Fácil",
     "goToSource": "Ir a la fuente",
     "finishReview": "Finalizar Repaso",
@@ -382,6 +380,13 @@
     "back_button_aria_label": "Volver al menú principal",
     "back_button_label": "Atrás"
   },
+  "vault_view": {
+    "title": "Gestión de Bóveda",
+    "export_button": "Exportar Bóveda Cifrada",
+    "import_button": "Importar Bóveda Cifrada",
+    "back_button_aria_label": "Volver al menú principal",
+    "back_button_label": "Atrás"
+  },
   "page": {
     "view_toggle": {
       "aria_label": {
@@ -436,14 +441,90 @@
   "command": {
     "new_schema": "Nuevo Esquema",
     "explore_schemas": "Explorar Esquemas",
+    "study_decks": "Estudiar Mazos",
     "ai_assistant": "Asistente de IA",
-    "start_review": "Iniciar Repaso",
     "read_schema": "Leer Esquema",
-    "export_vault": "Exportar Bóveda",
-    "import_vault": "Importar Bóveda",
+    "vault_management": "Gestión de Bóveda",
     "diagnostics_and_error_report": "Diagnóstico y Reporte de Errores",
     "create_schema_from_text": "Crear Esquema desde Texto",
     "generate_study_cards": "Generar Tarjetas de Estudio",
     "expand_this_node": "Expandir este Nodo"
+  },
+  "theme": {
+    "aria": {
+      "switchToDark": "Cambiar a tema oscuro",
+      "switchToSystem": "Cambiar a tema del sistema",
+      "switchToLight": "Cambiar a tema claro"
+    }
+  },
+  "statistics": {
+    "title": "Estadísticas de Estudio",
+    "loading": "Calculando estadísticas...",
+    "noData": "No se encontraron datos.",
+    "reviewsToday": "Repasos Hoy",
+    "totalReviews": "Repasos Totales",
+    "youngRetention": "Retención de Tarjetas Jóvenes",
+    "matureRetention": "Retención de Tarjetas Maduras",
+    "breakdownTitle": "Distribución de la Colección",
+    "chartEmpty": "Añade algunas tarjetas para ver la distribución de tu colección.",
+    "backToDecks": "Volver a los Mazos",
+    "viewStatistics": "Ver Estadísticas"
+  },
+  "deckOptions": {
+    "title": "Opciones del Mazo",
+    "maxNew": "Máx. Tarjetas Nuevas / Día",
+    "maxReviews": "Máx. Repasos / Día",
+    "learningSteps": "Pasos de Aprendizaje (ej: \"1m 10m 1d\")",
+    "graduatingInterval": "Intervalo de Graduación (días)",
+    "cancel": "Cancelar",
+    "saveAndClose": "Guardar y Cerrar",
+    "loading": "Cargando opciones...",
+    "saveSuccess": "Opciones del mazo guardadas.",
+    "saveFailed": "Error al guardar las opciones."
+  },
+  "studyHub": {
+    "title": "Mazo de Estudio",
+    "viewStatistics": "Ver Estadísticas",
+    "loading": "Cargando mazos...",
+    "empty": "No se encontraron mazos con tarjetas. Añade tarjetas a un documento para empezar.",
+    "deckHeader": "Mazo",
+    "newHeader": "Nuevas",
+    "learningHeader": "Aprendizaje",
+    "reviewHeader": "A Repasar",
+    "settingsAria": "Opciones del Mazo"
+  },
+  "quickCardEditor": {
+    "title": "Editar Tarjeta",
+    "questionLabel": "Pregunta",
+    "answerLabel": "Respuesta",
+    "promptLabel": "Instrucción (usa {{...}} para el hueco)",
+    "expectedLabel": "Respuesta Esperada",
+    "instructionLabel": "Instrucción",
+    "sequenceGroupLabel": "Elementos de la Secuencia (en orden correcto)",
+    "sequenceItemPlaceholder": "Elemento {i}",
+    "addItem": "Añadir Elemento",
+    "removeItemAria": "Eliminar elemento",
+    "tagsLabel": "Etiquetas",
+    "suspendLabel": "Suspender Tarjeta",
+    "changeSource": "Cambiar Fuente",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar Cambios",
+    "updateSuccess": "Tarjeta actualizada correctamente.",
+    "updateFailed": "Error al guardar los cambios de la tarjeta.",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar esta tarjeta permanentemente?",
+    "deleteSuccess": "Tarjeta eliminada.",
+    "deleteFailed": "Error al eliminar la tarjeta."
+  },
+  "relinkCard": {
+    "title": "Cambiar Fuente de la Tarjeta",
+    "description": "Selecciona un nuevo documento para asociar esta tarjeta.",
+    "loading": "Cargando documentos...",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar Cambio",
+    "noSelectionError": "Por favor, selecciona un nuevo documento.",
+    "alreadyInDocInfo": "La tarjeta ya está en este documento.",
+    "updateSuccess": "Fuente de la tarjeta actualizada correctamente.",
+    "updateFailed": "Error al actualizar la fuente de la tarjeta."
   }
 }
