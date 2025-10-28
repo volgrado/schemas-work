@@ -1,37 +1,34 @@
-/**
- * @file Manages the global state and orchestration for the Text-to-Speech (TTS) feature.
- * @module ttsStore
- */
+// src/lib/stores/ttsStore.ts
 
 import { writable, get } from 'svelte/store';
 import { editorStore } from './editorStore';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import type { TTSService, TTSVoice } from '$lib/services/tts/tts.service';
-import { BrowserTTSService } from '$lib/services/tts/BrowserTTSService';
 import { toast } from 'svelte-sonner';
 import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
 import type { Unsubscriber } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
 import { t } from '$lib/utils/i18n';
+import { EdgeAudioTTSService } from '$lib/services/tts/EdgeAudioTTSService';
+import type { TTSVoice } from '$lib/services/tts/tts.service';
+// Imports para la lógica offline
+import { documentStore } from './documentStore';
+import { offlineStore } from './offlineStore';
 
-// --- (All of your original interfaces are kept) ---
+// --- Interfaces ---
 export type TTSStatus =
   | 'idle'
   | 'initializing'
   | 'playing'
   | 'paused'
   | 'error';
-
 export interface ReadableNode {
   pos: number;
   node: ProseMirrorNode;
   title: string;
   textToSpeak: string;
-  wordMap: { word: string; from: number; to: number }[];
 }
-
 export interface TTSState {
   status: TTSStatus;
   nodesToRead: ReadableNode[];
@@ -58,144 +55,81 @@ const initialState: TTSState = {
   currentSpeechId: null,
 };
 
-const ttsService: TTSService = new BrowserTTSService();
+// --- Configuración ---
+const ttsService: EdgeAudioTTSService = new EdgeAudioTTSService();
 const store = writable<TTSState>(initialState);
 const { subscribe, update, set } = store;
 let unsubscribeFromEditor: Unsubscriber | null = null;
 
-// --- NEW: MEDIA SESSION & BACKGROUND AUDIO MANAGEMENT ---
+// --- Funciones Internas ---
 
-/** Manages the silent audio element to maintain background execution. */
-const backgroundAudio = {
-  play: () => {
-    console.log('Attempting to play background audio...'); // <-- ADD THIS
-    const audio = document.getElementById(
-      'background-audio-player'
-    ) as HTMLAudioElement;
-    if (audio && audio.paused) {
-      audio.play().catch((e) => {
-        console.error('BACKGROUND AUDIO FAILED TO PLAY:', e); // <-- ADD THIS
-      });
-    }
-  },
-  pause: () => {
-    const audio = document.getElementById(
-      'background-audio-player'
-    ) as HTMLAudioElement;
-    if (audio && !audio.paused) {
-      audio.pause();
-    }
-  },
-};
-
-/** Updates the OS media notification (lock screen widget) with the current track info. */
-function updateMediaSession() {
-  if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
-
-  const state = get(store);
-  const { status, nodesToRead, currentNodeIndex } = state;
-
-  if (status === 'idle' || status === 'error' || nodesToRead.length === 0) {
-    if (navigator.mediaSession.metadata !== null) {
-      navigator.mediaSession.metadata = null;
-      navigator.mediaSession.playbackState = 'none';
-    }
-    return;
-  }
-
-  const currentNode = nodesToRead[currentNodeIndex];
-  if (!currentNode) return;
-
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: currentNode.title,
-    artist: 'Schemas.Work',
-    album: `Section ${currentNodeIndex + 1} of ${nodesToRead.length}`,
-
-    // --- THIS SECTION IS UPDATED TO USE YOUR FILES ---
-    artwork: [
-      {
-        src: '/android-chrome-192x192.png',
-        sizes: '192x192',
-        type: 'image/png',
-      },
-      {
-        src: '/android-chrome-512x512.png',
-        sizes: '512x512',
-        type: 'image/png',
-      },
-    ],
-    // ---------------------------------------------------
-  });
-
-  navigator.mediaSession.playbackState =
-    status === 'playing' ? 'playing' : 'paused';
-
-  console.log('Updated Media Session:', {
-    // <-- ADD THIS BLOCK
-    state: navigator.mediaSession.playbackState,
-    title: navigator.mediaSession.metadata?.title,
-  });
-}
-/** Sets up the media action handlers (play, pause, etc. from lock screen) once. */
-function setupMediaSessionHandlers() {
-  if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
-
-  const actions: [MediaSessionAction, () => void][] = [
-    ['play', () => ttsStore.resumeReading()],
-    ['pause', () => ttsStore.pauseReading()],
-    ['nexttrack', () => ttsStore.nextNode()],
-    ['previoustrack', () => ttsStore.previousNode()],
-    ['stop', () => ttsStore.stopReading()],
-  ];
-
-  for (const [action, handler] of actions) {
-    try {
-      navigator.mediaSession.setActionHandler(action, handler);
-    } catch (error) {
-      console.warn(`The media session action '${action}' is not supported.`);
-    }
-  }
-}
-
-// Run this once when the module loads
-setupMediaSessionHandlers();
-
-// --- (All your original functions are below, with minor modifications) ---
-
-function getReadableNodes(editor: Editor): ReadableNode[] {
+// MODIFICACIÓN: Exportamos la función para que otros módulos (como offlineStore) puedan usarla.
+export function getReadableNodes(editor: Editor): ReadableNode[] {
   const nodes: ReadableNode[] = [];
   editor.state.doc.descendants((node, pos) => {
     if (
       (node.type.name === 'heading' || node.type.name === 'listItem') &&
       node.textContent.trim()
     ) {
-      const textToSpeak = node.textContent.trim();
-      const wordMap: { word: string; from: number; to: number }[] = [];
-      let offset = 0;
-      textToSpeak.split(/\s+/).forEach((word) => {
-        if (word) {
-          const from = pos + 1 + offset;
-          const to = from + word.length;
-          wordMap.push({ word, from, to });
-          offset = to - pos - 1 + 1;
+      // --- START OF NEW '.' LOGIC ---
+
+      let title = '';
+      let content = '';
+      const fullText = node.textContent.trim();
+
+      // Intelligently separate the title from the main content.
+      if (node.type.name === 'heading') {
+        title = fullText;
+        content = '';
+      } else if (node.type.name === 'listItem' && node.firstChild) {
+        title = node.firstChild.textContent.trim();
+        if (fullText.length > title.length) {
+          content = fullText.substring(title.length).trim();
         }
-      });
+      } else {
+        // Fallback for unexpected structures.
+        title = fullText;
+        content = '';
+      }
+
+      // If there's no content, just use the title as is.
+      if (!content) {
+        nodes.push({
+          pos,
+          node,
+          title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
+          textToSpeak: title,
+        });
+        return node.type.name !== 'listItem';
+      }
+
+      // Check if the title already ends with punctuation.
+      const endsWithPunctuation = /[.?!]$/.test(title);
+
+      // Combine title and content with a period to create a pause.
+      // If the title already has punctuation, we just add a space.
+      const textToSpeak = endsWithPunctuation
+        ? `${title} ${content}`
+        : `${title}. ${content}`;
 
       nodes.push({
         pos,
         node,
-        title:
-          textToSpeak.substring(0, 50) + (textToSpeak.length > 50 ? '...' : ''),
-        textToSpeak,
-        wordMap,
+        // The display title for the UI is still clean.
+        title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
+        // The text to speak now includes the period for a natural pause.
+        textToSpeak: textToSpeak,
       });
+
+      // --- END OF NEW '.' LOGIC ---
     }
     return node.type.name !== 'listItem';
   });
   return nodes;
 }
 
-function speakNodeAtIndex(index: number) {
+// MODIFICACIÓN: La función ahora es 'async' para poder consultar el estado offline.
+async function speakNodeAtIndex(index: number) {
   const state = get(store);
   if (index < 0 || index >= state.nodesToRead.length) {
     stopReading(true);
@@ -212,13 +146,24 @@ function speakNodeAtIndex(index: number) {
     status: 'playing',
     currentSpeechId: speechId,
   }));
-
   highlightCurrentNode();
+
+  // --- INICIO DE LA LÓGICA OFFLINE ---
+  const docId = get(documentStore).docId;
+  const docStatus = await offlineStore.getDocStatus(docId);
+
+  let audioId: string | undefined = undefined;
+  // Usamos el audio de la caché solo si está descargado y actualizado.
+  if (docId && docStatus === 'downloaded') {
+    audioId = `${docId}_${index}`;
+  }
+  // --- FIN DE LA LÓGICA OFFLINE ---
 
   ttsService.speak(nodeToRead.textToSpeak, {
     voiceId: state.selectedVoiceId!,
     rate: state.rate,
     pitch: state.pitch,
+    audioId: audioId, // Pasamos el ID (o undefined) al servicio de audio
     onEnd: () => {
       if (get(store).currentSpeechId === speechId) {
         nextNode();
@@ -234,60 +179,13 @@ function speakNodeAtIndex(index: number) {
         }));
       }
     },
-    onBoundary: (event) => {
-      if (get(store).currentSpeechId === speechId) {
-        handleWordBoundary(event, nodeToRead.wordMap);
-      }
-    },
   });
-}
-
-function handleWordBoundary(
-  event: SpeechSynthesisEvent,
-  wordMap: ReadableNode['wordMap']
-) {
-  const editor = get(editorStore).instance;
-  if (!editor) return;
-
-  const state = get(store);
-  const currentNode = state.nodesToRead[state.currentNodeIndex];
-  const spokenText = currentNode.textToSpeak;
-  const charIndex = event.charIndex;
-
-  const currentWord = wordMap.find((w) => {
-    // A slightly more robust way to find the word index
-    const wordStartIndex = spokenText.indexOf(
-      w.word,
-      charIndex > 0 ? charIndex - 5 : 0
-    );
-    const wordEndIndex = wordStartIndex + w.word.length;
-    return charIndex >= wordStartIndex && charIndex < wordEndIndex;
-  });
-
-  if (currentWord) {
-    const wordDeco = Decoration.inline(currentWord.from, currentWord.to, {
-      class: 'is-current-tts-word',
-    });
-    const nodeDeco = Decoration.node(
-      currentNode.pos,
-      currentNode.pos + currentNode.node.nodeSize,
-      { class: 'is-current-tts-node' }
-    );
-    update((s) => ({
-      ...s,
-      decorationSet: DecorationSet.create(editor.state.doc, [
-        nodeDeco,
-        wordDeco,
-      ]),
-    }));
-  }
 }
 
 function highlightCurrentNode() {
   const editor = get(editorStore).instance;
   const state = get(store);
   if (!editor || state.nodesToRead.length === 0) return;
-
   const currentNode = state.nodesToRead[state.currentNodeIndex];
   const deco = Decoration.node(
     currentNode.pos,
@@ -302,7 +200,6 @@ function highlightCurrentNode() {
 
 function stopReading(reset: boolean) {
   ttsService.cancel();
-  backgroundAudio.pause(); // MODIFIED: Stop the background audio
   document.body.classList.remove('is-reading-aloud');
   if (reset) {
     set(initialState);
@@ -327,7 +224,6 @@ editorStore.subscribe(($editorStore) => {
   if ($editorStore.instance) {
     const editor = $editorStore.instance;
     let previousDoc: ProseMirrorNode | null = editor.state.doc;
-
     const handleTransaction = () => {
       const state = get(store);
       const currentDoc = editor.state.doc;
@@ -341,7 +237,6 @@ editorStore.subscribe(($editorStore) => {
       }
       previousDoc = currentDoc;
     };
-
     editor.on('transaction', handleTransaction);
     unsubscribeFromEditor = () => {
       editor.off('transaction', handleTransaction);
@@ -350,19 +245,18 @@ editorStore.subscribe(($editorStore) => {
   }
 });
 
+// --- Interfaz Pública ---
 export const ttsStore = {
   subscribe,
+  getReadableNodes, // MODIFICACIÓN: Exponemos la función para que la use el offlineStore
+
   async initialize(): Promise<void> {
     if (get(store).availableVoices.length > 0) return;
-
     update((s) => ({ ...s, status: 'initializing' }));
     try {
-      await ttsService.initialize();
       const voices = ttsService.getVoices();
       const preferredVoice =
-        voices.find((v) => v.id.includes('Google') && v.lang === 'en-GB') ||
-        voices.find((v) => v.lang.startsWith('en')) ||
-        voices[0];
+        voices.find((v) => v.id === 'en-US-JennyNeural') || voices[0];
       update((s) => ({
         ...s,
         status: 'idle',
@@ -376,58 +270,47 @@ export const ttsStore = {
         status: 'error',
         error: get(t)('tts.init_error'),
       }));
-      throw error;
     }
   },
 
   async startReading(): Promise<void> {
     const editor = get(editorStore).instance;
     if (!editor) return;
-
     await this.initialize();
     const nodes = getReadableNodes(editor);
     if (nodes.length === 0) {
       toast.info(get(t)('tts.no_readable_content_toast'));
       return;
     }
-
-    backgroundAudio.play(); // MODIFIED: Start the background audio
     document.body.classList.add('is-reading-aloud');
-    update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+    update((s) => ({ ...s, nodesToRead: nodes }));
     speakNodeAtIndex(0);
   },
-
   async startReadingFromNode(nodeId: string): Promise<void> {
     const editor = get(editorStore).instance;
     if (!editor) return;
-
     await this.initialize();
     const nodes = getReadableNodes(editor);
     const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
-
     if (startIndex === -1) {
       toast.error(get(t)('tts.node_not_found_error'));
       return;
     }
-
-    backgroundAudio.play(); // MODIFIED: Start the background audio
     document.body.classList.add('is-reading-aloud');
-    update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
+    update((s) => ({ ...s, nodesToRead: nodes }));
     speakNodeAtIndex(startIndex);
   },
 
   stopReading: () => stopReading(true),
 
   pauseReading: () => {
-    const state = get(store);
-    if (state.status !== 'playing') return;
+    if (get(store).status !== 'playing') return;
     ttsService.pause();
     update((s) => ({ ...s, status: 'paused' }));
   },
 
   resumeReading: () => {
-    const state = get(store);
-    if (state.status !== 'paused') return;
+    if (get(store).status !== 'paused') return;
     ttsService.resume();
     update((s) => ({ ...s, status: 'playing' }));
   },
@@ -456,8 +339,3 @@ export const ttsStore = {
     speakNodeAtIndex(currentIndex - 1);
   },
 };
-
-// NEW: This subscription automatically keeps the media session updated whenever the state changes.
-store.subscribe(() => {
-  updateMediaSession();
-});

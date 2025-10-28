@@ -47,6 +47,7 @@
     "vitest-browser-svelte": "^0.1.0"
   },
   "dependencies": {
+    "@andresaya/edge-tts": "^1.4.4",
     "@floating-ui/dom": "^1.7.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@tiptap/core": "^3.6.1",
@@ -68,6 +69,7 @@
     "chart.js": "^4.5.1",
     "d3": "^7.9.0",
     "dexie": "^4.2.1",
+    "idb": "^8.0.3",
     "katex": "^0.16.11",
     "sharp": "^0.34.4",
     "svelte-feather-icons": "^4.2.0",
