@@ -205,9 +205,12 @@ export class BrowserTTSService implements TTSService {
       .reduce((acc, c) => acc + c.length, 0);
 
     utterance.onboundary = (event) => {
+      // The original code had a bug here. This is the corrected way to create the event.
       const adjustedEvent = new SpeechSynthesisEvent('boundary', {
-        ...event,
         charIndex: baseCharIndex + event.charIndex,
+        elapsedTime: event.elapsedTime,
+        name: event.name,
+        utterance: event.utterance, // This was the missing part
       });
 
       if ('charLength' in event) {

@@ -68,14 +68,14 @@ let unsubscribeFromEditor: Unsubscriber | null = null;
 /** Manages the silent audio element to maintain background execution. */
 const backgroundAudio = {
   play: () => {
+    console.log('Attempting to play background audio...'); // <-- ADD THIS
     const audio = document.getElementById(
       'background-audio-player'
     ) as HTMLAudioElement;
     if (audio && audio.paused) {
-      // User must interact with the page first for this to work.
-      audio
-        .play()
-        .catch((e) => console.warn('Background audio could not be played.', e));
+      audio.play().catch((e) => {
+        console.error('BACKGROUND AUDIO FAILED TO PLAY:', e); // <-- ADD THIS
+      });
     }
   },
   pause: () => {
@@ -129,8 +129,13 @@ function updateMediaSession() {
 
   navigator.mediaSession.playbackState =
     status === 'playing' ? 'playing' : 'paused';
-}
 
+  console.log('Updated Media Session:', {
+    // <-- ADD THIS BLOCK
+    state: navigator.mediaSession.playbackState,
+    title: navigator.mediaSession.metadata?.title,
+  });
+}
 /** Sets up the media action handlers (play, pause, etc. from lock screen) once. */
 function setupMediaSessionHandlers() {
   if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
