@@ -1,16 +1,9 @@
+// src/lib/services/tts/EdgeAudioTTSService.ts (Complete)
+
 /**
  * @file Implements the TTSService interface using a custom backend API that streams
  * audio from a service like Microsoft Edge's TTS.
  * @module EdgeAudioTTSService
- *
- * @remarks
- * This service is designed for high-quality, server-generated audio playback.
- * Key features include:
- * - **Offline First:** Prioritizes playing pre-downloaded audio from a local cache (IndexedDB).
- * - **Streaming Playback:** Uses the `MediaSource` API to play audio from the network as it
- *   arrives, providing fast startup times and resilience on mobile networks.
- * - **Robust Lifecycle Management:** Carefully handles the complex state of the MediaSource
- *   API to prevent race conditions and memory leaks, particularly for short audio clips.
  */
 
 import type { TTSService, TTSSpeakOptions, TTSVoice } from './tts.service';
@@ -24,15 +17,11 @@ export class EdgeAudioTTSService implements TTSService {
   private mediaSource: MediaSource | null = null;
   private sourceBuffer: SourceBuffer | null = null;
 
-  /**
-   * A stable event handler to prevent TypeScript errors with `addEventListener`
-   * and to ensure proper removal to avoid memory leaks.
-   */
   private handleEnded = () => this.onEndCallback?.();
 
   constructor() {
     this.audio = new Audio();
-    this.audio.setAttribute('playsinline', ''); // Essential for iOS playback
+    this.audio.setAttribute('playsinline', '');
 
     this.audio.addEventListener('error', () => {
       const mediaError = this.audio.error;
@@ -71,7 +60,6 @@ export class EdgeAudioTTSService implements TTSService {
 
     (async () => {
       try {
-        // --- PATH 1: OFFLINE CACHE ---
         if (options.audioId) {
           const audioBlob = await getAudio(options.audioId);
           if (audioBlob) {
@@ -87,7 +75,6 @@ export class EdgeAudioTTSService implements TTSService {
           }
         }
 
-        // --- PATH 2: NETWORK STREAMING ---
         console.log('Playing audio from: Network (Streaming)');
         const encodedText = encodeURIComponent(text);
         const response = await fetch(
@@ -108,7 +95,17 @@ export class EdgeAudioTTSService implements TTSService {
           async () => {
             if (!this.mediaSource) return;
             try {
-              const mimeType = 'audio/mpeg';
+              // --- THIS IS THE FINAL CLIENT-SIDE CHANGE ---
+              // We declare the modern, supported MIME type.
+              const mimeType = 'audio/webm; codecs=opus';
+              // --- END OF CHANGE ---
+
+              // We should check if the browser supports it before trying to use it.
+              if (!MediaSource.isTypeSupported(mimeType)) {
+                throw new Error(
+                  `Streaming with ${mimeType} is not supported by this browser.`
+                );
+              }
               this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 
               const streamFinished = new Promise<void>((resolve) => {
@@ -120,9 +117,7 @@ export class EdgeAudioTTSService implements TTSService {
                     this.mediaSource.endOfStream();
                   }
                 };
-
                 const onSourceEnded = () => {
-                  // --- FIX: Add guards to satisfy TypeScript ---
                   if (this.sourceBuffer) {
                     this.sourceBuffer.removeEventListener(
                       'updateend',
@@ -137,8 +132,6 @@ export class EdgeAudioTTSService implements TTSService {
                   }
                   resolve();
                 };
-
-                // --- FIX: Add guards to satisfy TypeScript ---
                 if (this.sourceBuffer) {
                   this.sourceBuffer.addEventListener('updateend', onUpdateEnd);
                 }
@@ -156,7 +149,6 @@ export class EdgeAudioTTSService implements TTSService {
                 if (done) break;
                 await this.appendBuffer(value.buffer);
               }
-
               await streamFinished;
             } catch (error) {
               this.onErrorCallback?.(error);
@@ -166,7 +158,6 @@ export class EdgeAudioTTSService implements TTSService {
         );
 
         this.audio.addEventListener('ended', this.handleEnded, { once: true });
-
         await this.audio.play();
       } catch (error) {
         this.onErrorCallback?.(error);
@@ -176,12 +167,10 @@ export class EdgeAudioTTSService implements TTSService {
 
   private appendBuffer(chunk: ArrayBuffer): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Create a local constant to help TypeScript's control flow analysis
       const buffer = this.sourceBuffer;
       if (!buffer) {
         return reject('SourceBuffer is not initialized.');
       }
-
       const append = () => {
         try {
           const onUpdateEnd = () => {
@@ -194,7 +183,6 @@ export class EdgeAudioTTSService implements TTSService {
             buffer.removeEventListener('error', onError);
             reject(ev);
           };
-
           buffer.addEventListener('updateend', onUpdateEnd);
           buffer.addEventListener('error', onError);
           buffer.appendBuffer(chunk);
@@ -202,7 +190,6 @@ export class EdgeAudioTTSService implements TTSService {
           reject(err);
         }
       };
-
       if (buffer.updating) {
         buffer.addEventListener('updateend', append, { once: true });
       } else {
@@ -214,7 +201,6 @@ export class EdgeAudioTTSService implements TTSService {
   public pause(): void {
     this.audio.pause();
   }
-
   public resume(): void {
     this.audio.play().catch(this.onErrorCallback);
   }
@@ -225,8 +211,6 @@ export class EdgeAudioTTSService implements TTSService {
         if (this.sourceBuffer && !this.sourceBuffer.updating) {
           this.sourceBuffer.abort();
         }
-        // It's safe to call endOfStream even if the buffer was aborted.
-        // This helps formally close the MediaSource.
         if (this.mediaSource.readyState === 'open') {
           this.mediaSource.endOfStream();
         }
@@ -234,18 +218,14 @@ export class EdgeAudioTTSService implements TTSService {
         console.error('Error during MediaSource cancellation:', e);
       }
     }
-
     this.audio.pause();
     this.audio.removeAttribute('src');
-
     if (this.currentAudioUrl) {
       URL.revokeObjectURL(this.currentAudioUrl);
     }
-
     this.currentAudioUrl = null;
     this.mediaSource = null;
     this.sourceBuffer = null;
-
     this.audio.removeEventListener('ended', this.handleEnded);
   }
 }

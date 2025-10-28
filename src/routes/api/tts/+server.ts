@@ -3,29 +3,28 @@
 import { EdgeTTS } from '@andresaya/edge-tts';
 import type { RequestHandler } from './$types';
 
-// --- THIS IS THE CORRECTED SYNTAX ---
-/**
- * Route-specific configuration.
- * By setting `runtime` to 'edge', we instruct the hosting platform
- * (Vercel, Netlify, etc.) to run this endpoint on their global Edge Network.
- * This is the key to bypassing the IP blocking issue.
- */
 export const config = {
   runtime: 'edge',
 };
-// ------------------------------------
 
 export const GET: RequestHandler = async ({ url }) => {
+  // --- THIS IS THE CORRECTED LINE ---
   const text = url.searchParams.get('text');
   const voice = url.searchParams.get('voice') || 'en-US-JennyNeural';
+  // --- END OF CORRECTION ---
 
   if (!text) {
     return new Response('Missing text parameter', { status: 400 });
   }
 
   try {
+    // Step 1: Create the instance with no arguments.
     const tts = new EdgeTTS();
 
+    // Step 2: Set the audio format as a property on the instance.
+    (tts as any).audioFormat = 'webm-24khz-16bit-mono-opus';
+
+    // Step 3: Now, call the synthesize method.
     const ttsStream = tts.synthesizeStream(text, voice);
 
     const webStream = new ReadableStream({
@@ -39,7 +38,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
     return new Response(webStream, {
       headers: {
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': 'audio/webm; codecs=opus',
       },
     });
   } catch (error) {
