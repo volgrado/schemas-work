@@ -36,3 +36,6 @@
 <!-- GLOBAL UI OVERLAYS -->
 <!-- The CommandBar is a global overlay that can be triggered from anywhere. -->
 <CommandBar />
+
+<!-- ADD THIS LINE AT THE VERY BOTTOM -->
+<audio id="background-audio-player" loop src="/silent.mp3"></audio>

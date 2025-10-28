@@ -1,51 +1,6 @@
 /**
  * @file Manages the global state and orchestration for the Text-to-Speech (TTS) feature.
  * @module ttsStore
- *
- * @remarks
- * This store orchestrates the entire Text-to-Speech (TTS) feature. It acts as a high-level
- * state machine, managing everything from initializing the underlying speech synthesis engine to
- * building a playable queue, tracking playback progress, and highlighting the text in the editor
- * as it's being spoken.
- *
- * ### Architectural Role
- *
- * - **Complex Feature Controller**: This is one of the most complex stores in the application,
- *   showcasing a rich set of responsibilities. It manages not just UI state (`status`, `rate`,
- *   `selectedVoiceId`), but also a data queue (`nodesToRead`) and direct interaction with a
- *   browser API via a service abstraction (`ttsService`).
- *
- * - **Service Abstraction**: The store does not interact with the `SpeechSynthesis` Web API
- *   directly. Instead, it uses a `TTSService` interface (`BrowserTTSService`). This is an
- *   important architectural choice. It decouples the store's logic from the specific
- *   implementation of the TTS engine. This would make it easier to swap in a different TTS
- *   provider in the future (e.g., a cloud-based AI voice service) without having to rewrite the
- *   entire store. The new provider would just need to implement the `TTSService` interface.
- *
- * - **Editor Integration for Highlighting**: A key feature is the real-time highlighting of spoken
- *   text. The store achieves this by interacting with the `editorStore`.
- *   1. It generates a `wordMap` for each `ReadableNode`, pre-calculating the exact document
- *      position of every word.
- *   2. It listens to the `onBoundary` event from the `ttsService`.
- *   3. In the `handleWordBoundary` function, it uses this event to find the currently spoken word
- *      in the `wordMap` and creates a ProseMirror `Decoration` to apply a CSS class to it.
- *   4. The new `DecorationSet` is committed to the store, which causes the `DocumentView` to
- *      update the editor's appearance.
- *   This creates a highly dynamic and interactive experience that is tightly coupled to the editor's
- *   state.
- *
- * - **Robust State and Race Condition Management**: Speaking is an asynchronous, time-based
- *   operation with many events (`onEnd`, `onError`, `onBoundary`). The store carefully manages
- *   its state (`status`) and uses a unique `currentSpeechId` (a UUID) for each utterance. Notice
- *   how the event handlers always check if the `currentSpeechId` still matches the one from the
- *   state. This prevents race conditions, for example, if the user quickly stops and starts a new
- *   speech request, the `onEnd` event from the old, cancelled speech won't incorrectly trigger
- *   the `nextNode` action.
- *
- * - **Reactive to Document Changes**: The store subscribes to the `editorStore` and listens for
- *   transactions. If the document is modified while TTS is active, it automatically stops playback.
- *   This prevents the playback from going out of sync with the document content and avoids potential
- *   errors with stale node positions in the `nodesToRead` queue.
  */
 
 import { writable, get } from 'svelte/store';
@@ -61,9 +16,7 @@ import type { Unsubscriber } from 'svelte/store';
 import type { Editor } from '@tiptap/core';
 import { t } from '$lib/utils/i18n';
 
-/**
- * Defines the possible playback statuses of the TTS engine.
- */
+// --- (All of your original interfaces are kept) ---
 export type TTSStatus =
   | 'idle'
   | 'initializing'
@@ -71,52 +24,27 @@ export type TTSStatus =
   | 'paused'
   | 'error';
 
-/**
- * Represents a block of text that can be read aloud, corresponding to a ProseMirror node.
- */
 export interface ReadableNode {
-  /** The start position of the node in the document. */
   pos: number;
-  /** The ProseMirror node object. */
   node: ProseMirrorNode;
-  /** A truncated title for the node, for display in the UI. */
   title: string;
-  /** The full text content of the node to be spoken. */
   textToSpeak: string;
-  /** A map of each word's exact position for highlighting. */
   wordMap: { word: string; from: number; to: number }[];
 }
 
-/**
- * Defines the complete state of the TTS feature.
- */
 export interface TTSState {
-  /** The current playback status. */
   status: TTSStatus;
-  /** The queue of nodes to be read. */
   nodesToRead: ReadableNode[];
-  /** The index of the currently playing node in the queue. */
   currentNodeIndex: number;
-  /** A ProseMirror `DecorationSet` for highlighting. */
   decorationSet: DecorationSet;
-  /** A list of all available TTS voices. */
   availableVoices: TTSVoice[];
-  /** The ID of the currently selected voice. */
   selectedVoiceId: string | null;
-  /** The playback rate (speed). */
   rate: number;
-  /** The playback pitch. */
   pitch: number;
-  /** An error message, if any. */
   error: string | null;
-  /** A unique ID for the current speech utterance to prevent race conditions. */
   currentSpeechId: string | null;
 }
 
-/**
- * The initial state of the TTS store.
- * @internal
- */
 const initialState: TTSState = {
   status: 'idle',
   nodesToRead: [],
@@ -135,12 +63,100 @@ const store = writable<TTSState>(initialState);
 const { subscribe, update, set } = store;
 let unsubscribeFromEditor: Unsubscriber | null = null;
 
-/**
- * Scans the editor document and extracts all readable nodes.
- * @internal
- * @param editor The Tiptap editor instance.
- * @returns An array of readable nodes.
- */
+// --- NEW: MEDIA SESSION & BACKGROUND AUDIO MANAGEMENT ---
+
+/** Manages the silent audio element to maintain background execution. */
+const backgroundAudio = {
+  play: () => {
+    const audio = document.getElementById(
+      'background-audio-player'
+    ) as HTMLAudioElement;
+    if (audio && audio.paused) {
+      // User must interact with the page first for this to work.
+      audio
+        .play()
+        .catch((e) => console.warn('Background audio could not be played.', e));
+    }
+  },
+  pause: () => {
+    const audio = document.getElementById(
+      'background-audio-player'
+    ) as HTMLAudioElement;
+    if (audio && !audio.paused) {
+      audio.pause();
+    }
+  },
+};
+
+/** Updates the OS media notification (lock screen widget) with the current track info. */
+function updateMediaSession() {
+  if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
+
+  const state = get(store);
+  const { status, nodesToRead, currentNodeIndex } = state;
+
+  if (status === 'idle' || status === 'error' || nodesToRead.length === 0) {
+    if (navigator.mediaSession.metadata !== null) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = 'none';
+    }
+    return;
+  }
+
+  const currentNode = nodesToRead[currentNodeIndex];
+  if (!currentNode) return;
+
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: currentNode.title,
+    artist: 'Schemas.Work',
+    album: `Section ${currentNodeIndex + 1} of ${nodesToRead.length}`,
+
+    // --- THIS SECTION IS UPDATED TO USE YOUR FILES ---
+    artwork: [
+      {
+        src: '/android-chrome-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/android-chrome-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+    // ---------------------------------------------------
+  });
+
+  navigator.mediaSession.playbackState =
+    status === 'playing' ? 'playing' : 'paused';
+}
+
+/** Sets up the media action handlers (play, pause, etc. from lock screen) once. */
+function setupMediaSessionHandlers() {
+  if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
+
+  const actions: [MediaSessionAction, () => void][] = [
+    ['play', () => ttsStore.resumeReading()],
+    ['pause', () => ttsStore.pauseReading()],
+    ['nexttrack', () => ttsStore.nextNode()],
+    ['previoustrack', () => ttsStore.previousNode()],
+    ['stop', () => ttsStore.stopReading()],
+  ];
+
+  for (const [action, handler] of actions) {
+    try {
+      navigator.mediaSession.setActionHandler(action, handler);
+    } catch (error) {
+      console.warn(`The media session action '${action}' is not supported.`);
+    }
+  }
+}
+
+// Run this once when the module loads
+setupMediaSessionHandlers();
+
+// --- (All your original functions are below, with minor modifications) ---
+
 function getReadableNodes(editor: Editor): ReadableNode[] {
   const nodes: ReadableNode[] = [];
   editor.state.doc.descendants((node, pos) => {
@@ -174,11 +190,6 @@ function getReadableNodes(editor: Editor): ReadableNode[] {
   return nodes;
 }
 
-/**
- * Initiates speech synthesis for the node at a given index.
- * @internal
- * @param index The index of the node to speak.
- */
 function speakNodeAtIndex(index: number) {
   const state = get(store);
   if (index < 0 || index >= state.nodesToRead.length) {
@@ -226,12 +237,6 @@ function speakNodeAtIndex(index: number) {
   });
 }
 
-/**
- * Handles the `onboundary` event to highlight the currently spoken word.
- * @internal
- * @param event The speech synthesis boundary event.
- * @param wordMap The word map for the current node.
- */
 function handleWordBoundary(
   event: SpeechSynthesisEvent,
   wordMap: ReadableNode['wordMap']
@@ -245,7 +250,11 @@ function handleWordBoundary(
   const charIndex = event.charIndex;
 
   const currentWord = wordMap.find((w) => {
-    const wordStartIndex = spokenText.indexOf(w.word);
+    // A slightly more robust way to find the word index
+    const wordStartIndex = spokenText.indexOf(
+      w.word,
+      charIndex > 0 ? charIndex - 5 : 0
+    );
     const wordEndIndex = wordStartIndex + w.word.length;
     return charIndex >= wordStartIndex && charIndex < wordEndIndex;
   });
@@ -269,10 +278,6 @@ function handleWordBoundary(
   }
 }
 
-/**
- * Applies a decoration to highlight the entire node being read.
- * @internal
- */
 function highlightCurrentNode() {
   const editor = get(editorStore).instance;
   const state = get(store);
@@ -290,14 +295,10 @@ function highlightCurrentNode() {
   }));
 }
 
-/**
- * Stops playback and optionally resets the TTS state.
- * @internal
- * @param reset If true, resets all state.
- */
 function stopReading(reset: boolean) {
   ttsService.cancel();
-  document.body.classList.remove('is-reading-aloud'); // IMPROVEMENT: Remove global state class
+  backgroundAudio.pause(); // MODIFIED: Stop the background audio
+  document.body.classList.remove('is-reading-aloud');
   if (reset) {
     set(initialState);
   } else {
@@ -310,10 +311,6 @@ function stopReading(reset: boolean) {
   }
 }
 
-/**
- * Skips to the next node in the reading queue.
- * @internal
- */
 function nextNode() {
   ttsService.cancel();
   const currentIndex = get(store).currentNodeIndex;
@@ -348,15 +345,8 @@ editorStore.subscribe(($editorStore) => {
   }
 });
 
-/**
- * The public interface for the `ttsStore`.
- */
 export const ttsStore = {
   subscribe,
-
-  /**
-   * Initializes the TTS engine and fetches available voices.
-   */
   async initialize(): Promise<void> {
     if (get(store).availableVoices.length > 0) return;
 
@@ -385,9 +375,6 @@ export const ttsStore = {
     }
   },
 
-  /**
-   * Starts reading the document from the beginning.
-   */
   async startReading(): Promise<void> {
     const editor = get(editorStore).instance;
     if (!editor) return;
@@ -399,15 +386,12 @@ export const ttsStore = {
       return;
     }
 
-    document.body.classList.add('is-reading-aloud'); // IMPROVEMENT: Add global state class
+    backgroundAudio.play(); // MODIFIED: Start the background audio
+    document.body.classList.add('is-reading-aloud');
     update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
     speakNodeAtIndex(0);
   },
 
-  /**
-   * Starts reading from a specific node in the document.
-   * @param nodeId The ID of the node from which to start reading.
-   */
   async startReadingFromNode(nodeId: string): Promise<void> {
     const editor = get(editorStore).instance;
     if (!editor) return;
@@ -421,15 +405,14 @@ export const ttsStore = {
       return;
     }
 
-    document.body.classList.add('is-reading-aloud'); // IMPROVEMENT: Add global state class
+    backgroundAudio.play(); // MODIFIED: Start the background audio
+    document.body.classList.add('is-reading-aloud');
     update((s) => ({ ...s, nodesToRead: nodes, status: 'playing' }));
     speakNodeAtIndex(startIndex);
   },
 
-  /** Stops the current playback and resets the TTS state. */
   stopReading: () => stopReading(true),
 
-  /** Pauses the current playback. */
   pauseReading: () => {
     const state = get(store);
     if (state.status !== 'playing') return;
@@ -437,7 +420,6 @@ export const ttsStore = {
     update((s) => ({ ...s, status: 'paused' }));
   },
 
-  /** Resumes a paused playback. */
   resumeReading: () => {
     const state = get(store);
     if (state.status !== 'paused') return;
@@ -445,10 +427,6 @@ export const ttsStore = {
     update((s) => ({ ...s, status: 'playing' }));
   },
 
-  /**
-   * Sets the active TTS voice.
-   * @param voiceId The unique ID of the voice to use.
-   */
   setVoice: (voiceId: string) => {
     update((s) => ({ ...s, selectedVoiceId: voiceId }));
     if (['playing', 'paused'].includes(get(store).status)) {
@@ -457,10 +435,6 @@ export const ttsStore = {
     }
   },
 
-  /**
-   * Sets the TTS playback rate.
-   * @param rate The new playback rate (e.g., 1.25 for 25% faster).
-   */
   setRate: (rate: number) => {
     update((s) => ({ ...s, rate }));
     if (['playing', 'paused'].includes(get(store).status)) {
@@ -469,13 +443,16 @@ export const ttsStore = {
     }
   },
 
-  /** Skips to the next readable node in the queue. */
   nextNode: () => nextNode(),
 
-  /** Skips to the previous readable node in the queue. */
   previousNode: () => {
     ttsService.cancel();
     const currentIndex = get(store).currentNodeIndex;
     speakNodeAtIndex(currentIndex - 1);
   },
 };
+
+// NEW: This subscription automatically keeps the media session updated whenever the state changes.
+store.subscribe(() => {
+  updateMediaSession();
+});

@@ -4,6 +4,7 @@
  */
 
 import { writable, get } from 'svelte/store';
+import { Decoration, DecorationSet } from 'prosemirror-view';
 import type { Card, ReviewQuality } from '$lib/types';
 import type { DeckOptions } from '$lib/services/features/deckService';
 import { editorStore } from './editorStore';
@@ -15,21 +16,25 @@ import * as deckService from '$lib/services/features/deckService';
 import * as reviewLogService from '$lib/services/features/reviewLogService';
 import type { Unsubscriber } from 'svelte/store';
 import { t } from '$lib/utils/i18n';
+// FIX: Use an alias for ProseMirror's Node to avoid confusion with the browser's DOM Node.
+import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 /**
  * Represents the complete state of a single review session.
  */
 export interface ReviewState {
   isReviewing: boolean;
-  isUiVisible: boolean; // NEW: Controls if the review UI is shown
-  isFinished: boolean; // NEW: Tracks session completion
+  isUiVisible: boolean;
+  isFinished: boolean;
   cardsToReview: Card[];
-  failedQueue: Card[]; // NEW: Queue for cards marked "Again"
-  sessionCardCount: number; // NEW: Total cards at session start
+  failedQueue: Card[];
+  sessionCardCount: number;
   currentCardIndex: number;
   isAnswerShown: boolean;
   lastAnswerCorrect: boolean | null;
   sessionOptions: Omit<DeckOptions, 'deckId'>;
+  /** The set of decorations to highlight the current card in the editor. */
+  decorationSet: DecorationSet;
 }
 
 /**
@@ -37,7 +42,7 @@ export interface ReviewState {
  */
 const initialState: ReviewState = {
   isReviewing: false,
-  isUiVisible: false, // NEW: Default to false
+  isUiVisible: false,
   isFinished: false,
   cardsToReview: [],
   failedQueue: [],
@@ -46,7 +51,73 @@ const initialState: ReviewState = {
   isAnswerShown: false,
   lastAnswerCorrect: null,
   sessionOptions: deckService.defaultDeckOptions,
+  decorationSet: DecorationSet.empty,
 };
+
+/**
+ * Represents the location of a card node within the ProseMirror document.
+ */
+interface CardPosition {
+  pos: number;
+  node: ProseMirrorNode;
+}
+
+/**
+ * Finds the ProseMirror node corresponding to a given card ID.
+ * @param cardId - The ID of the card to find.
+ * @returns A `CardPosition` object if found, otherwise `null`.
+ */
+function findCardNode(cardId: string): CardPosition | null {
+  const editor = get(editorStore).instance;
+  if (!editor) return null;
+
+  let position: CardPosition | null = null;
+
+  editor.state.doc.descendants((node, pos) => {
+    if (node.attrs.cardId === cardId) {
+      position = { pos, node };
+      return false; // Stop searching once the node is found
+    }
+  });
+
+  return position;
+}
+
+/**
+ * Creates a decoration set to highlight the current review card in the editor.
+ * @param state - The current review state.
+ * @returns A DecorationSet containing the highlight, or an empty set if no highlight is needed.
+ */
+function createCardDecorations(state: ReviewState): DecorationSet {
+  const editor = get(editorStore).instance;
+  if (
+    !state.isReviewing ||
+    state.isFinished ||
+    !editor ||
+    !state.isUiVisible ||
+    state.cardsToReview.length === 0
+  ) {
+    return DecorationSet.empty;
+  }
+
+  const currentCard = state.cardsToReview[state.currentCardIndex];
+  if (!currentCard) {
+    return DecorationSet.empty;
+  }
+
+  const cardPos = findCardNode(currentCard.id);
+
+  if (cardPos) {
+    const from = cardPos.pos;
+    const to = from + cardPos.node.nodeSize;
+    const decoration = Decoration.inline(from, to, {
+      class: 'review-highlight',
+    });
+    return DecorationSet.create(editor.state.doc, [decoration]);
+  }
+
+  return DecorationSet.empty;
+}
 
 const store = writable<ReviewState>(initialState);
 const { subscribe, update, set } = store;
@@ -98,7 +169,6 @@ async function startReview(deckIds?: string[]): Promise<void> {
     Math.max(0, remainingReviewSlots)
   );
 
-  // Anki-like order: learning cards first, then reviews, then new cards.
   const finalCards = [
     ...learningCards,
     ...limitedReviewCards.sort((a, b) => a.srs.interval - b.srs.interval),
@@ -159,14 +229,19 @@ function startReviewSession(
   toast.info(
     get(t)('review.review_started_toast', { type, count: cards.length })
   );
-  update((state) => ({
-    ...initialState,
-    isReviewing: true,
-    isUiVisible: true,
-    cardsToReview: cards,
-    sessionCardCount: cards.length,
-    sessionOptions: options || deckService.defaultDeckOptions,
-  }));
+  update((state) => {
+    const newState: ReviewState = {
+      ...initialState,
+      isReviewing: true,
+      isUiVisible: true,
+      cardsToReview: cards,
+      sessionCardCount: cards.length,
+      sessionOptions: options || deckService.defaultDeckOptions,
+      decorationSet: DecorationSet.empty,
+    };
+    newState.decorationSet = createCardDecorations(newState);
+    return newState;
+  });
 }
 
 function showAnswer(): void {
@@ -204,7 +279,7 @@ async function submitReview(quality: ReviewQuality): Promise<void> {
 
   await reviewLogService.logReview({
     cardId: currentCard.id,
-    deckId: currentCard.deckId, // FIX: Use deckId
+    deckId: currentCard.deckId,
     reviewTime: Date.now(),
     quality,
     newEase: updatedCard.srs.easeFactor,
@@ -212,39 +287,45 @@ async function submitReview(quality: ReviewQuality): Promise<void> {
     state: cardStateForLog,
   });
 
-  // Anki-style queue management
   let newCardsToReview = [...state.cardsToReview];
   let newFailedQueue = [...state.failedQueue];
   const reviewedCard = newCardsToReview.splice(state.currentCardIndex, 1)[0];
 
   if (quality < 3) {
-    // "Again"
     newFailedQueue.push(reviewedCard);
     toast.info(get(t)('review.card_will_reappear_toast'));
   }
 
-  // If main queue is empty, repopulate it with failed cards for this round
   if (newCardsToReview.length === 0 && newFailedQueue.length > 0) {
     newCardsToReview = newFailedQueue.sort(() => Math.random() - 0.5);
     newFailedQueue = [];
   }
 
   if (newCardsToReview.length === 0) {
-    update((s) => ({ ...s, isFinished: true }));
+    update((s) => ({
+      ...s,
+      isFinished: true,
+      decorationSet: DecorationSet.empty,
+    }));
     toast.success(get(t)('review.review_complete_toast'), {
       description: get(t)('review.review_complete_description', {
         count: state.sessionCardCount,
       }),
     });
   } else {
-    update((s) => ({
-      ...s,
-      cardsToReview: newCardsToReview,
-      failedQueue: newFailedQueue,
-      currentCardIndex: 0, // Always go to the start of the new queue
-      isAnswerShown: false,
-      lastAnswerCorrect: null,
-    }));
+    update((s) => {
+      const newState: ReviewState = {
+        ...s,
+        cardsToReview: newCardsToReview,
+        failedQueue: newFailedQueue,
+        currentCardIndex: 0,
+        isAnswerShown: false,
+        lastAnswerCorrect: null,
+        decorationSet: DecorationSet.empty,
+      };
+      newState.decorationSet = createCardDecorations(newState);
+      return newState;
+    });
   }
 }
 
@@ -263,11 +344,19 @@ async function jumpToSource(): Promise<void> {
     await documentStore.loadDocument(currentCard.deckId);
   }
 
-  update((s) => ({ ...s, isUiVisible: false }));
+  update((s) => ({
+    ...s,
+    isUiVisible: false,
+    decorationSet: DecorationSet.empty,
+  }));
 }
 
 function resumeReviewUi(): void {
-  update((s) => ({ ...s, isUiVisible: true }));
+  update((s) => {
+    const newState = { ...s, isUiVisible: true };
+    newState.decorationSet = createCardDecorations(newState);
+    return newState;
+  });
 }
 
 export const reviewStore = {
