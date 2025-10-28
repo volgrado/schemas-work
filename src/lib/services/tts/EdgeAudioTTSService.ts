@@ -1,22 +1,30 @@
 // src/lib/services/tts/EdgeAudioTTSService.ts
 
 import type { TTSService, TTSSpeakOptions, TTSVoice } from './tts.service';
-import { getAudio } from '$lib/services/core/db.service'; // Importa la función para leer de la BD
+import { getAudio } from '$lib/services/core/db.service';
 
 export class EdgeAudioTTSService implements TTSService {
   private audio: HTMLAudioElement;
   private onEndCallback: (() => void) | null = null;
   private onErrorCallback: ((error: any) => void) | null = null;
   private currentAudioUrl: string | null = null;
+  private mediaSource: MediaSource | null = null;
+  private sourceBuffer: SourceBuffer | null = null;
+
+  // --- FIX 1: Create a stable event handler to prevent type errors and memory leaks ---
+  private handleEnded = () => this.onEndCallback?.();
 
   constructor() {
     this.audio = new Audio();
-    this.audio.setAttribute('playsinline', ''); // Importante para iOS
+    this.audio.setAttribute('playsinline', '');
 
-    this.audio.addEventListener('ended', () => this.onEndCallback?.());
-    this.audio.addEventListener('error', (e) =>
-      this.onErrorCallback?.(new Error('Audio playback failed.'))
-    );
+    this.audio.addEventListener('error', (e) => {
+      const mediaError = this.audio.error;
+      const errorMessage = mediaError
+        ? `Media Error Code ${mediaError.code}: ${mediaError.message}`
+        : 'Audio playback failed.';
+      this.onErrorCallback?.(new Error(errorMessage));
+    });
   }
 
   public initialize(): Promise<void> {
@@ -24,7 +32,6 @@ export class EdgeAudioTTSService implements TTSService {
   }
 
   public getVoices(): TTSVoice[] {
-    // Lista de voces de alta calidad que ofreces a tus usuarios.
     return [
       { id: 'en-US-JennyNeural', name: 'Jenny (English, US)', lang: 'en-US' },
       { id: 'en-GB-SoniaNeural', name: 'Sonia (English, UK)', lang: 'en-GB' },
@@ -34,76 +41,110 @@ export class EdgeAudioTTSService implements TTSService {
         lang: 'es-MX',
       },
       { id: 'fr-FR-DeniseNeural', name: 'Denise (Français)', lang: 'fr-FR' },
-      // Puedes añadir más voces de la lista de Edge TTS aquí
     ];
   }
 
-  /**
-   * Inicia la reproducción de audio.
-   * Primero intenta obtener el audio desde el almacenamiento local (IndexedDB) si se proporciona un `audioId`.
-   * Si no lo encuentra localmente, lo solicita a la API de red.
-   * @param text El texto a sintetizar (solo se usa si el audio no está en caché).
-   * @param options Opciones de reproducción, incluyendo un `audioId` opcional para la búsqueda en caché.
-   */
   public speak(
     text: string,
     options: TTSSpeakOptions & { audioId?: string }
   ): void {
-    this.cancel(); // Detiene cualquier reproducción anterior
+    this.cancel();
 
     this.onEndCallback = options.onEnd;
     this.onErrorCallback = options.onError;
 
-    // Usamos una función autoejecutable asíncrona para manejar las promesas limpiamente.
     (async () => {
       try {
-        let audioBlob: Blob | undefined;
-        let dataSource: 'Cache' | 'Network' = 'Network';
-
-        // --- INICIO DE LA LÓGICA OFFLINE ---
-        // Si nos han pasado un ID, intentamos buscar el audio en la base de datos local.
         if (options.audioId) {
-          audioBlob = await getAudio(options.audioId);
+          const audioBlob = await getAudio(options.audioId);
           if (audioBlob) {
-            dataSource = 'Cache';
+            console.log('Playing audio from: Cache');
+            this.currentAudioUrl = URL.createObjectURL(audioBlob);
+            this.audio.src = this.currentAudioUrl;
+            this.audio.playbackRate = options.rate;
+            // --- FIX 1 (continued): Use the stable handler ---
+            this.audio.addEventListener('ended', this.handleEnded, {
+              once: true,
+            });
+            await this.audio.play();
+            return;
           }
         }
 
-        // Si no encontramos el audio en la caché (o no se proporcionó un ID), lo pedimos a la red.
-        if (!audioBlob) {
-          dataSource = 'Network';
-          const encodedText = encodeURIComponent(text);
-          const response = await fetch(
-            `/api/tts?text=${encodedText}&voice=${options.voiceId}`
-          );
+        console.log('Playing audio from: Network (Streaming)');
+        const encodedText = encodeURIComponent(text);
+        const response = await fetch(
+          `/api/tts?text=${encodedText}&voice=${options.voiceId}`
+        );
 
-          if (!response.ok) {
-            throw new Error(
-              `TTS service failed with status ${response.status}`
-            );
-          }
-          audioBlob = await response.blob();
-        }
-        // --- FIN DE LA LÓGICA OFFLINE ---
-
-        console.log(`Playing audio from: ${dataSource}`); // Log útil para depurar
-
-        if (!audioBlob || audioBlob.size === 0) {
-          throw new Error('Audio Blob is empty or invalid.');
+        if (!response.ok || !response.body) {
+          throw new Error(`TTS API Error (Status ${response.status})`);
         }
 
-        // Creamos una URL local para el Blob (ya sea de la caché o de la red)
-        this.currentAudioUrl = URL.createObjectURL(audioBlob);
+        this.mediaSource = new MediaSource();
+        this.currentAudioUrl = URL.createObjectURL(this.mediaSource);
         this.audio.src = this.currentAudioUrl;
         this.audio.playbackRate = options.rate;
 
-        // Reproducimos el audio
+        this.mediaSource.addEventListener(
+          'sourceopen',
+          async () => {
+            if (!this.mediaSource) return;
+            try {
+              const mimeType = 'audio/mpeg';
+              this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
+
+              const reader = response.body!.getReader();
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                // --- FIX 2: Explicitly provide the underlying ArrayBuffer ---
+                // This resolves the 'BufferSource' type mismatch.
+                await this.appendBuffer(value.buffer);
+              }
+
+              if (this.mediaSource.readyState === 'open') {
+                this.mediaSource.endOfStream();
+              }
+            } catch (error) {
+              this.onErrorCallback?.(error);
+            }
+          },
+          { once: true }
+        );
+
+        // --- FIX 1 (continued): Use the stable handler ---
+        this.audio.addEventListener('ended', this.handleEnded, { once: true });
+
         await this.audio.play();
       } catch (error) {
-        // Si algo falla en cualquier punto, llamamos al callback de error.
         this.onErrorCallback?.(error);
       }
     })();
+  }
+
+  // --- FIX 2 (continued): Update the parameter type to ArrayBuffer ---
+  private appendBuffer(chunk: ArrayBuffer): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.sourceBuffer || this.sourceBuffer.updating) {
+        reject('SourceBuffer not available or busy.');
+        return;
+      }
+      const onUpdateEnd = () => {
+        this.sourceBuffer?.removeEventListener('updateend', onUpdateEnd);
+        this.sourceBuffer?.removeEventListener('error', onError);
+        resolve();
+      };
+      const onError = (ev: Event) => {
+        this.sourceBuffer?.removeEventListener('updateend', onUpdateEnd);
+        this.sourceBuffer?.removeEventListener('error', onError);
+        reject(ev);
+      };
+
+      this.sourceBuffer.addEventListener('updateend', onUpdateEnd);
+      this.sourceBuffer.addEventListener('error', onError);
+      this.sourceBuffer.appendBuffer(chunk);
+    });
   }
 
   public pause(): void {
@@ -111,16 +152,27 @@ export class EdgeAudioTTSService implements TTSService {
   }
 
   public resume(): void {
-    this.audio.play();
+    this.audio.play().catch(this.onErrorCallback);
   }
 
   public cancel(): void {
+    if (this.mediaSource && this.mediaSource.readyState === 'open') {
+      this.sourceBuffer?.abort();
+      this.mediaSource.endOfStream();
+    }
+
     this.audio.pause();
     this.audio.removeAttribute('src');
-    // Es muy importante liberar la memoria de la URL del Blob cuando ya no se necesita.
+
     if (this.currentAudioUrl) {
       URL.revokeObjectURL(this.currentAudioUrl);
-      this.currentAudioUrl = null;
     }
+
+    this.currentAudioUrl = null;
+    this.mediaSource = null;
+    this.sourceBuffer = null;
+
+    // --- FIX 1 (continued): Remove the correct handler to prevent memory leaks ---
+    this.audio.removeEventListener('ended', this.handleEnded);
   }
 }
