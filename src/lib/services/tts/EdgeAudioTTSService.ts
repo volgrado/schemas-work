@@ -1,4 +1,17 @@
-// src/lib/services/tts/EdgeAudioTTSService.ts
+/**
+ * @file Implements the TTSService interface using a custom backend API that streams
+ * audio from a service like Microsoft Edge's TTS.
+ * @module EdgeAudioTTSService
+ *
+ * @remarks
+ * This service is designed for high-quality, server-generated audio playback.
+ * Key features include:
+ * - **Offline First:** Prioritizes playing pre-downloaded audio from a local cache (IndexedDB).
+ * - **Streaming Playback:** Uses the `MediaSource` API to play audio from the network as it
+ *   arrives, providing fast startup times and resilience on mobile networks.
+ * - **Robust Lifecycle Management:** Carefully handles the complex state of the MediaSource
+ *   API to prevent race conditions and memory leaks, particularly for short audio clips.
+ */
 
 import type { TTSService, TTSSpeakOptions, TTSVoice } from './tts.service';
 import { getAudio } from '$lib/services/core/db.service';
@@ -11,14 +24,17 @@ export class EdgeAudioTTSService implements TTSService {
   private mediaSource: MediaSource | null = null;
   private sourceBuffer: SourceBuffer | null = null;
 
-  // --- FIX 1: Create a stable event handler to prevent type errors and memory leaks ---
+  /**
+   * A stable event handler to prevent TypeScript errors with `addEventListener`
+   * and to ensure proper removal to avoid memory leaks.
+   */
   private handleEnded = () => this.onEndCallback?.();
 
   constructor() {
     this.audio = new Audio();
-    this.audio.setAttribute('playsinline', '');
+    this.audio.setAttribute('playsinline', ''); // Essential for iOS playback
 
-    this.audio.addEventListener('error', (e) => {
+    this.audio.addEventListener('error', () => {
       const mediaError = this.audio.error;
       const errorMessage = mediaError
         ? `Media Error Code ${mediaError.code}: ${mediaError.message}`
@@ -55,6 +71,7 @@ export class EdgeAudioTTSService implements TTSService {
 
     (async () => {
       try {
+        // --- PATH 1: OFFLINE CACHE ---
         if (options.audioId) {
           const audioBlob = await getAudio(options.audioId);
           if (audioBlob) {
@@ -62,7 +79,6 @@ export class EdgeAudioTTSService implements TTSService {
             this.currentAudioUrl = URL.createObjectURL(audioBlob);
             this.audio.src = this.currentAudioUrl;
             this.audio.playbackRate = options.rate;
-            // --- FIX 1 (continued): Use the stable handler ---
             this.audio.addEventListener('ended', this.handleEnded, {
               once: true,
             });
@@ -71,6 +87,7 @@ export class EdgeAudioTTSService implements TTSService {
           }
         }
 
+        // --- PATH 2: NETWORK STREAMING ---
         console.log('Playing audio from: Network (Streaming)');
         const encodedText = encodeURIComponent(text);
         const response = await fetch(
@@ -94,18 +111,53 @@ export class EdgeAudioTTSService implements TTSService {
               const mimeType = 'audio/mpeg';
               this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 
+              const streamFinished = new Promise<void>((resolve) => {
+                const onUpdateEnd = () => {
+                  if (
+                    this.mediaSource?.readyState === 'open' &&
+                    !this.sourceBuffer?.updating
+                  ) {
+                    this.mediaSource.endOfStream();
+                  }
+                };
+
+                const onSourceEnded = () => {
+                  // --- FIX: Add guards to satisfy TypeScript ---
+                  if (this.sourceBuffer) {
+                    this.sourceBuffer.removeEventListener(
+                      'updateend',
+                      onUpdateEnd
+                    );
+                  }
+                  if (this.mediaSource) {
+                    this.mediaSource.removeEventListener(
+                      'sourceended',
+                      onSourceEnded
+                    );
+                  }
+                  resolve();
+                };
+
+                // --- FIX: Add guards to satisfy TypeScript ---
+                if (this.sourceBuffer) {
+                  this.sourceBuffer.addEventListener('updateend', onUpdateEnd);
+                }
+                if (this.mediaSource) {
+                  this.mediaSource.addEventListener(
+                    'sourceended',
+                    onSourceEnded
+                  );
+                }
+              });
+
               const reader = response.body!.getReader();
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                // --- FIX 2: Explicitly provide the underlying ArrayBuffer ---
-                // This resolves the 'BufferSource' type mismatch.
                 await this.appendBuffer(value.buffer);
               }
 
-              if (this.mediaSource.readyState === 'open') {
-                this.mediaSource.endOfStream();
-              }
+              await streamFinished;
             } catch (error) {
               this.onErrorCallback?.(error);
             }
@@ -113,7 +165,6 @@ export class EdgeAudioTTSService implements TTSService {
           { once: true }
         );
 
-        // --- FIX 1 (continued): Use the stable handler ---
         this.audio.addEventListener('ended', this.handleEnded, { once: true });
 
         await this.audio.play();
@@ -123,27 +174,40 @@ export class EdgeAudioTTSService implements TTSService {
     })();
   }
 
-  // --- FIX 2 (continued): Update the parameter type to ArrayBuffer ---
   private appendBuffer(chunk: ArrayBuffer): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.sourceBuffer || this.sourceBuffer.updating) {
-        reject('SourceBuffer not available or busy.');
-        return;
+      // Create a local constant to help TypeScript's control flow analysis
+      const buffer = this.sourceBuffer;
+      if (!buffer) {
+        return reject('SourceBuffer is not initialized.');
       }
-      const onUpdateEnd = () => {
-        this.sourceBuffer?.removeEventListener('updateend', onUpdateEnd);
-        this.sourceBuffer?.removeEventListener('error', onError);
-        resolve();
-      };
-      const onError = (ev: Event) => {
-        this.sourceBuffer?.removeEventListener('updateend', onUpdateEnd);
-        this.sourceBuffer?.removeEventListener('error', onError);
-        reject(ev);
+
+      const append = () => {
+        try {
+          const onUpdateEnd = () => {
+            buffer.removeEventListener('updateend', onUpdateEnd);
+            buffer.removeEventListener('error', onError);
+            resolve();
+          };
+          const onError = (ev: Event) => {
+            buffer.removeEventListener('updateend', onUpdateEnd);
+            buffer.removeEventListener('error', onError);
+            reject(ev);
+          };
+
+          buffer.addEventListener('updateend', onUpdateEnd);
+          buffer.addEventListener('error', onError);
+          buffer.appendBuffer(chunk);
+        } catch (err) {
+          reject(err);
+        }
       };
 
-      this.sourceBuffer.addEventListener('updateend', onUpdateEnd);
-      this.sourceBuffer.addEventListener('error', onError);
-      this.sourceBuffer.appendBuffer(chunk);
+      if (buffer.updating) {
+        buffer.addEventListener('updateend', append, { once: true });
+      } else {
+        append();
+      }
     });
   }
 
@@ -157,8 +221,18 @@ export class EdgeAudioTTSService implements TTSService {
 
   public cancel(): void {
     if (this.mediaSource && this.mediaSource.readyState === 'open') {
-      this.sourceBuffer?.abort();
-      this.mediaSource.endOfStream();
+      try {
+        if (this.sourceBuffer && !this.sourceBuffer.updating) {
+          this.sourceBuffer.abort();
+        }
+        // It's safe to call endOfStream even if the buffer was aborted.
+        // This helps formally close the MediaSource.
+        if (this.mediaSource.readyState === 'open') {
+          this.mediaSource.endOfStream();
+        }
+      } catch (e) {
+        console.error('Error during MediaSource cancellation:', e);
+      }
     }
 
     this.audio.pause();
@@ -172,7 +246,6 @@ export class EdgeAudioTTSService implements TTSService {
     this.mediaSource = null;
     this.sourceBuffer = null;
 
-    // --- FIX 1 (continued): Remove the correct handler to prevent memory leaks ---
     this.audio.removeEventListener('ended', this.handleEnded);
   }
 }
