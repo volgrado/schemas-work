@@ -1,7 +1,8 @@
 /**
  * @file Manages the state and operations for Text-to-Speech (TTS) playback.
  * This store orchestrates the TTS service, offline downloads, and UI state, including
- * the Media Session API for native OS media controls.
+ * the Media Session API for native OS media controls. It uses an initialization
+ * promise to prevent race conditions during startup.
  * @module ttsStore
  */
 
@@ -60,16 +61,16 @@ const initialState: TTSState = {
   currentSpeechId: null,
 };
 
-/**
- * Creates the TTS store with all its associated logic and side-effects.
- * This factory pattern encapsulates the complex state management.
- */
 function createTtsStore() {
   const store = writable<TTSState>(initialState);
   const { subscribe, update, set } = store;
 
   let ttsService: EdgeAudioTTSService | null = null;
   let editorUnsubscriber: (() => void) | null = null;
+
+  // This promise acts as a "gate," ensuring that critical methods wait for
+  // the asynchronous initialization to complete before executing.
+  let initializationPromise: Promise<void> | null = null;
 
   // --- Private Helpers ---
 
@@ -121,13 +122,9 @@ function createTtsStore() {
     ttsService?.cancel();
     document.body.classList.remove('is-reading-aloud');
 
-    // Note: mediaSessionService.clear() is handled automatically by the subscription
-    // when the status changes to 'idle'.
-
     if (resetCompletely) {
-      set(initialState);
       if (ttsService) {
-        const service = ttsService; // Capture in a const for safety
+        const service = ttsService; // Capture for type safety
         set({
           ...initialState,
           isServiceReady: true,
@@ -198,8 +195,6 @@ function createTtsStore() {
     }));
     highlightCurrentNode();
 
-    // Note: mediaSessionService state is updated automatically by the subscription.
-
     try {
       await ttsService.speak(nodeToRead.textToSpeak, {
         voiceId: selectedVoiceId,
@@ -258,41 +253,51 @@ function createTtsStore() {
   const publicMethods = {
     subscribe,
 
-    async initialize(audioEl: HTMLAudioElement): Promise<void> {
-      if (ttsService) return;
-      update((s) => ({ ...s, status: 'initializing' }));
-      try {
-        ttsService = new EdgeAudioTTSService(audioEl);
-        await ttsService.initialize();
-
-        const voices = ttsService.getVoices();
-        const preferredVoice =
-          voices.find((v) => v.id === 'en-US-JennyNeural') || voices[0];
-
-        update((s) => ({
-          ...s,
-          status: 'idle',
-          isServiceReady: true,
-          availableVoices: voices,
-          selectedVoiceId: preferredVoice?.id ?? null,
-        }));
-
-        setupEditorListener();
-        setupMediaSessionIntegration();
-      } catch (error) {
-        errorService.reportError(error, { operation: 'tts.initialize' });
-        update((s) => ({
-          ...s,
-          status: 'error',
-          error: get(t)('tts.init_error'),
-          isServiceReady: false,
-        }));
+    initialize(audioEl: HTMLAudioElement): Promise<void> {
+      if (initializationPromise) {
+        return initializationPromise;
       }
+      initializationPromise = (async () => {
+        update((s) => ({ ...s, status: 'initializing' }));
+        try {
+          ttsService = new EdgeAudioTTSService(audioEl);
+          await ttsService.initialize();
+
+          const voices = ttsService.getVoices();
+          const preferredVoice =
+            voices.find((v) => v.id === 'en-US-JennyNeural') || voices[0];
+
+          update((s) => ({
+            ...s,
+            status: 'idle',
+            isServiceReady: true,
+            availableVoices: voices,
+            selectedVoiceId: preferredVoice?.id ?? null,
+          }));
+
+          setupEditorListener();
+          setupMediaSessionIntegration();
+        } catch (error) {
+          errorService.reportError(error, { operation: 'tts.initialize' });
+          update((s) => ({
+            ...s,
+            status: 'error',
+            error: get(t)('tts.init_error'),
+            isServiceReady: false,
+          }));
+          throw error;
+        }
+      })();
+      return initializationPromise;
     },
 
     async startReading(): Promise<void> {
-      const { status, isServiceReady } = get(store);
-      if (!isServiceReady || !['idle', 'error'].includes(status)) return;
+      await initializationPromise;
+      const { status } = get(store);
+      if (!['idle', 'error'].includes(status)) {
+        console.warn('TTSStore: startReading called in an invalid state.');
+        return;
+      }
 
       const { instance: editor } = get(editorStore);
       const { docId } = get(documentStore);
@@ -332,14 +337,16 @@ function createTtsStore() {
 
     stopReading: () => transitionToIdle(true),
 
-    pauseReading: () => {
+    async pauseReading(): Promise<void> {
+      await initializationPromise;
       if (get(store).status === 'playing') {
         ttsService?.pause();
         update((s) => ({ ...s, status: 'paused' }));
       }
     },
 
-    resumeReading: () => {
+    async resumeReading(): Promise<void> {
+      await initializationPromise;
       if (get(store).status === 'paused') {
         ttsService?.resume();
         update((s) => ({ ...s, status: 'playing' }));
@@ -353,19 +360,22 @@ function createTtsStore() {
       }
     },
 
-    setRate: (rate: number) => {
+    async setRate(rate: number): Promise<void> {
+      await initializationPromise;
       update((s) => ({ ...s, rate }));
       if (['playing', 'paused'].includes(get(store).status)) {
         speakNodeAtIndex(get(store).currentNodeIndex);
       }
     },
 
-    nextNode: () => {
+    async nextNode(): Promise<void> {
+      await initializationPromise;
       const currentIndex = get(store).currentNodeIndex;
       speakNodeAtIndex(currentIndex + 1);
     },
 
-    previousNode: () => {
+    async previousNode(): Promise<void> {
+      await initializationPromise;
       const currentIndex = get(store).currentNodeIndex;
       speakNodeAtIndex(currentIndex - 1);
     },
