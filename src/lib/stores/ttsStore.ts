@@ -1,41 +1,37 @@
 /**
  * @file Manages the state and operations for Text-to-Speech (TTS) playback.
- * This store is architected to be initialized asynchronously, waiting for a global
- * HTMLAudioElement to be provided by the UI layer before creating the TTS service instance.
+ * This store orchestrates the TTS service, offline downloads, and UI state, including
+ * the Media Session API for native OS media controls.
  * @module ttsStore
  */
 
 import { writable, get } from 'svelte/store';
 import { editorStore } from './editorStore';
+import { documentStore } from './documentStore';
+import { offlineStore } from './offlineStore';
+import {
+  mediaSessionService,
+  type MediaMetadataPayload,
+} from '$lib/services/tts/mediaSessionService';
+import { EdgeAudioTTSService } from '$lib/services/tts/EdgeAudioTTSService';
+import type { TTSVoice } from '$lib/services/tts/ttsService';
+import { getReadableNodes, type ReadableNode } from '$lib/utils/ttsUtils';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import { toast } from 'svelte-sonner';
 import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
-import type { Unsubscriber } from 'svelte/store';
-import type { Editor } from '@tiptap/core';
 import { t } from '$lib/utils/i18n';
-import { EdgeAudioTTSService } from '$lib/services/tts/EdgeAudioTTSService';
-import type { TTSVoice } from '$lib/services/tts/tts.service';
-import { documentStore } from './documentStore';
-import { offlineStore } from './offlineStore';
 
-// --- NEW: Import the dedicated store for the global audio element ---
-import { globalAudioElementStore } from './globalAudioStore';
-
-// --- Interfaces ---
+// --- Types and Initial State ---
 export type TTSStatus =
   | 'idle'
   | 'initializing'
+  | 'awaiting_download'
   | 'playing'
   | 'paused'
   | 'error';
-export interface ReadableNode {
-  pos: number;
-  node: ProseMirrorNode;
-  title: string;
-  textToSpeak: string;
-}
+
 export interface TTSState {
   status: TTSStatus;
   nodesToRead: ReadableNode[];
@@ -46,6 +42,7 @@ export interface TTSState {
   rate: number;
   pitch: number;
   error: string | null;
+  isServiceReady: boolean;
   currentSpeechId: string | null;
 }
 
@@ -59,321 +56,322 @@ const initialState: TTSState = {
   rate: 1,
   pitch: 1,
   error: null,
+  isServiceReady: false,
   currentSpeechId: null,
 };
 
-// --- Asynchronous Service Initialization ---
-// The service is now initialized to null. It will be created only when the global audio element is ready.
-let ttsService: EdgeAudioTTSService | null = null;
+/**
+ * Creates the TTS store with all its associated logic and side-effects.
+ * This factory pattern encapsulates the complex state management.
+ */
+function createTtsStore() {
+  const store = writable<TTSState>(initialState);
+  const { subscribe, update, set } = store;
 
-// Subscribe to the global audio element store.
-globalAudioElementStore.subscribe((audioEl) => {
-  // If the audio element from the layout is ready AND we haven't created the service yet...
-  if (audioEl && !ttsService) {
-    // ...create the service instance, passing the global element as a dependency.
-    ttsService = new EdgeAudioTTSService(audioEl);
-    console.log(
-      'TTS Service initialized successfully with global audio element.'
-    );
-  }
-});
+  let ttsService: EdgeAudioTTSService | null = null;
+  let editorUnsubscriber: (() => void) | null = null;
 
-const store = writable<TTSState>(initialState);
-const { subscribe, update, set } = store;
-let unsubscribeFromEditor: Unsubscriber | null = null;
+  // --- Private Helpers ---
 
-// --- Internal Functions ---
-export function getReadableNodes(editor: Editor): ReadableNode[] {
-  const nodes: ReadableNode[] = [];
-  editor.state.doc.descendants((node, pos) => {
-    if (
-      (node.type.name === 'heading' || node.type.name === 'listItem') &&
-      node.textContent.trim()
-    ) {
-      let title = '';
-      let content = '';
-      const fullText = node.textContent.trim();
-      if (node.type.name === 'heading') {
-        title = fullText;
-        content = '';
-      } else if (node.type.name === 'listItem' && node.firstChild) {
-        title = node.firstChild.textContent.trim();
-        if (fullText.length > title.length) {
-          content = fullText.substring(title.length).trim();
+  /** Sets up the integration with the Media Session API, making the store self-contained. */
+  function setupMediaSessionIntegration() {
+    mediaSessionService.initialize({
+      onPlay: () => publicMethods.resumeReading(),
+      onPause: () => publicMethods.pauseReading(),
+      onNextTrack: () => publicMethods.nextNode(),
+      onPreviousTrack: () => publicMethods.previousNode(),
+    });
+
+    // Subscribe to our own store's changes to keep the media notification in sync.
+    store.subscribe(($tts) => {
+      const status = $tts.status;
+      if (status === 'playing' || status === 'paused') {
+        const $document = get(documentStore);
+        const currentNode = $tts.nodesToRead[$tts.currentNodeIndex];
+
+        if (currentNode) {
+          const metadata: MediaMetadataPayload = {
+            title: currentNode.title,
+            artist: $document.metadata?.title || 'Document',
+            album: 'Schemas.Work',
+            artwork: [
+              {
+                src: '/android-chrome-192x192.png',
+                sizes: '192x192',
+                type: 'image/png',
+              },
+              {
+                src: '/android-chrome-512x512.png',
+                sizes: '512x512',
+                type: 'image/png',
+              },
+            ],
+          };
+          mediaSessionService.updateMetadata(metadata);
         }
+        mediaSessionService.setPlaybackState(status);
       } else {
-        title = fullText;
-        content = '';
+        mediaSessionService.clear();
       }
-      if (!content) {
-        nodes.push({
-          pos,
-          node,
-          title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
-          textToSpeak: title,
+    });
+  }
+
+  /** Centralizes the logic for stopping playback and cleaning up state. */
+  function transitionToIdle(resetCompletely: boolean = false) {
+    ttsService?.cancel();
+    document.body.classList.remove('is-reading-aloud');
+
+    // Note: mediaSessionService.clear() is handled automatically by the subscription
+    // when the status changes to 'idle'.
+
+    if (resetCompletely) {
+      set(initialState);
+      if (ttsService) {
+        const service = ttsService; // Capture in a const for safety
+        set({
+          ...initialState,
+          isServiceReady: true,
+          availableVoices: service.getVoices(),
         });
-        return node.type.name !== 'listItem';
+      } else {
+        set(initialState);
       }
-      const endsWithPunctuation = /[.?!]$/.test(title);
-      const textToSpeak = endsWithPunctuation
-        ? `${title} ${content}`
-        : `${title}. ${content}`;
-      nodes.push({
-        pos,
-        node,
-        title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
-        textToSpeak: textToSpeak,
-      });
-    }
-    return node.type.name !== 'listItem';
-  });
-  return nodes;
-}
-
-async function speakNodeAtIndex(index: number) {
-  if (!ttsService) {
-    console.error(
-      'speakNodeAtIndex called before TTS service was initialized.'
-    );
-    return;
-  }
-
-  const state = get(store);
-  if (index < 0 || index >= state.nodesToRead.length) {
-    stopReading(true);
-    toast.success(get(t)('tts.finished_reading_toast'));
-    return;
-  }
-
-  const nodeToRead = state.nodesToRead[index];
-  const speechId = uuidv4();
-  update((s) => ({
-    ...s,
-    currentNodeIndex: index,
-    status: 'playing',
-    currentSpeechId: speechId,
-  }));
-  highlightCurrentNode();
-
-  const docId = get(documentStore).docId;
-  const docStatus = await offlineStore.getDocStatus(docId);
-  let audioId: string | undefined =
-    docId && docStatus === 'downloaded' ? `${docId}_${index}` : undefined;
-
-  ttsService.speak(nodeToRead.textToSpeak, {
-    voiceId: state.selectedVoiceId!,
-    rate: state.rate,
-    pitch: state.pitch,
-    audioId: audioId,
-    onEnd: () => {
-      if (get(store).currentSpeechId === speechId) {
-        nextNode();
-      }
-    },
-    onError: (error) => {
-      if (get(store).currentSpeechId === speechId) {
-        errorService.reportError(error, { operation: 'tts.speakNode' });
-        update((s) => ({
-          ...s,
-          status: 'error',
-          error: get(t)('tts.playback_error'),
-        }));
-      }
-    },
-  });
-}
-
-function highlightCurrentNode() {
-  const editor = get(editorStore).instance;
-  const state = get(store);
-  if (!editor || state.nodesToRead.length === 0) return;
-  const currentNode = state.nodesToRead[state.currentNodeIndex];
-  if (!currentNode) return;
-  const deco = Decoration.node(
-    currentNode.pos,
-    currentNode.pos + currentNode.node.nodeSize,
-    { class: 'is-current-tts-node' }
-  );
-  update((s) => ({
-    ...s,
-    decorationSet: DecorationSet.create(editor.state.doc, [deco]),
-  }));
-}
-
-function stopReading(reset: boolean) {
-  if (!ttsService) return;
-  ttsService.cancel();
-  document.body.classList.remove('is-reading-aloud');
-  if (reset) {
-    set(initialState);
-  } else {
-    update((s) => ({
-      ...s,
-      status: 'idle',
-      decorationSet: DecorationSet.empty,
-      currentSpeechId: null,
-    }));
-  }
-}
-
-function nextNode() {
-  if (!ttsService) return;
-  ttsService.cancel();
-  const currentIndex = get(store).currentNodeIndex;
-  speakNodeAtIndex(currentIndex + 1);
-}
-
-editorStore.subscribe(($editorStore) => {
-  if (unsubscribeFromEditor) unsubscribeFromEditor();
-  if ($editorStore.instance) {
-    const editor = $editorStore.instance;
-    let previousDoc: ProseMirrorNode | null = editor.state.doc;
-    const handleTransaction = () => {
-      const state = get(store);
-      const currentDoc = editor.state.doc;
-      if (
-        ['playing', 'paused'].includes(state.status) &&
-        previousDoc &&
-        !currentDoc.eq(previousDoc)
-      ) {
-        toast.info(get(t)('tts.stopped_due_to_changes_toast'));
-        stopReading(true);
-      }
-      previousDoc = currentDoc;
-    };
-    editor.on('transaction', handleTransaction);
-    unsubscribeFromEditor = () => {
-      editor.off('transaction', handleTransaction);
-      previousDoc = null;
-    };
-  }
-});
-
-// --- Public Store Interface ---
-export const ttsStore = {
-  subscribe,
-  getReadableNodes,
-
-  async initialize(): Promise<void> {
-    if (!ttsService) {
-      toast.info('Audio player is initializing, please wait a moment.');
-      return;
-    }
-    if (get(store).availableVoices.length > 0) return;
-    update((s) => ({ ...s, status: 'initializing' }));
-    try {
-      const voices = ttsService.getVoices();
-      const preferredVoice =
-        voices.find((v) => v.id === 'en-US-JennyNeural') || voices[0];
+    } else {
       update((s) => ({
         ...s,
         status: 'idle',
-        availableVoices: voices,
-        selectedVoiceId: preferredVoice ? preferredVoice.id : null,
+        decorationSet: DecorationSet.empty,
+        currentSpeechId: null,
       }));
-    } catch (error) {
-      errorService.reportError(error, { operation: 'tts.initialize' });
+    }
+  }
+
+  /** Updates the visual highlight on the currently spoken node. */
+  function highlightCurrentNode() {
+    const { instance: editor } = get(editorStore);
+    const { nodesToRead, currentNodeIndex } = get(store);
+    if (!editor || nodesToRead.length === 0) return;
+
+    const currentNode = nodesToRead[currentNodeIndex];
+    if (!currentNode) return;
+
+    const deco = Decoration.node(
+      currentNode.pos,
+      currentNode.pos + currentNode.node.nodeSize,
+      { class: 'is-current-tts-node' }
+    );
+    update((s) => ({
+      ...s,
+      decorationSet: DecorationSet.create(editor.state.doc, [deco]),
+    }));
+  }
+
+  /** The core function to speak a single node. */
+  async function speakNodeAtIndex(index: number) {
+    const { nodesToRead, selectedVoiceId, rate, pitch } = get(store);
+
+    if (index < 0 || index >= nodesToRead.length) {
+      toast.success(get(t)('tts.finished_reading_toast'));
+      transitionToIdle(true);
+      return;
+    }
+
+    if (!ttsService || !selectedVoiceId) {
+      errorService.reportError(
+        new Error(
+          'speakNodeAtIndex called without ready service or selected voice'
+        )
+      );
+      return;
+    }
+
+    const nodeToRead = nodesToRead[index];
+    const speechId = uuidv4();
+    const docId = get(documentStore).docId;
+    const audioId = docId ? `${docId}_${index}` : undefined;
+
+    update((s) => ({
+      ...s,
+      currentNodeIndex: index,
+      status: 'playing',
+      currentSpeechId: speechId,
+    }));
+    highlightCurrentNode();
+
+    // Note: mediaSessionService state is updated automatically by the subscription.
+
+    try {
+      await ttsService.speak(nodeToRead.textToSpeak, {
+        voiceId: selectedVoiceId,
+        rate,
+        pitch,
+        audioId,
+        onEnd: () => {
+          if (get(store).currentSpeechId === speechId) publicMethods.nextNode();
+        },
+        onError: (error) => {
+          if (get(store).currentSpeechId === speechId) {
+            errorService.reportError(error, { operation: 'tts.speakNode' });
+            update((s) => ({
+              ...s,
+              status: 'error',
+              error: get(t)('tts.playback_error'),
+            }));
+          }
+        },
+      });
+    } catch (initialError) {
+      errorService.reportError(initialError as Error, {
+        operation: 'tts.speakNode.setup',
+      });
       update((s) => ({
         ...s,
         status: 'error',
-        error: get(t)('tts.init_error'),
+        error: get(t)('tts.playback_error'),
       }));
     }
-  },
+  }
 
-  async startReading(): Promise<void> {
-    const currentStatus = get(store).status;
-    if (currentStatus === 'playing' || currentStatus === 'initializing') {
-      console.warn(
-        'TTS Store: Ignored startReading() call because playback is already active.'
-      );
-      return;
-    }
-    if (!ttsService) {
-      toast.error(
-        'Audio service is not yet ready. Please try again in a moment.'
-      );
-      return;
-    }
-    const editor = get(editorStore).instance;
+  /** Attaches a listener to the editor to stop playback on content changes. */
+  function setupEditorListener() {
+    editorUnsubscriber?.();
+    const { instance: editor } = get(editorStore);
     if (!editor) return;
-    await this.initialize();
-    const nodes = getReadableNodes(editor);
-    if (nodes.length === 0) {
-      toast.info(get(t)('tts.no_readable_content_toast'));
-      return;
-    }
-    document.body.classList.add('is-reading-aloud');
-    update((s) => ({ ...s, nodesToRead: nodes }));
-    speakNodeAtIndex(0);
-  },
 
-  async startReadingFromNode(nodeId: string): Promise<void> {
-    const currentStatus = get(store).status;
-    if (currentStatus === 'playing' || currentStatus === 'initializing') {
-      console.warn(
-        'TTS Store: Ignored startReadingFromNode() call because playback is already active.'
-      );
-      return;
-    }
-    if (!ttsService) {
-      toast.error('Audio service not ready.');
-      return;
-    }
-    const editor = get(editorStore).instance;
-    if (!editor) return;
-    await this.initialize();
-    const nodes = getReadableNodes(editor);
-    const startIndex = nodes.findIndex((n) => n.node.attrs.nodeId === nodeId);
-    if (startIndex === -1) {
-      toast.error(get(t)('tts.node_not_found_error'));
-      return;
-    }
-    document.body.classList.add('is-reading-aloud');
-    update((s) => ({ ...s, nodesToRead: nodes }));
-    speakNodeAtIndex(startIndex);
-  },
+    let previousDoc: ProseMirrorNode = editor.state.doc;
+    const handleTransaction = () => {
+      const { status } = get(store);
+      if (['awaiting_download', 'playing', 'paused'].includes(status)) {
+        if (!editor.state.doc.eq(previousDoc)) {
+          toast.info(get(t)('tts.stopped_due_to_changes_toast'));
+          transitionToIdle(true);
+        }
+      }
+      previousDoc = editor.state.doc;
+    };
 
-  stopReading: () => stopReading(true),
+    editor.on('transaction', handleTransaction);
+    editorUnsubscriber = () => editor.off('transaction', handleTransaction);
+  }
 
-  pauseReading: () => {
-    if (!ttsService) return;
-    if (get(store).status !== 'playing') return;
-    ttsService.pause();
-    update((s) => ({ ...s, status: 'paused' }));
-  },
+  // --- Public Store Methods ---
+  const publicMethods = {
+    subscribe,
 
-  resumeReading: () => {
-    if (!ttsService) return;
-    if (get(store).status !== 'paused') return;
-    ttsService.resume();
-    update((s) => ({ ...s, status: 'playing' }));
-  },
+    async initialize(audioEl: HTMLAudioElement): Promise<void> {
+      if (ttsService) return;
+      update((s) => ({ ...s, status: 'initializing' }));
+      try {
+        ttsService = new EdgeAudioTTSService(audioEl);
+        await ttsService.initialize();
 
-  setVoice: (voiceId: string) => {
-    if (!ttsService) return;
-    update((s) => ({ ...s, selectedVoiceId: voiceId }));
-    if (['playing', 'paused'].includes(get(store).status)) {
-      ttsService.cancel();
-      speakNodeAtIndex(get(store).currentNodeIndex);
-    }
-  },
+        const voices = ttsService.getVoices();
+        const preferredVoice =
+          voices.find((v) => v.id === 'en-US-JennyNeural') || voices[0];
 
-  setRate: (rate: number) => {
-    if (!ttsService) return;
-    update((s) => ({ ...s, rate }));
-    if (['playing', 'paused'].includes(get(store).status)) {
-      ttsService.cancel();
-      speakNodeAtIndex(get(store).currentNodeIndex);
-    }
-  },
+        update((s) => ({
+          ...s,
+          status: 'idle',
+          isServiceReady: true,
+          availableVoices: voices,
+          selectedVoiceId: preferredVoice?.id ?? null,
+        }));
 
-  nextNode: () => nextNode(),
+        setupEditorListener();
+        setupMediaSessionIntegration();
+      } catch (error) {
+        errorService.reportError(error, { operation: 'tts.initialize' });
+        update((s) => ({
+          ...s,
+          status: 'error',
+          error: get(t)('tts.init_error'),
+          isServiceReady: false,
+        }));
+      }
+    },
 
-  previousNode: () => {
-    if (!ttsService) return;
-    ttsService.cancel();
-    const currentIndex = get(store).currentNodeIndex;
-    speakNodeAtIndex(currentIndex - 1);
-  },
-};
+    async startReading(): Promise<void> {
+      const { status, isServiceReady } = get(store);
+      if (!isServiceReady || !['idle', 'error'].includes(status)) return;
+
+      const { instance: editor } = get(editorStore);
+      const { docId } = get(documentStore);
+      if (!editor || !docId) return;
+
+      const nodes = getReadableNodes(editor);
+      if (nodes.length === 0) {
+        toast.info(get(t)('tts.no_readable_content_toast'));
+        return;
+      }
+
+      update((s) => ({ ...s, nodesToRead: nodes, status: 'initializing' }));
+
+      try {
+        const docStatus = await offlineStore.getDocStatus(docId);
+        if (docStatus === 'downloaded') {
+          document.body.classList.add('is-reading-aloud');
+          speakNodeAtIndex(0);
+        } else {
+          update((s) => ({ ...s, status: 'awaiting_download' }));
+          const { selectedVoiceId } = get(store);
+          if (!selectedVoiceId)
+            throw new Error('No voice selected for download.');
+          await offlineStore.downloadDocument(docId, selectedVoiceId);
+          if (get(store).status === 'awaiting_download') {
+            document.body.classList.add('is-reading-aloud');
+            speakNodeAtIndex(0);
+          }
+        }
+      } catch (err) {
+        errorService.reportError(err as Error, {
+          operation: 'tts.startReading.workflow',
+        });
+        transitionToIdle(true);
+      }
+    },
+
+    stopReading: () => transitionToIdle(true),
+
+    pauseReading: () => {
+      if (get(store).status === 'playing') {
+        ttsService?.pause();
+        update((s) => ({ ...s, status: 'paused' }));
+      }
+    },
+
+    resumeReading: () => {
+      if (get(store).status === 'paused') {
+        ttsService?.resume();
+        update((s) => ({ ...s, status: 'playing' }));
+      }
+    },
+
+    setVoice: (voiceId: string) => {
+      update((s) => ({ ...s, selectedVoiceId: voiceId }));
+      if (get(store).status !== 'idle') {
+        toast.info(get(t)('offline.voice_change_requires_redownload'));
+      }
+    },
+
+    setRate: (rate: number) => {
+      update((s) => ({ ...s, rate }));
+      if (['playing', 'paused'].includes(get(store).status)) {
+        speakNodeAtIndex(get(store).currentNodeIndex);
+      }
+    },
+
+    nextNode: () => {
+      const currentIndex = get(store).currentNodeIndex;
+      speakNodeAtIndex(currentIndex + 1);
+    },
+
+    previousNode: () => {
+      const currentIndex = get(store).currentNodeIndex;
+      speakNodeAtIndex(currentIndex - 1);
+    },
+  };
+
+  return publicMethods;
+}
+
+export const ttsStore = createTtsStore();

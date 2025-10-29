@@ -30,12 +30,13 @@ export interface TTSSpeakOptions {
   rate: number;
   /** The desired pitch of the voice (e.g., 0 for low, 2 for high). */
   pitch: number;
-  /** A callback that executes when speech synthesis has finished. */
+  /** A callback that executes when speech synthesis has finished successfully. */
   onEnd: () => void;
-  /** A callback that executes if an error occurs during synthesis. */
-  onError: (error: any) => void;
+  /** A callback that executes if an error occurs during synthesis or playback. */
+  onError: (error: Error) => void; // Changed 'any' to 'Error' for better type safety.
   /** An optional callback that executes at word or sentence boundaries. */
   onBoundary?: (event: SpeechSynthesisEvent) => void;
+  audioId?: string;
 }
 
 /**
@@ -57,10 +58,13 @@ export interface TTSService {
 
   /**
    * Initiates speech synthesis of a given text with specified options.
+   * This is an asynchronous operation for setting up the audio stream or utterance.
    * @param {string} text The text to be synthesized.
    * @param {TTSSpeakOptions} options The configuration for this speech request.
+   * @returns {Promise<void>} A promise that resolves when playback has successfully started,
+   * or rejects if there's an initial setup error (e.g., API failure, invalid options).
    */
-  speak(text: string, options: TTSSpeakOptions): void;
+  speak(text: string, options: TTSSpeakOptions): Promise<void>;
 
   /**
    * Pauses the currently playing speech.
@@ -73,7 +77,7 @@ export interface TTSService {
   resume(): void;
 
   /**
-   * Immediately stops the current speech and clears any pending utterances.
+   * Immediately stops the current speech and clears any pending operations.
    */
   cancel(): void;
 }

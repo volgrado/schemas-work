@@ -1,0 +1,27 @@
+[
+  {
+    "id": "en-US-JennyNeural",
+    "name": "Jenny (English, US)",
+    "lang": "en-US"
+  },
+  {
+    "id": "en-GB-SoniaNeural",
+    "name": "Sonia (English, UK)",
+    "lang": "en-GB"
+  },
+  {
+    "id": "es-MX-DaliaNeural",
+    "name": "Dalia (Español, México)",
+    "lang": "es-MX"
+  },
+  {
+    "id": "fr-FR-DeniseNeural",
+    "name": "Denise (Français)",
+    "lang": "fr-FR"
+  },
+  {
+    "id": "de-DE-AmalaNeural",
+    "name": "Amala (Deutsch)",
+    "lang": "de-DE"
+  }
+]
