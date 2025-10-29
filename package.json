@@ -77,5 +77,8 @@
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.27",
     "zod": "^4.1.11"
+  },
+  "overrides": {
+    "picomatch": "^4.0.3"
   }
 }
