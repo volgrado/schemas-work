@@ -1,0 +1,12 @@
+# wrangler.toml
+
+name = "schemas-work"
+pages_build_output_dir = ".cloudflare/pages"
+
+[compatibility_flags]
+nodejs_compat = true
+
+[compatibility_dates]
+# Usa una fecha reciente. Esto le dice a Cloudflare que use las últimas
+# versiones de sus APIs del runtime.
+default = "2024-03-01"

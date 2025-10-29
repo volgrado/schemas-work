@@ -10,8 +10,6 @@ const config = {
   kit: {
     adapter: adapter({
       // AÑADE ESTA SECCIÓN PARA RESOLVER EL ERROR DE CONSTRUCCIÓN
-      compatibilityFlags: ['nodejs_compat'],
-      compatibility_date: '2024-09-23',
 
       routes: {
         include: ['/*'],
