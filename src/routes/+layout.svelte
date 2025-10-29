@@ -1,5 +1,5 @@
 <!--
-  @file src/routes/+layout.svelte
+  @file src/routes/+layout.svelte.
   @description The root layout for the application.
   This version implements the "Global Audio Element" pattern by creating a single <audio>
   element and setting its value in a dedicated Svelte store (`globalAudioElementStore`).
