@@ -21,7 +21,6 @@
     "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.22.0",
     "@playwright/test": "^1.49.1",
-    "@sveltejs/adapter-auto": "^6.0.0",
     "@sveltejs/adapter-cloudflare": "^7.2.4",
     "@sveltejs/kit": "^2.22.0",
     "@testing-library/svelte": "^5.2.8",
@@ -49,7 +48,6 @@
   "dependencies": {
     "@andresaya/edge-tts": "^1.4.4",
     "@floating-ui/dom": "^1.7.4",
-    "@sveltejs/adapter-static": "^3.0.10",
     "@testing-library/jest-dom": "^6.9.1",
     "@tiptap/core": "^3.6.1",
     "@tiptap/extension-bold": "^3.6.1",
