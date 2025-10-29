@@ -1,4 +1,9 @@
-// src/lib/stores/ttsStore.ts
+/**
+ * @file Manages the state and operations for Text-to-Speech (TTS) playback.
+ * This store is architected to be initialized asynchronously, waiting for a global
+ * HTMLAudioElement to be provided by the UI layer before creating the TTS service instance.
+ * @module ttsStore
+ */
 
 import { writable, get } from 'svelte/store';
 import { editorStore } from './editorStore';
@@ -12,9 +17,11 @@ import type { Editor } from '@tiptap/core';
 import { t } from '$lib/utils/i18n';
 import { EdgeAudioTTSService } from '$lib/services/tts/EdgeAudioTTSService';
 import type { TTSVoice } from '$lib/services/tts/tts.service';
-// Imports para la lógica offline
 import { documentStore } from './documentStore';
 import { offlineStore } from './offlineStore';
+
+// --- NEW: Import the dedicated store for the global audio element ---
+import { globalAudioElementStore } from './globalAudioStore';
 
 // --- Interfaces ---
 export type TTSStatus =
@@ -55,15 +62,27 @@ const initialState: TTSState = {
   currentSpeechId: null,
 };
 
-// --- Configuración ---
-const ttsService: EdgeAudioTTSService = new EdgeAudioTTSService();
+// --- Asynchronous Service Initialization ---
+// The service is now initialized to null. It will be created only when the global audio element is ready.
+let ttsService: EdgeAudioTTSService | null = null;
+
+// Subscribe to the global audio element store.
+globalAudioElementStore.subscribe((audioEl) => {
+  // If the audio element from the layout is ready AND we haven't created the service yet...
+  if (audioEl && !ttsService) {
+    // ...create the service instance, passing the global element as a dependency.
+    ttsService = new EdgeAudioTTSService(audioEl);
+    console.log(
+      'TTS Service initialized successfully with global audio element.'
+    );
+  }
+});
+
 const store = writable<TTSState>(initialState);
 const { subscribe, update, set } = store;
 let unsubscribeFromEditor: Unsubscriber | null = null;
 
-// --- Funciones Internas ---
-
-// MODIFICACIÓN: Exportamos la función para que otros módulos (como offlineStore) puedan usarla.
+// --- Internal Functions ---
 export function getReadableNodes(editor: Editor): ReadableNode[] {
   const nodes: ReadableNode[] = [];
   editor.state.doc.descendants((node, pos) => {
@@ -71,13 +90,9 @@ export function getReadableNodes(editor: Editor): ReadableNode[] {
       (node.type.name === 'heading' || node.type.name === 'listItem') &&
       node.textContent.trim()
     ) {
-      // --- START OF NEW '.' LOGIC ---
-
       let title = '';
       let content = '';
       const fullText = node.textContent.trim();
-
-      // Intelligently separate the title from the main content.
       if (node.type.name === 'heading') {
         title = fullText;
         content = '';
@@ -87,12 +102,9 @@ export function getReadableNodes(editor: Editor): ReadableNode[] {
           content = fullText.substring(title.length).trim();
         }
       } else {
-        // Fallback for unexpected structures.
         title = fullText;
         content = '';
       }
-
-      // If there's no content, just use the title as is.
       if (!content) {
         nodes.push({
           pos,
@@ -102,34 +114,30 @@ export function getReadableNodes(editor: Editor): ReadableNode[] {
         });
         return node.type.name !== 'listItem';
       }
-
-      // Check if the title already ends with punctuation.
       const endsWithPunctuation = /[.?!]$/.test(title);
-
-      // Combine title and content with a period to create a pause.
-      // If the title already has punctuation, we just add a space.
       const textToSpeak = endsWithPunctuation
         ? `${title} ${content}`
         : `${title}. ${content}`;
-
       nodes.push({
         pos,
         node,
-        // The display title for the UI is still clean.
         title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
-        // The text to speak now includes the period for a natural pause.
         textToSpeak: textToSpeak,
       });
-
-      // --- END OF NEW '.' LOGIC ---
     }
     return node.type.name !== 'listItem';
   });
   return nodes;
 }
 
-// MODIFICACIÓN: La función ahora es 'async' para poder consultar el estado offline.
 async function speakNodeAtIndex(index: number) {
+  if (!ttsService) {
+    console.error(
+      'speakNodeAtIndex called before TTS service was initialized.'
+    );
+    return;
+  }
+
   const state = get(store);
   if (index < 0 || index >= state.nodesToRead.length) {
     stopReading(true);
@@ -139,7 +147,6 @@ async function speakNodeAtIndex(index: number) {
 
   const nodeToRead = state.nodesToRead[index];
   const speechId = uuidv4();
-
   update((s) => ({
     ...s,
     currentNodeIndex: index,
@@ -148,22 +155,16 @@ async function speakNodeAtIndex(index: number) {
   }));
   highlightCurrentNode();
 
-  // --- INICIO DE LA LÓGICA OFFLINE ---
   const docId = get(documentStore).docId;
   const docStatus = await offlineStore.getDocStatus(docId);
-
-  let audioId: string | undefined = undefined;
-  // Usamos el audio de la caché solo si está descargado y actualizado.
-  if (docId && docStatus === 'downloaded') {
-    audioId = `${docId}_${index}`;
-  }
-  // --- FIN DE LA LÓGICA OFFLINE ---
+  let audioId: string | undefined =
+    docId && docStatus === 'downloaded' ? `${docId}_${index}` : undefined;
 
   ttsService.speak(nodeToRead.textToSpeak, {
     voiceId: state.selectedVoiceId!,
     rate: state.rate,
     pitch: state.pitch,
-    audioId: audioId, // Pasamos el ID (o undefined) al servicio de audio
+    audioId: audioId,
     onEnd: () => {
       if (get(store).currentSpeechId === speechId) {
         nextNode();
@@ -187,6 +188,7 @@ function highlightCurrentNode() {
   const state = get(store);
   if (!editor || state.nodesToRead.length === 0) return;
   const currentNode = state.nodesToRead[state.currentNodeIndex];
+  if (!currentNode) return;
   const deco = Decoration.node(
     currentNode.pos,
     currentNode.pos + currentNode.node.nodeSize,
@@ -199,6 +201,7 @@ function highlightCurrentNode() {
 }
 
 function stopReading(reset: boolean) {
+  if (!ttsService) return;
   ttsService.cancel();
   document.body.classList.remove('is-reading-aloud');
   if (reset) {
@@ -214,6 +217,7 @@ function stopReading(reset: boolean) {
 }
 
 function nextNode() {
+  if (!ttsService) return;
   ttsService.cancel();
   const currentIndex = get(store).currentNodeIndex;
   speakNodeAtIndex(currentIndex + 1);
@@ -245,12 +249,16 @@ editorStore.subscribe(($editorStore) => {
   }
 });
 
-// --- Interfaz Pública ---
+// --- Public Store Interface ---
 export const ttsStore = {
   subscribe,
-  getReadableNodes, // MODIFICACIÓN: Exponemos la función para que la use el offlineStore
+  getReadableNodes,
 
   async initialize(): Promise<void> {
+    if (!ttsService) {
+      toast.info('Audio player is initializing, please wait a moment.');
+      return;
+    }
     if (get(store).availableVoices.length > 0) return;
     update((s) => ({ ...s, status: 'initializing' }));
     try {
@@ -274,6 +282,19 @@ export const ttsStore = {
   },
 
   async startReading(): Promise<void> {
+    const currentStatus = get(store).status;
+    if (currentStatus === 'playing' || currentStatus === 'initializing') {
+      console.warn(
+        'TTS Store: Ignored startReading() call because playback is already active.'
+      );
+      return;
+    }
+    if (!ttsService) {
+      toast.error(
+        'Audio service is not yet ready. Please try again in a moment.'
+      );
+      return;
+    }
     const editor = get(editorStore).instance;
     if (!editor) return;
     await this.initialize();
@@ -286,7 +307,19 @@ export const ttsStore = {
     update((s) => ({ ...s, nodesToRead: nodes }));
     speakNodeAtIndex(0);
   },
+
   async startReadingFromNode(nodeId: string): Promise<void> {
+    const currentStatus = get(store).status;
+    if (currentStatus === 'playing' || currentStatus === 'initializing') {
+      console.warn(
+        'TTS Store: Ignored startReadingFromNode() call because playback is already active.'
+      );
+      return;
+    }
+    if (!ttsService) {
+      toast.error('Audio service not ready.');
+      return;
+    }
     const editor = get(editorStore).instance;
     if (!editor) return;
     await this.initialize();
@@ -304,18 +337,21 @@ export const ttsStore = {
   stopReading: () => stopReading(true),
 
   pauseReading: () => {
+    if (!ttsService) return;
     if (get(store).status !== 'playing') return;
     ttsService.pause();
     update((s) => ({ ...s, status: 'paused' }));
   },
 
   resumeReading: () => {
+    if (!ttsService) return;
     if (get(store).status !== 'paused') return;
     ttsService.resume();
     update((s) => ({ ...s, status: 'playing' }));
   },
 
   setVoice: (voiceId: string) => {
+    if (!ttsService) return;
     update((s) => ({ ...s, selectedVoiceId: voiceId }));
     if (['playing', 'paused'].includes(get(store).status)) {
       ttsService.cancel();
@@ -324,6 +360,7 @@ export const ttsStore = {
   },
 
   setRate: (rate: number) => {
+    if (!ttsService) return;
     update((s) => ({ ...s, rate }));
     if (['playing', 'paused'].includes(get(store).status)) {
       ttsService.cancel();
@@ -334,6 +371,7 @@ export const ttsStore = {
   nextNode: () => nextNode(),
 
   previousNode: () => {
+    if (!ttsService) return;
     ttsService.cancel();
     const currentIndex = get(store).currentNodeIndex;
     speakNodeAtIndex(currentIndex - 1);

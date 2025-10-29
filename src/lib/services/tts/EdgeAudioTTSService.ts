@@ -1,13 +1,41 @@
-// src/lib/services/tts/EdgeAudioTTSService.ts (Complete)
-
 /**
  * @file Implements the TTSService interface using a custom backend API that streams
- * audio from a service like Microsoft Edge's TTS.
+ * audio. This final version is architected as a pure class that operates on a
+ * provided HTMLAudioElement, making it decoupled from Svelte's lifecycle and context.
  * @module EdgeAudioTTSService
  */
 
 import type { TTSService, TTSSpeakOptions, TTSVoice } from './tts.service';
 import { getAudio } from '$lib/services/core/db.service';
+
+// NOTE: Remote logging can be removed for production.
+function sendLogToServer(
+  level: 'info' | 'error' | 'fatal',
+  message: string,
+  data?: any
+) {
+  try {
+    const logData = {
+      level,
+      message,
+      data: data
+        ? JSON.stringify(data, (key, value) =>
+            value instanceof Error
+              ? { message: value.message, stack: value.stack }
+              : value
+          )
+        : undefined,
+    };
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData),
+      keepalive: true,
+    }).catch(console.error);
+  } catch (e) {
+    console.error('Failed to send log to server:', e);
+  }
+}
 
 export class EdgeAudioTTSService implements TTSService {
   private audio: HTMLAudioElement;
@@ -17,25 +45,47 @@ export class EdgeAudioTTSService implements TTSService {
   private mediaSource: MediaSource | null = null;
   private sourceBuffer: SourceBuffer | null = null;
 
-  private handleEnded = () => this.onEndCallback?.();
-
-  constructor() {
-    this.audio = new Audio();
-    this.audio.setAttribute('playsinline', '');
-
-    this.audio.addEventListener('error', () => {
-      const mediaError = this.audio.error;
-      const errorMessage = mediaError
-        ? `Media Error Code ${mediaError.code}: ${mediaError.message}`
-        : 'Audio playback failed.';
-      this.onErrorCallback?.(new Error(errorMessage));
+  // Stable event handlers to ensure proper removal and prevent memory leaks.
+  private handleEnded = () => {
+    this.log('EVENT: Audio element "ended" triggered.');
+    this.onEndCallback?.();
+  };
+  private handleError = () => {
+    const mediaError = this.audio.error;
+    const errorMessage = mediaError
+      ? `Media Error Code ${mediaError.code}: ${mediaError.message}`
+      : 'Audio playback failed.';
+    this.logError('EVENT: Audio element "error" triggered', {
+      code: mediaError?.code,
+      message: mediaError?.message,
     });
+    this.onErrorCallback?.(new Error(errorMessage));
+  };
+
+  private log(message: string, data?: any) {
+    const fullMessage = `[EdgeAudioTTSService] ${message}`;
+    console.log(fullMessage, data || '');
+    sendLogToServer('info', message, data);
+  }
+  private logError(message: string, error: any) {
+    const fullMessage = `[EdgeAudioTTSService] ${message}`;
+    console.error(fullMessage, error);
+    sendLogToServer('error', message, error);
+  }
+
+  constructor(audioElement: HTMLAudioElement) {
+    if (!audioElement) {
+      throw new Error(
+        'EdgeAudioTTSService: An HTMLAudioElement must be provided to the constructor.'
+      );
+    }
+    this.audio = audioElement;
+    this.log('Service initialized with global audio element.');
   }
 
   public initialize(): Promise<void> {
     return Promise.resolve();
   }
-
   public getVoices(): TTSVoice[] {
     return [
       { id: 'en-US-JennyNeural', name: 'Jenny (English, US)', lang: 'en-US' },
@@ -53,36 +103,27 @@ export class EdgeAudioTTSService implements TTSService {
     text: string,
     options: TTSSpeakOptions & { audioId?: string }
   ): void {
+    this.log('speak() called.');
     this.cancel();
-
     this.onEndCallback = options.onEnd;
     this.onErrorCallback = options.onError;
+
+    // Add event listeners for this specific operation. They will be removed in cancel().
+    this.audio.addEventListener('error', this.handleError, { once: true });
+    this.audio.addEventListener('ended', this.handleEnded, { once: true });
 
     (async () => {
       try {
         if (options.audioId) {
           const audioBlob = await getAudio(options.audioId);
           if (audioBlob) {
-            console.log('Playing audio from: Cache');
+            this.log('SUCCESS: Found audio in cache.');
             this.currentAudioUrl = URL.createObjectURL(audioBlob);
             this.audio.src = this.currentAudioUrl;
             this.audio.playbackRate = options.rate;
-            this.audio.addEventListener('ended', this.handleEnded, {
-              once: true,
-            });
             await this.audio.play();
             return;
           }
-        }
-
-        console.log('Playing audio from: Network (Streaming)');
-        const encodedText = encodeURIComponent(text);
-        const response = await fetch(
-          `/api/tts?text=${encodedText}&voice=${options.voiceId}`
-        );
-
-        if (!response.ok || !response.body) {
-          throw new Error(`TTS API Error (Status ${response.status})`);
         }
 
         this.mediaSource = new MediaSource();
@@ -93,53 +134,34 @@ export class EdgeAudioTTSService implements TTSService {
         this.mediaSource.addEventListener(
           'sourceopen',
           async () => {
+            this.log('EVENT: MediaSource "sourceopen" triggered.');
             if (!this.mediaSource) return;
             try {
-              // --- THIS IS THE FINAL CLIENT-SIDE CHANGE ---
-              // We declare the modern, supported MIME type.
-              const mimeType = 'audio/webm; codecs=opus';
-              // --- END OF CHANGE ---
+              const encodedText = encodeURIComponent(text);
+              const fetchUrl = `/api/tts?text=${encodedText}&voice=${options.voiceId}`;
+              const response = await fetch(fetchUrl);
+              if (!response.ok || !response.body) {
+                throw new Error(`TTS API Error (Status ${response.status})`);
+              }
 
-              // We should check if the browser supports it before trying to use it.
+              const mimeType = 'audio/webm; codecs=opus';
               if (!MediaSource.isTypeSupported(mimeType)) {
-                throw new Error(
-                  `Streaming with ${mimeType} is not supported by this browser.`
-                );
+                throw new Error(`Streaming with ${mimeType} is not supported.`);
               }
               this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 
+              // Play is now called here, after the source is open and ready.
+              await this.audio.play();
+
               const streamFinished = new Promise<void>((resolve) => {
-                const onUpdateEnd = () => {
-                  if (
-                    this.mediaSource?.readyState === 'open' &&
-                    !this.sourceBuffer?.updating
-                  ) {
-                    this.mediaSource.endOfStream();
-                  }
-                };
-                const onSourceEnded = () => {
-                  if (this.sourceBuffer) {
-                    this.sourceBuffer.removeEventListener(
-                      'updateend',
-                      onUpdateEnd
-                    );
-                  }
-                  if (this.mediaSource) {
-                    this.mediaSource.removeEventListener(
-                      'sourceended',
-                      onSourceEnded
-                    );
-                  }
-                  resolve();
-                };
-                if (this.sourceBuffer) {
-                  this.sourceBuffer.addEventListener('updateend', onUpdateEnd);
-                }
                 if (this.mediaSource) {
                   this.mediaSource.addEventListener(
                     'sourceended',
-                    onSourceEnded
+                    () => resolve(),
+                    { once: true }
                   );
+                } else {
+                  resolve();
                 }
               });
 
@@ -149,17 +171,31 @@ export class EdgeAudioTTSService implements TTSService {
                 if (done) break;
                 await this.appendBuffer(value.buffer);
               }
+
+              const waitForUpdateEndAndClose = () => {
+                if (this.sourceBuffer && !this.sourceBuffer.updating) {
+                  if (this.mediaSource?.readyState === 'open') {
+                    this.mediaSource.endOfStream();
+                  }
+                } else {
+                  this.sourceBuffer?.addEventListener(
+                    'updateend',
+                    waitForUpdateEndAndClose,
+                    { once: true }
+                  );
+                }
+              };
+              waitForUpdateEndAndClose();
               await streamFinished;
             } catch (error) {
+              this.logError('FATAL ERROR inside sourceopen handler:', error);
               this.onErrorCallback?.(error);
             }
           },
           { once: true }
         );
-
-        this.audio.addEventListener('ended', this.handleEnded, { once: true });
-        await this.audio.play();
       } catch (error) {
+        this.logError('FATAL ERROR in main speak() async block:', error);
         this.onErrorCallback?.(error);
       }
     })();
@@ -199,13 +235,18 @@ export class EdgeAudioTTSService implements TTSService {
   }
 
   public pause(): void {
+    this.log('pause() called.');
     this.audio.pause();
   }
+
   public resume(): void {
+    this.log('resume() called.');
     this.audio.play().catch(this.onErrorCallback);
   }
 
   public cancel(): void {
+    this.log('cancel() called.');
+
     if (this.mediaSource && this.mediaSource.readyState === 'open') {
       try {
         if (this.sourceBuffer && !this.sourceBuffer.updating) {
@@ -215,17 +256,24 @@ export class EdgeAudioTTSService implements TTSService {
           this.mediaSource.endOfStream();
         }
       } catch (e) {
-        console.error('Error during MediaSource cancellation:', e);
+        this.logError('Error during MediaSource cancellation:', e);
       }
     }
+
     this.audio.pause();
-    this.audio.removeAttribute('src');
     if (this.currentAudioUrl) {
+      this.audio.removeAttribute('src');
       URL.revokeObjectURL(this.currentAudioUrl);
     }
+
     this.currentAudioUrl = null;
     this.mediaSource = null;
     this.sourceBuffer = null;
+
+    // Clean up the listeners we added for this operation
     this.audio.removeEventListener('ended', this.handleEnded);
+    this.audio.removeEventListener('error', this.handleError);
+
+    this.log('Cancellation complete.');
   }
 }

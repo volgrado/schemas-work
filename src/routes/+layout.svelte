@@ -1,8 +1,9 @@
 <!--
   @file src/routes/+layout.svelte
-  @description The root layout for the entire single-page application.
-  It provides the global "app shell" components and integrates the Media Session API
-  for native OS control of the Text-to-Speech feature.
+  @description The root layout for the application.
+  This version implements the "Global Audio Element" pattern by creating a single <audio>
+  element and setting its value in a dedicated Svelte store (`globalAudioElementStore`).
+  This is the most robust solution for mobile browser audio.
 -->
 <script lang="ts">
   import { browser } from '$app/environment';
@@ -11,101 +12,48 @@
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import CommandBar from '$lib/components/ui/CommandBar.svelte';
   import { theme, applyTheme } from '$lib/stores/themeStore';
-
-  // --- NEW IMPORTS for Media Session ---
   import { ttsStore } from '$lib/stores/ttsStore';
   import { documentStore } from '$lib/stores/documentStore';
+
+  // --- NEW: Import the dedicated store for the audio element ---
+  import { globalAudioElementStore } from '$lib/stores/globalAudioStore';
 
   // --- STYLES ---
   import '$lib/styles/app.css';
 
-  // Apply the theme class to the root element whenever the theme store changes.
+  // Apply theme from store
   $: if (browser && $theme) {
     applyTheme($theme);
   }
 
-  // --- Media Session API Integration ---
-  // This section connects the application's TTS state to the operating system's
-  // native media controls (e.g., lock screen, notification shade, keyboard keys).
+  // --- GLOBAL AUDIO ELEMENT PATTERN ---
+  // This variable will be bound to the <audio> element in the HTML.
+  let audioEl: HTMLAudioElement;
 
-  /**
-   * Updates the metadata displayed in the OS media panel.
-   * This includes the title, album, artist, and artwork.
-   */
-  function updateMediaSessionMetadata() {
-    if (!browser || !('mediaSession' in navigator)) return;
-
-    const state = $ttsStore;
-
-    // Only show the media panel if audio is actively playing or paused.
-    if (state.status === 'playing' || state.status === 'paused') {
-      const currentNode = state.nodesToRead[state.currentNodeIndex];
-
-      // Get metadata from stores, with safe fallbacks.
-      const documentTitle = $documentStore.metadata?.title || 'Document';
-      const nodeTitle = currentNode ? currentNode.title : 'Loading...';
-
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: nodeTitle,
-        artist: 'Schemas.Work', // Your app's name
-        album: documentTitle,
-        // IMPORTANT: You must provide your own artwork files in the `/static/icons/` folder.
-        // The browser will select the most appropriate size for the context.
-        artwork: [
-          {
-            src: '/icons/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: '/icons/icon-256x256.png',
-            sizes: '256x256',
-            type: 'image/png',
-          },
-          {
-            src: '/icons/icon-384x384.png',
-            sizes: '384x384',
-            type: 'image/png',
-          },
-          {
-            src: '/icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-        ],
-      });
-    } else {
-      // Clear metadata to remove the media panel when playback stops.
-      navigator.mediaSession.metadata = null;
+  // This function "unlocks" the audio context after the first user interaction.
+  function unlockAudio() {
+    if (audioEl && audioEl.paused) {
+      // The play() call is expected to fail or do nothing if there's no source,
+      // but it successfully signals to the browser that a user gesture initiated audio.
+      audioEl.play().catch(() => {});
+      // We immediately pause it.
+      audioEl.pause();
+      console.log('Global audio context unlocked by user gesture.');
     }
   }
 
-  // This reactive block listens for any change in the TTS store.
-  // It ensures the OS media panel is always in sync with the app's state.
-  $: if (browser && 'mediaSession' in navigator) {
-    const state = $ttsStore;
-
-    // Update the playback state (affects the play/pause icon in the OS UI).
-    switch (state.status) {
-      case 'playing':
-        navigator.mediaSession.playbackState = 'playing';
-        break;
-      case 'paused':
-        navigator.mediaSession.playbackState = 'paused';
-        break;
-      default:
-        navigator.mediaSession.playbackState = 'none';
-        break;
-    }
-
-    // Refresh the displayed metadata (title, etc.).
-    updateMediaSessionMetadata();
-  }
-
-  // onMount runs once when the app starts. We use it to set up the
-  // action handlers that connect OS media buttons to our ttsStore functions.
   onMount(() => {
-    if (browser && 'mediaSession' in navigator) {
+    // Once the <audio> element is mounted in the DOM, set the store's value.
+    // The ttsStore subscribes to this store and will initialize its service when this is set.
+    globalAudioElementStore.set(audioEl);
+
+    // Add a one-time event listener to unlock the audio on the first tap/click anywhere.
+    // This is crucial for mobile browser compatibility.
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+
+    // Media Session API Setup
+    if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () =>
         ttsStore.resumeReading()
       );
@@ -123,21 +71,59 @@
       );
     }
   });
+
+  // --- Media Session API Integration ---
+  $: if (browser && 'mediaSession' in navigator) {
+    const state = $ttsStore;
+    switch (state.status) {
+      case 'playing':
+        navigator.mediaSession.playbackState = 'playing';
+        break;
+      case 'paused':
+        navigator.mediaSession.playbackState = 'paused';
+        break;
+      default:
+        navigator.mediaSession.playbackState = 'none';
+        break;
+    }
+
+    if (state.status === 'playing' || state.status === 'paused') {
+      const currentNode = state.nodesToRead[state.currentNodeIndex];
+      const documentTitle = $documentStore.metadata?.title || 'Document';
+      const nodeTitle = currentNode ? currentNode.title : 'Loading...';
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: nodeTitle,
+        artist: 'Schemas.Work',
+        album: documentTitle,
+        artwork: [
+          {
+            src: '/android-chrome-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      });
+    } else {
+      navigator.mediaSession.metadata = null;
+    }
+  }
 </script>
 
 <svelte:head>
   <title>Schemas.Work</title>
 </svelte:head>
 
-<!-- Global toast notification component -->
+<!-- This is the single, persistent audio element for the entire application. -->
+<!-- It's bound to our `audioEl` variable and hidden from view. -->
+<audio bind:this={audioEl} playsinline style="display:none;"></audio>
+
+<!-- Global UI Components -->
 <Toaster position="bottom-center" />
-
-<!-- Animated background, always present -->
 <OrganicCanvas />
-
-<!-- The main content of the application, rendered by +page.svelte -->
 <slot />
-
-<!-- GLOBAL UI OVERLAYS -->
-<!-- The CommandBar is a global overlay that can be triggered from anywhere. -->
 <CommandBar />
