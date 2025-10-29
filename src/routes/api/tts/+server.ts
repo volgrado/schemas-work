@@ -1,27 +1,65 @@
-// src/routes/api/tts/+server.ts
+/**
+ * @file SvelteKit edge function for synthesizing speech using Microsoft's Edge TTS.
+ * This endpoint streams audio data and is heavily cached at the edge for performance.
+ * @module /api/tts
+ */
 
 import { EdgeTTS } from '@andresaya/edge-tts';
 import type { RequestHandler } from './$types';
 
+// --- Configuration ---
 export const config = {
-  runtime: 'edge',
+  runtime: 'edge', // Specify the Vercel/Cloudflare edge runtime.
 };
 
-// The 'event' object contains helpers, including setHeaders for caching.
-export const GET: RequestHandler = async (event) => {
-  const { url } = event; // Destructure url from event
+// --- Constants for maintainability ---
+const AUDIO_FORMAT = 'webm-24khz-16bit-mono-opus';
+const CONTENT_TYPE = 'audio/webm; codecs=opus';
+const DEFAULT_VOICE = 'en-US-JennyNeural';
+const MAX_TEXT_LENGTH = 1000; // A sensible limit to prevent abuse.
 
+/**
+ * Handles GET requests to synthesize text to speech.
+ * @param {URL} url - The request URL object.
+ * @returns {Response} A streaming response with the audio data or a JSON error.
+ */
+export const GET: RequestHandler = async ({ url }) => {
   const text = url.searchParams.get('text');
-  const voice = url.searchParams.get('voice') || 'en-US-JennyNeural';
+  const voice = url.searchParams.get('voice') || DEFAULT_VOICE;
 
+  // --- Robust Input Validation ---
   if (!text) {
-    return new Response('Missing text parameter', { status: 400 });
+    return new Response(
+      JSON.stringify({ error: 'Missing "text" parameter.' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  if (text.length > MAX_TEXT_LENGTH) {
+    return new Response(
+      JSON.stringify({
+        error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters.`,
+      }),
+      {
+        status: 413, // "Payload Too Large"
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   try {
+    // --- FIX 1: Revert to setting property after instantiation ---
+    // The library's types indicate a zero-argument constructor. We use `any`
+    // as a pragmatic way to set the undocumented `audioFormat` property.
     const tts = new EdgeTTS();
-    (tts as any).audioFormat = 'webm-24khz-16bit-mono-opus';
+    (tts as any).audioFormat = AUDIO_FORMAT;
     const ttsStream = tts.synthesizeStream(text, voice);
+
+    // --- FIX 2: Revert to the universally compatible ReadableStream constructor ---
+    // This works in all environments, regardless of the tsconfig `lib` settings.
     const webStream = new ReadableStream({
       async start(controller) {
         for await (const chunk of ttsStream) {
@@ -31,26 +69,31 @@ export const GET: RequestHandler = async (event) => {
       },
     });
 
-    // --- THIS IS THE FIX ---
-    // Set caching headers. This tells the Edge CDN to cache this response.
-    // The key is the full URL, including the text and voice.
-    // 'public' means it can be cached by shared caches (the CDN).
-    // 'max-age=31536000' tells the browser/CDN to cache it for one year.
-    // 'immutable' tells caches that this response will never change.
-    event.setHeaders({
-      'Cache-Control': 'public, max-age=31536000, immutable',
-      'Content-Type': 'audio/webm; codecs=opus',
+    // --- Caching and Response ---
+    return new Response(webStream, {
+      status: 200,
+      headers: {
+        'Content-Type': CONTENT_TYPE,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
     });
-    // --- END OF FIX ---
-
-    // Return the Response without headers here, as setHeaders handles it.
-    return new Response(webStream);
   } catch (error) {
-    console.error('[TTS API @ Edge] Error synthesizing speech:', error);
-    // Also add a cache-control header for errors so they aren't cached.
-    event.setHeaders({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-    });
-    return new Response('Error synthesizing speech', { status: 500 });
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(
+      `[TTS API @ Edge] Failed to synthesize text "${text.substring(0, 50)}...":`,
+      err.message
+    );
+
+    // --- Structured JSON Error Response ---
+    return new Response(
+      JSON.stringify({ error: 'Failed to synthesize speech.' }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store', // Ensure errors are not cached.
+        },
+      }
+    );
   }
 };

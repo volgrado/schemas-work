@@ -1,7 +1,4 @@
-/**
- * @file A dedicated service for interacting with the TTS backend API.
- * @module ttsApiService
- */
+// src/lib/services/tts/ttsApiService.ts
 
 const API_BASE_URL = '/api/tts';
 
@@ -25,5 +22,16 @@ export async function fetchAudioForText(
   if (!response.ok) {
     throw new Error(`TTS API Error (Status ${response.status})`);
   }
+
+  // --- THE FIX IS HERE ---
+  // Validate that the server actually sent us audio.
+  const contentType = response.headers.get('Content-Type');
+  if (!contentType || !contentType.startsWith('audio/')) {
+    throw new Error(
+      `Invalid content type from TTS API. Expected 'audio/*', but got '${contentType || 'none'}'.`
+    );
+  }
+  // --- END OF FIX ---
+
   return response.blob();
 }
