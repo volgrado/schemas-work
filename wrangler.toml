@@ -1,11 +1,11 @@
-# wrangler.toml (Versión final y definitiva)
+# wrangler.toml (LA VERSIÓN FINAL Y CORRECTA)
 
 name = "schemas-work"
 pages_build_output_dir = ".cloudflare/pages"
 
-compatibility_date = "2024-03-01"
+# Actualiza la fecha para optar por las nuevas características,
+# incluyendo la resolución automática de módulos de Node.js.
+compatibility_date = "2025-10-30" 
 
-# Esta es la bandera que nos faltaba.
-# nodejs_compat por sí sola a veces no es suficiente para la resolución de módulos
-# en el momento de la construcción. Esta bandera activa un polyfill más completo.
-compatibility_flags = ["nodejs_compat", "streams_enable_constructors"]
+# Mantenemos la bandera por si acaso, es una buena práctica ser explícito.
+compatibility_flags = ["nodejs_compat"]
