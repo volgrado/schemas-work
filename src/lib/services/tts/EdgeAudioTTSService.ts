@@ -8,35 +8,6 @@
 import type { TTSService, TTSSpeakOptions, TTSVoice } from './ttsService';
 import { getAudio } from '$lib/services/core/db.service';
 
-// NOTE: Consider moving this to a dedicated logger utility file (e.g., '$lib/utils/logger.ts')
-function sendLogToServer(
-  level: 'info' | 'error' | 'fatal',
-  message: string,
-  data?: any
-) {
-  try {
-    const logData = {
-      level,
-      message,
-      data: data
-        ? JSON.stringify(data, (key, value) =>
-            value instanceof Error
-              ? { message: value.message, stack: value.stack }
-              : value
-          )
-        : undefined,
-    };
-    fetch('/api/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logData),
-      keepalive: true,
-    }).catch(console.error);
-  } catch (e) {
-    console.error('Failed to send log to server:', e);
-  }
-}
-
 // --- Constants for configuration and to avoid magic strings ---
 const MIME_TYPE = 'audio/webm; codecs=opus';
 const API_BASE_URL = '/api/tts';
@@ -83,12 +54,10 @@ export class EdgeAudioTTSService implements TTSService {
   private log(message: string, data?: any) {
     const fullMessage = `[EdgeAudioTTSService] ${message}`;
     console.log(fullMessage, data || '');
-    sendLogToServer('info', message, data);
   }
   private logError(message: string, error: any) {
     const fullMessage = `[EdgeAudioTTSService] ${message}`;
     console.error(fullMessage, error);
-    sendLogToServer('error', message, error);
   }
 
   constructor(audioElement: HTMLAudioElement) {
