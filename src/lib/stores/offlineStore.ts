@@ -1,33 +1,32 @@
-// src/lib/stores/offlineStore.ts
+/**
+ * @file Manages the state and operations for offline document audio.
+ * This store handles audio generation directly on the client-side
+ * using the Edge-TTS library, following its correct async workflow.
+ * @module offlineStore
+ */
 
 import { writable, get } from 'svelte/store';
 import { documentStore } from './documentStore';
 import { editorStore } from './editorStore';
 import { getReadableNodes, type ReadableNode } from '$lib/utils/ttsUtils';
 import { saveAudio, deleteAudioForDoc } from '$lib/services/core/db.service';
-import { fetchAudioForText } from '$lib/services/tts/ttsApiService'; // Import our new service
 import { toast } from 'svelte-sonner';
 import { t } from '$lib/utils/i18n';
 import * as errorService from '$lib/services/core/errorService';
 
+// Import the TTS library and the Buffer polyfill.
+import { EdgeTTS } from '@andresaya/edge-tts';
+import { Buffer } from 'buffer';
+
 // --- TYPES AND CONFIGURATION ---
 
-/**
- * Creates a SHA-1 hash of a string for content versioning.
- * Falls back to a unique timestamp if the Web Crypto API is unavailable (insecure context).
- * @param text The string to hash.
- * @returns A promise that resolves to the hex string of the hash or a unique string.
- */
 async function hashText(text: string): Promise<string> {
-  // Check if the crypto API is available in this context.
   if (!crypto?.subtle?.digest) {
     console.warn(
-      'Web Crypto API (crypto.subtle) is not available. This is expected on non-HTTPS origins (excluding localhost). Falling back to a timestamp for versioning. Offline status checks may be less reliable.'
+      'Web Crypto API (crypto.subtle) is not available. Falling back to timestamp for versioning.'
     );
-    // Return a value that will always be unique, forcing an "outdated" status.
     return `insecure_context_${Date.now()}`;
   }
-
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-1', data);
@@ -50,15 +49,13 @@ export interface OfflineDocInfo {
 
 export interface OfflineState {
   status: 'idle' | 'downloading';
-  downloadProgress: number; // 0-100
-  downloadedDocs: Record<string, OfflineDocInfo>; // A map of docId to its offline info
+  downloadProgress: number;
+  downloadedDocs: Record<string, OfflineDocInfo>;
 }
 
 const OFFLINE_DOCS_KEY = 'schemas-work-offline-docs';
+const AUDIO_FORMAT = 'webm-24khz-16bit-mono-opus';
 
-/**
- * Creates the offline store with encapsulated logic for downloading and managing documents.
- */
 function createOfflineStore() {
   const initialState: OfflineState = {
     status: 'idle',
@@ -69,10 +66,8 @@ function createOfflineStore() {
   const store = writable<OfflineState>(initialState);
   const { subscribe, update } = store;
 
-  // A controller to manage the cancellation of in-progress downloads.
   let downloadAbortController: AbortController | null = null;
 
-  // Persist changes to downloadedDocs in localStorage whenever the store updates.
   subscribe((state) => {
     localStorage.setItem(
       OFFLINE_DOCS_KEY,
@@ -82,28 +77,52 @@ function createOfflineStore() {
 
   // --- PRIVATE HELPERS ---
 
-  /** The core download loop. Decoupled from state management. */
-  async function _performDownloadLoop(
+  /**
+   * The core download loop, running in the browser.
+   * This is the correct workflow based on the library's type definitions.
+   */
+  async function _performClientSideDownloadLoop(
     docId: string,
     voiceId: string,
     nodes: ReadableNode[],
     signal: AbortSignal,
     onProgress: (progress: number) => void
   ): Promise<void> {
-    // First, clear any old audio data for this document to ensure consistency.
     await deleteAudioForDoc(docId);
 
+    const tts = new EdgeTTS();
+    (tts as any).audioFormat = AUDIO_FORMAT;
+
     for (const [index, node] of nodes.entries()) {
-      // Check for cancellation before each network request. Throws if aborted.
       signal.throwIfAborted();
 
       const audioId = `${docId}_${index}`;
-      const audioBlob = await fetchAudioForText(
-        node.textToSpeak,
-        voiceId,
-        signal
+      console.log(
+        `[OfflineStore] Generating audio for chunk ${index + 1}/${nodes.length}...`
       );
-      await saveAudio(audioId, audioBlob);
+
+      try {
+        // 1. Llama a synthesize y espera a que termine. Esto llena el búfer interno de 'tts'.
+        await tts.synthesize(node.textToSpeak, voiceId);
+
+        // 2. Después de que termine, extrae los datos del búfer interno.
+        const audioBuffer = tts.toBuffer();
+
+        // 3. Convierte el Buffer en un Blob para guardarlo.
+        const audioBlob = new Blob([audioBuffer], { type: 'audio/webm' });
+
+        if (audioBlob.size > 0) {
+          await saveAudio(audioId, audioBlob);
+        } else {
+          throw new Error('Synthesized audio is empty.');
+        }
+      } catch (error) {
+        // Re-lanza el error para que sea capturado por el bloque catch principal.
+        const err = error instanceof Error ? error : new Error(String(error));
+        throw new Error(
+          `Failed to synthesize audio for chunk ${index + 1}: ${err.message}`
+        );
+      }
 
       onProgress(((index + 1) / nodes.length) * 100);
     }
@@ -113,9 +132,6 @@ function createOfflineStore() {
   const publicMethods = {
     subscribe,
 
-    /**
-     * Downloads all readable nodes of a document as audio chunks for offline playback.
-     */
     async downloadDocument(docId: string, voiceId: string): Promise<void> {
       if (get(store).status === 'downloading') {
         console.warn('Download already in progress.');
@@ -139,7 +155,7 @@ function createOfflineStore() {
       toast.info(get(t)('offline.download_started'));
 
       try {
-        await _performDownloadLoop(
+        await _performClientSideDownloadLoop(
           docId,
           voiceId,
           nodes,
@@ -166,9 +182,10 @@ function createOfflineStore() {
         toast.success(get(t)('offline.download_complete'));
       } catch (error) {
         const err = error as Error;
-        // Don't show an error toast if the user intentionally cancelled.
         if (err.name !== 'AbortError') {
-          errorService.reportError(err, { operation: 'offline.download' });
+          errorService.reportError(err, {
+            operation: 'offline.download.client',
+          });
           toast.error(get(t)('offline.download_failed'));
         } else {
           toast.info(get(t)('offline.download_cancelled'));
@@ -179,7 +196,6 @@ function createOfflineStore() {
       }
     },
 
-    /** Cancels any download that is currently in progress. */
     cancelDownload(): void {
       if (downloadAbortController) {
         downloadAbortController.abort();
@@ -187,7 +203,6 @@ function createOfflineStore() {
       }
     },
 
-    /** Deletes all local audio chunks and metadata for a document. */
     async deleteOfflineDocument(docId: string): Promise<void> {
       await deleteAudioForDoc(docId);
       update((s) => {
@@ -198,15 +213,10 @@ function createOfflineStore() {
       toast.success(get(t)('offline.deleted'));
     },
 
-    /**
-     * Checks the offline status of a document by comparing its current content
-     * hash with the stored hash.
-     */
     async getDocStatus(docId: string | null): Promise<OfflineDocStatus> {
       if (!docId) return 'not_downloaded';
       const state = get(store);
 
-      // If this specific doc is the one being downloaded, report it.
       if (
         state.status === 'downloading' &&
         get(documentStore).docId === docId
@@ -220,7 +230,7 @@ function createOfflineStore() {
       }
 
       const editor = get(editorStore).instance;
-      if (!editor) return 'downloaded'; // Cannot verify, assume it's fine.
+      if (!editor) return 'downloaded';
 
       const currentVersionHash = await hashText(editor.state.doc.textContent);
       return currentVersionHash === docInfo.versionHash
