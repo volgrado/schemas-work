@@ -10,11 +10,6 @@ const config = {
   kit: {
     adapter: adapter({
       // AÑADE ESTA SECCIÓN PARA RESOLVER EL ERROR DE CONSTRUCCIÓN
-
-      routes: {
-        include: ['/*'],
-        exclude: ['<all_static_assets>'],
-      },
     }),
 
     alias: {
