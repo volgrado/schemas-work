@@ -158,3 +158,50 @@ export interface Command {
   /** Additional search keywords to help fuzzy matching. Optional. */
   keywords?: string[];
 }
+
+// --- TTS (Text-to-Speech) Types ---
+
+import type { Node as ProseMirrorNode } from 'prosemirror-model';
+
+/**
+ * Describes a parsed block of text from the editor, ready for TTS.
+ */
+export interface ReadableNode {
+  /** The unique ID for this node, typically its index in the playlist array. */
+  id: number;
+  /** The starting position of the node in the ProseMirror document. */
+  pos: number;
+  /** The raw ProseMirror node instance. */
+  node: ProseMirrorNode;
+  /** A short, display-friendly title for the node (used in the UI). */
+  title: string;
+  /** The full, cleaned text content that will be sent to the TTS engine. */
+  text: string;
+  /** DEPRECATED: Use 'text' instead. This is kept for compatibility during refactor. */
+  textToSpeak?: string;
+}
+
+/**
+ * Describes the structure of a voice available in a TTS engine.
+ */
+export interface TTSVoice {
+  id: string;
+  name: string;
+  lang: string;
+}
+
+/**
+ * The possible TTS engines the application can use.
+ */
+export type TTSEngine = 'cloud' | 'browser';
+
+/**
+ * The possible operational statuses of the TTS player.
+ */
+export type TTSStatus =
+  | 'idle'
+  | 'initializing'
+  | 'awaiting_download'
+  | 'playing'
+  | 'paused'
+  | 'error';

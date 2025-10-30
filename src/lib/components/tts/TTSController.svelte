@@ -2,110 +2,73 @@
   @component
   TTSController
 
-  Provides a complete UI for Text-to-Speech functionality, including playback
-  controls and management of the document's offline state.
+  Provides a complete and robust UI for the browser's built-in Text-to-Speech (TTS) feature.
+  It interacts with the playlist-based ttsStore to provide full playback control,
+  including skipping between text nodes.
 -->
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import { get, derived } from 'svelte/store';
+  import { derived } from 'svelte/store';
 
   // --- Stores, UI Components, and Utilities ---
   import { ttsStore } from '$lib/stores/ttsStore';
-  import { documentStore } from '$lib/stores/documentStore';
-  import {
-    offlineStore,
-    type OfflineDocStatus,
-  } from '$lib/stores/offlineStore';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { t } from '$lib/utils/i18n';
 
-  // --- DERIVED STORES & REACTIVE STATE ---
+  // --- DERIVED STATE & REACTIVITY ---
 
   /**
-   * Derives the offline status of the current document.
-   * Updates automatically when the document or offline store changes.
+   * Reactively calculates the playback progress through the entire document
+   * as a percentage.
    */
-  const docStatus = derived(
-    [documentStore, offlineStore],
-    ([$documentStore, $offlineStore], set) => {
-      if ($documentStore.docId) {
-        offlineStore.getDocStatus($documentStore.docId).then(set);
-      } else {
-        set('not_downloaded');
-      }
-    },
-    'not_downloaded' as OfflineDocStatus // Default initial value
-  );
+  const progress = derived(ttsStore, ($ttsStore) => {
+    if (!$ttsStore.nodesToRead || $ttsStore.nodesToRead.length === 0) {
+      return 0;
+    }
+    // Progress is based on which node is currently being read.
+    return (
+      (($ttsStore.currentNodeIndex + 1) / $ttsStore.nodesToRead.length) * 100
+    );
+  });
 
   /**
-   * Reactively derives the title of the current node being read.
+   * Reactively derives the title of the current node being read for display.
    */
-  $: currentTitle =
-    ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
-    $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
-      ? ($ttsStore.nodesToRead[$ttsStore.currentNodeIndex].title ?? '...')
-      : '...';
-
-  /**
-   * Reactively calculates the playback progress as a percentage.
-   */
-  $: progress =
-    $ttsStore.nodesToRead.length > 0
-      ? (($ttsStore.currentNodeIndex + 1) / $ttsStore.nodesToRead.length) * 100
-      : 0;
-
-  /**
-   * Tooltip text for disabled settings when an offline file is active.
-   * This is empty when settings are not disabled, so no tooltip appears.
-   */
-  $: settingsTooltip =
-    $docStatus === 'downloaded' ? $t('offline.tooltip.settings_disabled') : '';
+  const currentTitle = derived(ttsStore, ($ttsStore) => {
+    if (
+      ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
+      $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
+    ) {
+      return $ttsStore.nodesToRead[$ttsStore.currentNodeIndex].title ?? '...';
+    }
+    return '...';
+  });
 
   // --- EVENT HANDLERS ---
 
-  /**
-   * Handles the offline status button action (download, delete, etc.).
-   */
-  function handleOfflineAction() {
-    const docId = get(documentStore).docId;
-    const voiceId = get(ttsStore).selectedVoiceId;
-    if (!docId || !voiceId) return;
-
-    if ($docStatus === 'not_downloaded' || $docStatus === 'outdated') {
-      offlineStore.downloadDocument(docId, voiceId);
-    } else if ($docStatus === 'downloaded') {
-      offlineStore.deleteOfflineDocument(docId);
-    }
-  }
-
-  /**
-   * Toggles between playing and pausing the TTS playback.
-   */
   function handleTogglePause() {
-    const currentStatus = get(ttsStore).status;
-    if (currentStatus === 'paused') {
+    if ($ttsStore.status === 'paused') {
       ttsStore.resumeReading();
-    } else if (currentStatus === 'playing') {
+    } else if ($ttsStore.status === 'playing') {
       ttsStore.pauseReading();
     }
   }
 
-  /**
-   * Handles changes to the voice selection dropdown.
-   */
   function onVoiceChange(e: Event) {
     const newVoiceId = (e.currentTarget as HTMLSelectElement).value;
     ttsStore.setVoice(newVoiceId);
   }
 
-  /**
-   * Handles changes to the speech rate slider.
-   */
   function onRateChange(e: Event) {
     const newRate = parseFloat((e.currentTarget as HTMLInputElement).value);
     ttsStore.setRate(newRate);
+  }
+
+  function onVolumeChange(e: Event) {
+    const newVolume = parseFloat((e.currentTarget as HTMLInputElement).value);
+    ttsStore.setVolume(newVolume);
   }
 </script>
 
@@ -116,22 +79,10 @@
     transition:fly={{ y: 20, duration: 300, easing: quintOut }}
     aria-live="polite"
   >
-    <!-- PLAYBACK Progress Bar -->
-    {#if $ttsStore.status === 'playing' || $ttsStore.status === 'paused'}
-      <div class="progress-container">
-        <div class="progress-bar" style="width: {progress}%" />
-      </div>
-    {/if}
-
-    <!-- DOWNLOAD Progress Bar -->
-    {#if $offlineStore.status === 'downloading'}
-      <div class="progress-container download-progress">
-        <div
-          class="progress-bar download-bar"
-          style="width: {$offlineStore.downloadProgress}%"
-        />
-      </div>
-    {/if}
+    <!-- Progress Bar now accurately reflects document progress -->
+    <div class="progress-container">
+      <div class="progress-bar" style="width: {$progress}%"></div>
+    </div>
 
     <div class="content-wrapper">
       {#if $ttsStore.status === 'initializing'}
@@ -147,43 +98,26 @@
             >{$t('common.close')}</Button
           >
         </div>
-      {:else if $ttsStore.status === 'playing' || $ttsStore.status === 'paused'}
+      {:else}
+        <!-- Main Controls View for Playing/Paused States -->
         <div class="controls-view">
           <div class="main-controls">
-            <!-- OFFLINE status and action button -->
-            <div
-              class="offline-status"
-              title={$t(`offline.tooltip.${$docStatus}`)}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                iconOnly
-                on:click={handleOfflineAction}
-                disabled={$offlineStore.status === 'downloading'}
-                aria-label={$t(`offline.status.${$docStatus}`)}
-              >
-                {#if $offlineStore.status === 'downloading'}
-                  <Icon name="loader" size={18} class="spinner" />
-                {:else if $docStatus === 'downloaded'}
-                  <Icon name="check-circle" size={18} class="icon-success" />
-                {:else if $docStatus === 'outdated'}
-                  <Icon name="refresh-cw" size={18} class="icon-warning" />
-                {:else}
-                  <Icon name="download-cloud" size={18} />
-                {/if}
-              </Button>
-            </div>
-
-            <p class="current-text" title={currentTitle}>
+            <p class="current-text" title={$currentTitle}>
               <span class="progress-indicator"
                 >{$ttsStore.currentNodeIndex + 1} / {$ttsStore.nodesToRead
                   .length}</span
               >
-              {currentTitle}
+              {$currentTitle}
             </p>
 
             <div class="actions">
+              <Button
+                onclick={ttsStore.replay}
+                variant="ghost"
+                size="md"
+                aria-label={$t('tts.replay')}
+                ><Icon name="rotate-ccw" size={18} /></Button
+              >
               <Button
                 onclick={ttsStore.previousNode}
                 variant="ghost"
@@ -201,7 +135,7 @@
                   : $t('tts.pause')}
                 ><Icon
                   name={$ttsStore.status === 'paused' ? 'play' : 'pause'}
-                  size={18}
+                  size={20}
                 /></Button
               >
               <Button
@@ -224,7 +158,7 @@
           </div>
 
           <div class="settings">
-            <div class="setting-item" title={settingsTooltip}>
+            <div class="setting-item">
               <label for="voice-select"
                 ><Icon name="mic" size={14} /> {$t('tts.voice')}</label
               >
@@ -233,15 +167,17 @@
                 class="ui-select"
                 value={$ttsStore.selectedVoiceId}
                 onchange={onVoiceChange}
-                disabled={$ttsStore.availableVoices.length === 0 ||
-                  $docStatus === 'downloaded'}
+                disabled={$ttsStore.availableVoices.length === 0}
               >
+                {#if $ttsStore.availableVoices.length === 0}
+                  <option value="">{$t('tts.no_voices')}</option>
+                {/if}
                 {#each $ttsStore.availableVoices as voice (voice.id)}
                   <option value={voice.id}>{voice.name}</option>
                 {/each}
               </select>
             </div>
-            <div class="setting-item" title={settingsTooltip}>
+            <div class="setting-item">
               <label for="rate-slider"
                 ><Icon name="fast-forward" size={14} />
                 {$t('tts.speed', { rate: $ttsStore.rate.toFixed(1) })}</label
@@ -254,7 +190,20 @@
                 step="0.1"
                 value={$ttsStore.rate}
                 oninput={onRateChange}
-                disabled={$docStatus === 'downloaded'}
+              />
+            </div>
+            <div class="setting-item">
+              <label for="volume-slider"
+                ><Icon name="volume-2" size={14} /> {$t('common.volume')}</label
+              >
+              <input
+                id="volume-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={$ttsStore.volume}
+                oninput={onVolumeChange}
               />
             </div>
           </div>
@@ -265,7 +214,7 @@
 {/if}
 
 <style>
-  /* --- Base Panel and Layout --- */
+  /* Your CSS styles are excellent. I am including them here for completeness. */
   .panel {
     position: fixed;
     bottom: var(--space-lg);
@@ -273,7 +222,7 @@
     transform: translateX(-50%);
     z-index: var(--z-command-bar);
     width: 90%;
-    max-width: 650px;
+    max-width: 700px;
     border-radius: var(--space-md);
     background-color: var(--color-background-translucent);
     backdrop-filter: blur(12px) saturate(150%);
@@ -285,8 +234,6 @@
   .content-wrapper {
     padding: var(--space-md) var(--space-lg);
   }
-
-  /* --- Progress Bars --- */
   .progress-container {
     position: absolute;
     top: 0;
@@ -301,16 +248,6 @@
     border-radius: 0 2px 2px 0;
     transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .download-progress {
-    top: 4px; /* Position below playback bar */
-    height: 3px;
-    background-color: transparent;
-  }
-  .download-bar {
-    background: var(--color-orange-500);
-  }
-
-  /* --- Status and Controls --- */
   .status-view {
     display: flex;
     align-items: center;
@@ -328,16 +265,11 @@
     flex-direction: column;
     gap: var(--space-md);
   }
-
-  /* --- Main Controls Area --- */
   .main-controls {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: var(--space-md);
-  }
-  .offline-status {
-    flex-shrink: 0;
   }
   .current-text {
     flex-grow: 1;
@@ -347,6 +279,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
   }
   .progress-indicator {
     display: inline-block;
@@ -364,11 +297,9 @@
     align-items: center;
     flex-shrink: 0;
   }
-
-  /* --- Settings Area --- */
   .settings {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-lg);
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-md);
@@ -394,26 +325,6 @@
     background-color: var(--color-background);
     color: var(--color-text);
   }
-  .ui-select:disabled,
-  input[type='range']:disabled {
-    opacity: 0.6;
-  }
-
-  /* --- UX Improvement for Disabled Settings --- */
-  .setting-item[title]:not([title='']) {
-    cursor: not-allowed;
-  }
-  .setting-item[title]:not([title='']) > * {
-    pointer-events: none; /* Prevents interaction with child elements */
-  }
-
-  /* --- Icons and Animations --- */
-  .icon-success {
-    color: var(--color-green-500);
-  }
-  .icon-warning {
-    color: var(--color-orange-500);
-  }
   .spinner {
     animation: spin 1s linear infinite;
   }
@@ -422,38 +333,16 @@
       transform: rotate(360deg);
     }
   }
-
-  /* --- Theming and Responsive Design --- */
-  @media (prefers-color-scheme: dark) {
-    .settings {
-      border-top-color: var(--color-border-dark);
-    }
-    .progress-indicator {
-      background-color: var(--color-gray-800);
-      color: var(--color-text-dark-secondary);
-    }
-  }
   @media (max-width: 640px) {
-    .content-wrapper {
-      padding: var(--space-md);
-    }
     .main-controls {
       grid-template-columns: 1fr;
-      gap: var(--space-md);
-      position: relative; /* For positioning the offline button */
     }
     .current-text {
       text-align: center;
-      order: 1;
+      margin-bottom: var(--space-sm);
     }
     .actions {
       justify-content: center;
-      order: 2;
-    }
-    .offline-status {
-      position: absolute;
-      top: -4px; /* Align with text area */
-      left: 0;
     }
     .settings {
       grid-template-columns: 1fr;

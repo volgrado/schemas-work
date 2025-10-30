@@ -3,12 +3,6 @@
  * @description This service is responsible for defining and managing all the commands
  * available in the application's command bar. It acts as a centralized registry for actions
  * that the user can perform, from creating new documents to interacting with AI features.
- *
- * The service exposes functions that return lists of `Command` objects. Each command has
- * properties like an `id`, a `label`, an `icon`, and an `action` to be executed.
- * Crucially, commands can also have an `isEnabled` function, which dynamically determines
- * whether the command should be available to the user based on the current application state.
- * This state is accessed from various Svelte stores (e.g., `editorStore`, `reviewStore`).
  */
 
 import type { Command } from '$lib/types';
@@ -19,6 +13,10 @@ import { editorStore } from '$lib/stores/editorStore';
 import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
 import { t } from '$lib/utils/i18n';
+import { toast } from 'svelte-sonner'; // Import toast for user feedback
+
+// --- FIX APPLIED: Import the utility function to get nodes from the editor ---
+import { getReadableNodes } from '$lib/utils/ttsUtils';
 
 /**
  * Retrieves the list of primary commands available in the command bar.
@@ -70,10 +68,30 @@ export function getCommands(): Command[] {
       label: get(t)('command.read_schema'),
       icon: 'volume-2',
       action: () => {
-        ttsStore.startReading();
+        // --- FIX APPLIED HERE ---
+        // 1. Get the current editor instance from the store.
+        const editor = get(editorStore).instance;
+
+        // 2. Guard against the editor not being ready.
+        if (editor) {
+          // 3. Use our utility to parse the editor's content into readable nodes.
+          const nodesToRead = getReadableNodes(editor);
+
+          // 4. Pass the prepared nodes to the ttsStore. This resolves the error.
+          ttsStore.startReading(nodesToRead);
+        } else {
+          // It's good practice to log an error and inform the user.
+          console.error(
+            "Command 'read-aloud': Editor instance is not available."
+          );
+          toast.error(get(t)('common.editor_not_ready'));
+        }
+
         commandBarStore.close();
       },
-      isEnabled: () => get(ttsStore).status !== 'playing',
+      // Polished: Also disable the command if there is no active editor instance.
+      isEnabled: () =>
+        get(ttsStore).status !== 'playing' && !!get(editorStore).instance,
     },
     {
       id: 'vault-management',
