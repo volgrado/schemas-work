@@ -1,0 +1,530 @@
+{
+  "app_name": "Schemas",
+  "welcome": {
+    "tagline": "Estructura tu conocimiento, visualiza tus ideas y aprende eficazmente.",
+    "cta": "Comenzar",
+    "cta_support": "Completamente gratis y sin conexión."
+  },
+  "feature": {
+    "ai_structure": {
+      "title": "Estructuración con IA",
+      "description": "Transforma notas no estructuradas en esquemas organizados con un solo clic."
+    },
+    "visualize": {
+      "title": "Visualiza Conexiones",
+      "description": "Explora tu conocimiento como un árbol interactivo para ver el panorama general."
+    },
+    "learn": {
+      "title": "Aprende con SRS",
+      "description": "Genera tarjetas de estudio a partir de tus notas y domina conceptos con repetición espaciada."
+    },
+    "privacy": {
+      "title": "Privacidad y sin conexión",
+      "description": "Todos tus datos permanecen en tu dispositivo, almacenados de forma segura en tu navegador."
+    }
+  },
+  "slashCommands": {
+    "groups": {
+      "basic": "Básico",
+      "formatting": "Formato",
+      "media": "Multimedia",
+      "ai": "IA",
+      "utilities": "Utilidades"
+    },
+    "term": {
+      "title": "Término",
+      "description": "Añadir un nuevo concepto o término."
+    },
+    "list": {
+      "title": "Lista",
+      "description": "Crear una lista con viñetas."
+    },
+    "numberedList": {
+      "title": "Lista Numerada",
+      "description": "Crear una lista ordenada (1, 2, 3...)"
+    },
+    "h1": {
+      "title": "Título 1",
+      "description": "El título principal del esquema."
+    },
+    "h2": {
+      "title": "Título 2",
+      "description": "Añadir un subtítulo de sección."
+    },
+    "h3": {
+      "title": "Título 3",
+      "description": "Añadir un subtítulo anidado."
+    },
+    "separator": {
+      "title": "Separador",
+      "description": "Añadir una línea horizontal."
+    },
+    "bold": {
+      "title": "Negrita",
+      "description": "Resaltar el texto seleccionado."
+    },
+    "italic": {
+      "title": "Cursiva",
+      "description": "Enfatizar el texto seleccionado."
+    },
+    "image": {
+      "title": "Imagen",
+      "description": "Añadir una imagen desde una URL."
+    },
+    "youtube": {
+      "title": "Video de YouTube",
+      "description": "Incrustar un video de YouTube."
+    },
+    "mathBlock": {
+      "title": "Fórmula (Bloque)",
+      "description": "Añadir una fórmula matemática (KaTeX)."
+    },
+    "mathInline": {
+      "title": "Fórmula (En línea)",
+      "description": "Añadir una fórmula en la misma línea."
+    },
+    "expandNode": {
+      "title": "Expandir Nodo (IA)",
+      "description": "Generar sub-puntos para el nodo actual.",
+      "error": "Para expandir, primero selecciona un nodo en el esquema."
+    },
+    "generateCards": {
+      "title": "Generar Tarjetas (IA)",
+      "description": "Crear tarjetas de estudio para este nodo.",
+      "error": "Para generar tarjetas, primero selecciona un nodo."
+    },
+    "readNode": {
+      "title": "Leer Nodo",
+      "description": "Iniciar la lectura en voz alta desde aquí.",
+      "error": "Selecciona un nodo para empezar a leer.",
+      "errorNoId": "No se pudo encontrar un ID válido para este nodo para iniciar la lectura."
+    },
+    "editCards": {
+      "title": "Editar Tarjetas",
+      "description": "Abrir el editor de tarjetas para este documento.",
+      "error": "No se pudo abrir el editor de tarjetas para este documento.",
+      "errorNoId": "Este nodo no tiene un ID válido para asociar tarjetas."
+    }
+  },
+  "appHeader": {
+    "aria": {
+      "returnToWelcome": "Volver a la pantalla de bienvenida"
+    }
+  },
+  "review": {
+    "inputPlaceholder": "Escribe tu respuesta...",
+    "correctAnswer": "Respuesta correcta:",
+    "correctSequence": "¡Secuencia correcta!",
+    "correctSequenceIs": "La secuencia correcta es:",
+    "showAnswer": "Mostrar Respuesta",
+    "evaluating": "Evaluando...",
+    "check": "Comprobar",
+    "again": "De nuevo",
+    "hard": "Difícil",
+    "good": "Bien",
+    "easy": "Fácil",
+    "goToSource": "Ir a la fuente",
+    "finishReview": "Finalizar Repaso",
+    "scheduled_review": "Repaso Programado",
+    "all_reviewed_toast": "¡Todo repasado por hoy!",
+    "all_reviewed_description": "¿Quieres estudiar tus tarjetas más difíciles en su lugar?",
+    "review_weakest_button": "Repasar 5 Tarjetas",
+    "no_cards_for_additional_review": "No hay tarjetas disponibles para un repaso adicional.",
+    "additional_review": "Repaso Adicional",
+    "review_started_toast": "{type} iniciado con {count, plural, =1 {1 tarjeta} other {# tarjetas}}.",
+    "card_will_reappear_toast": "Esta tarjeta volverá a aparecer en esta sesión.",
+    "review_complete_toast": "¡Repaso completo!",
+    "review_complete_description": "Estudiaste {count, plural, =1 {1 tarjeta} other {# tarjetas}}."
+  },
+  "card_editor": {
+    "load_error": "No se pudieron cargar las tarjetas para este nodo.",
+    "input_prompt_template": "Con respecto a \"{content}\", ¿cuál es la respuesta?",
+    "input_prompt_fallback": "Rellena el espacio en blanco",
+    "sequencing_prompt": "Ordena los siguientes elementos:",
+    "new_question": "Nueva Pregunta",
+    "create_error": "No se pudo crear la nueva tarjeta.",
+    "save_error": "No se pudieron guardar los cambios de la tarjeta.",
+    "delete_error": "No se pudo eliminar la tarjeta.",
+    "restore_error": "No se pudo restaurar la tarjeta."
+  },
+  "card_editor_panel": {
+    "title": "Tarjetas de Estudio",
+    "tooltip": "Crea preguntas y respuestas para este documento. Úsalas en el \"Modo de Repaso\" para memorizar conceptos clave.",
+    "saving": "Guardando...",
+    "saved": "Guardado",
+    "add_card": "Añadir Tarjeta",
+    "add_basic": "Básica (P/R)",
+    "add_input": "Rellenar el Hueco",
+    "add_sequence": "Secuencia",
+    "done": "Hecho",
+    "loading": "Cargando tarjetas...",
+    "load_error": "No se pudieron cargar las tarjetas para este documento.",
+    "question_label": "Pregunta",
+    "question_placeholder": "Escribe la pregunta...",
+    "answer_label": "Respuesta",
+    "answer_placeholder": "Escribe la respuesta...",
+    "prompt_label": "Instrucción (usa {{...}} para el hueco)",
+    "prompt_placeholder": "p. ej., La capital de Francia es {{...}}",
+    "expected_answer_label": "Respuesta Esperada",
+    "expected_answer_placeholder": "p. ej., París",
+    "instruction_label": "Instrucción",
+    "instruction_placeholder": "p. ej., Ordena los siguientes pasos...",
+    "sequence_item_placeholder": "Elemento de la secuencia...",
+    "add_item": "Añadir Elemento",
+    "card_deleted_toast": "Tarjeta eliminada.",
+    "undo_button": "Deshacer",
+    "empty_title": "Aún no hay tarjetas",
+    "empty_message": "Añade tu primera tarjeta de estudio para este documento para empezar."
+  },
+  "document": {
+    "invalid_document_error": "El elemento no es un documento válido: {docId}",
+    "new_schema_title": "Nuevo Esquema",
+    "first_schema_title": "Mi Primer Esquema"
+  },
+  "tts": {
+    "initializing": "Inicializando audio...",
+    "error": "Ocurrió un error desconocido.",
+    "previous_node": "Anterior",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "next_node": "Siguiente",
+    "stop": "Detener",
+    "voice": "Voz",
+    "speed": "Velocidad ({rate}x)",
+    "finished_reading_toast": "Se terminó de leer el documento.",
+    "playback_error": "Ocurrió un error durante la reproducción.",
+    "stopped_due_to_changes_toast": "La reproducción se detuvo debido a cambios en el documento.",
+    "init_error": "No se pudo inicializar la conversión de texto a voz.",
+    "no_readable_content_toast": "No hay contenido legible en el documento.",
+    "node_not_found_error": "No se pudo encontrar el nodo especificado para iniciar la lectura."
+  },
+  "aiHelper": {
+    "errors": {
+      "jsonFormatIncorrect": "El formato JSON es incorrecto.",
+      "notValidJson": "El texto proporcionado no es un JSON válido.",
+      "zodValidationError": "Error en '{path}': {message}"
+    },
+    "promptCopied": "Prompt copiado al portapapeles.",
+    "copyError": "No se pudo copiar el prompt.",
+    "step1": {
+      "title": "Paso 1: Copia el Prompt",
+      "description": "Copia el prompt a continuación y pégalo en tu asistente de IA preferido."
+    },
+    "step2": {
+      "title": "Paso 2: Pega la Respuesta",
+      "description": "Pega la respuesta JSON completa y sin modificar de la IA en el área de texto a continuación.",
+      "placeholder": "Pega la respuesta JSON de la IA aquí..."
+    }
+  },
+  "common": {
+    "copy": "Copiar",
+    "cancel": "Cancelar",
+    "applyChanges": "Aplicar Cambios",
+    "close": "Cerrar"
+  },
+  "doc_view": {
+    "untitled_schema": "Esquema sin título",
+    "placeholder": {
+      "title": "¿Sobre qué es tu esquema?",
+      "term": "Escribe '/' para comandos",
+      "description": "Añadir una descripción..."
+    },
+    "media": {
+      "edit_button": "Editar"
+    }
+  },
+  "formula_editor": {
+    "title": "Editar Fórmula",
+    "label": "Fórmula KaTeX",
+    "cancel_button": "Cancelar",
+    "save_button": "Guardar",
+    "preview_title": "Vista Previa",
+    "help_title": "Ayuda de KaTeX",
+    "error_rendering": "Error al renderizar la vista previa",
+    "help": {
+      "fractions": "Fracciones:",
+      "superscript": "Superíndice:",
+      "subscript": "Subíndice:",
+      "square_root": "Raíz Cuadrada:",
+      "summation": "Sumatoria:",
+      "greek_letters": "Letras Griegas:"
+    }
+  },
+  "command_bar": {
+    "ai_helper": {
+      "create_schema": {
+        "title": "Crear Esquema desde Texto",
+        "prompt_placeholder": "Pega aquí tu texto, notas o artículo...",
+        "success": "Esquema \"{title}\" creado con éxito."
+      },
+      "expand_node": {
+        "title": "Expandir Nodo con IA",
+        "success": "Nodo expandido con éxito.",
+        "error": {
+          "no_node_selected": "Para expandir un nodo, primero debes seleccionarlo en el editor."
+        }
+      },
+      "generate_flashcards": {
+        "title": "Generar Tarjetas de Estudio con IA",
+        "success": "{count, plural, =1 {1 tarjeta de estudio generada} other {# tarjetas de estudio generadas}}.",
+        "error": {
+          "no_node_id": "No se pudieron generar las tarjetas. El documento actual no tiene un ID válido.",
+          "save_failed": "Error al guardar las tarjetas generadas.",
+          "no_node_selected": "Para generar tarjetas, primero debes seleccionar un nodo en el editor."
+        }
+      }
+    },
+    "export_success": "Bóveda exportada con éxito.",
+    "operation_failed": "La operación falló",
+    "operation_failed_details": "Contraseña incorrecta o archivo dañado.",
+    "password_modal": {
+      "title": {
+        "export": "Exportar Bóveda",
+        "import": "Importar Bóveda"
+      },
+      "description": {
+        "export": "Por favor, introduce una contraseña para encriptar tu bóveda. Será necesaria para la importación.",
+        "import": "Por favor, introduce la contraseña de la bóveda que estás importando."
+      },
+      "password_placeholder": "Introduce la contraseña...",
+      "cancel_button": "Cancelar",
+      "confirm_button": {
+        "export": "Exportar",
+        "import": "Importar"
+      }
+    },
+    "close_aria_label": "Cerrar barra de comandos"
+  },
+  "error_diagnostic": {
+    "title": "Diagnóstico de Errores",
+    "explanation": "Este es un registro de los errores que han ocurrido en la aplicación. Si tienes problemas, copia este informe y envíalo al desarrollador para obtener ayuda.",
+    "explanation.privacy": "Este informe no contiene ningún dato personal.",
+    "report_header": "Informe de Errores",
+    "empty_state": "No se han registrado errores.",
+    "clear_logs": "Limpiar Registros",
+    "copy_report": "Copiar Informe"
+  },
+  "toast": {
+    "info": {
+      "nothing_to_copy": "Nada que copiar.",
+      "error_logs_cleared": "Registros de errores limpiados."
+    },
+    "success": {
+      "diagnostic_report_copied": "Informe de diagnóstico copiado al portapapeles."
+    },
+    "error": {
+      "could_not_copy_report": "No se pudo copiar el informe."
+    }
+  },
+  "first_time_hint": {
+    "command_bar_hint": "Presiona <kbd>Ctrl</kbd> + <kbd>K</kbd> para abrir el menú de comandos.",
+    "close_hint_aria_label": "Cerrar pista"
+  },
+  "modal": {
+    "close_aria_label": "Cerrar modal",
+    "default_aria_label": "Ventana modal"
+  },
+  "file_explorer": {
+    "item_type": {
+      "folder": "carpeta",
+      "schema": "esquema"
+    },
+    "header": {
+      "root_breadcrumb": "Inicio",
+      "new_schema_button": "Nuevo Esquema",
+      "new_folder_button": "Nueva Carpeta",
+      "drop_zone_aria_label": "Suelta archivos aquí para mover a la raíz"
+    },
+    "state": {
+      "loading": "Cargando elementos...",
+      "empty_folder_title": "Esta carpeta está vacía",
+      "empty_folder_message": "Crea un nuevo esquema o carpeta para empezar."
+    },
+    "new_item_placeholder": "Introduce el nombre del {type}...",
+    "rename_input_aria_label": "Renombrar {title}",
+    "delete_confirm": {
+      "title": "¿Eliminar \"{title}\"?",
+      "description": "¿Estás seguro? Esto eliminará permanentemente el/la {itemType} y todo su contenido.",
+      "action": "Eliminar"
+    },
+    "context_menu": {
+      "open": "Abrir",
+      "rename": "Renombrar",
+      "delete": "Eliminar"
+    },
+    "toast": {
+      "folder_created": "Carpeta \"{name}\" creada.",
+      "schema_created": "Esquema \"{name}\" creado.",
+      "create_failed": "No se pudo crear el/la {type}.",
+      "renamed": "\"{oldTitle}\" fue renombrado a \"{newTitle}\"",
+      "rename_failed": "No se pudo renombrar el elemento.",
+      "item_deleted": "Elemento eliminado.",
+      "delete_failed": "No se pudo eliminar el elemento.",
+      "item_moved": "\"{title}\" fue movido.",
+      "move_failed": "No se pudo mover el elemento."
+    },
+    "errors": {
+      "load_failed": "No se pudieron cargar los elementos."
+    },
+    "default_schema_name": "Nuevo Esquema",
+    "item_actions": {
+      "rename": "Renombrar elemento",
+      "delete": "Eliminar elemento"
+    },
+    "footer": {
+      "back_to_main_menu": "Volver al Menú Principal"
+    }
+  },
+  "ai_view": {
+    "title": "Acciones del Asistente de IA",
+    "back_button_aria_label": "Volver al menú principal",
+    "back_button_label": "Atrás"
+  },
+  "vault_view": {
+    "title": "Gestión de Bóveda",
+    "export_button": "Exportar Bóveda Cifrada",
+    "import_button": "Importar Bóveda Cifrada",
+    "back_button_aria_label": "Volver al menú principal",
+    "back_button_label": "Atrás"
+  },
+  "page": {
+    "view_toggle": {
+      "aria_label": {
+        "to_tree": "Cambiar a vista de árbol",
+        "to_editor": "Cambiar a vista de editor"
+      }
+    },
+    "status": {
+      "loading_schema": "Cargando esquema...",
+      "load_error": "Hubo un error al cargar el documento.",
+      "empty_schema": {
+        "message": "Este esquema está vacío.",
+        "hint": "Empieza a escribir o usa '/' para ver los comandos."
+      }
+    },
+    "fab": {
+      "tree": "Árbol",
+      "editor": "Editor",
+      "menu": "Menú",
+      "cards": "Tarjetas"
+    }
+  },
+  "languages": {
+    "en": "Inglés",
+    "es": "Español",
+    "el": "Griego"
+  },
+  "media_editor": {
+    "title": {
+      "image": "Editar Imagen",
+      "youtube": "Editar Video de YouTube"
+    },
+    "label": {
+      "image": "URL de la Imagen",
+      "youtube": "URL de YouTube"
+    },
+    "preview": {
+      "alt": "Vista previa de la imagen"
+    },
+    "cancel_button": "Cancelar",
+    "save_button": "Guardar"
+  },
+  "tooltip": {
+    "show_help": "Mostrar ayuda"
+  },
+  "slash_menu": {
+    "empty_state": "No hay comandos que coincidan"
+  },
+  "main_view": {
+    "title": "Comandos"
+  },
+  "command": {
+    "new_schema": "Nuevo Esquema",
+    "explore_schemas": "Explorar Esquemas",
+    "study_decks": "Estudiar Mazos",
+    "ai_assistant": "Asistente de IA",
+    "read_schema": "Leer Esquema",
+    "vault_management": "Gestión de Bóveda",
+    "diagnostics_and_error_report": "Diagnóstico y Reporte de Errores",
+    "create_schema_from_text": "Crear Esquema desde Texto",
+    "generate_study_cards": "Generar Tarjetas de Estudio",
+    "expand_this_node": "Expandir este Nodo"
+  },
+  "theme": {
+    "aria": {
+      "switchToDark": "Cambiar a tema oscuro",
+      "switchToSystem": "Cambiar a tema del sistema",
+      "switchToLight": "Cambiar a tema claro"
+    }
+  },
+  "statistics": {
+    "title": "Estadísticas de Estudio",
+    "loading": "Calculando estadísticas...",
+    "noData": "No se encontraron datos.",
+    "reviewsToday": "Repasos Hoy",
+    "totalReviews": "Repasos Totales",
+    "youngRetention": "Retención de Tarjetas Jóvenes",
+    "matureRetention": "Retención de Tarjetas Maduras",
+    "breakdownTitle": "Distribución de la Colección",
+    "chartEmpty": "Añade algunas tarjetas para ver la distribución de tu colección.",
+    "backToDecks": "Volver a los Mazos",
+    "viewStatistics": "Ver Estadísticas"
+  },
+  "deckOptions": {
+    "title": "Opciones del Mazo",
+    "maxNew": "Máx. Tarjetas Nuevas / Día",
+    "maxReviews": "Máx. Repasos / Día",
+    "learningSteps": "Pasos de Aprendizaje (ej: \"1m 10m 1d\")",
+    "graduatingInterval": "Intervalo de Graduación (días)",
+    "cancel": "Cancelar",
+    "saveAndClose": "Guardar y Cerrar",
+    "loading": "Cargando opciones...",
+    "saveSuccess": "Opciones del mazo guardadas.",
+    "saveFailed": "Error al guardar las opciones."
+  },
+  "studyHub": {
+    "title": "Mazo de Estudio",
+    "viewStatistics": "Ver Estadísticas",
+    "loading": "Cargando mazos...",
+    "empty": "No se encontraron mazos con tarjetas. Añade tarjetas a un documento para empezar.",
+    "deckHeader": "Mazo",
+    "newHeader": "Nuevas",
+    "learningHeader": "Aprendizaje",
+    "reviewHeader": "A Repasar",
+    "settingsAria": "Opciones del Mazo"
+  },
+  "quickCardEditor": {
+    "title": "Editar Tarjeta",
+    "questionLabel": "Pregunta",
+    "answerLabel": "Respuesta",
+    "promptLabel": "Instrucción (usa {{...}} para el hueco)",
+    "expectedLabel": "Respuesta Esperada",
+    "instructionLabel": "Instrucción",
+    "sequenceGroupLabel": "Elementos de la Secuencia (en orden correcto)",
+    "sequenceItemPlaceholder": "Elemento {i}",
+    "addItem": "Añadir Elemento",
+    "removeItemAria": "Eliminar elemento",
+    "tagsLabel": "Etiquetas",
+    "suspendLabel": "Suspender Tarjeta",
+    "changeSource": "Cambiar Fuente",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar Cambios",
+    "updateSuccess": "Tarjeta actualizada correctamente.",
+    "updateFailed": "Error al guardar los cambios de la tarjeta.",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar esta tarjeta permanentemente?",
+    "deleteSuccess": "Tarjeta eliminada.",
+    "deleteFailed": "Error al eliminar la tarjeta."
+  },
+  "relinkCard": {
+    "title": "Cambiar Fuente de la Tarjeta",
+    "description": "Selecciona un nuevo documento para asociar esta tarjeta.",
+    "loading": "Cargando documentos...",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar Cambio",
+    "noSelectionError": "Por favor, selecciona un nuevo documento.",
+    "alreadyInDocInfo": "La tarjeta ya está en este documento.",
+    "updateSuccess": "Fuente de la tarjeta actualizada correctamente.",
+    "updateFailed": "Error al actualizar la fuente de la tarjeta."
+  }
+}

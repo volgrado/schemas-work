@@ -12,28 +12,28 @@
 <script lang="ts">
   import { editorStore } from '$lib/stores/editorStore';
   import { getAiCommands } from '$lib/services/features/commandService';
+  // ... other imports ...
   import Icon from '$lib/components/ui/Icon.svelte';
   import { commandBarStore } from '$lib/stores/commandBarStore';
   import { t } from '$lib/utils/i18n';
   import type { Command } from '$lib/types';
   import type { AiActionHandler } from '$lib/services/features/commandService';
 
-  // This component accepts the orchestrator function from its parent using the $props rune.
   let { handleAiAction } = $props<{ handleAiAction: AiActionHandler }>();
 
-  // --- THE FINAL, WORKING SOLUTION ---
+  // --- THE FINAL FIX ---
 
   // STEP 1: Derive the simple boolean value directly from the store.
-  // This creates a clean, pure Svelte 5 signal that is guaranteed to be reactive.
+  // This creates a clean, simple reactive signal.
   let isNodeSelected = $derived($editorStore.selectedNodePos !== null);
 
-  // STEP 2: Derive the final command list from our simple, clean signal.
+  // STEP 2: Derive the final command list from our simple signal.
   // The dependency chain is now crystal clear: aiCommands depends on isNodeSelected.
   let aiCommands = $derived(getAiCommands(handleAiAction, isNodeSelected));
 
   // STEP 3 (The Ultimate Test): Use an `$effect` to log changes.
-  // An effect is GUARANTEED to run when its dependencies (isNodeSelected) change.
-  // If you see this pink log in the console when you select a node, the problem is solved.
+  // An effect is GUARANTEED to run when its dependencies change.
+  // If you see this log, the reactivity is working.
   $effect(() => {
     console.log(
       `%c[AiView EFFECT] Reactivity has fired! isNodeSelected is now: ${isNodeSelected}`,
@@ -43,10 +43,8 @@
 </script>
 
 <nav class="action-list" aria-labelledby="ai-commands-title">
-  <!-- Accessible heading for screen readers -->
   <h2 id="ai-commands-title" class="visually-hidden">{$t('ai_view.title')}</h2>
 
-  <!-- The loop now iterates over the reactive 'aiCommands' variable. -->
   {#each aiCommands as command (command.id)}
     <button
       class="action-button"
@@ -58,10 +56,8 @@
     </button>
   {/each}
 
-  <!-- Visual separator to distinguish commands from navigation -->
   <hr class="separator" />
 
-  <!-- Button to navigate back to the main command view -->
   <button
     class="action-button"
     on:click={() => commandBarStore.setView('main')}
@@ -73,6 +69,7 @@
 </nav>
 
 <style>
+  /* Styles are unchanged */
   .visually-hidden {
     border: 0;
     clip: rect(0 0 0 0);
@@ -84,15 +81,12 @@
     width: 1px;
     white-space: nowrap;
   }
-
   .separator {
     border: none;
     height: 1px;
     background-color: var(--panel-border-light);
     margin: 4px 0;
   }
-
-  /* --- Dark Mode --- */
   :global(.dark-theme) .separator {
     background-color: var(--panel-border-dark);
   }

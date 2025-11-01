@@ -3,21 +3,27 @@
   DocumentView
 
   This is the core component of the application, responsible for rendering the rich text editor.
+  It leverages the Tiptap editor framework, configured with numerous extensions to provide a powerful
+  and flexible editing experience.
 
-  ARCHITECTURAL NOTE: This component's `onMount` cleanup function includes a crucial
-  "ownership check" before clearing the global `editorStore`. This is the definitive fix for
-  a component remounting bug originating in `+page.svelte`. It prevents a dying, stale
-  component instance from destructively clearing the state that a new instance, or the
-  user, has just set.
+  Key Responsibilities:
+  - Instantiates and configures the Tiptap editor.
+  - Binds the editor to a Yjs collaborative document (`ydoc`) for real-time sync.
+  - Manages a wide array of Tiptap extensions, including custom-built ones for application-specific features
+    (e.g., `RoleExtension`, `NodeIdExtension`, `SlashCommandExtension`, `CardIndicatorExtension`).
+  - Synchronizes the document's title (the first H1 heading) with the `documentStore`.
+  - Handles editor updates, propagating changes to the `editorStore`. This component is the *only* writer to the store.
+  - Manages editor focus and selection, particularly when navigating from other parts of the UI.
+  - Provides custom node views for enhanced rendering and interaction with elements like Images.
 -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
-  import { get } from 'svelte/store'; // 'get' is essential for our fix.
+  import { get } from 'svelte/store';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
   // --- Tiptap Core & Extensions ---
   import { Editor, findParentNode } from '@tiptap/core';
-  import { NodeSelection } from 'prosemirror-state';
+  import { NodeSelection } from 'prosemirror-state'; // <-- This import is crucial for the fix
   import * as Y from 'yjs';
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
@@ -62,13 +68,19 @@
 
   const dispatch = createEventDispatcher<{ focusApplied: void }>();
 
-  let element: HTMLDivElement;
+  let element: HTMLDivElement; // The DOM element where the editor will be mounted.
   let editor = $state<Editor | null>(null);
 
+  /**
+   * Debounced function to synchronize the document's title (the first h1 node)
+   * with the global documentStore. This avoids excessive updates while typing.
+   */
   const syncTitleWithStore = debounce((editorInstance: Editor) => {
     if (!editorInstance || editorInstance.isDestroyed) return;
+
     const firstNode = editorInstance.state.doc.firstChild;
     let newTitle = get(t)('doc_view.untitled_schema');
+
     if (
       firstNode &&
       firstNode.type.name === 'heading' &&
@@ -76,12 +88,17 @@
     ) {
       newTitle = firstNode.textContent.trim() || newTitle;
     }
+
     const currentTitleInStore = get(documentStore).metadata?.title;
     if (newTitle !== currentTitleInStore) {
       documentStore.updateTitle(newTitle);
     }
   }, 750);
 
+  /**
+   * This effect hook is responsible for focusing a specific node when the component is loaded
+   * with a `focusedNodePos` prop.
+   */
   $effect(() => {
     if (focusedNodePos !== null && editor && editor.isEditable) {
       const currentSelection = editor.state.selection;
@@ -98,9 +115,6 @@
   });
 
   onMount(() => {
-    let selectionUpdateTimeout: ReturnType<typeof setTimeout>;
-    let clearSelectionTimeout: ReturnType<typeof setTimeout>;
-
     const editorInstance = new Editor({
       element: element,
       extensions: [
@@ -126,19 +140,22 @@
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             const _t = get(t);
-            if (node.type.name === 'heading' && node.attrs.level === 1)
+            if (node.type.name === 'heading' && node.attrs.level === 1) {
               return _t('doc_view.placeholder.title');
+            }
             if (node.type.name === 'paragraph' && !node.textContent) {
               const parent = editor.state.doc.resolve(pos).parent;
-              if (parent.firstChild === node)
+              if (parent.firstChild === node) {
                 return _t('doc_view.placeholder.term');
+              }
             }
             if (
               node.type.name === 'paragraph' &&
               !node.textContent &&
               node.attrs.role === 'description'
-            )
+            ) {
               return _t('doc_view.placeholder.description');
+            }
             return '';
           },
         }),
@@ -150,6 +167,7 @@
               const img = document.createElement('img');
               img.setAttribute('src', node.attrs.src);
               container.append(img);
+
               if (editor.isEditable) {
                 const button = document.createElement('button');
                 button.classList.add('edit-button');
@@ -174,6 +192,9 @@
       editorProps: {
         attributes: { class: 'prose' },
       },
+
+      // --- FIX: SIMPLIFIED onUpdate HANDLER ---
+      // This handler is now correctly focused only on content changes.
       onUpdate({ editor: updatedEditor }) {
         syncTitleWithStore(updatedEditor);
         editorStore.update((s) => ({
@@ -182,14 +203,30 @@
           contentVersion: s.contentVersion + 1,
         }));
       },
+
+      // --- FIX: ADDED onSelectionUpdate FOR ROBUST SELECTION TRACKING ---
+      // This is the correct, efficient event for handling all selection changes.
       onSelectionUpdate({ editor: updatedEditor }) {
+        console.log(
+          '%c[Step 1: DocumentView] Selection Update Fired!',
+          'color: #00AACC; font-weight: bold;'
+        );
         const { selection } = updatedEditor.state;
+
         let newSelectedNode: ProseMirrorNode | null = null;
         let newSelectedPos: number | null = null;
+
+        // First, check for a direct NodeSelection (e.g., clicking an image, hr, etc.).
         if (selection instanceof NodeSelection) {
+          console.log('[Step 1: DocumentView] NodeSelection detected.');
           newSelectedNode = selection.node;
           newSelectedPos = selection.from;
         } else {
+          console.log(
+            '[Step 1: DocumentView] Not a NodeSelection. Looking for parent listItem...'
+          );
+          // If not a direct node selection, fall back to finding a parent listItem.
+          // This handles cases where the text cursor is inside a list item.
           const listItem = findParentNode(
             (node) => node.type.name === 'listItem'
           )(selection);
@@ -198,74 +235,45 @@
             newSelectedPos = listItem.pos;
           }
         }
-        if (newSelectedPos !== null) {
-          clearTimeout(clearSelectionTimeout);
-          clearTimeout(selectionUpdateTimeout);
-          selectionUpdateTimeout = setTimeout(() => {
-            if (get(editorStore).selectedNodePos !== newSelectedPos) {
-              editorStore.update((s) => ({
-                ...s,
-                selectedNode: newSelectedNode,
-                selectedNodePos: newSelectedPos,
-              }));
-            }
-          }, 50);
-        } else {
-          clearTimeout(selectionUpdateTimeout);
-          clearTimeout(clearSelectionTimeout);
-          clearSelectionTimeout = setTimeout(() => {
-            if (get(editorStore).selectedNodePos !== null) {
-              editorStore.update((s) => ({
-                ...s,
-                selectedNode: null,
-                selectedNodePos: null,
-              }));
-            }
-          }, 150);
-        }
+
+        console.log(
+          `[Step 1: DocumentView] Updating store with pos: ${newSelectedPos}`
+        );
+        // Update the store with the definitive selection state.
+        // If nothing was selected, values will correctly be null.
+        editorStore.update((s) => ({
+          ...s,
+          selectedNode: newSelectedNode,
+          selectedNodePos: newSelectedPos,
+        }));
       },
     });
 
     editor = editorInstance;
+
+    // Sync title on initial load.
     syncTitleWithStore(editor);
 
     if (initialContent) {
       editor.commands.setContent(initialContent, { emitUpdate: false });
       documentStore.clearInitialContent();
     }
+
     editorStore.update((s) => ({ ...s, instance: editor }));
 
-    // --- THE SILVER BULLET FIX FOR THE REMOUNTING BUG ---
+    // --- Cleanup ---
     return () => {
-      // We must always destroy the Tiptap editor instance to prevent memory leaks.
       if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
-
-      // THE FIX: We check if the instance we are destroying is the same one
-      // currently in the global store. If a new component has already mounted
-      // and replaced the instance, this check will fail, preventing this old,
-      // dying component from clearing the state that was just set.
-      if (get(editorStore).instance === editor) {
-        // This log will run on normal page navigation, which is correct.
-        console.log(
-          '%c[DocumentView Cleanup] This instance owns the store. Clearing state.',
-          'color: red; font-weight: bold;'
-        );
-        editorStore.set({
-          instance: null,
-          selectedNodePos: null,
-          selectedNode: null,
-          contentVersion: 0,
-          doc: null,
-        });
-      } else {
-        // This log will run when you select a node, proving our fix is working.
-        console.log(
-          '%c[DocumentView Cleanup] Stale instance detected. NOT clearing store state.',
-          'color: green; font-weight: bold;'
-        );
-      }
+      // Reset the full editor store state on component destruction.
+      editorStore.set({
+        instance: null,
+        selectedNodePos: null,
+        selectedNode: null,
+        contentVersion: 0,
+        doc: null,
+      });
     };
   });
 </script>
@@ -275,13 +283,15 @@
 </div>
 
 <style>
-  /* All styles are unchanged */
+  /* Scoped styles for the document view layout */
   .document-layout-container {
     width: 100%;
-    max-width: 960px;
+    max-width: 960px; /* Provides max width for large screens */
     margin: 0 auto;
-    padding: var(--space-xxl) var(--space-md) 50vh var(--space-md);
+    padding: var(--space-xxl) var(--space-md) 50vh var(--space-md); /* Vertical padding to center content */
   }
+
+  /* Global styles for the Tiptap .prose element */
   :global(.prose) {
     font-family: var(--font-main);
     color: var(--color-text);
@@ -295,10 +305,14 @@
     border: 1px solid var(--color-gray-100);
     box-shadow: var(--shadow-md);
   }
+
+  /* --- Dark Mode Styles --- */
   :global(.dark-theme .prose) {
     border-color: var(--color-border-dark);
     box-shadow: var(--shadow-dark-md);
   }
+
+  /* --- Responsive Adjustments --- */
   @media (max-width: 960px) {
     .document-layout-container {
       padding: var(--space-xl) 0 50vh 0;
@@ -309,6 +323,8 @@
       border-right: none;
     }
   }
+
+  /* --- Typography & Element Styling --- */
   :global(.prose p),
   :global(.prose li) {
     line-height: 1.7;
@@ -333,6 +349,8 @@
     border-top: 1px solid var(--color-gray-200);
     margin: var(--space-lg) 0;
   }
+
+  /* --- Placeholder Styles --- */
   :global(.prose .is-empty::before) {
     content: attr(data-placeholder);
     float: left;

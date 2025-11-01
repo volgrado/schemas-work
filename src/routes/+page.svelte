@@ -197,8 +197,6 @@
               ydoc={$documentStore.ydoc}
               initialContent={$documentStore.initialContent}
               focusedNodePos={$editorStore.selectedNodePos}
-              on:focusApplied={() =>
-                editorStore.update((s) => ({ ...s, selectedNodePos: null }))}
             />
           {:else if currentView === 'tree'}
             <SchemaTree

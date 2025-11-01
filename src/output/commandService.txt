@@ -1,23 +1,20 @@
 /**
  * @file commandService.ts
  * @description This service is responsible for defining and managing all the commands
- * available in the application's command bar. It acts as a centralized registry for actions.
- *
- * ARCHITECTURAL NOTE: This service has been intentionally designed to use simple,
- * non-reactive "builder" functions. The responsibility for reactivity (e.g., re-calculating
- * the command list when the editor's state changes) now lives directly within the Svelte
- * components that consume these functions, using Svelte 5's `$derived` rune.
- * This pattern proved to be the most robust solution to a deep-seated reactivity bug.
+ * available in the application's command bar.
  */
 
+// 1. Import the TTSStatus type from its canonical source file.
 import type { Command, TTSStatus } from '$lib/types';
 import { get } from 'svelte/store';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { documentStore } from '$lib/stores/documentStore';
 import { editorStore } from '$lib/stores/editorStore';
+import { reviewStore } from '$lib/stores/reviewStore';
 import { ttsStore } from '$lib/stores/ttsStore';
 import { t } from '$lib/utils/i18n';
 import { toast } from 'svelte-sonner';
+import { settingsStore } from '$lib/stores/settingsStore';
 import { getReadableNodes } from '$lib/utils/ttsUtils';
 
 export type AiActionHandler = (
@@ -28,12 +25,13 @@ export type AiActionHandler = (
 /**
  * Retrieves the list of primary commands. This is a non-reactive function.
  * @param openApiKeyModal - A callback function to open the API Key modal.
- * @param ttsStatus - The current status of the TTS player (e.g., 'playing', 'stopped').
+ * @param ttsStatus - The current status of the TTS player.
  * @param isEditorReady - A boolean indicating if the editor instance is available.
  * @returns {Command[]} An array of `Command` objects.
  */
 export function getCommands(
   openApiKeyModal: () => void,
+  // 2. THIS IS THE FIX: The function now correctly accepts the full TTSStatus type.
   ttsStatus: TTSStatus,
   isEditorReady: boolean
 ): Command[] {
@@ -58,25 +56,19 @@ export function getCommands(
       id: 'switch-schema',
       label: _t('command.explore_schemas'),
       icon: 'folder',
-      action: () => {
-        commandBarStore.setView('list-schemas');
-      },
+      action: () => commandBarStore.setView('list-schemas'),
     },
     {
       id: 'study-decks',
       label: _t('command.study_decks'),
       icon: 'book-open',
-      action: () => {
-        commandBarStore.setView('study-hub');
-      },
+      action: () => commandBarStore.setView('study-hub'),
     },
     {
       id: 'ai-submenu',
       label: _t('command.ai_assistant'),
       icon: 'sparkles',
-      action: () => {
-        commandBarStore.setView('ai-actions');
-      },
+      action: () => commandBarStore.setView('ai-actions'),
     },
     {
       id: 'read-aloud',
@@ -95,16 +87,15 @@ export function getCommands(
         }
         commandBarStore.close();
       },
-      // The button's state is determined by the arguments passed into this function.
+      // 3. This logic remains correct. If status is 'idle', 'paused', or 'stopped',
+      //    it will not be equal to 'playing', so the button will be enabled as intended.
       isEnabled: () => ttsStatus !== 'playing' && isEditorReady,
     },
     {
       id: 'vault-management',
       label: _t('command.vault_management'),
       icon: 'lock',
-      action: () => {
-        commandBarStore.setView('vault');
-      },
+      action: () => commandBarStore.setView('vault'),
     },
     {
       id: 'set-api-key',
@@ -119,18 +110,13 @@ export function getCommands(
       id: 'report-problem',
       label: _t('command.diagnostics_and_error_report'),
       icon: 'help-circle',
-      action: () => {
-        commandBarStore.openDiagnosticModal();
-      },
+      action: () => commandBarStore.openDiagnosticModal(),
     },
   ];
 }
 
 /**
  * Retrieves the list of AI-specific commands. This is a non-reactive function.
- * @param handleAiAction - The orchestrator function from CommandBar to handle AI actions.
- * @param isNodeSelected - A boolean indicating if a node is currently selected in the editor.
- * @returns {Command[]} An array of `Command` objects.
  */
 export function getAiCommands(
   handleAiAction: AiActionHandler,
@@ -156,7 +142,6 @@ export function getAiCommands(
       action: (event) => {
         handleAiAction('generate-flashcards', { forceManual: event?.shiftKey });
       },
-      // The button's state is determined by the boolean passed into this function.
       isEnabled: () => isNodeSelected,
     },
     {
@@ -166,7 +151,6 @@ export function getAiCommands(
       action: (event) => {
         handleAiAction('expand-node', { forceManual: event?.shiftKey });
       },
-      // The button's state is determined by the boolean passed into this function.
       isEnabled: () => isNodeSelected,
     },
   ];

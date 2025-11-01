@@ -1,0 +1,530 @@
+{
+  "app_name": "Schemas",
+  "welcome": {
+    "tagline": "Structure your knowledge, visualize your ideas, and learn effectively.",
+    "cta": "Get Started",
+    "cta_support": "Completely free and offline."
+  },
+  "feature": {
+    "ai_structure": {
+      "title": "AI-Powered Structuring",
+      "description": "Transform unstructured notes into organized schemas with a single click."
+    },
+    "visualize": {
+      "title": "Visualize Connections",
+      "description": "Explore your knowledge as an interactive tree to see the bigger picture."
+    },
+    "learn": {
+      "title": "Learn with SRS",
+      "description": "Generate flashcards from your notes and master concepts with spaced repetition."
+    },
+    "privacy": {
+      "title": "Privacy First & Offline",
+      "description": "All your data stays on your device, securely stored in your browser."
+    }
+  },
+  "slashCommands": {
+    "groups": {
+      "basic": "Basic",
+      "formatting": "Formatting",
+      "media": "Media",
+      "ai": "AI",
+      "utilities": "Utilities"
+    },
+    "term": {
+      "title": "Term",
+      "description": "Add a new concept or term."
+    },
+    "list": {
+      "title": "List",
+      "description": "Create a bulleted list."
+    },
+    "numberedList": {
+      "title": "Numbered List",
+      "description": "Create an ordered list (1, 2, 3...)"
+    },
+    "h1": {
+      "title": "Heading 1",
+      "description": "The main title of the schema."
+    },
+    "h2": {
+      "title": "Heading 2",
+      "description": "Add a section subtitle."
+    },
+    "h3": {
+      "title": "Heading 3",
+      "description": "Add a nested subtitle."
+    },
+    "separator": {
+      "title": "Separator",
+      "description": "Add a horizontal line."
+    },
+    "bold": {
+      "title": "Bold",
+      "description": "Highlight the selected text."
+    },
+    "italic": {
+      "title": "Italic",
+      "description": "Emphasize the selected text."
+    },
+    "image": {
+      "title": "Image",
+      "description": "Add an image from a URL."
+    },
+    "youtube": {
+      "title": "YouTube Video",
+      "description": "Embed a YouTube video."
+    },
+    "mathBlock": {
+      "title": "Formula (Block)",
+      "description": "Add a mathematical formula (KaTeX)."
+    },
+    "mathInline": {
+      "title": "Formula (Inline)",
+      "description": "Add a formula in the same line."
+    },
+    "expandNode": {
+      "title": "Expand Node (AI)",
+      "description": "Generate sub-points for the current node.",
+      "error": "To expand, first select a node in the schema."
+    },
+    "generateCards": {
+      "title": "Generate Cards (AI)",
+      "description": "Create study cards for this node.",
+      "error": "To generate cards, first select a node."
+    },
+    "readNode": {
+      "title": "Read Node",
+      "description": "Start reading aloud from here.",
+      "error": "Select a node to start reading.",
+      "errorNoId": "Could not find a valid ID for this node to start reading."
+    },
+    "editCards": {
+      "title": "Edit Cards",
+      "description": "Open the card editor for this document.",
+      "error": "Could not open the card editor for this document.",
+      "errorNoId": "This node does not have a valid ID to associate cards with."
+    }
+  },
+  "appHeader": {
+    "aria": {
+      "returnToWelcome": "Return to the welcome screen"
+    }
+  },
+  "review": {
+    "inputPlaceholder": "Type your answer...",
+    "correctAnswer": "Correct answer:",
+    "correctSequence": "Correct sequence!",
+    "correctSequenceIs": "The correct sequence is:",
+    "showAnswer": "Show Answer",
+    "evaluating": "Evaluating...",
+    "check": "Check",
+    "again": "Again",
+    "hard": "Hard",
+    "good": "Good",
+    "easy": "Easy",
+    "goToSource": "Go to source",
+    "finishReview": "Finish Review",
+    "scheduled_review": "Scheduled Review",
+    "all_reviewed_toast": "All reviewed for today!",
+    "all_reviewed_description": "Want to study your most difficult cards instead?",
+    "review_weakest_button": "Review 5 Cards",
+    "no_cards_for_additional_review": "No cards available for an additional review.",
+    "additional_review": "Additional Review",
+    "review_started_toast": "{type} started with {count, plural, =1 {1 card} other {# cards}}.",
+    "card_will_reappear_toast": "This card will appear again in this session.",
+    "review_complete_toast": "Review complete!",
+    "review_complete_description": "You studied {count, plural, =1 {1 card} other {# cards}}."
+  },
+  "card_editor": {
+    "load_error": "Could not load cards for this node.",
+    "input_prompt_template": "Regarding \"{content}\", what is the answer?",
+    "input_prompt_fallback": "Fill in the blank",
+    "sequencing_prompt": "Order the following items:",
+    "new_question": "New Question",
+    "create_error": "Failed to create the new card.",
+    "save_error": "Failed to save card changes.",
+    "delete_error": "Failed to delete the card.",
+    "restore_error": "Failed to restore the card."
+  },
+  "card_editor_panel": {
+    "title": "Study Cards",
+    "tooltip": "Create questions and answers for this document. Use them in \"Review Mode\" to memorize key concepts.",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "add_card": "Add Card",
+    "add_basic": "Basic (Q/A)",
+    "add_input": "Fill in the Blank",
+    "add_sequence": "Sequence",
+    "done": "Done",
+    "loading": "Loading cards...",
+    "load_error": "Could not load the cards for this document.",
+    "question_label": "Question",
+    "question_placeholder": "Write the question...",
+    "answer_label": "Answer",
+    "answer_placeholder": "Write the answer...",
+    "prompt_label": "Prompt (use {{...}} for the blank)",
+    "prompt_placeholder": "e.g., The capital of France is {{...}}",
+    "expected_answer_label": "Expected Answer",
+    "expected_answer_placeholder": "e.g., Paris",
+    "instruction_label": "Instruction",
+    "instruction_placeholder": "e.g., Order the following steps...",
+    "sequence_item_placeholder": "Sequence item...",
+    "add_item": "Add Item",
+    "card_deleted_toast": "Card deleted.",
+    "undo_button": "Undo",
+    "empty_title": "No Cards Yet",
+    "empty_message": "Add your first study card for this document to begin."
+  },
+  "document": {
+    "invalid_document_error": "Item is not a valid document: {docId}",
+    "new_schema_title": "New Schema",
+    "first_schema_title": "My First Schema"
+  },
+  "tts": {
+    "initializing": "Initializing audio...",
+    "error": "An unknown error occurred.",
+    "previous_node": "Previous",
+    "play": "Play",
+    "pause": "Pause",
+    "next_node": "Next",
+    "stop": "Stop",
+    "voice": "Voice",
+    "speed": "Speed ({rate}x)",
+    "finished_reading_toast": "Finished reading the document.",
+    "playback_error": "An error occurred during playback.",
+    "stopped_due_to_changes_toast": "Playback stopped due to document changes.",
+    "init_error": "Could not initialize Text-to-Speech.",
+    "no_readable_content_toast": "There is no readable content in the document.",
+    "node_not_found_error": "Could not find the specified node to start reading."
+  },
+  "aiHelper": {
+    "errors": {
+      "jsonFormatIncorrect": "The JSON format is incorrect.",
+      "notValidJson": "The provided text is not valid JSON.",
+      "zodValidationError": "Error in '{path}': {message}"
+    },
+    "promptCopied": "Prompt copied to clipboard.",
+    "copyError": "Could not copy the prompt.",
+    "step1": {
+      "title": "Step 1: Copy the Prompt",
+      "description": "Copy the prompt below and paste it into your preferred AI assistant."
+    },
+    "step2": {
+      "title": "Step 2: Paste the Response",
+      "description": "Paste the complete and unmodified JSON response from the AI into the text area below.",
+      "placeholder": "Paste the AI's JSON response here..."
+    }
+  },
+  "common": {
+    "copy": "Copy",
+    "cancel": "Cancel",
+    "applyChanges": "Apply Changes",
+    "close": "Close"
+  },
+  "doc_view": {
+    "untitled_schema": "Untitled Schema",
+    "placeholder": {
+      "title": "What is your schema about?",
+      "term": "Type '/' for commands",
+      "description": "Add a description..."
+    },
+    "media": {
+      "edit_button": "Edit"
+    }
+  },
+  "formula_editor": {
+    "title": "Edit Formula",
+    "label": "KaTeX Formula",
+    "cancel_button": "Cancel",
+    "save_button": "Save",
+    "preview_title": "Preview",
+    "help_title": "KaTeX Help",
+    "error_rendering": "Error rendering preview",
+    "help": {
+      "fractions": "Fractions:",
+      "superscript": "Superscript:",
+      "subscript": "Subscript:",
+      "square_root": "Square Root:",
+      "summation": "Summation:",
+      "greek_letters": "Greek Letters:"
+    }
+  },
+  "command_bar": {
+    "ai_helper": {
+      "create_schema": {
+        "title": "Create Schema from Text",
+        "prompt_placeholder": "Paste your text, notes, or article here...",
+        "success": "Schema \"{title}\" created successfully."
+      },
+      "expand_node": {
+        "title": "Expand Node with AI",
+        "success": "Node expanded successfully.",
+        "error": {
+          "no_node_selected": "To expand a node, you must first select it in the editor."
+        }
+      },
+      "generate_flashcards": {
+        "title": "Generate Study Cards with AI",
+        "success": "{count, plural, =1 {1 study card} other {# study cards}} generated.",
+        "error": {
+          "no_node_id": "Could not generate cards. The current document does not have a valid ID.",
+          "save_failed": "Failed to save the generated cards.",
+          "no_node_selected": "To generate cards, you must first select a node in the editor."
+        }
+      }
+    },
+    "export_success": "Vault exported successfully.",
+    "operation_failed": "Operation failed",
+    "operation_failed_details": "Incorrect password or corrupted file.",
+    "password_modal": {
+      "title": {
+        "export": "Export Vault",
+        "import": "Import Vault"
+      },
+      "description": {
+        "export": "Please enter a password to encrypt your vault. This will be required for import.",
+        "import": "Please enter the password for the vault you are importing."
+      },
+      "password_placeholder": "Enter password...",
+      "cancel_button": "Cancel",
+      "confirm_button": {
+        "export": "Export",
+        "import": "Import"
+      }
+    },
+    "close_aria_label": "Close command bar"
+  },
+  "error_diagnostic": {
+    "title": "Error Diagnostic",
+    "explanation": "This is a log of errors that have occurred in the application. If you are experiencing problems, copy this report and send it to the developer for assistance.",
+    "explanation.privacy": "This report does not contain any personal data.",
+    "report_header": "Error Report",
+    "empty_state": "No errors have been recorded.",
+    "clear_logs": "Clear Logs",
+    "copy_report": "Copy Report"
+  },
+  "toast": {
+    "info": {
+      "nothing_to_copy": "Nothing to copy.",
+      "error_logs_cleared": "Error logs cleared."
+    },
+    "success": {
+      "diagnostic_report_copied": "Diagnostic report copied to clipboard."
+    },
+    "error": {
+      "could_not_copy_report": "Could not copy the report."
+    }
+  },
+  "first_time_hint": {
+    "command_bar_hint": "Press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open the command menu.",
+    "close_hint_aria_label": "Close hint"
+  },
+  "modal": {
+    "close_aria_label": "Close modal",
+    "default_aria_label": "Modal window"
+  },
+  "file_explorer": {
+    "item_type": {
+      "folder": "folder",
+      "schema": "schema"
+    },
+    "header": {
+      "root_breadcrumb": "Home",
+      "new_schema_button": "New Schema",
+      "new_folder_button": "New Folder",
+      "drop_zone_aria_label": "Drop files here to move to root"
+    },
+    "state": {
+      "loading": "Loading items...",
+      "empty_folder_title": "This folder is empty",
+      "empty_folder_message": "Create a new schema or folder to get started."
+    },
+    "new_item_placeholder": "Enter {type} name...",
+    "rename_input_aria_label": "Rename {title}",
+    "delete_confirm": {
+      "title": "Delete \"{title}\"?",
+      "description": "Are you sure? This will permanently delete the {itemType} and all its contents.",
+      "action": "Delete"
+    },
+    "context_menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "delete": "Delete"
+    },
+    "toast": {
+      "folder_created": "Folder \"{name}\" created.",
+      "schema_created": "Schema \"{name}\" created.",
+      "create_failed": "Failed to create {type}.",
+      "renamed": "\"{oldTitle}\" was renamed to \"{newTitle}\"",
+      "rename_failed": "Failed to rename item.",
+      "item_deleted": "Item deleted.",
+      "delete_failed": "Failed to delete item.",
+      "item_moved": "\"{title}\" was moved.",
+      "move_failed": "Failed to move item."
+    },
+    "errors": {
+      "load_failed": "Failed to load items."
+    },
+    "default_schema_name": "New Schema",
+    "item_actions": {
+      "rename": "Rename item",
+      "delete": "Delete item"
+    },
+    "footer": {
+      "back_to_main_menu": "Back to Main Menu"
+    }
+  },
+  "ai_view": {
+    "title": "AI Assistant Actions",
+    "back_button_aria_label": "Back to main menu",
+    "back_button_label": "Back"
+  },
+  "vault_view": {
+    "title": "Vault Management",
+    "export_button": "Export Encrypted Vault",
+    "import_button": "Import Encrypted Vault",
+    "back_button_aria_label": "Back to main menu",
+    "back_button_label": "Back"
+  },
+  "page": {
+    "view_toggle": {
+      "aria_label": {
+        "to_tree": "Switch to tree view",
+        "to_editor": "Switch to editor view"
+      }
+    },
+    "status": {
+      "loading_schema": "Loading schema...",
+      "load_error": "There was an error loading the document.",
+      "empty_schema": {
+        "message": "This schema is empty.",
+        "hint": "Start typing or use '/' for commands."
+      }
+    },
+    "fab": {
+      "tree": "Tree",
+      "editor": "Editor",
+      "menu": "Menu",
+      "cards": "Cards"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "es": "Spanish",
+    "el": "Greek"
+  },
+  "media_editor": {
+    "title": {
+      "image": "Edit Image",
+      "youtube": "Edit YouTube Video"
+    },
+    "label": {
+      "image": "Image URL",
+      "youtube": "YouTube URL"
+    },
+    "preview": {
+      "alt": "Image preview"
+    },
+    "cancel_button": "Cancel",
+    "save_button": "Save"
+  },
+  "tooltip": {
+    "show_help": "Show help"
+  },
+  "slash_menu": {
+    "empty_state": "No matching commands"
+  },
+  "main_view": {
+    "title": "Commands"
+  },
+  "command": {
+    "new_schema": "New Schema",
+    "explore_schemas": "Explore Schemas",
+    "study_decks": "Study Decks",
+    "ai_assistant": "AI Assistant",
+    "read_schema": "Read Schema",
+    "vault_management": "Vault Management",
+    "diagnostics_and_error_report": "Diagnostics & Error Report",
+    "create_schema_from_text": "Create Schema From Text",
+    "generate_study_cards": "Generate Study Cards",
+    "expand_this_node": "Expand This Node"
+  },
+  "theme": {
+    "aria": {
+      "switchToDark": "Switch to dark theme",
+      "switchToSystem": "Switch to system theme",
+      "switchToLight": "Switch to light theme"
+    }
+  },
+  "statistics": {
+    "title": "Study Statistics",
+    "loading": "Calculating statistics...",
+    "noData": "No data found.",
+    "reviewsToday": "Reviews Today",
+    "totalReviews": "Total Reviews",
+    "youngRetention": "Young Card Retention",
+    "matureRetention": "Mature Card Retention",
+    "breakdownTitle": "Card Collection Breakdown",
+    "chartEmpty": "Add some cards to see your collection breakdown.",
+    "backToDecks": "Back to Decks",
+    "viewStatistics": "View Statistics"
+  },
+  "deckOptions": {
+    "title": "Deck Options",
+    "maxNew": "Max New Cards / Day",
+    "maxReviews": "Max Reviews / Day",
+    "learningSteps": "Learning Steps (e.g., \"1m 10m 1d\")",
+    "graduatingInterval": "Graduating Interval (days)",
+    "cancel": "Cancel",
+    "saveAndClose": "Save & Close",
+    "loading": "Loading options...",
+    "saveSuccess": "Deck options saved.",
+    "saveFailed": "Failed to save options."
+  },
+  "studyHub": {
+    "title": "Study Decks",
+    "viewStatistics": "View Statistics",
+    "loading": "Loading decks...",
+    "empty": "No decks with cards found. Add cards to a document to get started.",
+    "deckHeader": "Deck",
+    "newHeader": "New",
+    "learningHeader": "Learning",
+    "reviewHeader": "To Review",
+    "settingsAria": "Deck Settings"
+  },
+  "quickCardEditor": {
+    "title": "Edit Card",
+    "questionLabel": "Question",
+    "answerLabel": "Answer",
+    "promptLabel": "Prompt (use {{...}} for the blank)",
+    "expectedLabel": "Expected Answer",
+    "instructionLabel": "Instruction",
+    "sequenceGroupLabel": "Sequence Items (in correct order)",
+    "sequenceItemPlaceholder": "Item {i}",
+    "addItem": "Add Item",
+    "removeItemAria": "Remove item",
+    "tagsLabel": "Tags",
+    "suspendLabel": "Suspend Card",
+    "changeSource": "Change Source",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "updateSuccess": "Card updated successfully.",
+    "updateFailed": "Failed to save card changes.",
+    "deleteConfirm": "Are you sure you want to permanently delete this card?",
+    "deleteSuccess": "Card deleted.",
+    "deleteFailed": "Failed to delete card."
+  },
+  "relinkCard": {
+    "title": "Change Card Source",
+    "description": "Select a new document to associate this card with.",
+    "loading": "Loading documents...",
+    "cancel": "Cancel",
+    "confirm": "Confirm Change",
+    "noSelectionError": "Please select a new document.",
+    "alreadyInDocInfo": "Card is already in this document.",
+    "updateSuccess": "Card source updated successfully.",
+    "updateFailed": "Failed to update card source."
+  }
+}
