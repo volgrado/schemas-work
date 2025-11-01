@@ -7,7 +7,7 @@ compatibility_date = "2024-05-01"
 
 # This is the crucial part for Cloudflare Pages to find your build output.
 # It overrides any automatic framework detection.
-pages_build_output_dir = ".svelte-kit/output"
+pages_build_output_dir = ".svelte-kit/cloudfare"
 
 # The [pages] section is for Workers, not for static asset deployment on Pages.
 # If you were deploying a Cloudflare Worker *alongside* your Pages site,
