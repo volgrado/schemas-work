@@ -1,6 +1,6 @@
 // svelte.config.js
 
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-cloudflare'; // <--- CAMBIO 1: Importamos el nuevo adaptador
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,20 +8,18 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    // Usamos el adaptador estático para generar archivos HTML, CSS y JS.
+    // Usamos el adaptador de Cloudflare para desplegar en su plataforma.
     adapter: adapter({
-      // Las opciones por defecto suelen ser 'build' para pages y assets.
-      pages: 'build',
-      assets: 'build',
-
-      // ¡ESTA ES LA LÍNEA MÁS IMPORTANTE PARA UNA SPA!
-      // Le dice al servidor que si una ruta como /document/xyz no existe como
-      // un archivo, debe servir el archivo principal 'index.html'. Esto permite
-      // que el enrutador del lado del cliente de SvelteKit se haga cargo.
-      fallback: 'index.html',
-
-      // Opciones adicionales, los valores por defecto suelen estar bien.
-      precompress: false,
+      // <--- CAMBIO 2: Usamos el nuevo adaptador
+      // ¡ESTA ES LA LÍNEA MÁS IMPORTANTE PARA UNA SPA EN CLOUDFLARE!
+      // Esto le dice a Cloudflare que todas las rutas ('/*') deben ser manejadas
+      // por la lógica de tu aplicación (sirviendo el index.html), excepto
+      // los archivos que ya existen físicamente ('<all>'), como imágenes o CSS.
+      // Es el equivalente al 'fallback: "index.html"' del adaptador estático.
+      routes: {
+        include: ['/*'],
+        exclude: ['<all>'],
+      },
     }),
 
     alias: {
