@@ -4,7 +4,7 @@
  */
 
 // --- UI & Component Types ---
-// import type { IconName } from '$lib/components/ui/Icon.svelte'; // <<< REMOVED THIS LINE
+import type { IconName } from './iconName'; // <<< IMPORT ADDED HERE
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 // --- Core Data Structures ---
@@ -148,21 +148,7 @@ export type NewCard = NewBasicCard | NewInputCard | NewSequencingCard;
 
 // --- Command Palette Types ---
 
-/**
- * Defines the set of valid icon names that can be used in the application.
- * Using a string literal union provides type safety and autocompletion.
- */
-export type IconName =
-  | 'plus'
-  | 'folder'
-  | 'book-open'
-  | 'sparkles'
-  | 'volume-2'
-  | 'lock'
-  | 'key'
-  | 'help-circle'
-  | 'zap'
-  | 'x';
+// <<< The IconName type definition was removed from here >>>
 
 export interface Command {
   /** Unique identifier for the command. */

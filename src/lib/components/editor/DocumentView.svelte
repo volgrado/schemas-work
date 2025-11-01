@@ -12,7 +12,7 @@
 -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
-  import { get } from 'svelte/store'; // 'get' is essential for our fix.
+  import { get } from 'svelte/store';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
   // --- Tiptap Core & Extensions ---
@@ -48,6 +48,8 @@
   import { modalStore } from '$lib/stores/modalStore';
   import { debounce } from '$lib/utils/debounce';
   import { t } from '$lib/utils/i18n';
+  // --- NEW ---
+  import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
 
   // --- Component Properties ---
   let {
@@ -176,6 +178,19 @@
       },
       onUpdate({ editor: updatedEditor }) {
         syncTitleWithStore(updatedEditor);
+
+        // --- NEW LOGIC for Neural Index ---
+        const currentDocId = get(documentStore).docId;
+        if (currentDocId) {
+          // Trigger the debounced indexing function. This is an efficient
+          // way to keep the "Local Brain" in sync with user edits.
+          neuralIndexService.indexDocument(
+            currentDocId,
+            updatedEditor.state.doc
+          );
+        }
+        // --- END NEW LOGIC ---
+
         editorStore.update((s) => ({
           ...s,
           doc: updatedEditor.state.doc,
@@ -231,23 +246,20 @@
 
     if (initialContent) {
       editor.commands.setContent(initialContent, { emitUpdate: false });
+      // --- NEW: Also index the initial content ---
+      const currentDocId = get(documentStore).docId;
+      if (currentDocId) {
+        neuralIndexService.indexDocument(currentDocId, editor.state.doc);
+      }
       documentStore.clearInitialContent();
     }
     editorStore.update((s) => ({ ...s, instance: editor }));
 
-    // --- THE SILVER BULLET FIX FOR THE REMOUNTING BUG ---
     return () => {
-      // We must always destroy the Tiptap editor instance to prevent memory leaks.
       if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
-
-      // THE FIX: We check if the instance we are destroying is the same one
-      // currently in the global store. If a new component has already mounted
-      // and replaced the instance, this check will fail, preventing this old,
-      // dying component from clearing the state that was just set.
       if (get(editorStore).instance === editor) {
-        // This log will run on normal page navigation, which is correct.
         console.log(
           '%c[DocumentView Cleanup] This instance owns the store. Clearing state.',
           'color: red; font-weight: bold;'
@@ -260,7 +272,6 @@
           doc: null,
         });
       } else {
-        // This log will run when you select a node, proving our fix is working.
         console.log(
           '%c[DocumentView Cleanup] Stale instance detected. NOT clearing store state.',
           'color: green; font-weight: bold;'
@@ -294,50 +305,5 @@
     border-radius: var(--space-sm);
     border: 1px solid var(--color-gray-100);
     box-shadow: var(--shadow-md);
-  }
-  :global(.dark-theme .prose) {
-    border-color: var(--color-border-dark);
-    box-shadow: var(--shadow-dark-md);
-  }
-  @media (max-width: 960px) {
-    .document-layout-container {
-      padding: var(--space-xl) 0 50vh 0;
-    }
-    :global(.prose) {
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-    }
-  }
-  :global(.prose p),
-  :global(.prose li) {
-    line-height: 1.7;
-  }
-  :global(.prose h1) {
-    font-size: 2.25rem;
-    margin-top: 0;
-    margin-bottom: var(--space-md);
-  }
-  :global(.prose h2) {
-    font-size: 1.5rem;
-    margin-top: var(--space-lg);
-    margin-bottom: var(--space-sm);
-  }
-  :global(.prose h3) {
-    font-size: 1.25rem;
-    margin-top: var(--space-lg);
-    margin-bottom: var(--space-sm);
-  }
-  :global(.prose hr) {
-    border: none;
-    border-top: 1px solid var(--color-gray-200);
-    margin: var(--space-lg) 0;
-  }
-  :global(.prose .is-empty::before) {
-    content: attr(data-placeholder);
-    float: left;
-    color: var(--color-gray-400);
-    pointer-events: none;
-    height: 0;
   }
 </style>

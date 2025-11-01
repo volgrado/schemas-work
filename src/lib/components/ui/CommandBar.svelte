@@ -1,4 +1,3 @@
-<!-- src/lib/components/ui/CommandBar.svelte -->
 <script lang="ts">
   // --- Svelte & Third-Party ---
   import { onMount, onDestroy } from 'svelte';
@@ -15,6 +14,7 @@
   import ErrorDiagnosticModal from '$lib/components/ui/ErrorDiagnosticModal.svelte';
   import ApiKeyModal from '$lib/components/ui/ApiKeyModal.svelte';
   import TextInputModal from '$lib/components/ui/TextInputModal.svelte';
+  import StrategySessionModal from '$lib/components/ai/StrategySessionModal.svelte';
 
   // --- Services & Schemas ---
   import * as aiService from '$lib/services/ai/aiService';
@@ -34,6 +34,7 @@
   import VaultView from './command-bar/VaultView.svelte';
   import DeckOptionsView from './command-bar/DeckOptionsView.svelte';
   import StatisticsView from './command-bar/StatisticsView.svelte';
+  import SearchView from './command-bar/SearchView.svelte';
 
   // --- Stores ---
   import {
@@ -52,7 +53,6 @@
   import * as errorService from '$lib/services/core/errorService';
   import type { Card, NewCard } from '$lib/types';
 
-  // This config object now just holds static data. The prompts are assembled dynamically.
   const aiHelperConfigs = {
     'create-schema-from-text': {
       title: $t('command_bar.ai_helper.create_schema.title'),
@@ -85,7 +85,7 @@
         }
       },
     },
-    'generate-flashcards': {
+    'generate-flashcards-node': {
       title: $t('command_bar.ai_helper.generate_flashcards.title'),
       validationSchema: aiSchemas.FlashcardResponseSchema,
       onApply: async (data: Omit<Card, 'id' | 'deckId'>[]) => {
@@ -115,7 +115,6 @@
     },
   };
 
-  // --- Local State ---
   let isApiKeyModalOpen = $state(false);
   let passwordInput = '';
   let helperConfig = $state({
@@ -132,9 +131,8 @@
     }
   });
 
-  // --- THE CHEF: This function's job is to prepare the final prompt for the manual AI Helper modal ---
   function configureAiHelper(actionId: AiHelperAction) {
-    const config = aiHelperConfigs[actionId];
+    const config = aiHelperConfigs[actionId as keyof typeof aiHelperConfigs];
     if (!config) return;
 
     let finalPrompt = '';
@@ -144,7 +142,6 @@
       selectedNode: node,
     } = get(editorStore);
 
-    // Prepare the final prompt based on the action
     switch (actionId) {
       case 'create-schema-from-text':
         finalPrompt =
@@ -172,7 +169,7 @@
         ).replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
         break;
 
-      case 'generate-flashcards':
+      case 'generate-flashcards-node':
         if (!node) {
           toast.error(
             $t(
@@ -189,14 +186,12 @@
         break;
     }
 
-    // Set the final, complete configuration for the modal
     helperConfig = {
       ...config,
       prompt: finalPrompt,
     };
   }
 
-  // --- Automated Action Handlers ---
   async function handleAiAction(
     actionId: AiHelperAction,
     options: { forceManual?: boolean } = {}
@@ -225,10 +220,11 @@
         `Running AI action with ${selectedModel.name}...`
       );
       try {
-        const config = aiHelperConfigs[actionId];
+        const config =
+          aiHelperConfigs[actionId as keyof typeof aiHelperConfigs];
         if (!config) throw new Error('Invalid AI action configuration.');
 
-        let prompt = ''; // The automated flow builds its own prompt
+        let prompt = '';
 
         const { instance: editor, selectedNode } = get(editorStore);
         if (!selectedNode)
@@ -243,7 +239,7 @@
             '{{NODE_TEXT}}',
             selectedNode.textContent
           ).replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
-        } else if (actionId === 'generate-flashcards') {
+        } else if (actionId === 'generate-flashcards-node') {
           prompt = Prompts.GENERATE_FLASHCARDS_V2_PROMPT.replace(
             '{{NODE_TEXT}}',
             selectedNode.textContent
@@ -365,7 +361,8 @@
       $commandBarStore.isPasswordModalOpen ||
       $commandBarStore.isAiHelperOpen ||
       isApiKeyModalOpen ||
-      isTextInputModalOpen
+      isTextInputModalOpen ||
+      $commandBarStore.isStrategySessionOpen
     )
       return;
 
@@ -383,6 +380,13 @@
         commandBarStore.close();
       }
     }
+  }
+
+  // --- FIX: This function is required by SearchView ---
+  function openApiKeyModal() {
+    isApiKeyModalOpen = true;
+    // It's good practice to close the command bar when opening a modal.
+    commandBarStore.close();
   }
 
   onMount(() => window.addEventListener('keydown', handleKeydown));
@@ -407,6 +411,8 @@
   onClose={commandBarStore.closeDiagnosticModal}
 />
 
+<StrategySessionModal show={$commandBarStore.isStrategySessionOpen} />
+
 <Modal
   title={$commandBarStore.passwordModalAction === 'export'
     ? $t('command_bar.password_modal.title.export')
@@ -414,7 +420,7 @@
   show={$commandBarStore.isPasswordModalOpen}
   onClose={commandBarStore.closePasswordModal}
 >
-  <form on:submit|preventDefault={handlePasswordSubmit}>
+  <form onsubmit={handlePasswordSubmit}>
     <p>
       {$commandBarStore.passwordModalAction === 'export'
         ? $t('command_bar.password_modal.description.export')
@@ -428,7 +434,7 @@
       autocomplete="new-password"
     />
     <div class="modal-actions">
-      <Button on:click={commandBarStore.closePasswordModal} variant="secondary">
+      <Button onclick={commandBarStore.closePasswordModal} variant="secondary">
         {$t('command_bar.password_modal.cancel_button')}
       </Button>
       <Button type="submit">
@@ -456,7 +462,7 @@
 {#if $commandBarStore.isOpen}
   <button
     class="overlay"
-    on:click={commandBarStore.close}
+    onclick={commandBarStore.close}
     transition:fade={{ duration: 150 }}
     aria-label={$t('command_bar.close_aria_label')}
   ></button>
@@ -470,9 +476,12 @@
   >
     <!-- Dynamic View Rendering -->
     {#if $commandBarStore.currentView === 'main'}
-      <MainView openApiKeyModal={() => (isApiKeyModalOpen = true)} />
+      <MainView {openApiKeyModal} />
     {:else if $commandBarStore.currentView === 'ai-actions'}
       <AiView {handleAiAction} />
+    {:else if $commandBarStore.currentView === 'search'}
+      <!-- --- FIX: Pass the required functions as props to SearchView --- -->
+      <SearchView {openApiKeyModal} {handleAiAction} />
     {:else if $commandBarStore.currentView === 'list-schemas'}
       <FileExplorerView />
     {:else if $commandBarStore.currentView === 'study-hub'}

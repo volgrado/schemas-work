@@ -1,11 +1,3 @@
-<!--
-@component
-Icon
-
-Dynamic wrapper for rendering icons from `svelte-feather-icons`.
-Allows rendering a specific icon by passing its name as a prop.
-Provides consistent sizing, styling, and customization.
--->
 <script lang="ts">
   import type { SvelteComponent, ComponentType } from 'svelte';
 
@@ -28,6 +20,8 @@ Provides consistent sizing, styling, and customization.
     FolderIcon,
     FileTextIcon,
     LockIcon,
+    KeyIcon, // ADDED
+    SearchIcon, // ADDED
     PlusSquareIcon,
     SunIcon,
     MoonIcon,
@@ -54,7 +48,7 @@ Provides consistent sizing, styling, and customization.
 
     // Conceptual
     ZapIcon,
-    StarIcon,
+    StarIcon, // This is used for 'sparkles'
     GitBranchIcon,
     DownloadCloudIcon,
     UploadCloudIcon,
@@ -67,6 +61,7 @@ Provides consistent sizing, styling, and customization.
   }
 
   // --- Icon mapping ---
+  // This record should match the IconName type exactly.
   const icons: Record<
     string,
     ComponentType<SvelteComponent<FeatherIconProps>>
@@ -88,6 +83,8 @@ Provides consistent sizing, styling, and customization.
     folder: FolderIcon,
     'file-text': FileTextIcon,
     lock: LockIcon,
+    key: KeyIcon, // ADDED
+    search: SearchIcon, // ADDED
     'plus-square': PlusSquareIcon,
     sun: SunIcon,
     moon: MoonIcon,
@@ -110,6 +107,7 @@ Provides consistent sizing, styling, and customization.
     bold: BoldIcon,
     italic: ItalicIcon,
     list: ListIcon,
+    'list-ordered': ListIcon, // ADDED (aliased to regular list)
 
     // Conceptual & App-Specific
     'book-open': BookOpenIcon,

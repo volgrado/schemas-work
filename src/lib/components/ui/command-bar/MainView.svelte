@@ -44,7 +44,7 @@
   {#each mainCommands as command (command.id)}
     <button
       class="action-button"
-      on:click={command.action}
+      onclick={command.action}
       disabled={command.isEnabled && !command.isEnabled()}
     >
       <Icon name={command.icon} size={18} />

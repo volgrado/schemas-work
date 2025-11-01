@@ -1,24 +1,20 @@
+import type { SearchResult as ContentResult } from '$lib/services/features/searchService';
 import type { IconName } from '$lib/types/iconName';
 
-/**
- * @file Defines the data structure for a command.
- * @module command
- */
-
-/**
- * Represents a command that can be executed from the command bar, a menu, or a toolbar.
- */
+// --- THIS IS YOUR NEW, SUPERIOR INTERFACE ---
 export interface Command {
-  /** A unique identifier for the command. */
   id: string;
-  /** The user-facing label for the command. */
   label: string;
-  /** The name of the icon to display next to the command. */
   icon: IconName;
-  /** The function to execute when the command is triggered. */
   action: (event?: MouseEvent) => void | Promise<void>;
-  /** An optional function to determine if the command is currently enabled. Defaults to `true`. */
   isEnabled?: () => boolean;
-  /** Optional sub-commands for creating nested menus. */
-  subItems?: Command[];
+  subItems?: Command[]; // Note: We won't implement sub-item rendering in this step, but the type supports it for the future.
+}
+
+// These types remain the same
+export type ResultItem = ContentResult | Command;
+
+export interface SearchResultGroup {
+  type: 'Knowledge' | 'Commands';
+  items: ResultItem[];
 }

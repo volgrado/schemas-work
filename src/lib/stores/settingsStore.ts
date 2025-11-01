@@ -1,8 +1,5 @@
-// src/lib/stores/settingsStore.ts
-
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
-// NEW: Import the model definitions to access rate limits
 import { getModelById, type AiProvider } from '$lib/services/ai/aiModels';
 
 // --- Constants ---
@@ -17,18 +14,24 @@ export interface ApiKey {
   provider: AiProvider;
   lastUsed: number;
   nickname?: string;
-  // NEW: An array to store timestamps of recent requests for rate-limit tracking.
   requests: { timestamp: number }[];
 }
+
+// NEW: Define the possible embedding strategies
+export type EmbeddingMethod = 'cloud' | 'local';
 
 export interface SettingsState {
   selectedModelId: string;
   apiKeys: ApiKey[];
+  // NEW: Add a property to store the user's chosen embedding strategy.
+  embeddingMethod: EmbeddingMethod;
 }
 
 const DEFAULT_STATE: SettingsState = {
   selectedModelId: 'gemini-1.5-flash-latest',
   apiKeys: [],
+  // NEW: Default to 'cloud' for the highest quality experience out-of-the-box.
+  embeddingMethod: 'cloud',
 };
 
 // --- Store Implementation ---
@@ -41,13 +44,13 @@ function createSettingsStore() {
     if (storedSettings) {
       try {
         const parsed = JSON.parse(storedSettings);
-        // NEW: Ensure old keys without the `requests` property are gracefully handled.
         if (parsed.apiKeys) {
           parsed.apiKeys = parsed.apiKeys.map((key: any) => ({
-            requests: [], // Add the default empty array if missing
+            requests: [],
             ...key,
           }));
         }
+        // Gracefully handle old settings objects that don't have the new property.
         return { ...DEFAULT_STATE, ...parsed };
       } catch {
         return DEFAULT_STATE;
@@ -66,7 +69,7 @@ function createSettingsStore() {
             provider: 'gemini',
             lastUsed: 0,
             nickname: 'Migrated Key',
-            requests: [], // MODIFIED: Include the new property
+            requests: [],
           },
         ],
       };
@@ -87,13 +90,12 @@ function createSettingsStore() {
     }
   };
 
-  // NEW: The core rate-limiting logic.
   const isKeyRateLimited = (
     key: ApiKey,
     currentState: SettingsState
   ): boolean => {
     const model = getModelById(currentState.selectedModelId);
-    if (!model || !key) return false; // Fail open if model not found
+    if (!model || !key) return false;
 
     const now = Date.now();
     const oneMinuteAgo = now - 60 * 1000;
@@ -129,6 +131,22 @@ function createSettingsStore() {
       });
     },
 
+    // --- NEW METHOD ---
+    /**
+     * Sets the preferred method for generating embeddings (for the Neural Index).
+     * @param method The chosen embedding strategy.
+     */
+    setEmbeddingMethod: (method: EmbeddingMethod) => {
+      update((state) => {
+        // Here you could trigger the "catch-up" indexing logic if needed.
+        // For now, we just update the state.
+        console.log(`Embedding method changed to: ${method}`);
+        const newState = { ...state, embeddingMethod: method };
+        saveState(newState);
+        return newState;
+      });
+    },
+
     addApiKey: (key: string, provider: AiProvider, nickname?: string) => {
       update((state) => {
         const newKey: ApiKey = {
@@ -137,7 +155,7 @@ function createSettingsStore() {
           provider,
           lastUsed: 0,
           nickname,
-          requests: [], // MODIFIED: Initialize with an empty requests array
+          requests: [],
         };
         const newState = { ...state, apiKeys: [...state.apiKeys, newKey] };
         saveState(newState);
@@ -156,7 +174,6 @@ function createSettingsStore() {
       });
     },
 
-    // MODIFIED: This function now also records the request timestamp.
     recordApiKeyUsage: (keyId: string) => {
       update((state) => {
         const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
@@ -164,7 +181,6 @@ function createSettingsStore() {
           ...state,
           apiKeys: state.apiKeys.map((k) => {
             if (k.id === keyId) {
-              // Add new request and clean up old ones (older than 24h)
               const updatedRequests = [
                 ...k.requests.filter((r) => r.timestamp > oneDayAgo),
                 { timestamp: Date.now() },
@@ -179,7 +195,6 @@ function createSettingsStore() {
       });
     },
 
-    // MODIFIED: The "smart switch" logic now includes rate-limit checking.
     getNextAvailableKey: (
       provider: AiProvider,
       currentState: SettingsState
@@ -189,17 +204,14 @@ function createSettingsStore() {
       );
       if (providerKeys.length === 0) return null;
 
-      // Sort by lastUsed timestamp to prioritize rotation
       providerKeys.sort((a, b) => a.lastUsed - b.lastUsed);
 
-      // Find the first key that is NOT rate-limited
       for (const key of providerKeys) {
         if (!isKeyRateLimited(key, currentState)) {
-          return key; // Found a valid key
+          return key;
         }
       }
 
-      // If the loop completes, all keys for this provider are currently rate-limited
       return null;
     },
   };

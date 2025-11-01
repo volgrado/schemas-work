@@ -1,7 +1,10 @@
+// src/types/iconName.ts
+
 /**
  * @file Defines the IconName type, a union of all valid icon names
- * available in the Icon.svelte component.
- * Provides type safety for any prop that expects an icon name.
+ * available in the Icon.svelte component. Provides type safety for
+ * any prop that expects an icon name.
+ * @module types/iconName
  *
  * To add a new icon:
  * 1. Add it to the `icons` object in src/lib/components/ui/Icon.svelte
@@ -25,11 +28,13 @@ export type IconName =
   | 'folder'
   | 'file-text'
   | 'lock'
+  | 'key'
+  | 'search'
+  | 'plus-square' // ADDED
   | 'sun'
   | 'moon'
   | 'monitor'
   | 'settings'
-
   // Media & Audio
   | 'play'
   | 'pause'
@@ -40,14 +45,12 @@ export type IconName =
   | 'skip-forward'
   | 'image'
   | 'video'
-
   // Text & Formatting
   | 'type'
   | 'bold'
   | 'italic'
   | 'list'
   | 'list-ordered'
-
   // Conceptual & App-Specific
   | 'book-open'
   | 'zap'
@@ -55,6 +58,5 @@ export type IconName =
   | 'git-branch'
   | 'download-cloud'
   | 'upload-cloud'
-
   // Special alias
   | 'plus-slash-minus';

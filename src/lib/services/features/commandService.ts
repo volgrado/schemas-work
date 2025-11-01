@@ -1,13 +1,8 @@
 /**
  * @file commandService.ts
- * @description This service is responsible for defining and managing all the commands
- * available in the application's command bar. It acts as a centralized registry for actions.
- *
- * ARCHITECTURAL NOTE: This service has been intentionally designed to use simple,
- * non-reactive "builder" functions. The responsibility for reactivity (e.g., re-calculating
- * the command list when the editor's state changes) now lives directly within the Svelte
- * components that consume these functions, using Svelte 5's `$derived` rune.
- * This pattern proved to be the most robust solution to a deep-seated reactivity bug.
+ * @description This service is responsible for dynamically generating and searching all commands
+ * available in the application's command bar. It acts as a centralized registry for actions,
+ * building the list of commands based on the current application state.
  */
 
 import type { Command, TTSStatus } from '$lib/types';
@@ -20,13 +15,34 @@ import { t } from '$lib/utils/i18n';
 import { toast } from 'svelte-sonner';
 import { getReadableNodes } from '$lib/utils/ttsUtils';
 
+/**
+ * Defines the signature for the AI action handler function passed from the UI.
+ */
 export type AiActionHandler = (
-  action: 'create-schema-from-text' | 'generate-flashcards' | 'expand-node',
+  action:
+    | 'create-schema-from-text'
+    | 'generate-flashcards-node'
+    | 'expand-node',
   options?: { forceManual?: boolean }
 ) => void;
 
 /**
- * Retrieves the list of primary commands. This is a non-reactive function.
+ * Defines the options that must be passed from the UI layer to the search function.
+ * This pattern keeps the service decoupled from specific component instances.
+ */
+export interface SearchOptions {
+  openApiKeyModal: () => void;
+  handleAiAction: AiActionHandler;
+}
+
+// =================================================================================
+// COMMAND GETTERS
+// These functions are EXPORTED to maintain compatibility with other views like
+// MainView.svelte and AiView.svelte, which use them directly.
+// =================================================================================
+
+/**
+ * Retrieves the list of primary commands.
  * @param openApiKeyModal - A callback function to open the API Key modal.
  * @param ttsStatus - The current status of the TTS player (e.g., 'playing', 'stopped').
  * @param isEditorReady - A boolean indicating if the editor instance is available.
@@ -40,6 +56,14 @@ export function getCommands(
   const _t = get(t);
 
   return [
+    {
+      id: 'search-vault',
+      label: _t('command.search_vault'),
+      icon: 'search',
+      action: () => {
+        commandBarStore.setView('search');
+      },
+    },
     {
       id: 'new-schema',
       label: _t('command.new_schema'),
@@ -95,7 +119,6 @@ export function getCommands(
         }
         commandBarStore.close();
       },
-      // The button's state is determined by the arguments passed into this function.
       isEnabled: () => ttsStatus !== 'playing' && isEditorReady,
     },
     {
@@ -127,7 +150,7 @@ export function getCommands(
 }
 
 /**
- * Retrieves the list of AI-specific commands. This is a non-reactive function.
+ * Retrieves the list of AI-specific commands.
  * @param handleAiAction - The orchestrator function from CommandBar to handle AI actions.
  * @param isNodeSelected - A boolean indicating if a node is currently selected in the editor.
  * @returns {Command[]} An array of `Command` objects.
@@ -150,13 +173,23 @@ export function getAiCommands(
       },
     },
     {
-      id: 'generate-flashcards',
-      label: _t('command.generate_study_cards'),
+      id: 'generate-flashcards-document',
+      label: _t('command.generate_study_cards_for_document'),
+      icon: 'zap',
+      action: () => {
+        commandBarStore.openStrategySession();
+      },
+      isEnabled: () => true,
+    },
+    {
+      id: 'generate-flashcards-node',
+      label: _t('command.generate_study_cards_for_node'),
       icon: 'zap',
       action: (event) => {
-        handleAiAction('generate-flashcards', { forceManual: event?.shiftKey });
+        handleAiAction('generate-flashcards-node', {
+          forceManual: event?.shiftKey,
+        });
       },
-      // The button's state is determined by the boolean passed into this function.
       isEnabled: () => isNodeSelected,
     },
     {
@@ -166,8 +199,57 @@ export function getAiCommands(
       action: (event) => {
         handleAiAction('expand-node', { forceManual: event?.shiftKey });
       },
-      // The button's state is determined by the boolean passed into this function.
       isEnabled: () => isNodeSelected,
     },
   ];
+}
+
+// =================================================================================
+// UNIFIED SEARCH FUNCTION (For SearchView.svelte)
+// This is the main exported function that the omni-search view will use.
+// =================================================================================
+
+/**
+ * Searches all available commands based on the current application state and a query.
+ * @param query The text to search for.
+ * @param options An object containing UI-dependent callbacks.
+ * @returns A promise that resolves to an array of matching, enabled commands.
+ */
+export async function searchCommands(
+  query: string,
+  options: SearchOptions
+): Promise<Command[]> {
+  // 1. Get current application state from stores
+  const ttsStatus = get(ttsStore).status;
+  const editorState = get(editorStore);
+  const isEditorReady = !!editorState.instance;
+  const isNodeSelected = editorState.selectedNode !== null;
+
+  // 2. Generate the full list of commands by calling our own exported functions
+  const primaryCommands = getCommands(
+    options.openApiKeyModal,
+    ttsStatus,
+    isEditorReady
+  );
+  const aiCommands = getAiCommands(options.handleAiAction, isNodeSelected);
+  const allAvailableCommands = [...primaryCommands, ...aiCommands];
+
+  const lowerCaseQuery = query.toLowerCase();
+
+  // 3. Filter the generated list
+  return allAvailableCommands.filter((command) => {
+    // A command is available if its isEnabled function returns true, or if it's not defined
+    const isCommandEnabled = command.isEnabled ? command.isEnabled() : true;
+    if (!isCommandEnabled) {
+      return false;
+    }
+
+    // If there's no query, return all enabled commands
+    if (!query) {
+      return true;
+    }
+
+    // Otherwise, filter by matching the label
+    return command.label.toLowerCase().includes(lowerCaseQuery);
+  });
 }

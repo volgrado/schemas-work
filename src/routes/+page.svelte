@@ -247,7 +247,7 @@
               icon="command"
               label={$t('page.fab.menu')}
               position="right"
-              on:click={commandBarStore.open}
+              on:click={() => commandBarStore.open()}
             />
           {/if}
         {/if}
