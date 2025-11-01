@@ -1,0 +1,8 @@
+# wrangler.toml
+
+name = "schemas-work" # Feel free to change this to your project name
+compatibility_date = "2025-11-01" # Use a recent date
+
+[pages]
+main = ".svelte-kit/output/server/index.js"
+assets = ".svelte-kit/output/client"
