@@ -1,8 +1,19 @@
 # wrangler.toml
 
-name = "schemas-work" # Feel free to change this to your project name
-compatibility_date = "2025-11-01" # Use a recent date
+name = "schemas-work" # Your project name
+# This compatibility date is important for Workers, but less critical for Pages build output.
+# A recent date is generally fine.
+compatibility_date = "2024-05-01" 
 
-[pages]
-main = ".svelte-kit/output/server/index.js"
-assets = ".svelte-kit/output/client"
+# This is the crucial part for Cloudflare Pages to find your build output.
+# It overrides any automatic framework detection.
+pages_build_output_dir = ".svelte-kit/output"
+
+# The [pages] section is for Workers, not for static asset deployment on Pages.
+# If you were deploying a Cloudflare Worker *alongside* your Pages site,
+# you would configure it here. For just static site hosting,
+# pages_build_output_dir is sufficient.
+#
+# [pages]
+# main = ".svelte-kit/output/server/index.js" # This is for Workers runtime
+# assets = ".svelte-kit/output/client"      # This is also more for Workers
