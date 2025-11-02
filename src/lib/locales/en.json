@@ -29,7 +29,8 @@
       "formatting": "Formatting",
       "media": "Media",
       "ai": "AI",
-      "utilities": "Utilities"
+      "utilities": "Utilities",
+      "content": "Content"
     },
     "term": {
       "title": "Term",
@@ -134,7 +135,15 @@
     "review_started_toast": "{type} started with {count, plural, =1 {1 card} other {# cards}}.",
     "card_will_reappear_toast": "This card will appear again in this session.",
     "review_complete_toast": "Review complete!",
-    "review_complete_description": "You studied {count, plural, =1 {1 card} other {# cards}}."
+    "review_complete_description": "You studied {count, plural, =1 {1 card} other {# cards}}.",
+    "congrats_title": "Congratulations!",
+    "session_finished_desc": "You have finished this study session. You reviewed {count, plural, =1 {1 card} other {# cards}}.",
+    "finish_button": "Finish",
+    "progress": {
+      "new_tooltip": "New cards",
+      "learning_tooltip": "Learning cards",
+      "due_tooltip": "Cards to review"
+    }
   },
   "card_editor": {
     "load_error": "Could not load cards for this node.",
@@ -174,7 +183,9 @@
     "card_deleted_toast": "Card deleted.",
     "undo_button": "Undo",
     "empty_title": "No Cards Yet",
-    "empty_message": "Add your first study card for this document to begin."
+    "empty_message": "Add your first study card for this document to begin.",
+    "close_aria": "Close card editor",
+    "delete_card_aria": "Delete card"
   },
   "document": {
     "invalid_document_error": "Item is not a valid document: {docId}",
@@ -196,7 +207,11 @@
     "stopped_due_to_changes_toast": "Playback stopped due to document changes.",
     "init_error": "Could not initialize Text-to-Speech.",
     "no_readable_content_toast": "There is no readable content in the document.",
-    "node_not_found_error": "Could not find the specified node to start reading."
+    "node_not_found_error": "Could not find the specified node to start reading.",
+    "no_voices": "No voices available",
+    "voice_changed_toast": "Voice changed. Press play to resume with the new voice.",
+    "speed_changed_toast": "Speed changed. Press play to resume with the new speed.",
+    "volume_changed_toast": "Volume changed. Press play to resume with the new volume."
   },
   "aiHelper": {
     "errors": {
@@ -220,7 +235,10 @@
     "copy": "Copy",
     "cancel": "Cancel",
     "applyChanges": "Apply Changes",
-    "close": "Close"
+    "close": "Close",
+    "loading": "Loading...",
+    "send": "Send",
+    "volume": "Volume"
   },
   "doc_view": {
     "untitled_schema": "Untitled Schema",
@@ -293,7 +311,28 @@
         "import": "Import"
       }
     },
-    "close_aria_label": "Close command bar"
+    "close_aria_label": "Close command bar",
+    "toast": {
+      "running_action": "Running AI action with {modelName}...",
+      "action_success": "AI action completed successfully!",
+      "action_failed": "AI Action Failed: {message}",
+      "manual_helper_info": "Shift key held. Opening manual AI helper.",
+      "rate_limit_info": "All {provider} keys are currently rate-limited. Please wait.",
+      "no_key_info": "No API key found for {provider}. Please add one in AI Settings.",
+      "generating_schema": "Generating new schema with {modelName}...",
+      "schema_created_success": "Schema created successfully!"
+    },
+    "errors": {
+      "invalid_action_config": "Invalid AI action configuration.",
+      "node_selection_required": "A node must be selected for this action.",
+      "automated_flow_error": "This action should not be running in automated node-based flow."
+    },
+    "text_input_modal": {
+      "title": "Create Schema from Text",
+      "placeholder": "Paste your notes, an article, or any block of text here...",
+      "generate_button": "Generate",
+      "cancel_button": "Cancel"
+    }
   },
   "error_diagnostic": {
     "title": "Error Diagnostic",
@@ -447,8 +486,11 @@
     "vault_management": "Vault Management",
     "diagnostics_and_error_report": "Diagnostics & Error Report",
     "create_schema_from_text": "Create Schema From Text",
-    "generate_study_cards": "Generate Study Cards",
-    "expand_this_node": "Expand This Node"
+    "generate_study_cards_for_document": "Generate Study Cards for Document",
+    "generate_study_cards_for_node": "Generate Study Cards for this Node",
+    "expand_this_node": "Expand This Node",
+    "set_api_key": "Set API Key",
+    "search_vault": "Search Vault..."
   },
   "theme": {
     "aria": {
@@ -468,7 +510,13 @@
     "breakdownTitle": "Card Collection Breakdown",
     "chartEmpty": "Add some cards to see your collection breakdown.",
     "backToDecks": "Back to Decks",
-    "viewStatistics": "View Statistics"
+    "viewStatistics": "View Statistics",
+    "chart": {
+      "new": "New",
+      "learning": "Learning",
+      "young": "Young",
+      "mature": "Mature"
+    }
   },
   "deckOptions": {
     "title": "Deck Options",
@@ -526,5 +574,88 @@
     "alreadyInDocInfo": "Card is already in this document.",
     "updateSuccess": "Card source updated successfully.",
     "updateFailed": "Failed to update card source."
+  },
+  "ai_service": {
+    "errors": {
+      "no_gemini_key_embedding": "No Gemini API key found to generate embeddings.",
+      "embedding_api_error": "Gemini Embedding API Error: {status} - {message}",
+      "no_valid_embedding": "Gemini response did not contain a valid embedding.",
+      "unexpected_embedding_error": "An unexpected error occurred while generating the embedding.",
+      "unsupported_provider": "Unsupported AI provider: {provider}",
+      "gemini_api_error": "Gemini API Error: {status} - {message}",
+      "no_content": "Gemini response did not contain any content.",
+      "validation_failed": "AI response validation failed: {path} - {message}",
+      "unexpected_generate_content_error": "An unexpected error occurred while contacting the AI service."
+    }
+  },
+  "apiKeyModal": {
+    "toast": {
+      "empty_key_error": "API Key cannot be empty.",
+      "key_added_success": "New Gemini key added!",
+      "key_removed_info": "API Key removed."
+    },
+    "confirm": {
+      "remove_key": "Are you sure you want to remove the key \"{name}\"?"
+    },
+    "title": "AI Settings",
+    "explanation": "Manage your API keys and select your preferred AI model. Keys are stored securely in your browser's local storage.",
+    "model_selector_label": "Preferred AI Model",
+    "optgroup": {
+      "supported": "Supported Models",
+      "discovered": "Discovered Models (Experimental)"
+    },
+    "model_loading": "(...)",
+    "model_available": " ✓",
+    "model_unavailable": " (Unavailable)",
+    "discovered_model_tooltip": "*This is a discovered model. Rate limits are set to a conservative default.",
+    "your_keys_header": "Your API Keys",
+    "empty_state": "You haven't added any API keys yet.",
+    "untitled_key": "Untitled Key",
+    "usage_tooltip": "Estimated API usage for the selected model.",
+    "rpm_label": "RPM",
+    "rpd_label": "RPD",
+    "remove_key_aria": "Remove key",
+    "add_key_header": "Add a New Gemini Key",
+    "nickname_label": "Nickname (Optional)",
+    "nickname_placeholder": "e.g., Personal Project Key",
+    "api_key_label": "API Key",
+    "api_key_placeholder": "Enter your API key here",
+    "get_key_link": "Get a Gemini Key",
+    "add_key_button": "Add Key"
+  },
+  "backup_service": {
+    "errors": {
+      "password_required_export": "A password is required to encrypt and export the vault.",
+      "invalid_json_file": "The selected file is not a valid JSON backup file.",
+      "corrupt_vault": "Vault data is corrupt or has an invalid format after decryption."
+    },
+    "toast": {
+      "export_success": "Vault exported successfully.",
+      "export_failed_title": "Export Failed",
+      "export_failed_desc": "Could not generate the backup file. See the error console for more details.",
+      "password_required_import": "A password is required to decrypt and import the vault.",
+      "import_success": "Vault imported successfully! The page will now reload.",
+      "import_failed_title": "Import Failed",
+      "import_failed_desc": "The password may be incorrect, or the selected file may be corrupt or invalid."
+    }
+  },
+  "search_view": {
+    "recent_searches": "Recent Searches",
+    "group": {
+      "commands": "Commands",
+      "knowledge": "Knowledge"
+    },
+    "relevancy_score_tooltip": "Relevancy score",
+    "prompt": "Start typing to search your entire vault.",
+    "error": "There was an error performing the search.",
+    "no_results": "No results found for your query."
+  },
+  "strategy_session": {
+    "title": "AI Strategy Session",
+    "analysis_brief_placeholder": "Analysis complete. I've identified key concepts in this document that could be turned into study cards.",
+    "concepts_title": "Concepts for this Document",
+    "draft_button": "Draft {count, plural, =1 {1 Card} other {# Cards}}",
+    "command_placeholder": "What's next? You can refine the cards or add more.",
+    "send": "Send"
   }
 }

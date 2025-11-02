@@ -115,6 +115,8 @@ export function getCommands(
           console.error(
             "Command 'read-aloud': Editor instance is not available."
           );
+          // NOTE: A toast for "editor not ready" doesn't exist yet in the provided en.txt
+          // For now, it will fall back to the key name. Add `common.editor_not_ready` to en.txt if needed.
           toast.error(_t('common.editor_not_ready'));
         }
         commandBarStore.close();
@@ -131,7 +133,7 @@ export function getCommands(
     },
     {
       id: 'set-api-key',
-      label: 'Set API Key',
+      label: _t('command.set_api_key'),
       icon: 'key',
       action: () => {
         openApiKeyModal();

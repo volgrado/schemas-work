@@ -27,6 +27,15 @@
   src: url('/fonts/Inter-VariableFont_slnt,wght.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900; /* The italic font is also variable */
+  font-display: swap;
+  /* Make sure this file exists in your /static/fonts/ folder! */
+  src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.woff2') format('woff2');
+}
+
 /**
  * 1.2. Design Tokens (CSS Variables) - REFINED LIGHT THEME
  * -------------------------------------------------------------------------- */
@@ -355,20 +364,25 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 3px;
 }
 
-:global(.prose p[data-role='term']),
-.prose .schema-term {
-  font-weight: 500;
-  margin-bottom: 0.25em !important;
+/* --- MIGRATION: VISUAL HIERARCHY --- */
+/* Provides visual indentation for nested headings to restore hierarchy
+   after the list-to-heading migration. */
+.prose h3 {
+  margin-left: 2em;
 }
+.prose h4 {
+  margin-left: 4em;
+}
+/* --- END MIGRATION --- */
+
+/* --- MIGRATION: REMOVED Obsolete role-based selectors --- */
+/*
+:global(.prose p[data-role='term']),
+.prose .schema-term { ... }
 
 :global(.prose p[data-role='description']),
-.prose .schema-description {
-  color: var(--color-gray-500);
-  font-size: 0.9em;
-  line-height: 1.6;
-  margin-top: 0 !important;
-  padding-left: 1.6em;
-}
+.prose .schema-description { ... }
+*/
 
 .prose .is-empty::before {
   content: attr(data-placeholder);
@@ -378,6 +392,7 @@ input[type='range']::-webkit-slider-thumb {
   height: 0;
 }
 
+/* --- MIGRATION: KEPT for user-created nested lists --- */
 .prose ul {
   position: relative;
 }
@@ -549,17 +564,16 @@ input[type='range']::-webkit-slider-thumb {
 }
 
 /* --- Read Aloud Mode State --- */
-.is-reading-aloud .prose ul > li {
-  transition: opacity 0.3s ease;
-  opacity: 0.4;
-}
-.is-reading-aloud .prose ul > li.is-current-tts-node {
-  opacity: 1;
-}
+/* --- MIGRATION: REMOVED Obsolete TTS fading logic for list items --- */
+/*
+.is-reading-aloud .prose ul > li { ... }
+.is-reading-aloud .prose ul > li.is-current-tts-node { ... }
+*/
 .is-reading-aloud .prose h1 {
   opacity: 1; /* Keep the title always visible */
 }
 
+/* This style is still valid, as the class is now applied to headings/paragraphs */
 .is-current-tts-node {
   background-color: hsl(var(--color-accent-hsl) / 0.1);
   border-radius: var(--space-sm);

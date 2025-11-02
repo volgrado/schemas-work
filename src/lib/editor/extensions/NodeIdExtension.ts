@@ -1,6 +1,7 @@
 /**
  * @file Implements a robust NodeIdExtension for the Tiptap editor.
- * This extension ensures every `listItem` has a unique `nodeId`.
+ * This extension ensures every semantic heading (h2, h3, etc.) has a unique `nodeId`,
+ * which is critical for linking features like cards, TTS, and the neural index.
  */
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
@@ -12,7 +13,8 @@ export const NodeIdExtension = Extension.create({
   addGlobalAttributes() {
     return [
       {
-        types: ['listItem'],
+        // --- MIGRATION CHANGE: The nodeId is now the cornerstone of headings. ---
+        types: ['heading'],
         attributes: {
           nodeId: {
             default: null,
@@ -43,19 +45,25 @@ export const NodeIdExtension = Extension.create({
 
           const tr = newState.tr;
           let modified = false;
-          const seenNodeIds = new Set<string>(); // A set to track IDs we've already seen in this scan.
+          const seenNodeIds = new Set<string>(); // Tracks IDs seen in this scan.
 
           // Scan the entire document from top to bottom.
           newState.doc.descendants((node, pos) => {
-            if (node.type.name === 'listItem') {
+            // --- MIGRATION CHANGE: Target 'heading' nodes. ---
+            if (node.type.name === 'heading') {
+              // --- AUDIT FIX: Exclude the main H1 document title. ---
+              // The document title is not a semantic "node" for features like cards.
+              if (node.attrs.level === 1) {
+                return; // Skip and continue scanning.
+              }
+
               const nodeId = node.attrs.nodeId;
 
-              // A node needs a new ID if:
+              // A heading needs a new ID if:
               // 1. It doesn't have an ID (`!nodeId`).
               // 2. Its ID is a duplicate (`seenNodeIds.has(nodeId)`).
               if (!nodeId || seenNodeIds.has(nodeId)) {
                 const newNodeId = uuidv4();
-                // Add a step to the transaction to update this node's ID.
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
                   nodeId: newNodeId,
@@ -63,13 +71,13 @@ export const NodeIdExtension = Extension.create({
                 modified = true;
                 seenNodeIds.add(newNodeId); // Add the new, unique ID to our set.
               } else {
-                // The ID is valid and unique, so we add it to the set for future checks.
+                // The ID is valid and unique, so add it to the set for future checks.
                 seenNodeIds.add(nodeId);
               }
             }
           });
 
-          // If we made any changes, return the modified transaction. Otherwise, return null.
+          // If we made any changes, return the modified transaction.
           return modified ? tr : null;
         },
       }),

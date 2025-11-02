@@ -58,7 +58,9 @@
       title: $t('command_bar.ai_helper.create_schema.title'),
       validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
       onApply: (data: any) => {
-        const title = data.content?.[0]?.content?.[0]?.text || 'New Schema';
+        const title =
+          data.content?.[0]?.content?.[0]?.text ||
+          $t('document.new_schema_title');
         const parentId = get(commandBarStore).currentParentId;
         documentStore.createNewDocument(title, data, parentId);
         toast.success(
@@ -217,18 +219,21 @@
 
     if (selectedKey && !forceManual) {
       const toastId = toast.loading(
-        `Running AI action with ${selectedModel.name}...`
+        $t('command_bar.toast.running_action', {
+          modelName: selectedModel.name,
+        })
       );
       try {
         const config =
           aiHelperConfigs[actionId as keyof typeof aiHelperConfigs];
-        if (!config) throw new Error('Invalid AI action configuration.');
+        if (!config)
+          throw new Error($t('command_bar.errors.invalid_action_config'));
 
         let prompt = '';
 
         const { instance: editor, selectedNode } = get(editorStore);
         if (!selectedNode)
-          throw new Error('A node must be selected for this action.');
+          throw new Error($t('command_bar.errors.node_selection_required'));
 
         if (actionId === 'expand-node' && editor) {
           const breadcrumb = schemaService.getBreadcrumbForPosition(
@@ -245,9 +250,7 @@
             selectedNode.textContent
           );
         } else {
-          throw new Error(
-            'This action should not be running in automated node-based flow.'
-          );
+          throw new Error($t('command_bar.errors.automated_flow_error'));
         }
 
         settingsStore.recordApiKeyUsage(selectedKey.id);
@@ -261,9 +264,12 @@
         const dataToApply =
           'content' in result ? (result as any).content : result;
         await config.onApply(dataToApply);
-        toast.success('AI action completed successfully!', { id: toastId });
+        toast.success($t('command_bar.toast.action_success'), { id: toastId });
       } catch (error: any) {
-        toast.error(`AI Action Failed: ${error.message}`, { id: toastId });
+        toast.error(
+          $t('command_bar.toast.action_failed', { message: error.message }),
+          { id: toastId }
+        );
         errorService.reportError(error, {
           operation: `handleAiAction:${actionId}`,
           model: selectedModel.id,
@@ -271,18 +277,22 @@
       }
     } else {
       if (forceManual && selectedKey)
-        toast.info('Shift key held. Opening manual AI helper.');
+        toast.info($t('command_bar.toast.manual_helper_info'));
       else if (!selectedKey) {
         const providerKeys = settings.apiKeys.filter(
           (k) => k.provider === selectedModel.provider
         );
         if (providerKeys.length > 0)
           toast.info(
-            `All ${selectedModel.provider} keys are currently rate-limited. Please wait.`
+            $t('command_bar.toast.rate_limit_info', {
+              provider: selectedModel.provider,
+            })
           );
         else
           toast.info(
-            `No API key found for ${selectedModel.provider}. Please add one in AI Settings.`
+            $t('command_bar.toast.no_key_info', {
+              provider: selectedModel.provider,
+            })
           );
       }
       commandBarStore.openAiHelper(actionId);
@@ -305,7 +315,9 @@
     if (!selectedKey) return;
 
     const toastId = toast.loading(
-      `Generating new schema with ${selectedModel.name}...`
+      $t('command_bar.toast.generating_schema', {
+        modelName: selectedModel.name,
+      })
     );
     try {
       const config = aiHelperConfigs['create-schema-from-text'];
@@ -324,9 +336,14 @@
       );
 
       await config.onApply(result);
-      toast.success('Schema created successfully!', { id: toastId });
+      toast.success($t('command_bar.toast.schema_created_success'), {
+        id: toastId,
+      });
     } catch (error: any) {
-      toast.error(`AI Action Failed: ${error.message}`, { id: toastId });
+      toast.error(
+        $t('command_bar.toast.action_failed', { message: error.message }),
+        { id: toastId }
+      );
       errorService.reportError(error, {
         operation: `handleTextSubmitForSchemaCreation`,
         model: selectedModel.id,
@@ -339,7 +356,6 @@
     try {
       if ($commandBarStore.passwordModalAction === 'export') {
         await backupService.exportVault(passwordInput);
-        toast.success($t('command_bar.export_success'));
       } else {
         await backupService.importVault(passwordInput);
       }
@@ -347,9 +363,7 @@
       errorService.reportError(error, {
         operation: `backup:${$commandBarStore.passwordModalAction}`,
       });
-      toast.error($t('command_bar.operation_failed'), {
-        description: $t('command_bar.operation_failed_details'),
-      });
+      // Toasts are now handled by the backupService for better encapsulation.
     } finally {
       commandBarStore.closePasswordModal();
       passwordInput = '';
@@ -395,8 +409,8 @@
 
 <TextInputModal
   show={isTextInputModalOpen}
-  title="Create Schema from Text"
-  placeholder="Paste your notes, an article, or any block of text here..."
+  title={$t('command_bar.text_input_modal.title')}
+  placeholder={$t('command_bar.text_input_modal.placeholder')}
   onClose={() => (isTextInputModalOpen = false)}
   onsubmit={handleTextSubmitForSchemaCreation}
 />

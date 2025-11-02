@@ -32,8 +32,8 @@ import type { CardType } from '$lib/types';
  * @remarks
  * The prompt is engineered to achieve two main objectives:
  * - **Structuring**: It must generate a valid Tiptap document with a root `heading`
- *   (serving as the title) and a main `bulletList` (serving as the schema).
- * - **Explaining**: For each identified term in the schema, it must provide a clear,
+ *   (serving as the title) followed by a linear sequence of level 2 `heading` nodes and `paragraph` nodes.
+ * - **Explaining**: For each identified concept, it must provide a clear,
  *   didactic description suitable for learning, effectively applying the Feynman Technique
  *   (explaining a concept in simple terms).
  *
@@ -48,10 +48,10 @@ You are an exceptional hybrid: an Information Architect with the soul of an expe
 **TIPTAP STRUCTURE RULES:**
 1.  Your response MUST be exclusively a valid JSON object, without comments.
 2.  The root object must be of type \`doc\`.
-3.  The content of the \`doc\` must have a level 1 \`heading\` (the title) and a \`bulletList\` (the schema).
-4.  Each element of the schema is a \`listItem\`.
-5.  Within each \`listItem\`, the first node must be a \`paragraph\` with \`"attrs": { "role": "term" }\` for the key concept.
-6.  Add a second \`paragraph\` with \`"attrs": { "role": "description" }\` to explain the concept didactically.
+3.  The content of the \`doc\` must start with a level 1 \`heading\` (the main title).
+4.  After the title, create a flat, linear sequence of nodes.
+5.  Each key concept should be a level 2 \`heading\`.
+6.  Immediately following each level 2 \`heading\`, add a \`paragraph\` node containing its didactic explanation.
 
 **QUALITY EXAMPLE:**
 - **Example Input:** "The Solar System is composed of the Sun and the planets. The planets are divided into inner, like Earth, and outer, like Jupiter."
@@ -66,24 +66,22 @@ You are an exceptional hybrid: an Information Architect with the soul of an expe
       "content": [{ "type": "text", "text": "Composition of the Solar System" }]
     },
     {
-      "type": "bulletList",
-      "content": [
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": { "role": "term" },
-              "content": [{ "type": "text", "text": "Inner Planets" }]
-            },
-            {
-              "type": "paragraph",
-              "attrs": { "role": "description" },
-              "content": [{ "type": "text", "text": "Known as the rocky planets, they are the four closest to the Sun and are characterized by their solid surface." }]
-            }
-          ]
-        }
-      ]
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [{ "type": "text", "text": "Inner Planets" }]
+    },
+    {
+      "type": "paragraph",
+      "content": [{ "type": "text", "text": "Known as the rocky planets, they are the four closest to the Sun and are characterized by their solid surface." }]
+    },
+    {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Outer Planets" }]
+    },
+    {
+        "type": "paragraph",
+        "content": [{ "type": "text", "text": "Known as the gas giants, these are the four planets furthest from the Sun and are primarily composed of hydrogen, helium, and methane." }]
     }
   ]
 }
@@ -103,8 +101,7 @@ You are an exceptional hybrid: an Information Architect with the soul of an expe
  * @remarks
  * This prompt is used to add hierarchical depth to the user's knowledge schema by generating
  * 2-3 relevant sub-points for a given node. The expected output is a Tiptap JSON
- * object representing a `bulletList`, which can be seamlessly nested within the existing
- * Tiptap document structure.
+ * array of nodes, which can be seamlessly inserted into the existing Tiptap document.
  *
  * Placeholders:
  * - `{{NODE_TEXT}}`: The text content of the node that the user wishes to expand.
@@ -113,7 +110,7 @@ You are an exceptional hybrid: an Information Architect with the soul of an expe
  */
 export const EXPAND_NODE_PROMPT_V4_PEDAGOGICAL = `
 **ROLE AND OBJECTIVE:**
-You are an expert tutor and Tiptap specialist. Your task is to expand a concept, adding sub-points that not only list information but explain it with exceptional clarity, as if you were guiding a student.
+You are an expert tutor and Tiptap specialist. Your task is to expand a concept by generating sub-points, adding explanatory text with exceptional clarity as if guiding a student.
 
 **SCHEMA CONTEXT:**
 Main concept: "{{NODE_TEXT}}"
@@ -123,33 +120,34 @@ Its path in the schema is: \`{{CONTEXT_BREADCRUMB}}\`
 Generate 2-3 relevant sub-points. For each one, write a didactic and enriching description.
 
 **RULES AND OUTPUT STRUCTURE:**
-1.  Your response MUST be a valid JSON object representing a \`bulletList\`.
-2.  Each \`listItem\` must contain a \`paragraph\` with \`"attrs": { "role": "term" }\` (the key) and a second \`paragraph\` with \`"attrs": { "role": "description" }\` (the explanation).
+1.  Your response MUST be a valid JSON array of Tiptap nodes.
+2.  Each sub-point should be a level 3 \`heading\`.
+3.  Each level 3 \`heading\` MUST be immediately followed by a \`paragraph\` node containing its explanation.
 
 **QUALITY EXAMPLE:**
 - **Concept to expand:** "SEO Strategies"
 - **Example JSON Output:**
 \`\`\`json
-{
-  "type": "bulletList",
-  "content": [
-    {
-      "type": "listItem",
-      "content": [
-        {
-          "type": "paragraph",
-          "attrs": { "role": "term" },
-          "content": [{ "type": "text", "text": "On-Page SEO" }]
-        },
-        {
-          "type": "paragraph",
-          "attrs": { "role": "description" },
-          "content": [{ "type": "text", "text": "Refers to all the improvements you apply directly on your page (titles, content, images) so that search engines understand what it is about and consider it relevant." }]
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "type": "heading",
+    "attrs": { "level": 3 },
+    "content": [{ "type": "text", "text": "On-Page SEO" }]
+  },
+  {
+    "type": "paragraph",
+    "content": [{ "type": "text", "text": "Refers to all the improvements you apply directly on your page (titles, content, images) so that search engines understand what it is about and consider it relevant." }]
+  },
+  {
+    "type": "heading",
+    "attrs": { "level": 3 },
+    "content": [{ "type": "text", "text": "Off-Page SEO" }]
+  },
+  {
+    "type": "paragraph",
+    "content": [{ "type": "text", "text": "Involves actions taken outside of your own website to impact your rankings within search engine results pages, such as link building and social media marketing." }]
+  }
+]
 \`\`\`
 
 **BEGIN TASK:**

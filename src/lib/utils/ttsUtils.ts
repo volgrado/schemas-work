@@ -7,12 +7,11 @@
 
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-
-// --- FIX APPLIED: Import the shared ReadableNode type from the central types file ---
 import type { ReadableNode } from '$lib/types';
 
 // --- Configuration ---
-const SUPPORTED_NODE_TYPES = ['heading', 'listItem', 'paragraph'];
+// UPDATED: We now only process headings and paragraphs for the main playlist.
+const SUPPORTED_NODE_TYPES = ['heading', 'paragraph'];
 const TITLE_MAX_LENGTH = 60;
 const ELLIPSIS = '…';
 
@@ -62,6 +61,7 @@ function processNode(
   node: ProseMirrorNode,
   pos: number
 ): Omit<ReadableNode, 'id'> | null {
+  // SIMPLIFIED: Check if the node is a type we want in our playlist.
   if (!SUPPORTED_NODE_TYPES.includes(node.type.name)) {
     return null;
   }
@@ -71,77 +71,44 @@ function processNode(
     return null;
   }
 
-  let title = '';
-  let textToSpeak = '';
+  // SIMPLIFIED: For both headings and paragraphs, the title and the text to speak
+  // are the same. The complex logic for listItems is no longer needed.
+  const title = fullText;
+  const textToSpeak = fullText;
 
-  switch (node.type.name) {
-    case 'heading':
-      title = fullText;
-      textToSpeak = fullText;
-      break;
-
-    case 'paragraph':
-      title = fullText;
-      textToSpeak = fullText;
-      break;
-
-    case 'listItem': {
-      const firstChildText = node.firstChild
-        ? cleanTextForSpeech(node.firstChild.textContent)
-        : '';
-      if (firstChildText && fullText.length > firstChildText.length) {
-        title = firstChildText;
-        const titleEndsWithPunctuation = /[.?!]$/.test(title);
-        textToSpeak = titleEndsWithPunctuation
-          ? fullText
-          : `${title}. ${fullText.substring(title.length).trim()}`;
-      } else {
-        title = fullText;
-        textToSpeak = fullText;
-      }
-      break;
-    }
-
-    default:
-      return null;
-  }
-
-  // --- FIX APPLIED: Return an object that matches the shared ReadableNode type (minus the 'id') ---
   return {
     pos,
     node,
     title: truncateTitle(title),
-    text: textToSpeak, // Use the 'text' property as the primary field
-    textToSpeak: textToSpeak, // Keep 'textToSpeak' for compatibility if needed, but 'text' is better.
+    text: textToSpeak,
+    textToSpeak: textToSpeak,
   };
 }
 
 /**
  * Parses the editor's document to extract a flat list of nodes
- * that can be read aloud (headings, paragraphs, and list items).
- * It cleans and formats the text for a more natural-sounding speech synthesis.
+ * that can be read aloud (headings and paragraphs). It creates a simple,
+ * linear playlist of the document's content.
  *
  * @param editor The Tiptap editor instance.
- * @returns An array of `ReadableNode` objects that conform to the central type definition.
+ * @returns An array of `ReadableNode` objects.
  */
 export function getReadableNodes(editor: Editor): ReadableNode[] {
   const nodes: ReadableNode[] = [];
 
   editor.state.doc.descendants((node, pos) => {
-    // processNode now returns a partial object without an 'id'
     const partialNode = processNode(node, pos);
 
     if (partialNode) {
-      // --- FIX APPLIED: We construct the final, valid ReadableNode here ---
-      // This ensures it has all required properties, including the 'id'.
       nodes.push({
         ...partialNode,
         id: nodes.length, // The ID is simply the node's index in the final playlist.
       });
     }
 
-    // Do not descend into children of list items, as we process the whole item at once.
-    return node.type.name !== 'listItem';
+    // SIMPLIFIED: Always return true. The special rule for not descending
+    // into listItems is obsolete. We want to visit every node.
+    return true;
   });
 
   return nodes;

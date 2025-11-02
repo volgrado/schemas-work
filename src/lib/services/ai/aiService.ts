@@ -4,6 +4,8 @@ import type { AiModel } from './aiModels';
 // --- NEW ---
 import { settingsStore } from '$lib/stores/settingsStore';
 import { get } from 'svelte/store';
+// --- ADDED ---
+import { t } from '$lib/utils/i18n';
 
 // --- NEW ---
 // The official model name for the embedding generator.
@@ -34,7 +36,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   const apiKey = settings.apiKeys.find((k) => k.provider === 'gemini');
 
   if (!apiKey) {
-    throw new AiServiceError('No Gemini API key found to generate embeddings.');
+    throw new AiServiceError(
+      get(t)('ai_service.errors.no_gemini_key_embedding')
+    );
   }
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL_ID}:embedContent?key=${apiKey.key}`;
@@ -54,9 +58,10 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        `Gemini Embedding API Error: ${response.status} - ${
-          errorBody.error?.message || 'Unknown API error'
-        }`
+        get(t)('ai_service.errors.embedding_api_error', {
+          status: response.status,
+          message: errorBody.error?.message || 'Unknown API error',
+        })
       );
     }
 
@@ -64,9 +69,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     const embedding = jsonResponse.embedding?.values;
 
     if (!embedding || !Array.isArray(embedding)) {
-      throw new AiServiceError(
-        'Gemini response did not contain a valid embedding.'
-      );
+      throw new AiServiceError(get(t)('ai_service.errors.no_valid_embedding'));
     }
 
     // Record usage to participate in rate-limiting and key rotation
@@ -81,7 +84,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       throw error;
     }
     throw new AiServiceError(
-      'An unexpected error occurred while generating the embedding.'
+      get(t)('ai_service.errors.unexpected_embedding_error')
     );
   }
 }
@@ -104,7 +107,11 @@ export async function generateContent<T extends z.ZodType<any, any>>(
   validationSchema: T
 ): Promise<z.infer<T>> {
   if (model.provider !== 'gemini') {
-    throw new AiServiceError(`Unsupported AI provider: ${model.provider}`);
+    throw new AiServiceError(
+      get(t)('ai_service.errors.unsupported_provider', {
+        provider: model.provider,
+      })
+    );
   }
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${apiKey}`;
@@ -124,9 +131,10 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        `Gemini API Error: ${response.status} - ${
-          errorBody.error?.message || 'Unknown API error'
-        }`
+        get(t)('ai_service.errors.gemini_api_error', {
+          status: response.status,
+          message: errorBody.error?.message || 'Unknown API error',
+        })
       );
     }
 
@@ -134,7 +142,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     const content = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
-      throw new AiServiceError('Gemini response did not contain any content.');
+      throw new AiServiceError(get(t)('ai_service.errors.no_content'));
     }
 
     const dataFromApi = JSON.parse(content);
@@ -146,9 +154,10 @@ export async function generateContent<T extends z.ZodType<any, any>>(
         dataFromApi: dataFromApi,
       });
       throw new AiServiceError(
-        `AI response validation failed: ${validation.error.issues[0].path.join('.')} - ${
-          validation.error.issues[0].message
-        }`
+        get(t)('ai_service.errors.validation_failed', {
+          path: validation.error.issues[0].path.join('.'),
+          message: validation.error.issues[0].message,
+        })
       );
     }
 
@@ -161,7 +170,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
       throw error;
     }
     throw new AiServiceError(
-      'An unexpected error occurred while contacting the AI service.'
+      get(t)('ai_service.errors.unexpected_generate_content_error')
     );
   }
 }

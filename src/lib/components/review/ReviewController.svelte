@@ -108,21 +108,28 @@
 >
   {#if $reviewStore.isFinished}
     <div class="completion-screen">
-      <h2>Congratulations!</h2>
+      <h2>{$t('review.congrats_title')}</h2>
       <p>
-        You have finished this study session. You reviewed {$reviewStore.sessionCardCount}
-        cards.
+        {$t('review.session_finished_desc', {
+          count: $reviewStore.sessionCardCount,
+        })}
       </p>
-      <Button onclick={review.finishReview} size="lg">Finish</Button>
+      <Button onclick={review.finishReview} size="lg"
+        >{$t('review.finish_button')}</Button
+      >
     </div>
   {:else if currentCard}
     <div class="global-controls">
       <div class="session-progress">
-        <span class="new" title="New cards">{sessionProgress.new}</span>
-        <span class="learning" title="Learning cards"
+        <span class="new" title={$t('review.progress.new_tooltip')}
+          >{sessionProgress.new}</span
+        >
+        <span class="learning" title={$t('review.progress.learning_tooltip')}
           >{sessionProgress.learning}</span
         >
-        <span class="due" title="Cards to review">{sessionProgress.due}</span>
+        <span class="due" title={$t('review.progress.due_tooltip')}
+          >{sessionProgress.due}</span
+        >
       </div>
       <Button
         onclick={review.jumpToSource}

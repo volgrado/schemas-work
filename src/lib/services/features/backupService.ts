@@ -29,6 +29,8 @@ import {
 import type { Vault } from '$lib/types';
 import { toast } from 'svelte-sonner';
 import * as errorService from '$lib/services/core/errorService';
+import { t } from '$lib/utils/i18n';
+import { get } from 'svelte/store';
 
 /**
  * Exports the user's entire vault (all schemas and folders) to an encrypted,
@@ -39,11 +41,10 @@ import * as errorService from '$lib/services/core/errorService';
  * @throws An error if the password is empty or if any part of the export process fails.
  */
 export async function exportVault(password: string): Promise<void> {
+  const _t = get(t);
   try {
     if (!password) {
-      throw new Error(
-        'A password is required to encrypt and export the vault.'
-      );
+      throw new Error(_t('backup_service.errors.password_required_export'));
     }
 
     const allItems = await directoryService.getAllItems();
@@ -93,12 +94,11 @@ export async function exportVault(password: string): Promise<void> {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success('Vault exported successfully.');
+    toast.success(_t('backup_service.toast.export_success'));
   } catch (error) {
     errorService.reportError(error, { operation: 'exportVault' });
-    toast.error('Export Failed', {
-      description:
-        'Could not generate the backup file. See the error console for more details.',
+    toast.error(_t('backup_service.toast.export_failed_title'), {
+      description: _t('backup_service.toast.export_failed_desc'),
     });
     throw error; // Re-throw to allow for further handling by the caller if needed.
   }
@@ -116,6 +116,7 @@ export async function exportVault(password: string): Promise<void> {
  */
 export async function importVault(password: string): Promise<void> {
   let file: File | null = null;
+  const _t = get(t);
   try {
     file = await selectFile();
     if (!file) return; // The user canceled the file selection dialog.
@@ -123,7 +124,7 @@ export async function importVault(password: string): Promise<void> {
     const fileContent = await readFile(file);
 
     if (!password) {
-      toast.error('A password is required to decrypt and import the vault.');
+      toast.error(_t('backup_service.toast.password_required_import'));
       return;
     }
 
@@ -135,7 +136,7 @@ export async function importVault(password: string): Promise<void> {
         operation: 'importVault.parseFileContent',
         fileName: file?.name,
       });
-      throw new Error('The selected file is not a valid JSON backup file.');
+      throw new Error(_t('backup_service.errors.invalid_json_file'));
     }
 
     const vaultJson = await decryptData(password, encryptedJson);
@@ -143,7 +144,7 @@ export async function importVault(password: string): Promise<void> {
 
     if (!isValidVault(vault)) {
       const validationError = new Error(
-        'Vault data is corrupt or has an invalid format after decryption.'
+        _t('backup_service.errors.corrupt_vault')
       );
       errorService.reportError(validationError, {
         operation: 'importVault.validateVaultStructure',
@@ -165,7 +166,7 @@ export async function importVault(password: string): Promise<void> {
       provider.destroy(); // Clean up the connection.
     }
 
-    toast.success('Vault imported successfully! The page will now reload.');
+    toast.success(_t('backup_service.toast.import_success'));
     setTimeout(() => window.location.reload(), 2000); // Reload the page to reflect the new state.
   } catch (error) {
     errorService.reportError(error, {
@@ -173,9 +174,8 @@ export async function importVault(password: string): Promise<void> {
       fileName: file?.name,
       fileSize: file?.size,
     });
-    toast.error('Import Failed', {
-      description:
-        'The password may be incorrect, or the selected file may be corrupt or invalid.',
+    toast.error(_t('backup_service.toast.import_failed_title'), {
+      description: _t('backup_service.toast.import_failed_desc'),
     });
   }
 }

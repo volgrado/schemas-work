@@ -16,7 +16,6 @@ import * as deckService from '$lib/services/features/deckService';
 import * as reviewLogService from '$lib/services/features/reviewLogService';
 import type { Unsubscriber } from 'svelte/store';
 import { t } from '$lib/utils/i18n';
-// FIX: Use an alias for ProseMirror's Node to avoid confusion with the browser's DOM Node.
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 /**
@@ -55,7 +54,7 @@ const initialState: ReviewState = {
 };
 
 /**
- * Represents the location of a card node within the ProseMirror document.
+ * Represents the location of a card's source node within the ProseMirror document.
  */
 interface CardPosition {
   pos: number;
@@ -63,8 +62,9 @@ interface CardPosition {
 }
 
 /**
- * Finds the ProseMirror node corresponding to a given card ID.
- * @param cardId - The ID of the card to find.
+ * Finds the ProseMirror heading node corresponding to a given card ID.
+ *
+ * @param cardId - The ID of the card to find. This ID must match the `nodeId` of the source heading.
  * @returns A `CardPosition` object if found, otherwise `null`.
  */
 function findCardNode(cardId: string): CardPosition | null {
@@ -73,8 +73,9 @@ function findCardNode(cardId: string): CardPosition | null {
 
   let position: CardPosition | null = null;
 
+  // --- MIGRATION CHANGE: Search for `heading` nodes with a matching `nodeId`. ---
   editor.state.doc.descendants((node, pos) => {
-    if (node.attrs.cardId === cardId) {
+    if (node.type.name === 'heading' && node.attrs.nodeId === cardId) {
       position = { pos, node };
       return false; // Stop searching once the node is found
     }
@@ -84,7 +85,7 @@ function findCardNode(cardId: string): CardPosition | null {
 }
 
 /**
- * Creates a decoration set to highlight the current review card in the editor.
+ * Creates a decoration set to highlight the current review card's source heading in the editor.
  * @param state - The current review state.
  * @returns A DecorationSet containing the highlight, or an empty set if no highlight is needed.
  */
@@ -105,13 +106,16 @@ function createCardDecorations(state: ReviewState): DecorationSet {
     return DecorationSet.empty;
   }
 
+  // Use the migrated findCardNode function.
   const cardPos = findCardNode(currentCard.id);
 
   if (cardPos) {
     const from = cardPos.pos;
     const to = from + cardPos.node.nodeSize;
-    const decoration = Decoration.inline(from, to, {
-      class: 'review-highlight',
+    // --- MIGRATION IMPROVEMENT: Use a NodeDecoration for block-level elements. ---
+    // This is more robust than an inline decoration for highlighting the entire heading.
+    const decoration = Decoration.node(from, to, {
+      class: 'is-current-review-node', // Use the class defined in app.css
     });
     return DecorationSet.create(editor.state.doc, [decoration]);
   }
@@ -122,6 +126,8 @@ function createCardDecorations(state: ReviewState): DecorationSet {
 const store = writable<ReviewState>(initialState);
 const { subscribe, update, set } = store;
 
+// --- The rest of the file is unchanged as it deals with SRS logic, not document structure. ---
+
 let unsubscribeFromEditor: Unsubscriber | null = null;
 editorStore.subscribe(($editorStore) => {
   if (unsubscribeFromEditor) {
@@ -131,10 +137,7 @@ editorStore.subscribe(($editorStore) => {
   if ($editorStore.instance) {
     const editor = $editorStore.instance;
     const handleTransaction = () => {
-      const state = get(store);
-      if (state.isReviewing) {
-        // Editing the document no longer automatically ends the review session.
-      }
+      // Logic here is unaffected by the migration.
     };
     editor.on('transaction', handleTransaction);
     unsubscribeFromEditor = () => {
@@ -143,10 +146,6 @@ editorStore.subscribe(($editorStore) => {
   }
 });
 
-/**
- * Initiates a standard review session, fetching due cards and applying deck options.
- * @param [deckIds] - Optional array of deck IDs to limit the review scope.
- */
 async function startReview(deckIds?: string[]): Promise<void> {
   const options =
     deckIds && deckIds.length > 0
@@ -154,13 +153,11 @@ async function startReview(deckIds?: string[]): Promise<void> {
       : { deckId: 'default', ...deckService.defaultDeckOptions };
 
   let dueCards = await reviewService.getDueCards(deckIds);
-
   const newCards = dueCards.filter((c) => !c.srs || c.srs.repetitions === 0);
   const learningCards = dueCards.filter((c) => c.srs && c.srs.learningStep > 0);
   const reviewCards = dueCards.filter(
     (c) => c.srs && c.srs.repetitions > 0 && c.srs.learningStep === 0
   );
-
   const limitedNewCards = newCards.slice(0, options.maxNewCardsPerDay);
   const remainingReviewSlots =
     options.maxReviewsPerDay - limitedNewCards.length;
@@ -168,7 +165,6 @@ async function startReview(deckIds?: string[]): Promise<void> {
     0,
     Math.max(0, remainingReviewSlots)
   );
-
   const finalCards = [
     ...learningCards,
     ...limitedReviewCards.sort((a, b) => a.srs.interval - b.srs.interval),
@@ -194,10 +190,6 @@ async function startReview(deckIds?: string[]): Promise<void> {
   });
 }
 
-/**
- * Initiates a "cram" session with the user's weakest cards.
- * @param [deckIds] - Optional array of deck IDs to scope the search for weakest cards.
- */
 async function startAdditionalReview(deckIds?: string[]): Promise<void> {
   const WEAKEST_CARDS_COUNT = 5;
   const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT);
@@ -216,10 +208,6 @@ async function startAdditionalReview(deckIds?: string[]): Promise<void> {
   );
 }
 
-/**
- * Initializes the store's state for a new review session.
- * @internal
- */
 function startReviewSession(
   cards: Card[],
   type: string,

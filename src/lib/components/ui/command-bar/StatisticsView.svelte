@@ -39,14 +39,26 @@
     };
 
     return [
-      { label: 'New', value: cardDistribution.new, color: colors.new },
       {
-        label: 'Learning',
+        label: $t('statistics.chart.new'),
+        value: cardDistribution.new,
+        color: colors.new,
+      },
+      {
+        label: $t('statistics.chart.learning'),
         value: cardDistribution.learning,
         color: colors.learning,
       },
-      { label: 'Young', value: cardDistribution.young, color: colors.young },
-      { label: 'Mature', value: cardDistribution.mature, color: colors.mature },
+      {
+        label: $t('statistics.chart.young'),
+        value: cardDistribution.young,
+        color: colors.young,
+      },
+      {
+        label: $t('statistics.chart.mature'),
+        value: cardDistribution.mature,
+        color: colors.mature,
+      },
     ].filter((d) => d.value > 0);
   });
 
@@ -82,7 +94,7 @@
       <!-- Stat Cards -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon"><Icon name="check-square" size={24} /></div>
+          <div class="stat-icon"><Icon name="check-circle" size={24} /></div>
           <div class="stat-content">
             <span class="value">{stats.reviewsToday}</span>
             <span class="label">{$t('statistics.reviewsToday')}</span>
@@ -105,7 +117,7 @@
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon"><Icon name="brain" size={24} /></div>
+          <div class="stat-icon"><Icon name="award" size={24} /></div>
           <div class="stat-content">
             <span class="value {getRetentionColor(matureRetention())}">
               {matureRetention().toFixed(1)}%

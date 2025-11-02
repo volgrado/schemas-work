@@ -12,6 +12,7 @@
   import Icon from '$lib/components/ui/Icon.svelte';
   import { toast } from 'svelte-sonner';
   import { fetchAvailableGeminiModels } from '$lib/services/ai/modelDiscoveryService';
+  import { t } from '$lib/utils/i18n';
 
   let { show, onClose } = $props<{
     show: boolean;
@@ -63,11 +64,11 @@
   // --- Event Handlers & Helpers ---
   function handleAddKey() {
     if (!newApiKey.trim()) {
-      toast.error('API Key cannot be empty.');
+      toast.error($t('apiKeyModal.toast.empty_key_error'));
       return;
     }
     settingsStore.addApiKey(newApiKey.trim(), 'gemini', newApiNickname.trim());
-    toast.success(`New Gemini key added!`);
+    toast.success($t('apiKeyModal.toast.key_added_success'));
     newApiKey = '';
     newApiNickname = '';
   }
@@ -75,11 +76,13 @@
   function handleRemoveKey(key: ApiKey) {
     if (
       confirm(
-        `Are you sure you want to remove the key "${key.nickname || key.id}"?`
+        $t('apiKeyModal.confirm.remove_key', {
+          name: key.nickname || key.id,
+        })
       )
     ) {
       settingsStore.removeApiKey(key.id);
-      toast.info('API Key removed.');
+      toast.info($t('apiKeyModal.toast.key_removed_info'));
     }
   }
 
@@ -127,22 +130,21 @@
   }
 </script>
 
-<Modal title="AI Settings" {show} {onClose}>
+<Modal title={$t('apiKeyModal.title')} {show} {onClose}>
   <div class="ai-settings-content">
-    <p class="explanation">
-      Manage your API keys and select your preferred AI model. Keys are stored
-      securely in your browser's local storage.
-    </p>
+    <p class="explanation">{$t('apiKeyModal.explanation')}</p>
 
     <!-- Model Selection -->
     <div class="form-section">
-      <label for="model-selector">Preferred AI Model</label>
+      <label for="model-selector"
+        >{$t('apiKeyModal.model_selector_label')}</label
+      >
       <select
         id="model-selector"
         value={$settingsStore.selectedModelId}
         onchange={handleModelChange}
       >
-        <optgroup label="Supported Models">
+        <optgroup label={$t('apiKeyModal.optgroup.supported')}>
           {#each supportedModels as model}
             {@const isAvailable = availableModelIds?.has(model.id)}
             <option
@@ -151,20 +153,22 @@
             >
               {model.name}
               {#if isLoadingModels}
-                (...)
+                {$t('apiKeyModal.model_loading')}
               {:else if availableModelIds !== null}
-                {isAvailable ? ' ✓' : ' (Unavailable)'}
+                {isAvailable
+                  ? $t('apiKeyModal.model_available')
+                  : $t('apiKeyModal.model_unavailable')}
               {/if}
             </option>
           {/each}
         </optgroup>
 
         {#if discoveredModels.length > 0}
-          <optgroup label="Discovered Models (Experimental)">
+          <optgroup label={$t('apiKeyModal.optgroup.discovered')}>
             {#each discoveredModels as model (model.id)}
               <option
                 value={model.id}
-                title="*This is a discovered model. Rate limits are set to a conservative default."
+                title={$t('apiKeyModal.discovered_model_tooltip')}
               >
                 {model.name}
               </option>
@@ -176,27 +180,26 @@
 
     <!-- Manage API Keys -->
     <div class="form-section">
-      <h3>Your API Keys</h3>
+      <h3>{$t('apiKeyModal.your_keys_header')}</h3>
       <ul class="key-list">
         {#if $settingsStore.apiKeys.length === 0}
-          <p class="empty-state">You haven't added any API keys yet.</p>
+          <p class="empty-state">{$t('apiKeyModal.empty_state')}</p>
         {:else}
           {#each $settingsStore.apiKeys as key (key.id)}
             {@const usage = getUsagePercentage(key)}
             <li class="key-item">
               <div class="key-info">
                 <span class="key-nickname"
-                  >{key.nickname || 'Untitled Key'}</span
+                  >{key.nickname || $t('apiKeyModal.untitled_key')}</span
                 >
                 <span class="key-details">
                   {key.provider} &bull; {truncateKey(key.key)}
                 </span>
-                <div
-                  class="usage-bars"
-                  title="Estimated API usage for the selected model."
-                >
+                <div class="usage-bars" title={$t('apiKeyModal.usage_tooltip')}>
                   <div class="usage-bar-container">
-                    <span class="usage-label">RPM</span>
+                    <span class="usage-label"
+                      >{$t('apiKeyModal.rpm_label')}</span
+                    >
                     <div class="usage-bar-track">
                       <div
                         class="usage-bar-fill"
@@ -205,7 +208,9 @@
                     </div>
                   </div>
                   <div class="usage-bar-container">
-                    <span class="usage-label">RPD</span>
+                    <span class="usage-label"
+                      >{$t('apiKeyModal.rpd_label')}</span
+                    >
                     <div class="usage-bar-track">
                       <div
                         class="usage-bar-fill"
@@ -218,7 +223,7 @@
               <Button
                 variant="icon"
                 onclick={() => handleRemoveKey(key)}
-                aria-label="Remove key"
+                aria-label={$t('apiKeyModal.remove_key_aria')}
               >
                 <Icon name="trash-2" size={16} />
               </Button>
@@ -230,23 +235,25 @@
 
     <!-- Add New Key -->
     <div class="form-section">
-      <h3>Add a New Gemini Key</h3>
+      <h3>{$t('apiKeyModal.add_key_header')}</h3>
       <form class="add-key-form" onsubmit={handleAddKey}>
         <div class="input-group">
-          <label for="new-key-nickname">Nickname (Optional)</label>
+          <label for="new-key-nickname"
+            >{$t('apiKeyModal.nickname_label')}</label
+          >
           <input
             id="new-key-nickname"
             type="text"
-            placeholder="e.g., Personal Project Key"
+            placeholder={$t('apiKeyModal.nickname_placeholder')}
             bind:value={newApiNickname}
           />
         </div>
         <div class="input-group">
-          <label for="new-key-input">API Key</label>
+          <label for="new-key-input">{$t('apiKeyModal.api_key_label')}</label>
           <input
             id="new-key-input"
             type="password"
-            placeholder="Enter your API key here"
+            placeholder={$t('apiKeyModal.api_key_placeholder')}
             bind:value={newApiKey}
             required
           />
@@ -256,18 +263,18 @@
             target="_blank"
             rel="noopener"
           >
-            Get a Gemini Key
+            {$t('apiKeyModal.get_key_link')}
           </a>
         </div>
         <Button type="submit" variant="secondary">
           <Icon name="plus" size={16} />
-          Add Key
+          {$t('apiKeyModal.add_key_button')}
         </Button>
       </form>
     </div>
 
     <div class="modal-actions">
-      <Button onclick={onClose}>Close</Button>
+      <Button onclick={onClose}>{$t('common.close')}</Button>
     </div>
   </div>
 </Modal>

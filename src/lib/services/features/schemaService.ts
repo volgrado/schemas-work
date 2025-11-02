@@ -1,61 +1,36 @@
 /**
  * @file Provides business logic for interpreting and transforming schema documents.
+ * This service is responsible for converting the flat ProseMirror document structure
+ * into hierarchical data structures needed for UI components like the Tree View.
  */
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { TreeNodeData } from '$lib/components/tree/SchemaTree.svelte';
 
 /**
- * Converts a ProseMirror document object into a hierarchical tree structure.
+ * Converts a ProseMirror document object into a hierarchical tree structure
+ * by interpreting the semantic levels of heading nodes (h2, h3, etc.).
+ *
+ * @param doc The ProseMirror document node.
+ * @returns A root TreeNodeData object representing the document's hierarchy, or null if the document is empty.
  */
 export function documentToTreeData(
   doc: ProseMirrorNode | null
 ): TreeNodeData | null {
-  console.log(
-    '%c[schemaService] Starting documentToTreeData...',
-    'color: purple; font-weight: bold;'
-  );
-
   if (!doc || doc.childCount === 0) {
-    console.warn('[schemaService] Document is null or empty. Returning null.');
     return null;
   }
 
   let title = 'Schema (untitled)';
-  doc.descendants((node) => {
-    if (
-      node.type.name === 'heading' &&
-      node.attrs.level === 1 &&
-      node.textContent.trim()
-    ) {
-      title = node.textContent.trim();
-      return false; // Stop searching once found
-    }
-    return true;
-  });
-  console.log(`[schemaService] Found title: "${title}"`);
+  const firstNode = doc.firstChild;
 
-  // --- THIS IS THE ROBUST FIX ---
-  // Search the entire document for the first bulletList, don't just check top-level nodes.
-  let mainList: ProseMirrorNode | undefined;
-  doc.descendants((node) => {
-    if (mainList) return false; // Stop once we've found the first one
-    if (node.type.name === 'bulletList') {
-      mainList = node;
-      return false;
-    }
-    return true;
-  });
-
-  if (!mainList) {
-    console.error(
-      '[schemaService] CRITICAL: No bulletList found anywhere in the document. Cannot build tree. Returning null.'
-    );
-    return null;
+  // The first node is always expected to be the H1 title.
+  if (
+    firstNode &&
+    firstNode.type.name === 'heading' &&
+    firstNode.attrs.level === 1
+  ) {
+    title = firstNode.textContent.trim() || title;
   }
-  console.log(
-    '[schemaService] Found main bulletList to process:',
-    mainList.toJSON()
-  );
 
   const root: TreeNodeData = {
     id: 'root-title',
@@ -63,70 +38,60 @@ export function documentToTreeData(
     children: [],
   };
 
-  /**
-   * Recursively processes a ProseMirror list node, converting its items into tree nodes.
-   */
-  function processList(listNode: ProseMirrorNode, parentArray: TreeNodeData[]) {
-    listNode.forEach((listItem) => {
-      if (listItem.type.name !== 'listItem') return;
+  // A stack to keep track of the current parent for different heading levels.
+  // stack[0] is the root, stack[1] is the last H2, stack[2] is the last H3.
+  const parentStack: TreeNodeData[] = [root];
 
-      let termParagraph: ProseMirrorNode | undefined;
-      let nestedList: ProseMirrorNode | undefined;
-      let firstParagraphFallback: ProseMirrorNode | undefined;
+  doc.content.forEach((node) => {
+    if (node.type.name === 'heading') {
+      const level = node.attrs.level;
+      // We only build the tree from H2 and deeper. H1 is the root.
+      if (level <= 1) return;
 
-      listItem.forEach((child) => {
-        if (child.type.name === 'paragraph') {
-          if (child.attrs.role === 'term') {
-            termParagraph = child;
-          } else if (!firstParagraphFallback) {
-            firstParagraphFallback = child;
-          }
-        } else if (child.type.name === 'bulletList') {
-          nestedList = child;
-        }
-      });
-
-      const paragraphForContent = termParagraph || firstParagraphFallback;
-
-      if (paragraphForContent) {
-        const nodeId = listItem.attrs.nodeId;
-        if (!nodeId) {
-          console.warn('SKIPPING: List item is missing nodeId attribute.');
-          return;
-        }
-
-        const content =
-          paragraphForContent.textContent.trim() || '(Untitled Node)';
-        const newNode: TreeNodeData = {
-          id: nodeId,
-          content: content,
-          children: [],
-        };
-        parentArray.push(newNode);
-
-        if (nestedList && newNode.children) {
-          processList(nestedList, newNode.children!); // The '!' fixes the TypeScript error
-        }
-      } else {
-        console.warn('SKIPPING: No suitable paragraph found inside listItem.');
+      // The nodeId is critical for linking tree nodes back to the editor.
+      const nodeId = node.attrs.nodeId;
+      if (!nodeId) {
+        console.warn(
+          'SKIPPING: Heading node is missing nodeId attribute.',
+          node.toJSON()
+        );
+        return;
       }
-    });
-  }
 
-  if (root.children) {
-    processList(mainList, root.children);
-  }
+      const newNode: TreeNodeData = {
+        id: nodeId,
+        content: node.textContent.trim() || '(Untitled Node)',
+        children: [],
+      };
 
-  console.log(
-    '%c[schemaService] Finished. Final tree data:',
-    'color: green; font-weight: bold;',
-    JSON.parse(JSON.stringify(root))
-  );
+      // Adjust the stack to find the correct parent.
+      // e.g., If we see an H3 (level 3), we want the stack to have the root and the last H2.
+      // The desired stack length is `level - 1`.
+      while (parentStack.length > level - 1) {
+        parentStack.pop();
+      }
+
+      // The parent is now at the top of the stack.
+      const parent = parentStack[parentStack.length - 1];
+      if (parent && parent.children) {
+        parent.children.push(newNode);
+      }
+
+      // Push the new node onto the stack, making it the parent for subsequent, deeper headings.
+      parentStack.push(newNode);
+    }
+  });
+
   return root;
 }
 
 /**
- * Generates a breadcrumb path string for a node at a given editor position.
+ * Generates a breadcrumb path string (e.g., "Topic > Sub-Topic") for a given position in the editor.
+ * This is achieved by walking up the document tree from the given position.
+ *
+ * @param doc The ProseMirror document node.
+ * @param pos The numerical position in the document.
+ * @returns A formatted breadcrumb string.
  */
 export function getBreadcrumbForPosition(
   doc: ProseMirrorNode,
@@ -135,12 +100,15 @@ export function getBreadcrumbForPosition(
   const path: string[] = [];
   const resolvedPos = doc.resolve(pos);
 
+  // Walk up the document tree from the current depth.
   for (let i = resolvedPos.depth; i > 0; i--) {
     const parentNode = resolvedPos.node(i);
-    if (parentNode.type.name === 'listItem') {
-      const contentParagraph = parentNode.content.firstChild;
-      if (contentParagraph && contentParagraph.textContent.trim()) {
-        path.unshift(contentParagraph.textContent.trim());
+
+    // If a parent is a heading (but not the main H1 title), prepend its text to our path.
+    if (parentNode.type.name === 'heading' && parentNode.attrs.level > 1) {
+      const text = parentNode.textContent.trim();
+      if (text) {
+        path.unshift(text);
       }
     }
   }

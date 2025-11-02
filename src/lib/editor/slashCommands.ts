@@ -1,6 +1,7 @@
-// src/lib/editor/slashCommands.ts
 /**
  * @file Defines the slash commands available in the Tiptap editor.
+ * FINAL CLEANUP (OPTION A): All list-related commands have been removed to
+ * align with the removal of list extensions from the editor.
  * @module slashCommands
  */
 
@@ -8,7 +9,6 @@ import type { Editor, Range } from '@tiptap/core';
 import type { IconName } from '$lib/types/iconName';
 import { commandBarStore } from '$lib/stores/commandBarStore';
 import { editorStore } from '$lib/stores/editorStore';
-import { documentStore } from '$lib/stores/documentStore'; // MODIFIED: Add import
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { ttsStore } from '$lib/stores/ttsStore';
@@ -19,92 +19,58 @@ import {
   type FormulaModalConfig,
 } from '$lib/stores/modalStore';
 import { gett } from '$lib/utils/i18n';
+import { getReadableNodes } from '$lib/utils/ttsUtils';
+import { documentStore } from '$lib/stores/documentStore'; // <-- IMPORT ADDED FOR LOGIC FIX
 
 /**
  * Represents a single command in the slash command menu.
  */
 export interface CommandItem {
-  /** The display name of the command. */
   title: string;
-  /** A brief explanation of what the command does. */
   description: string;
-  /** The category this command belongs to (e.g., "Basic", "AI"). */
   group: string;
-  /** The icon to display next to the command. */
   icon: IconName;
-  /**
-   * The function to execute when the command is selected.
-   * @param {object} props - The properties passed to the command function.
-   * @param {Editor} props.editor - The Tiptap editor instance.
-   * @param {Range} props.range - The range of text that triggered the command (the "/").
-   */
   command: ({ editor, range }: { editor: Editor; range: Range }) => void;
 }
 
 /**
- * Checks if a node is currently selected in the editor.
- * @returns {boolean} `true` if a node is selected, otherwise `false`.
+ * Finds the nodeId of the heading that governs the current selection's position.
+ * @internal
+ */
+function findCurrentSectionNodeId(editor: Editor): string | null {
+  const { selection, doc } = editor.state;
+  let lastHeadingNodeId: string | null = null;
+
+  doc.nodesBetween(0, selection.from, (node) => {
+    if (
+      node.type.name === 'heading' &&
+      node.attrs.level > 1 &&
+      node.attrs.nodeId
+    ) {
+      lastHeadingNodeId = node.attrs.nodeId;
+    }
+  });
+  return lastHeadingNodeId;
+}
+
+/**
+ * Checks if a heading node is currently "active".
  * @internal
  */
 const hasNodeSelected = () => get(editorStore).selectedNodePos !== null;
 
 /**
- * Retrieves the full list of slash commands, organized by group.
- * This function is called to populate the slash command suggestion menu.
+ * Retrieves the full list of slash commands.
  * @returns {CommandItem[]} An array of command items.
  */
 export const getCommands = (): CommandItem[] => {
-  const t = gett(); // Get the translation function.
+  const t = gett();
   return [
-    // --- Group: Basic ---
-    {
-      title: t('slashCommands.term.title'),
-      description: t('slashCommands.term.description'),
-      group: t('slashCommands.groups.basic'),
-      icon: 'pen-tool',
-      command: ({ editor, range }) => {
-        // Toggles a standard list item, which is the default block for this app.
-        editor.chain().focus().deleteRange(range).toggleBulletList().run();
-      },
-    },
-    {
-      title: t('slashCommands.list.title'),
-      description: t('slashCommands.list.description'),
-      group: t('slashCommands.groups.basic'),
-      icon: 'list',
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).toggleBulletList().run();
-      },
-    },
-    {
-      title: t('slashCommands.numberedList.title'),
-      description: t('slashCommands.numberedList.description'),
-      group: t('slashCommands.groups.basic'),
-      icon: 'list-ordered',
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).toggleOrderedList().run();
-      },
-    },
-
-    // --- Group: Formatting ---
-    {
-      title: t('slashCommands.h1.title'),
-      description: t('slashCommands.h1.description'),
-      group: t('slashCommands.groups.formatting'),
-      icon: 'type',
-      command: ({ editor, range }) => {
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .setNode('heading', { level: 1 })
-          .run();
-      },
-    },
+    // --- Group: Content ---
     {
       title: t('slashCommands.h2.title'),
       description: t('slashCommands.h2.description'),
-      group: t('slashCommands.groups.formatting'),
+      group: t('slashCommands.groups.content'),
       icon: 'type',
       command: ({ editor, range }) => {
         editor
@@ -118,7 +84,7 @@ export const getCommands = (): CommandItem[] => {
     {
       title: t('slashCommands.h3.title'),
       description: t('slashCommands.h3.description'),
-      group: t('slashCommands.groups.formatting'),
+      group: t('slashCommands.groups.content'),
       icon: 'type',
       command: ({ editor, range }) => {
         editor
@@ -126,6 +92,72 @@ export const getCommands = (): CommandItem[] => {
           .focus()
           .deleteRange(range)
           .setNode('heading', { level: 3 })
+          .run();
+      },
+    },
+    // --- NEW HEADING COMMANDS ADDED ---
+    {
+      title: t('slashCommands.h4.title', { fallback: 'Heading 4' }),
+      description: t('slashCommands.h4.description', {
+        fallback: 'Small section heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 4 })
+          .run();
+      },
+    },
+    {
+      title: t('slashCommands.h5.title', { fallback: 'Heading 5' }),
+      description: t('slashCommands.h5.description', {
+        fallback: 'Very small section heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 5 })
+          .run();
+      },
+    },
+    {
+      title: t('slashCommands.h6.title', { fallback: 'Heading 6' }),
+      description: t('slashCommands.h6.description', {
+        fallback: 'The smallest section heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 6 })
+          .run();
+      },
+    },
+    // --- END OF NEW COMMANDS ---
+
+    // --- Group: Formatting ---
+    {
+      title: t('slashCommands.h1.title'),
+      description: t('slashCommands.h1.description'),
+      group: t('slashCommands.groups.formatting'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 1 })
           .run();
       },
     },
@@ -144,7 +176,8 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.formatting'),
       icon: 'bold',
       command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setMark('bold').run();
+        // toggleMark turns "bold mode" on for the text you are about to type.
+        editor.chain().focus().deleteRange(range).toggleMark('bold').run();
       },
     },
     {
@@ -153,7 +186,8 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.formatting'),
       icon: 'italic',
       command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setMark('italic').run();
+        // toggleMark turns "italic mode" on for the text you are about to type.
+        editor.chain().focus().deleteRange(range).toggleMark('italic').run();
       },
     },
 
@@ -273,7 +307,7 @@ export const getCommands = (): CommandItem[] => {
           toast.error(t('slashCommands.generateCards.error'));
           return;
         }
-        commandBarStore.openAiHelper('generate-flashcards');
+        commandBarStore.openAiHelper('generate-flashcards-node');
       },
     },
 
@@ -285,16 +319,17 @@ export const getCommands = (): CommandItem[] => {
       icon: 'volume-2',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        const state = get(editorStore);
-        if (state.selectedNodePos === null) {
-          toast.error(t('slashCommands.readNode.error'));
-          return;
-        }
-        const node = editor.state.doc.nodeAt(state.selectedNodePos);
-        if (node?.attrs.nodeId) {
-          ttsStore.startReadingFromNode(node.attrs.nodeId);
+        const startNodeId = findCurrentSectionNodeId(editor);
+        const allNodes = getReadableNodes(editor);
+        const startIndex = startNodeId
+          ? allNodes.findIndex((node) => node.node.attrs.nodeId === startNodeId)
+          : 0;
+
+        const playlist = allNodes.slice(startIndex > -1 ? startIndex : 0);
+        if (playlist.length > 0) {
+          ttsStore.startReading(playlist);
         } else {
-          toast.error(t('slashCommands.readNode.errorNoId'));
+          toast.error(t('slashCommands.readNode.error'));
         }
       },
     },
@@ -305,13 +340,13 @@ export const getCommands = (): CommandItem[] => {
       icon: 'edit-3',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
+        // LOGIC FIX: The card editor is document-wide, not node-specific.
         const docId = get(documentStore).docId;
 
         if (docId) {
           cardEditorStore.open(docId);
         } else {
-          toast.error(t('slashCommands.editCards.error')); // Re-use generic error
-          return;
+          toast.error(t('slashCommands.editCards.error'));
         }
       },
     },
