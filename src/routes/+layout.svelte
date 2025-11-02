@@ -65,6 +65,13 @@
 
 <svelte:head>
   <title>Schemas.Work</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    integrity="sha384-n8MVd4RsNIU0KOVEMeaMurdcICHZodavIMpg9DGcbEFcV3FoDb4eAZcARndCjKZX"
+    crossorigin="anonymous"
+  />
 </svelte:head>
 
 <!--

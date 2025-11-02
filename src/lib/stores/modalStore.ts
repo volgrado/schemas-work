@@ -9,19 +9,24 @@
 
 import { writable } from 'svelte/store';
 
+// =================================================================
+// --- TYPE DEFINITIONS for Modal Configurations ---
+// =================================================================
+
 /**
  * Configuration for the formula editing modal.
+ * This is used to pass the necessary data to the `FormulaEditorModal` component.
  * @interface FormulaModalConfig
  */
 export interface FormulaModalConfig {
   /** The type of the modal, used as the discriminator. */
   type: 'formula';
-  /** The ProseMirror position of the node being edited. */
+  /** The ProseMirror position of the math node being edited. */
   nodePos: number;
-  /** The attributes of the formula node. */
-  attrs: {
-    formula: string;
-  };
+  /** The type of math node, to determine KaTeX's display mode. */
+  nodeType: 'math_block' | 'math_inline';
+  /** The starting LaTeX formula to populate the editor with. */
+  initialFormula: string;
 }
 
 /**
@@ -41,9 +46,14 @@ export interface MediaModalConfig {
 
 /**
  * A discriminated union of all possible modal configurations.
- * The `type` property is used to determine which modal to display.
+ * The `type` property is essential for TypeScript to correctly infer the
+ * shape of the config object in Svelte components.
  */
 export type ModalConfig = FormulaModalConfig | MediaModalConfig;
+
+// =================================================================
+// --- STORE DEFINITION ---
+// =================================================================
 
 /**
  * Defines the shape of the modal store's state.
@@ -67,6 +77,7 @@ const initialState: ModalStoreState = {
 
 /**
  * Creates a custom Svelte store for managing modals.
+ * This factory function encapsulates the store's logic, providing a clean API.
  * @returns {object} The modal store with `subscribe`, `open`, and `close` methods.
  */
 function createModalStore() {
@@ -74,32 +85,44 @@ function createModalStore() {
 
   return {
     subscribe,
+
     /**
      * Opens a modal with the specified configuration.
+     * Any currently open modal will be replaced.
      * @param {ModalConfig} config - The configuration object for the modal to open.
      */
     open: (config: ModalConfig) => set({ isOpen: true, config }),
+
     /**
      * Closes the currently active modal and resets the store to its initial state.
      */
-    close: () => set({ isOpen: false, config: null }),
+    close: () => set(initialState),
   };
 }
 
 /**
  * The singleton instance of the modal store.
- * To use it, import `modalStore` and call its methods.
+ * Import this instance into any component or service that needs to interact with modals.
  *
  * @example
+ * // In a Svelte component to open a modal
  * import { modalStore } from './modalStore';
  *
- * function openFormulaEditor() {
- *   modalStore.open({ type: 'formula', nodePos: 10, attrs: { formula: 'x^2' } });
+ * function editFormula() {
+ *   modalStore.open({
+ *     type: 'formula',
+ *     nodePos: 15,
+ *     nodeType: 'math_block',
+ *     initialFormula: 'E = mc^2'
+ *   });
  * }
  *
- * function onSave() {
- *   // ... save logic ...
- *   modalStore.close();
- * }
+ * @example
+ * <!-- In a Svelte component to conditionally render a modal -->
+ * {#if $modalStore.config?.type === 'formula'}
+ *   <Modal title="Edit Formula" onClose={modalStore.close}>
+ *     <FormulaEditorModal {...$modalStore.config} onClose={modalStore.close} />
+ *   </Modal>
+ * {/if}
  */
 export const modalStore = createModalStore();

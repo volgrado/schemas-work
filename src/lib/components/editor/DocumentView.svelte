@@ -2,12 +2,13 @@
   @component
   DocumentView
 
-  This is the core component of the application's rich text editor.
-  This version uses a store-based command system to handle deep-linking from search,
-  avoiding any changes to the URL.
+  This is the core component of the application's rich text editor. It is responsible for
+  instantiating the Tiptap editor, loading all the necessary extensions (including the
+  custom Math, Image, and NodeID extensions), and binding it to the DOM. It also handles
+  editor events to sync state with various Svelte stores.
 -->
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
+  import { onMount, createEventDispatcher, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
@@ -24,15 +25,15 @@
   import Placeholder from '@tiptap/extension-placeholder';
   import Paragraph from '@tiptap/extension-paragraph';
   import HorizontalRule from '@tiptap/extension-horizontal-rule';
-  // Image from tiptap/extension-image is no longer directly used. We use our custom one.
   import YouTube from '@tiptap/extension-youtube';
-  import Gapcursor from '@tiptap/extension-gapcursor'; // <-- ADDED: For better block-level node interaction
+  import Gapcursor from '@tiptap/extension-gapcursor';
 
   // --- Custom Application-Specific Extensions ---
-  import { ResizableImage } from '$lib/editor/extensions/ResizableImage'; // <-- ADDED: Our new custom image extension
+  import { ResizableImage } from '$lib/editor/extensions/ResizableImage';
   import { DynamicHighlighter } from '$lib/editor/extensions/DynamicHighlighter';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
+  // This import now points to our refactored Math.ts with the modal logic.
   import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
 
   // --- Stores & Utilities ---
@@ -60,7 +61,6 @@
   let editor = $state<Editor | null>(null);
 
   const syncTitleWithStore = debounce((editorInstance: Editor) => {
-    // ... (This function is unchanged)
     if (!editorInstance || editorInstance.isDestroyed) return;
     const firstNode = editorInstance.state.doc.firstChild;
     let newTitle = get(t)('doc_view.untitled_schema');
@@ -77,7 +77,6 @@
     }
   }, 750);
 
-  // --- This effect for store-based focus commands is unchanged ---
   $effect(() => {
     const nodeIdToFocus = $documentStore.focusedNodeId;
     if (editor && nodeIdToFocus) {
@@ -99,7 +98,6 @@
     }
   });
 
-  // --- This effect for internal focus is unchanged ---
   $effect(() => {
     if (focusedNodePos !== null && editor && editor.isEditable) {
       const { selection } = editor.state;
@@ -107,7 +105,6 @@
       if (!targetNode) return;
       const nodeStart = focusedNodePos;
       const nodeEnd = focusedNodePos + targetNode.nodeSize;
-
       if (selection.from >= nodeStart && selection.to <= nodeEnd) {
         return;
       }
@@ -121,56 +118,67 @@
   });
 
   onMount(() => {
+    console.log('[LOG] DocumentView.svelte: onMount hook triggered.');
     let selectionUpdateTimeout: ReturnType<typeof setTimeout>;
     let clearSelectionTimeout: ReturnType<typeof setTimeout>;
 
+    const extensionsToLoad = [
+      Document,
+      Paragraph,
+      HorizontalRule,
+      Text,
+      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+      Bold,
+      Italic,
+      YouTube.configure({}),
+      MathInline, // Our refactored inline math node
+      MathBlock, // Our refactored block math node
+      NodeIdExtension,
+      DynamicHighlighter,
+      SlashCommandExtension,
+      Collaboration.configure({ document: ydoc }),
+      Gapcursor,
+      Placeholder.configure({
+        placeholder: ({ editor, node, pos }) => {
+          const _t = get(t);
+          if (node.type.name === 'heading' && node.attrs.level === 1) {
+            return _t('doc_view.placeholder.title');
+          }
+          if (node.type.name === 'paragraph' && !node.textContent) {
+            if (pos > 0) {
+              const nodeBefore = editor.state.doc.resolve(pos - 1).nodeBefore;
+              if (nodeBefore && nodeBefore.type.name === 'heading') {
+                return _t('doc_view.placeholder.description');
+              }
+            }
+            return _t('doc_view.placeholder.term');
+          }
+          return '';
+        },
+      }),
+      ResizableImage.configure({}),
+    ];
+
+    const extensionNames = extensionsToLoad.map(
+      (ext) => ext.name || 'UnknownExtension'
+    );
+    console.log(
+      '[LOG] DocumentView.svelte: Initializing Tiptap editor with these extensions:',
+      extensionNames
+    );
+    if (!extensionNames.includes('math_block')) {
+      console.error(
+        '[CRITICAL] DocumentView.svelte: "math_block" extension is NOT in the extensions list! This is the cause of the problem.'
+      );
+    }
+
     const editorInstance = new Editor({
       element: element,
-      extensions: [
-        Document,
-        Paragraph,
-        HorizontalRule,
-        Text,
-        Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-        Bold,
-        Italic,
-        YouTube.configure({}),
-        MathInline,
-        MathBlock,
-        NodeIdExtension,
-        DynamicHighlighter,
-        SlashCommandExtension,
-        Collaboration.configure({ document: ydoc }),
-        Gapcursor, // <-- ADDED
-        Placeholder.configure({
-          placeholder: ({ editor, node, pos }) => {
-            const _t = get(t);
-            if (node.type.name === 'heading' && node.attrs.level === 1) {
-              return _t('doc_view.placeholder.title');
-            }
-            if (node.type.name === 'paragraph' && !node.textContent) {
-              if (pos > 0) {
-                const nodeBefore = editor.state.doc.resolve(pos - 1).nodeBefore;
-                if (nodeBefore && nodeBefore.type.name === 'heading') {
-                  return _t('doc_view.placeholder.description');
-                }
-              }
-              return _t('doc_view.placeholder.term');
-            }
-            return '';
-          },
-        }),
-        // --- VVVV  CHANGED: The old Image.extend block has been replaced  VVVV ---
-        ResizableImage.configure({
-          // We can add configuration here later if needed
-        }),
-        // --- ^^^^ Your old Image.extend block is now removed. ^^^^ ---
-      ],
+      extensions: extensionsToLoad,
       editorProps: {
         attributes: { class: 'prose' },
       },
       onUpdate({ editor: updatedEditor }) {
-        // (This function is unchanged)
         syncTitleWithStore(updatedEditor);
         const currentDocId = get(documentStore).docId;
         if (currentDocId) {
@@ -186,7 +194,6 @@
         }));
       },
       onSelectionUpdate({ editor: updatedEditor }) {
-        // (This function is unchanged)
         const { selection } = updatedEditor.state;
         let newSelectedNode: ProseMirrorNode | null = null;
         let newSelectedPos: number | null = null;
@@ -237,6 +244,9 @@
       },
     });
 
+    console.log(
+      '[LOG] DocumentView.svelte: Tiptap editor instance has been created.'
+    );
     editor = editorInstance;
     syncTitleWithStore(editor);
 
@@ -251,6 +261,9 @@
     editorStore.update((s) => ({ ...s, instance: editor }));
 
     return () => {
+      console.log(
+        '[LOG] DocumentView.svelte: Cleanup function running. Destroying editor instance.'
+      );
       if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
@@ -272,7 +285,6 @@
 </div>
 
 <style>
-  /* This is the base layout container for the document view */
   .document-layout-container {
     width: 100%;
     max-width: 960px;
@@ -280,7 +292,6 @@
     padding: var(--space-xxl) var(--space-md) 50vh var(--space-md);
   }
 
-  /* This global selector targets the Tiptap editor element and its contents */
   :global(.prose) {
     font-family: var(--font-main);
     color: var(--color-text);
@@ -295,7 +306,6 @@
     box-shadow: var(--shadow-md);
   }
 
-  /* --- Explicit styles for bold and italic text --- */
   :global(.prose strong),
   :global(.prose b) {
     font-weight: bold;
@@ -306,7 +316,6 @@
     font-style: italic;
   }
 
-  /* --- Styles for additional heading levels --- */
   :global(.prose h4) {
     font-size: 1.25em;
     margin-top: 1.5em;
@@ -329,35 +338,24 @@
     color: var(--color-gray-600);
   }
 
-  /* --- CORRECTED & FINAL: CSS for Resizable Images --- */
-
-  /* The wrapper our NodeView creates around the image */
   :global(.prose .resizable-image-wrapper) {
-    position: relative; /* Crucial for positioning the handles */
+    position: relative;
     display: inline-block;
-    line-height: 0; /* Removes extra space below the image */
+    line-height: 0;
     max-width: 100%;
     clear: both;
   }
-
-  /* The actual image inside the wrapper */
   :global(.prose .resizable-image-wrapper img) {
     max-width: 100%;
     height: auto;
-    cursor: grab; /* Indicates the image can be moved */
+    cursor: grab;
   }
-
-  /* Add a visual outline when the image node is selected */
   :global(.prose .ProseMirror-selectednode .resizable-image-wrapper) {
-    outline: 3px solid #68b4f2; /* Use your app's primary color variable if you have one */
+    outline: 3px solid #68b4f2;
   }
-
-  /* Hide the resize handles by default */
   :global(.prose .resize-handle) {
     display: none;
   }
-
-  /* Show handles ONLY when the parent node is selected */
   :global(.prose .ProseMirror-selectednode .resize-handle) {
     display: block;
     position: absolute;
@@ -367,10 +365,8 @@
     border: 2px solid white;
     border-radius: 2px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    z-index: 10; /* Ensures handles are always on top of the image */
+    z-index: 10;
   }
-
-  /* Position each of the four handles */
   :global(.prose .resize-handle.top-left) {
     top: -6px;
     left: -6px;
@@ -390,5 +386,130 @@
     bottom: -6px;
     right: -6px;
     cursor: nwse-resize;
+  }
+
+  :global(.prose .math-block-node-view-wrapper) {
+    position: relative;
+    margin: 1em 0;
+  }
+
+  :global(.prose .katex-preview) {
+    padding: var(--space-md);
+    border: 1px dashed var(--color-gray-200);
+    border-radius: var(--space-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :global(.prose .katex-preview:hover) {
+    background-color: var(--color-gray-50);
+    border-color: var(--color-gray-400);
+  }
+  :global(.prose .katex) {
+    color: inherit;
+  }
+  .dark-theme :global(.prose .katex-preview:hover) {
+    background-color: var(--color-gray-800);
+    border-color: var(--color-gray-600);
+  }
+
+  :global(.prose .editor-container) {
+    background: var(--color-background-raised);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--space-sm);
+    box-shadow: var(--shadow-md);
+  }
+
+  :global(.prose .latex-editor-textarea) {
+    width: 100%;
+    font-family: var(--font-mono);
+    padding: var(--space-md);
+    border: none;
+    border-top: 1px solid var(--color-border);
+    background-color: transparent;
+    resize: vertical;
+    outline: none;
+    color: inherit;
+  }
+
+  :global(.prose .symbol-toolbar) {
+    display: flex;
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+  }
+  :global(.prose .symbol-toolbar button) {
+    font-family: var(--font-main);
+    font-size: 1rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--space-xs);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-tertiary);
+  }
+  :global(.prose .symbol-toolbar button:hover) {
+    background-color: var(--btn-hover-bg);
+    color: var(--color-text);
+  }
+
+  :global(.prose .help-pane) {
+    position: absolute;
+    top: 0;
+    left: calc(100% + var(--space-md));
+    width: 220px;
+    background-color: var(--color-background-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--space-md);
+    padding: var(--space-md);
+    font-size: 0.8rem;
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-slash-menu);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  :global(.prose .math-block-node-view-wrapper:focus-within .help-pane) {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  :global(.prose .help-pane h4) {
+    margin: 0 0 var(--space-sm) 0;
+    font-weight: 600;
+    font-size: inherit;
+  }
+  :global(.prose .help-pane ul) {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-md) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  :global(.prose .help-pane code) {
+    background: var(--color-gray-100);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  :global(.prose .help-pane a) {
+    font-size: 0.75rem;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .dark-theme :global(.prose .help-pane code) {
+    background-color: var(--color-gray-700);
+  }
+
+  @media (max-width: 1024px) {
+    :global(.prose .help-pane) {
+      display: none;
+    }
   }
 </style>

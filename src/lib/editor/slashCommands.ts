@@ -1,7 +1,5 @@
 /**
  * @file Defines the slash commands available in the Tiptap editor.
- * FINAL CLEANUP (OPTION A): All list-related commands have been removed to
- * align with the removal of list extensions from the editor.
  * @module slashCommands
  */
 
@@ -20,7 +18,7 @@ import {
 } from '$lib/stores/modalStore';
 import { gett } from '$lib/utils/i18n';
 import { getReadableNodes } from '$lib/utils/ttsUtils';
-import { documentStore } from '$lib/stores/documentStore'; // <-- IMPORT ADDED FOR LOGIC FIX
+import { documentStore } from '$lib/stores/documentStore';
 
 /**
  * Represents a single command in the slash command menu.
@@ -95,7 +93,6 @@ export const getCommands = (): CommandItem[] => {
           .run();
       },
     },
-    // --- NEW HEADING COMMANDS ADDED ---
     {
       title: t('slashCommands.h4.title', { fallback: 'Heading 4' }),
       description: t('slashCommands.h4.description', {
@@ -144,7 +141,6 @@ export const getCommands = (): CommandItem[] => {
           .run();
       },
     },
-    // --- END OF NEW COMMANDS ---
 
     // --- Group: Formatting ---
     {
@@ -176,7 +172,6 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.formatting'),
       icon: 'bold',
       command: ({ editor, range }) => {
-        // toggleMark turns "bold mode" on for the text you are about to type.
         editor.chain().focus().deleteRange(range).toggleMark('bold').run();
       },
     },
@@ -186,7 +181,6 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.formatting'),
       icon: 'italic',
       command: ({ editor, range }) => {
-        // toggleMark turns "italic mode" on for the text you are about to type.
         editor.chain().focus().deleteRange(range).toggleMark('italic').run();
       },
     },
@@ -240,41 +234,51 @@ export const getCommands = (): CommandItem[] => {
         }
       },
     },
+
+    // ✅ --- REFACTORED MATH COMMANDS ---
     {
       title: t('slashCommands.mathBlock.title'),
       description: t('slashCommands.mathBlock.description'),
       group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
+        // First, delete the slash command text
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
-        editor.chain().insertContentAt(pos, { type: 'mathBlock' }).run();
+
+        // Insert the math_block node at the cursor's position
+        editor.chain().insertContentAt(pos, { type: 'math_block' }).run();
+
+        // Immediately open the editing modal for a seamless user experience
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
           const config: FormulaModalConfig = {
             type: 'formula',
             nodePos: pos,
-            attrs: node.attrs as { formula: string },
+            nodeType: 'math_block',
+            initialFormula: node.attrs.formula,
           };
           modalStore.open(config);
         }
       },
     },
     {
-      title: t('slashCommands.mathInline.title'),
-      description: t('slashCommands.mathInline.description'),
+      title: t('slashCommands.math_inline.title'),
+      description: t('slashCommands.math_inline.description'),
       group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
+        // This command follows the same pattern as the mathBlock command
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
-        editor.chain().insertContentAt(pos, { type: 'mathInline' }).run();
+        editor.chain().insertContentAt(pos, { type: 'math_inline' }).run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
           const config: FormulaModalConfig = {
             type: 'formula',
             nodePos: pos,
-            attrs: node.attrs as { formula: string },
+            nodeType: 'math_inline',
+            initialFormula: node.attrs.formula,
           };
           modalStore.open(config);
         }
@@ -340,7 +344,6 @@ export const getCommands = (): CommandItem[] => {
       icon: 'edit-3',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        // LOGIC FIX: The card editor is document-wide, not node-specific.
         const docId = get(documentStore).docId;
 
         if (docId) {

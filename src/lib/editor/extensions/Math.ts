@@ -1,29 +1,28 @@
 /**
- * @file Implements the custom Tiptap nodes for rendering mathematical formulas using KaTeX.
- * This file provides two nodes: `MathInline` for inline formulas and `MathBlock` for block-level formulas.
+ * @file Math.ts
+ * @description Final robust Svelte 5 + Tiptap math extension.
+ * Handles inline and block formulas with proper lifecycle management.
  */
 
-import { Node, mergeAttributes } from '@tiptap/core';
-import katex from 'katex';
-import { modalStore } from '$lib/stores/modalStore';
+import { Node, mergeAttributes, wrappingInputRule } from '@tiptap/core';
+// --- THE FIX: Import the correct type for the renderer function ---
+import type { NodeViewRendererProps } from '@tiptap/core';
+import { mount, unmount } from 'svelte';
+import MathPreviewNodeView from '$lib/components/editor/MathPreviewNodeView.svelte';
 
-/**
- * @description The `MathInline` node represents an inline mathematical formula.
- * It is rendered as an inline element and can be placed within a line of text.
- * It uses KaTeX for rendering the formula specified in its `formula` attribute.
- */
+// =================================================================
+// --- INLINE MATH NODE ---
+// =================================================================
+
 export const MathInline = Node.create({
   name: 'math_inline',
   group: 'inline',
   inline: true,
-  atom: true, // The node is treated as a single, indivisible unit.
+  atom: true,
+  draggable: true,
 
   addAttributes() {
-    return {
-      formula: {
-        default: '',
-      },
-    };
+    return { formula: { default: '' } };
   },
 
   parseHTML() {
@@ -31,68 +30,65 @@ export const MathInline = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    // Renders an empty span, which will be populated by the custom node view.
     return [
       'span',
       mergeAttributes(HTMLAttributes, { 'data-type': 'math-inline' }),
-      0,
     ];
   },
 
-  /**
-   * @description The `addNodeView` method provides a custom view for the node.
-   * This allows for direct DOM manipulation and interaction.
-   */
   addNodeView() {
-    return ({ node, getPos, editor }) => {
+    const nodeType = this.type;
+
+    // --- THE FIX: The function returned here is a NodeViewRenderer,
+    // which receives NodeViewRendererProps from Tiptap.
+    return (props: NodeViewRendererProps) => {
       const dom = document.createElement('span');
-      dom.classList.add('math-inline');
+      let component: MathPreviewNodeView;
 
-      const formula = node.attrs.formula;
-      try {
-        // Render the LaTeX formula using KaTeX.
-        katex.render(formula, dom, {
-          throwOnError: false,
-          displayMode: false, // `false` for inline rendering.
-        });
-      } catch (error) {
-        // If rendering fails, display the raw formula and apply an error class.
-        dom.innerText = formula;
-        dom.classList.add('katex-error');
-      }
-
-      // Add a click listener to open the formula editor modal.
-      dom.addEventListener('click', () => {
-        if (!editor.isEditable) return;
-        const pos = getPos();
-        if (pos === undefined) return;
-        modalStore.open({
-          type: 'formula',
-          nodePos: pos,
-          attrs: { formula: node.attrs.formula },
-        });
+      component = mount(MathPreviewNodeView, {
+        target: dom,
+        props: props, // Pass the whole object
       });
 
-      return { dom };
+      return {
+        dom,
+        update(updatedNode) {
+          if (updatedNode.type.name !== nodeType.name) {
+            return false;
+          }
+          component.updateProps({ node: updatedNode });
+          return true;
+        },
+        destroy() {
+          try {
+            if (component) unmount(component);
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.warn(
+                'MathInline component unmount failed during HMR.',
+                error
+              );
+            }
+          }
+        },
+      };
     };
   },
 });
 
-/**
- * @description The `MathBlock` node represents a block-level mathematical formula.
- * It is rendered as a distinct block, separate from the main text flow.
- * It uses KaTeX with `displayMode: true` for block-style rendering.
- */
+// =================================================================
+// --- BLOCK MATH NODE ---
+// =================================================================
+
 export const MathBlock = Node.create({
   name: 'math_block',
   group: 'block',
   atom: true,
+  code: true,
 
   addAttributes() {
     return {
-      formula: {
-        default: '',
-      },
+      formula: { default: '' },
     };
   },
 
@@ -104,44 +100,54 @@ export const MathBlock = Node.create({
     return [
       'div',
       mergeAttributes(HTMLAttributes, { 'data-type': 'math-block' }),
-      0,
     ];
   },
 
-  /**
-   * @description The custom node view for the block-level math node.
-   * It is responsible for rendering the KaTeX formula and handling click events.
-   */
   addNodeView() {
-    return ({ node, getPos, editor }) => {
+    const nodeType = this.type;
+
+    // --- APPLY THE SAME FIX HERE ---
+    return (props: NodeViewRendererProps) => {
       const dom = document.createElement('div');
-      dom.classList.add('math-block');
+      let component: MathPreviewNodeView;
 
-      const formula = node.attrs.formula;
-
-      try {
-        // Render the LaTeX formula using KaTeX.
-        katex.render(formula, dom, {
-          throwOnError: false,
-          displayMode: true, // `true` for block rendering.
-        });
-      } catch (error) {
-        dom.innerText = formula;
-        dom.classList.add('katex-error');
-      }
-
-      // Add a click listener to open the formula editor modal.
-      dom.addEventListener('click', () => {
-        if (!editor.isEditable) return;
-        const pos = getPos();
-        if (pos === undefined) return;
-        modalStore.open({
-          type: 'formula',
-          nodePos: pos,
-          attrs: { formula: node.attrs.formula },
-        });
+      component = mount(MathPreviewNodeView, {
+        target: dom,
+        props: props,
       });
-      return { dom };
+
+      return {
+        dom,
+        stopEvent: () => true,
+        update(updatedNode) {
+          if (updatedNode.type.name !== nodeType.name) {
+            return false;
+          }
+          component.updateProps({ node: updatedNode });
+          return true;
+        },
+        destroy() {
+          try {
+            if (component) unmount(component);
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.warn(
+                'MathBlock component unmount failed during HMR.',
+                error
+              );
+            }
+          }
+        },
+      };
     };
+  },
+
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: /^\$\$\s$/,
+        type: this.type,
+      }),
+    ];
   },
 });

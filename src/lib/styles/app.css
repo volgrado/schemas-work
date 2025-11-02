@@ -438,24 +438,9 @@ input[type='range']::-webkit-slider-thumb {
   border: 0;
 }
 
-.prose .math-inline,
-.prose .math-block {
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.prose .math-inline:hover,
-.prose .math-block:hover {
-  background-color: var(--color-gray-100);
-}
-
-.prose .math-block {
-  padding: var(--space-md);
-  display: block;
-  text-align: center;
-}
+/* --- OLD MATH STYLES REMOVED FROM HERE --- */
+/* The styles for `.prose .math-inline` and `.prose .math-block` that were here have been deleted. */
+/* They are now handled by more specific component styles. */
 
 .dark-theme .prose ul > li > ul::before {
   background-color: var(--color-gray-100);

@@ -2,6 +2,7 @@
   @file src/routes/+page.svelte
   @description The main page component for the single-page application. It orchestrates the entire user experience,
   from the initial welcome screen to the main document editor view or the full-screen review session.
+  This version now includes the logic to render modals from the centralized modalStore.
 -->
 <script lang="ts">
   import { browser } from '$app/environment';
@@ -22,6 +23,14 @@
   import CardEditorPanel from '$lib/components/card/CardEditorPanel.svelte';
   import TTSController from '$lib/components/tts/TTSController.svelte';
   import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
+
+  // ✅ --- MODAL IMPORTS ---
+  // Import the necessary stores and components to render modals globally.
+  import { modalStore } from '$lib/stores/modalStore';
+  import Modal from '$lib/components/ui/Modal.svelte';
+  import FormulaEditorModal from '$lib/components/editor/FormulaEditorModal.svelte';
+  // If you have a media editor modal, you would import it here as well.
+  // import MediaEditorModal from '$lib/components/editor/MediaEditorModal.svelte';
 
   // --- Stores & Services ---
   import { documentStore } from '$lib/stores/documentStore';
@@ -256,6 +265,34 @@
       <CardEditorPanel />
       <TTSController />
       <SlashMenuController />
+
+      <!-- ✅ --- MODAL RENDERER --- -->
+      <!-- This block listens to the modalStore and renders the correct modal when needed. -->
+      {#if $modalStore.isOpen && $modalStore.config}
+        <!-- Render the Formula Editor Modal -->
+        {#if $modalStore.config.type === 'formula'}
+          <Modal show={true} title="Edit Formula" onClose={modalStore.close}>
+            <FormulaEditorModal
+              nodePos={$modalStore.config.nodePos}
+              nodeType={$modalStore.config.nodeType}
+              initialFormula={$modalStore.config.initialFormula}
+              onClose={modalStore.close}
+            />
+          </Modal>
+        {/if}
+
+        <!-- Render the Media Editor Modal -->
+        {#if $modalStore.config.type === 'media'}
+          <Modal show={true} title="Edit Media" onClose={modalStore.close}>
+            <!-- You would place your MediaEditorModal component here -->
+            <!-- e.g., <MediaEditorModal {...$modalStore.config} onClose={modalStore.close} /> -->
+            <div style="padding: 1rem; text-align: center;">
+              Media editor would be here for node type: {$modalStore.config
+                .nodeType}
+            </div>
+          </Modal>
+        {/if}
+      {/if}
     </div>
   {/if}
 {/if}

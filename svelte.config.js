@@ -1,6 +1,6 @@
 // svelte.config.js
 
-import adapter from '@sveltejs/adapter-cloudflare'; // <--- CAMBIO 1: Importamos el nuevo adaptador
+import adapter from '@sveltejs/adapter-cloudflare';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,24 +8,30 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    // Usamos el adaptador de Cloudflare para desplegar en su plataforma.
     adapter: adapter({
-      // <--- CAMBIO 2: Usamos el nuevo adaptador
-      // ¡ESTA ES LA LÍNEA MÁS IMPORTANTE PARA UNA SPA EN CLOUDFLARE!
-      // Esto le dice a Cloudflare que todas las rutas ('/*') deben ser manejadas
-      // por la lógica de tu aplicación (sirviendo el index.html), excepto
-      // los archivos que ya existen físicamente ('<all>'), como imágenes o CSS.
-      // Es el equivalente al 'fallback: "index.html"' del adaptador estático.
       routes: {
         include: ['/*'],
         exclude: ['<all>'],
       },
     }),
-
     alias: {
       $lib: 'src/lib',
     },
   },
+
+  // ==========================================================
+  // --- VVVV THIS BLOCK IS CRITICAL - VERIFY IT EXISTS VVVV ---
+  // ==========================================================
+  compilerOptions: {
+    compatibility: {
+      // This enables the Svelte 4 Component API (`new Component(...)`)
+      // which is required for Tiptap's vanilla JS Node Views.
+      componentApi: 4,
+    },
+  },
+  // ==========================================================
+  // --- ^^^^ THIS BLOCK IS CRITICAL - VERIFY IT EXISTS ^^^^ ---
+  // ==========================================================
 };
 
 export default config;
