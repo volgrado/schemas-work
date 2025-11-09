@@ -1,525 +1,237 @@
+<!-- src/lib/components/ui/CommandBar.svelte -->
 <script lang="ts">
   // --- Svelte & Third-Party ---
-  import { onMount, onDestroy } from 'svelte';
-  import { fly, fade } from 'svelte/transition';
-  import { get } from 'svelte/store';
-  import { toast } from 'svelte-sonner';
-  import { z } from 'zod';
+  import { fade, fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+  import type { TransitionConfig } from 'svelte/transition';
   import { t } from '$lib/utils/i18n';
 
-  // --- UI Components ---
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import AIHelperModal from '$lib/components/ai/AIHelperModal.svelte';
-  import ErrorDiagnosticModal from '$lib/components/ui/ErrorDiagnosticModal.svelte';
+  // --- UI Components & Modals ---
   import ApiKeyModal from '$lib/components/ui/ApiKeyModal.svelte';
-  import TextInputModal from '$lib/components/ui/TextInputModal.svelte';
+  import ErrorDiagnosticModal from '$lib/components/ui/ErrorDiagnosticModal.svelte';
   import StrategySessionModal from '$lib/components/ai/StrategySessionModal.svelte';
-
-  // --- Services & Schemas ---
-  import * as aiService from '$lib/services/ai/aiService';
-  import {
-    getModelById,
-    createDiscoveredModel,
-  } from '$lib/services/ai/aiModels';
-
-  // --- Stores ---
-  import { settingsStore } from '$lib/stores/settingsStore';
+  // FIX: This path was likely intended to be relative to the `command-bar` folder.
+  import PasswordModal from './command-bar/PasswordModal.svelte';
+  import Icon from '$lib/components/ui/Icon.svelte';
 
   // --- Command Bar Views ---
   import MainView from './command-bar/MainView.svelte';
+  import SearchView from './command-bar/SearchView.svelte';
   import AiView from './command-bar/AiView.svelte';
+  import VaultView from './command-bar/VaultView.svelte';
   import FileExplorerView from './command-bar/FileExplorerView.svelte';
   import StudyHubView from './command-bar/StudyHubView.svelte';
-  import VaultView from './command-bar/VaultView.svelte';
-  import DeckOptionsView from './command-bar/DeckOptionsView.svelte';
   import StatisticsView from './command-bar/StatisticsView.svelte';
-  import SearchView from './command-bar/SearchView.svelte';
+  import DeckOptionsView from './command-bar/DeckOptionsView.svelte';
 
-  // --- Stores ---
+  // --- Stores & Services ---
   import {
-    commandBarStore,
-    type AiHelperAction,
-  } from '$lib/stores/commandBarStore';
-  import { documentStore } from '$lib/stores/documentStore';
-  import { editorStore } from '$lib/stores/editorStore';
+    commandBarState,
+    close as closeCommandBar,
+    toggle as toggleCommandBar,
+    goBack,
+    // FIX: Import the missing action function.
+    closeDiagnosticModal,
+  } from '$lib/stores/commandBarStore.svelte';
 
-  // --- Services & Schemas ---
-  import * as backupService from '$lib/services/features/backupService';
-  import * as Prompts from '$lib/services/ai/prompts';
-  import * as aiSchemas from '$lib/schemas/aiSchemas';
-  import * as schemaService from '$lib/services/features/schemaService';
-  import * as cardService from '$lib/services/features/cardService';
-  import * as errorService from '$lib/services/core/errorService';
-  import type { Card, NewCard } from '$lib/types';
-
-  const aiHelperConfigs = {
-    'create-schema-from-text': {
-      title: $t('command_bar.ai_helper.create_schema.title'),
-      validationSchema: aiSchemas.CreateSchemaAiResponseSchema,
-      onApply: (data: any) => {
-        const title =
-          data.content?.[0]?.content?.[0]?.text ||
-          $t('document.new_schema_title');
-        const parentId = get(commandBarStore).currentParentId;
-        documentStore.createNewDocument(title, data, parentId);
-        toast.success(
-          $t('command_bar.ai_helper.create_schema.success', { title })
-        );
-      },
-    },
-    'expand-node': {
-      title: $t('command_bar.ai_helper.expand_node.title'),
-      validationSchema: aiSchemas.ExpandNodeAiResponseSchema,
-      onApply: (data: any) => {
-        const {
-          instance: editor,
-          selectedNodePos: currentPos,
-          selectedNode: node,
-        } = get(editorStore);
-        if (editor && node && currentPos !== null) {
-          editor
-            .chain()
-            .focus()
-            .insertContentAt(currentPos + node.nodeSize - 1, data)
-            .run();
-          toast.success($t('command_bar.ai_helper.expand_node.success'));
-        }
-      },
-    },
-    'generate-flashcards-node': {
-      title: $t('command_bar.ai_helper.generate_flashcards.title'),
-      validationSchema: aiSchemas.FlashcardResponseSchema,
-      onApply: async (data: Omit<Card, 'id' | 'deckId'>[]) => {
-        const docId = get(documentStore).docId;
-        if (!docId) {
-          toast.error(
-            $t('command_bar.ai_helper.generate_flashcards.error.no_node_id')
-          );
-          return;
-        }
-        try {
-          await cardService.addCards(docId, data as unknown as NewCard[]);
-          toast.success(
-            $t('command_bar.ai_helper.generate_flashcards.success', {
-              count: data.length,
-            })
-          );
-        } catch (err) {
-          errorService.reportError(err, {
-            operation: 'aiGenerateCards.onApply',
-          });
-          toast.error(
-            $t('command_bar.ai_helper.generate_flashcards.error.save_failed')
-          );
-        }
-      },
-    },
-  };
-
+  // --- Local State ---
+  let query = $state('');
   let isApiKeyModalOpen = $state(false);
-  let passwordInput = '';
-  let helperConfig = $state({
-    title: '',
-    prompt: '',
-    validationSchema: z.any() as z.ZodSchema,
-    onApply: (data: any) => {},
-  });
-  let isTextInputModalOpen = $state(false);
+  let panelElement = $state<HTMLDivElement | null>(null);
+  let searchInputElement = $state<HTMLInputElement | null>(null);
+  let previouslyFocusedElement: HTMLElement | null = null;
+  let searchViewInstance = $state<SearchView | null>(null);
+
+  // --- Effects for Lifecycle and Side Effects ---
 
   $effect(() => {
-    if ($commandBarStore.isAiHelperOpen && $commandBarStore.aiHelperAction) {
-      configureAiHelper($commandBarStore.aiHelperAction);
+    const handleGlobalKeydown = (event: KeyboardEvent) => {
+      const anyModalIsOpen =
+        isApiKeyModalOpen ||
+        commandBarState.isDiagnosticModalOpen ||
+        commandBarState.isStrategySessionOpen ||
+        commandBarState.isPasswordModalOpen;
+
+      if (anyModalIsOpen) return;
+
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        toggleCommandBar();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeydown);
+    return () => window.removeEventListener('keydown', handleGlobalKeydown);
+  });
+
+  $effect(() => {
+    if (commandBarState.isOpen) {
+      previouslyFocusedElement = document.activeElement as HTMLElement;
+      query = '';
+      setTimeout(() => searchInputElement?.focus(), 50);
+    } else {
+      previouslyFocusedElement?.focus();
     }
   });
 
-  function configureAiHelper(actionId: AiHelperAction) {
-    const config = aiHelperConfigs[actionId as keyof typeof aiHelperConfigs];
-    if (!config) return;
+  // --- Event Handlers ---
 
-    let finalPrompt = '';
-    const {
-      instance: editor,
-      selectedNodePos: currentPos,
-      selectedNode: node,
-    } = get(editorStore);
-
-    switch (actionId) {
-      case 'create-schema-from-text':
-        finalPrompt =
-          Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
-            '{{TEXT_INPUT}}',
-            $t('command_bar.ai_helper.create_schema.prompt_placeholder')
-          );
-        break;
-
-      case 'expand-node':
-        if (!node || !editor || currentPos === null) {
-          toast.error(
-            $t('command_bar.ai_helper.expand_node.error.no_node_selected')
-          );
-          commandBarStore.closeAiHelper();
-          return;
-        }
-        const breadcrumb = schemaService.getBreadcrumbForPosition(
-          editor.state.doc,
-          currentPos
-        );
-        finalPrompt = Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL.replaceAll(
-          '{{NODE_TEXT}}',
-          node.textContent
-        ).replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
-        break;
-
-      case 'generate-flashcards-node':
-        if (!node) {
-          toast.error(
-            $t(
-              'command_bar.ai_helper.generate_flashcards.error.no_node_selected'
-            )
-          );
-          commandBarStore.closeAiHelper();
-          return;
-        }
-        finalPrompt = Prompts.GENERATE_FLASHCARDS_V2_PROMPT.replace(
-          '{{NODE_TEXT}}',
-          node.textContent
-        );
-        break;
+  function handlePanelKeydown(event: KeyboardEvent) {
+    if (query.trim().length > 0 && searchViewInstance) {
+      searchViewInstance.handleKeyDown(event);
+      return;
     }
 
-    helperConfig = {
-      ...config,
-      prompt: finalPrompt,
+    if (event.key === 'Escape') {
+      if (commandBarState.currentView !== 'main') {
+        event.preventDefault();
+        goBack();
+      } else {
+        closeCommandBar();
+      }
+    }
+  }
+
+  // --- Transitions ---
+  type FlyAndScaleParams = { y: number; duration: number };
+
+  const flyAndScale = (
+    node: Element,
+    params: FlyAndScaleParams
+  ): TransitionConfig => {
+    const style = getComputedStyle(node);
+    const transform = style.transform === 'none' ? '' : style.transform;
+    return {
+      ...params,
+      easing: quintOut,
+      css: (t: number, u: number) => `
+        transform: ${transform} scale(${1 - u * 0.05}) translateY(${u * params.y}px);
+        opacity: ${t};
+      `,
     };
-  }
+  };
 
-  async function handleAiAction(
-    actionId: AiHelperAction,
-    options: { forceManual?: boolean } = {}
-  ) {
-    commandBarStore.close();
-    const forceManual = options.forceManual ?? false;
-    const settings = get(settingsStore);
-
-    let selectedModel = getModelById(settings.selectedModelId);
-    if (!selectedModel) {
-      selectedModel = createDiscoveredModel(settings.selectedModelId);
-    }
-
-    const selectedKey = settingsStore.getNextAvailableKey(
-      selectedModel.provider,
-      settings
-    );
-
-    if (actionId === 'create-schema-from-text' && selectedKey && !forceManual) {
-      isTextInputModalOpen = true;
-      return;
-    }
-
-    if (selectedKey && !forceManual) {
-      const toastId = toast.loading(
-        $t('command_bar.toast.running_action', {
-          modelName: selectedModel.name,
-        })
-      );
-      try {
-        const config =
-          aiHelperConfigs[actionId as keyof typeof aiHelperConfigs];
-        if (!config)
-          throw new Error($t('command_bar.errors.invalid_action_config'));
-
-        let prompt = '';
-
-        const { instance: editor, selectedNode } = get(editorStore);
-        if (!selectedNode)
-          throw new Error($t('command_bar.errors.node_selection_required'));
-
-        if (actionId === 'expand-node' && editor) {
-          const breadcrumb = schemaService.getBreadcrumbForPosition(
-            editor.state.doc,
-            get(editorStore).selectedNodePos!
-          );
-          prompt = Prompts.EXPAND_NODE_PROMPT_V4_PEDAGOGICAL.replaceAll(
-            '{{NODE_TEXT}}',
-            selectedNode.textContent
-          ).replace('{{CONTEXT_BREADCRUMB}}', breadcrumb);
-        } else if (actionId === 'generate-flashcards-node') {
-          prompt = Prompts.GENERATE_FLASHCARDS_V2_PROMPT.replace(
-            '{{NODE_TEXT}}',
-            selectedNode.textContent
-          );
-        } else {
-          throw new Error($t('command_bar.errors.automated_flow_error'));
-        }
-
-        settingsStore.recordApiKeyUsage(selectedKey.id);
-        const result = await aiService.generateContent(
-          prompt,
-          selectedModel,
-          selectedKey.key,
-          config.validationSchema
-        );
-
-        const dataToApply =
-          'content' in result ? (result as any).content : result;
-        await config.onApply(dataToApply);
-        toast.success($t('command_bar.toast.action_success'), { id: toastId });
-      } catch (error: any) {
-        toast.error(
-          $t('command_bar.toast.action_failed', { message: error.message }),
-          { id: toastId }
-        );
-        errorService.reportError(error, {
-          operation: `handleAiAction:${actionId}`,
-          model: selectedModel.id,
-        });
-      }
-    } else {
-      if (forceManual && selectedKey)
-        toast.info($t('command_bar.toast.manual_helper_info'));
-      else if (!selectedKey) {
-        const providerKeys = settings.apiKeys.filter(
-          (k) => k.provider === selectedModel.provider
-        );
-        if (providerKeys.length > 0)
-          toast.info(
-            $t('command_bar.toast.rate_limit_info', {
-              provider: selectedModel.provider,
-            })
-          );
-        else
-          toast.info(
-            $t('command_bar.toast.no_key_info', {
-              provider: selectedModel.provider,
-            })
-          );
-      }
-      commandBarStore.openAiHelper(actionId);
-    }
-  }
-
-  async function handleTextSubmitForSchemaCreation(text: string) {
-    isTextInputModalOpen = false;
-    const settings = get(settingsStore);
-
-    let selectedModel = getModelById(settings.selectedModelId);
-    if (!selectedModel) {
-      selectedModel = createDiscoveredModel(settings.selectedModelId);
-    }
-
-    const selectedKey = settingsStore.getNextAvailableKey(
-      selectedModel.provider,
-      settings
-    );
-    if (!selectedKey) return;
-
-    const toastId = toast.loading(
-      $t('command_bar.toast.generating_schema', {
-        modelName: selectedModel.name,
-      })
-    );
-    try {
-      const config = aiHelperConfigs['create-schema-from-text'];
-      const prompt =
-        Prompts.CREATE_SCHEMA_FROM_TEXT_PROMPT_V4_PEDAGOGICAL.replace(
-          '{{TEXT_INPUT}}',
-          text
-        );
-
-      settingsStore.recordApiKeyUsage(selectedKey.id);
-      const result = await aiService.generateContent(
-        prompt,
-        selectedModel,
-        selectedKey.key,
-        config.validationSchema
-      );
-
-      await config.onApply(result);
-      toast.success($t('command_bar.toast.schema_created_success'), {
-        id: toastId,
-      });
-    } catch (error: any) {
-      toast.error(
-        $t('command_bar.toast.action_failed', { message: error.message }),
-        { id: toastId }
-      );
-      errorService.reportError(error, {
-        operation: `handleTextSubmitForSchemaCreation`,
-        model: selectedModel.id,
-      });
-    }
-  }
-
-  async function handlePasswordSubmit() {
-    if (!passwordInput) return;
-    try {
-      if ($commandBarStore.passwordModalAction === 'export') {
-        await backupService.exportVault(passwordInput);
-      } else {
-        await backupService.importVault(passwordInput);
-      }
-    } catch (error) {
-      errorService.reportError(error, {
-        operation: `backup:${$commandBarStore.passwordModalAction}`,
-      });
-      // Toasts are now handled by the backupService for better encapsulation.
-    } finally {
-      commandBarStore.closePasswordModal();
-      passwordInput = '';
-    }
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (
-      $commandBarStore.isPasswordModalOpen ||
-      $commandBarStore.isAiHelperOpen ||
-      isApiKeyModalOpen ||
-      isTextInputModalOpen ||
-      $commandBarStore.isStrategySessionOpen
-    )
-      return;
-
-    if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      commandBarStore.toggle();
-    }
-
-    if (event.key === 'Escape' && $commandBarStore.isOpen) {
-      if ($commandBarStore.currentView === 'deck-options') {
-        commandBarStore.setView('study-hub');
-      } else if ($commandBarStore.currentView !== 'main') {
-        commandBarStore.setView('main');
-      } else {
-        commandBarStore.close();
-      }
-    }
-  }
-
-  // --- FIX: This function is required by SearchView ---
+  // --- Modal Control Functions ---
   function openApiKeyModal() {
     isApiKeyModalOpen = true;
-    // It's good practice to close the command bar when opening a modal.
-    commandBarStore.close();
+    closeCommandBar();
   }
-
-  onMount(() => window.addEventListener('keydown', handleKeydown));
-  onDestroy(() => window.removeEventListener('keydown', handleKeydown));
+  function closeApiKeyModal() {
+    isApiKeyModalOpen = false;
+  }
 </script>
 
-<TextInputModal
-  show={isTextInputModalOpen}
-  title={$t('command_bar.text_input_modal.title')}
-  placeholder={$t('command_bar.text_input_modal.placeholder')}
-  onClose={() => (isTextInputModalOpen = false)}
-  onsubmit={handleTextSubmitForSchemaCreation}
-/>
-
-<ApiKeyModal
-  show={isApiKeyModalOpen}
-  onClose={() => (isApiKeyModalOpen = false)}
-/>
+<!-- All Modals are managed here for central control -->
+<!-- FIX: Pass `onClose` as a prop, not an event handler. -->
+<ApiKeyModal show={isApiKeyModalOpen} onClose={closeApiKeyModal} />
 
 <ErrorDiagnosticModal
-  show={$commandBarStore.isDiagnosticModalOpen}
-  onClose={commandBarStore.closeDiagnosticModal}
+  show={commandBarState.isDiagnosticModalOpen}
+  onClose={closeDiagnosticModal}
 />
 
-<StrategySessionModal show={$commandBarStore.isStrategySessionOpen} />
+<StrategySessionModal show={commandBarState.isStrategySessionOpen} />
 
-<Modal
-  title={$commandBarStore.passwordModalAction === 'export'
-    ? $t('command_bar.password_modal.title.export')
-    : $t('command_bar.password_modal.title.import')}
-  show={$commandBarStore.isPasswordModalOpen}
-  onClose={commandBarStore.closePasswordModal}
->
-  <form onsubmit={handlePasswordSubmit}>
-    <p>
-      {$commandBarStore.passwordModalAction === 'export'
-        ? $t('command_bar.password_modal.description.export')
-        : $t('command_bar.password_modal.description.import')}
-    </p>
-    <input
-      type="password"
-      bind:value={passwordInput}
-      placeholder={$t('command_bar.password_modal.password_placeholder')}
-      required
-      autocomplete="new-password"
-    />
-    <div class="modal-actions">
-      <Button onclick={commandBarStore.closePasswordModal} variant="secondary">
-        {$t('command_bar.password_modal.cancel_button')}
-      </Button>
-      <Button type="submit">
-        {$commandBarStore.passwordModalAction === 'export'
-          ? $t('command_bar.password_modal.confirm_button.export')
-          : $t('command_bar.password_modal.confirm_button.import')}
-      </Button>
-    </div>
-  </form>
-</Modal>
-
-<AIHelperModal
-  show={$commandBarStore.isAiHelperOpen}
-  title={helperConfig.title}
-  prompt={helperConfig.prompt}
-  validationSchema={helperConfig.validationSchema}
-  on:apply={(e) => {
-    helperConfig.onApply(e.detail);
-    commandBarStore.closeAiHelper();
-  }}
-  on:close={commandBarStore.closeAiHelper}
-/>
+<PasswordModal bind:show={commandBarState.isPasswordModalOpen} />
 
 <!-- Main CommandBar UI -->
-{#if $commandBarStore.isOpen}
+{#if commandBarState.isOpen}
+  <!-- FIX: Use a styled <button> for the overlay for better accessibility. -->
   <button
     class="overlay"
-    onclick={commandBarStore.close}
+    onclick={closeCommandBar}
     transition:fade={{ duration: 150 }}
     aria-label={$t('command_bar.close_aria_label')}
   ></button>
 
   <div
     class="panel"
-    transition:fly={{ y: 20, duration: 200 }}
+    bind:this={panelElement}
+    in:flyAndScale={{ y: -20, duration: 250 }}
+    out:fade={{ duration: 150 }}
     role="dialog"
     aria-modal="true"
-    aria-labelledby="commandbar-title"
+    aria-label={$t('command_bar.title')}
+    tabindex="-1"
+    onkeydown={handlePanelKeydown}
   >
-    <!-- Dynamic View Rendering -->
-    {#if $commandBarStore.currentView === 'main'}
-      <MainView {openApiKeyModal} />
-    {:else if $commandBarStore.currentView === 'ai-actions'}
-      <AiView {handleAiAction} />
-    {:else if $commandBarStore.currentView === 'search'}
-      <!-- --- FIX: Pass the required functions as props to SearchView --- -->
-      <SearchView {openApiKeyModal} {handleAiAction} />
-    {:else if $commandBarStore.currentView === 'list-schemas'}
-      <FileExplorerView />
-    {:else if $commandBarStore.currentView === 'study-hub'}
-      <StudyHubView />
-    {:else if $commandBarStore.currentView === 'vault'}
-      <VaultView />
-    {:else if $commandBarStore.currentView === 'deck-options' && $commandBarStore.deckOptionsId}
-      <DeckOptionsView deckId={$commandBarStore.deckOptionsId} />
-    {:else if $commandBarStore.currentView === 'statistics'}
-      <StatisticsView />
-    {/if}
+    <!-- Persistent Search Input -->
+    <div class="input-wrapper">
+      <Icon name="search" size={20} />
+      <input
+        type="text"
+        bind:value={query}
+        placeholder={$t('command.search_vault')}
+        class="search-input"
+        aria-label={$t('command.search_vault')}
+        bind:this={searchInputElement}
+      />
+      {#if searchViewInstance?.status === 'loading'}
+        <div class="spinner" aria-label="Loading search results"></div>
+      {/if}
+    </div>
+
+    <!-- Dynamic View Area -->
+    <div class="view-content">
+      {#if query.trim().length === 0}
+        <!-- The View Router with Transitions -->
+        {#key commandBarState.currentView}
+          <div
+            class="view-transition-wrapper"
+            in:fly={{
+              x: commandBarState.isNavigatingBack ? -15 : 15,
+              duration: 250,
+              easing: quintOut,
+            }}
+            out:fade={{ duration: 100 }}
+          >
+            {#if commandBarState.currentView === 'main'}
+              <MainView {openApiKeyModal} />
+            {:else if commandBarState.currentView === 'ai-actions'}
+              <AiView />
+              <!-- FIX: Corrected typo from `commandBarV5State` to `commandBarState`. -->
+            {:else if commandBarState.currentView === 'vault'}
+              <VaultView />
+            {:else if commandBarState.currentView === 'file-explorer'}
+              <FileExplorerView />
+            {:else if commandBarState.currentView === 'study-hub'}
+              <StudyHubView />
+            {:else if commandBarState.currentView === 'statistics'}
+              <StatisticsView />
+            {:else if commandBarState.currentView === 'deck-options' && commandBarState.viewPayload}
+              <DeckOptionsView deckId={commandBarState.viewPayload.deckId} />
+            {/if}
+          </div>
+        {/key}
+      {:else}
+        <!-- Search Results (Query Exists) -->
+        <div
+          class="view-transition-wrapper"
+          transition:fade={{ duration: 150 }}
+        >
+          <SearchView
+            bind:this={searchViewInstance}
+            {query}
+            {openApiKeyModal}
+          />
+        </div>
+      {/if}
+    </div>
   </div>
 {/if}
 
 <style>
+  /* FIX: Reset button styles for the overlay to make it behave like a div. */
   .overlay {
+    all: unset; /* Remove all default button styling */
+    display: block; /* Ensure it covers the screen */
     position: fixed;
     inset: 0;
-    background-color: var(--overlay-bg);
-    z-index: calc(var(--z-command-bar) - 1);
-    border: none;
-    cursor: default;
+    background-color: var(--overlay-bg, rgba(0, 0, 0, 0.6));
+    z-index: calc(var(--z-command-bar, 100) - 1);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
   }
-
   .panel {
     position: fixed;
     top: 15%;
@@ -528,121 +240,75 @@
     width: 100%;
     max-width: 640px;
     max-height: 70vh;
-    box-sizing: border-box;
-    background-color: var(--color-background-translucent);
-    border: 1px solid var(--color-border);
+    background-color: var(
+      --color-background-translucent,
+      rgba(255, 255, 255, 0.8)
+    );
+    border: 1px solid var(--color-border, #e0e0e0);
     border-radius: 16px;
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-command-bar);
+    box-shadow: var(
+      --shadow-xl,
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04)
+    );
+    z-index: var(--z-command-bar, 100);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: var(--space-xs);
-  }
-
-  :global(.panel .action-list) {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex-grow: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding: var(--space-xs);
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) transparent;
-  }
-
-  :global(.panel .action-list::-webkit-scrollbar) {
-    width: 6px;
-  }
-  :global(.panel .action-list::-webkit-scrollbar-thumb) {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 4px;
-  }
-
-  :global(.panel .action-button) {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 12px 14px;
-    border: none;
-    background: none;
-    font-family: var(--font-main);
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--color-text);
-    border-radius: 8px;
-    text-align: left;
-    gap: 12px;
-    cursor: pointer;
-    transition:
-      background-color 0.2s ease,
-      transform 0.1s ease;
     outline: none;
-  }
-
-  :global(.panel .action-button:hover:not(:disabled)),
-  :global(.panel .action-button:focus-visible) {
-    background-color: var(--btn-hover-bg);
-  }
-
-  :global(.panel .action-button:focus-visible) {
-    box-shadow: 0 0 0 2px var(--color-accent);
-  }
-
-  :global(.panel .action-button :global(svg)) {
-    color: var(--color-gray-500);
-    transition:
-      transform 0.2s ease,
-      color 0.2s ease;
-  }
-
-  :global(.panel .action-button:hover:not(:disabled) :global(svg)),
-  :global(.panel .action-button:focus-visible :global(svg)) {
-    color: var(--color-accent);
-    transform: scale(1.1);
-  }
-
-  :global(.panel .action-button:active:not(:disabled)) {
-    transform: scale(0.985);
-  }
-  :global(.panel .action-button:disabled) {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .modal-actions {
-    margin-top: var(--space-md);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-sm);
-  }
-
-  /* --- Dark Mode --- */
-  :global(.dark-theme) .overlay {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  :global(.dark-theme) .panel {
-    background-color: var(--panel-bg-dark);
-    border-color: var(--panel-border-dark);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
-
-  :global(.dark-theme .action-list) {
-    scrollbar-color: var(--scrollbar-thumb-dark) transparent;
+  .input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-border, #e0e0e0);
+    flex-shrink: 0;
   }
-  :global(.dark-theme .action-list::-webkit-scrollbar-thumb) {
-    background-color: var(--scrollbar-thumb-dark);
+  .search-input {
+    flex-grow: 1;
+    border: none;
+    background: none;
+    font-size: 1rem;
+    color: var(--color-text, #111);
+    outline: none;
   }
-
-  :global(.dark-theme .action-button) {
-    color: var(--color-text-dark);
+  .search-input::placeholder {
+    color: var(--color-text-muted, #999);
   }
-  :global(.dark-theme .action-button:hover:not(:disabled)),
-  :global(.dark-theme .action-button:focus-visible) {
-    background-color: var(--btn-hover-bg-dark);
+  .view-content {
+    flex-grow: 1;
+    overflow: auto;
+    position: relative;
+    padding: var(--space-xs, 8px);
+  }
+  .view-transition-wrapper {
+    width: 100%;
+    height: 100%;
+  }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-accent, blue);
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    animation: rotation 1s linear infinite;
+  }
+  @keyframes rotation {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  :global(.dark-theme) .panel {
+    background-color: var(--panel-bg-dark, rgba(30, 30, 30, 0.8));
+    border-color: var(--panel-border-dark, #444);
+  }
+  :global(.dark-theme) .input-wrapper {
+    border-color: var(--panel-border-dark, #444);
+  }
+  :global(.dark-theme) .search-input {
+    color: var(--color-text-dark, #eee);
   }
 </style>

@@ -1,6 +1,6 @@
 // svelte.config.js
 
-import adapter from '@sveltejs/adapter-cloudflare';
+import adapter from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -19,19 +19,15 @@ const config = {
     },
   },
 
-  // ==========================================================
-  // --- VVVV THIS BLOCK IS CRITICAL - VERIFY IT EXISTS VVVV ---
-  // ==========================================================
   compilerOptions: {
+    // --- ADD THIS LINE ---
+    runes: true,
+
+    // Your existing compatibility option is still needed for Tiptap
     compatibility: {
-      // This enables the Svelte 4 Component API (`new Component(...)`)
-      // which is required for Tiptap's vanilla JS Node Views.
       componentApi: 4,
     },
   },
-  // ==========================================================
-  // --- ^^^^ THIS BLOCK IS CRITICAL - VERIFY IT EXISTS ^^^^ ---
-  // ==========================================================
 };
 
 export default config;

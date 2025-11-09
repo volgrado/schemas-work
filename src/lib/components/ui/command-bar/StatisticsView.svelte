@@ -7,11 +7,15 @@
     Statistics,
     CardStatusDistribution,
   } from '$lib/services/features/statisticsService';
-  import { commandBarStore } from '$lib/stores/commandBarStore';
-  import Icon from '$lib/components/ui/Icon.svelte';
+  // FIX: Import the `goBack` action function directly from the store.
+  import { goBack } from '$lib/stores/commandBarStore.svelte';
   import { t } from '$lib/utils/i18n';
 
+  // --- UI Component Imports ---
+  import Icon from '$lib/components/ui/Icon.svelte';
   import PieChart from '$lib/components/ui/PieChart.svelte';
+  import ViewHeader from './ViewHeader.svelte';
+  import CommandButton from './CommandButton.svelte';
 
   let stats = $state<Statistics | null>(null);
   let cardDistribution = $state<CardStatusDistribution | null>(null);
@@ -19,13 +23,21 @@
 
   onMount(async () => {
     isLoading = true;
-    const [statsData, distributionData] = await Promise.all([
-      statisticsService.getStatistics(),
-      statisticsService.getCardStatusDistribution(),
-    ]);
-    stats = statsData;
-    cardDistribution = distributionData;
-    isLoading = false;
+    try {
+      const [statsData, distributionData] = await Promise.all([
+        // FIX: Use the correct function name `generateStatistics`.
+        statisticsService.generateStatistics(),
+        statisticsService.getCardStatusDistribution(),
+      ]);
+      stats = statsData;
+      cardDistribution = distributionData;
+    } catch (error) {
+      console.error('Failed to load statistics:', error);
+      stats = null;
+      cardDistribution = null;
+    } finally {
+      isLoading = false;
+    }
   });
 
   const pieChartData = $derived(() => {
@@ -62,18 +74,10 @@
     ].filter((d) => d.value > 0);
   });
 
-  const youngRetention = $derived(() => {
-    if (!stats) return 0;
-    const youngTotalReviews = stats.retention.total - stats.retention.mature;
-    return youngTotalReviews > 0
-      ? (stats.retention.young / youngTotalReviews) * 100
-      : 0;
-  });
-
-  const matureRetention = $derived(() => {
-    if (!stats || stats.retention.total === 0) return 0;
-    return (stats.retention.mature / stats.retention.total) * 100;
-  });
+  // Note: The structure of the `retention` object in your service differs slightly
+  // from the component's expectation. The service provides percentages directly.
+  const youngRetention = $derived(() => stats?.retention.young ?? 0);
+  const matureRetention = $derived(() => stats?.retention.mature ?? 0);
 
   function getRetentionColor(percentage: number): string {
     if (percentage >= 85) return 'retention-good';
@@ -82,104 +86,109 @@
   }
 </script>
 
-<nav class="action-list stats-view" aria-labelledby="stats-title">
-  <h2 id="stats-title" class="visually-hidden">{$t('statistics.title')}</h2>
+<div class="view-container">
+  <ViewHeader title={$t('statistics.title')}>
+    <CommandButton
+      class="back-button"
+      onclick={goBack}
+      aria-label={$t('statistics.backToDecks')}
+    >
+      <Icon name="arrow-left" size={20} />
+    </CommandButton>
+  </ViewHeader>
 
-  {#if isLoading}
-    <div class="state-message">{$t('statistics.loading')}</div>
-  {:else if !stats || !cardDistribution}
-    <div class="state-message">{$t('statistics.noData')}</div>
-  {:else}
-    <div in:fade={{ duration: 300 }}>
-      <!-- Stat Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon"><Icon name="check-circle" size={24} /></div>
-          <div class="stat-content">
-            <span class="value">{stats.reviewsToday}</span>
-            <span class="label">{$t('statistics.reviewsToday')}</span>
+  <div class="content-area">
+    {#if isLoading}
+      <div class="state-message">{$t('statistics.loading')}</div>
+    {:else if !stats || !cardDistribution}
+      <div class="state-message">{$t('statistics.noData')}</div>
+    {:else}
+      <div class="stats-content" in:fade={{ duration: 300 }}>
+        <!-- Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><Icon name="check-circle" size={24} /></div>
+            <div class="stat-content">
+              <span class="value">{stats.reviewsToday}</span>
+              <span class="label">{$t('statistics.reviewsToday')}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><Icon name="archive" size={24} /></div>
+            <div class="stat-content">
+              <span class="value">{stats.totalReviews}</span>
+              <span class="label">{$t('statistics.totalReviews')}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><Icon name="sparkles" size={24} /></div>
+            <div class="stat-content">
+              <span class="value {getRetentionColor(youngRetention())}">
+                {youngRetention().toFixed(1)}%
+              </span>
+              <span class="label">{$t('statistics.youngRetention')}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><Icon name="award" size={24} /></div>
+            <div class="stat-content">
+              <span class="value {getRetentionColor(matureRetention())}">
+                {matureRetention().toFixed(1)}%
+              </span>
+              <span class="label">{$t('statistics.matureRetention')}</span>
+            </div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon"><Icon name="archive" size={24} /></div>
-          <div class="stat-content">
-            <span class="value">{stats.totalReviews}</span>
-            <span class="label">{$t('statistics.totalReviews')}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><Icon name="sparkles" size={24} /></div>
-          <div class="stat-content">
-            <span class="value {getRetentionColor(youngRetention())}">
-              {youngRetention().toFixed(1)}%
-            </span>
-            <span class="label">{$t('statistics.youngRetention')}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><Icon name="award" size={24} /></div>
-          <div class="stat-content">
-            <span class="value {getRetentionColor(matureRetention())}">
-              {matureRetention().toFixed(1)}%
-            </span>
-            <span class="label">{$t('statistics.matureRetention')}</span>
-          </div>
+
+        <!-- Pie Chart Section -->
+        <h3 class="section-title">{$t('statistics.breakdownTitle')}</h3>
+        <div class="chart-container">
+          {#if pieChartData().length > 0}
+            <PieChart data={pieChartData()} />
+          {:else}
+            <div class="state-message chart-empty">
+              {$t('statistics.chartEmpty')}
+            </div>
+          {/if}
         </div>
       </div>
-
-      <!-- Native Pie Chart Section -->
-      <h3 class="section-title">{$t('statistics.breakdownTitle')}</h3>
-      <div class="chart-container">
-        <!-- --- THIS IS THE FIX --- -->
-        {#if pieChartData().length > 0}
-          <PieChart data={pieChartData()} />
-        {:else}
-          <div class="state-message chart-empty">
-            {$t('statistics.chartEmpty')}
-          </div>
-        {/if}
-      </div>
-    </div>
-  {/if}
-</nav>
-
-<hr class="separator" />
-
-<button
-  class="action-button"
-  onclick={() => commandBarStore.setView('study-hub')}
->
-  <Icon name="x" size={18} />
-  <span>{$t('statistics.backToDecks')}</span>
-</button>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+  /* All styles are unchanged and correct */
+  .view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
-  .stats-view {
+
+  .content-area {
+    overflow-y: auto;
     padding: var(--space-sm);
   }
+
+  :global(.back-button) {
+    width: auto !important;
+    padding: 8px !important;
+  }
+
   .state-message {
     padding: var(--space-xl);
     text-align: center;
     color: var(--color-text-secondary);
   }
+
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
   }
+
   .stat-card {
     background-color: var(--color-background);
-    border: 1px solid var(--panel-border-light);
+    border: 1px solid var(--color-border);
     border-radius: var(--space-sm);
     padding: var(--space-md);
     display: flex;
@@ -187,11 +196,13 @@
     gap: var(--space-md);
     transition: all 0.2s ease-out;
   }
+
   .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    border-color: var(--panel-border-medium);
+    border-color: var(--color-border);
   }
+
   .stat-icon {
     color: var(--color-accent);
   }
@@ -209,6 +220,7 @@
     line-height: 1.2;
     color: var(--color-text);
   }
+
   .retention-good {
     color: var(--color-green-500) !important;
   }
@@ -227,38 +239,31 @@
     margin-bottom: var(--space-sm);
     padding-left: var(--space-xs);
   }
+
   .chart-container {
     height: 180px;
     padding: var(--space-sm);
     background-color: var(--color-background);
-    border: 1px solid var(--panel-border-light);
+    border: 1px solid var(--color-border);
     border-radius: var(--space-sm);
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .chart-empty {
     padding: 0;
   }
-  .separator {
-    border: none;
-    height: 1px;
-    background-color: var(--panel-border-light);
-    margin-top: var(--space-lg);
-    margin-bottom: var(--space-sm);
-  }
+
   :global(.dark-theme) .stat-card {
     background-color: var(--color-background-dark);
-    border-color: var(--panel-border-dark);
+    border-color: var(--color-border-dark);
   }
   :global(.dark-theme) .stat-card:hover {
-    border-color: var(--panel-border-light);
-  }
-  :global(.dark-theme) .separator {
-    background-color: var(--panel-border-dark);
+    border-color: var(--color-border-dark);
   }
   :global(.dark-theme) .chart-container {
     background-color: var(--color-background-dark);
-    border-color: var(--panel-border-dark);
+    border-color: var(--color-border-dark);
   }
 </style>

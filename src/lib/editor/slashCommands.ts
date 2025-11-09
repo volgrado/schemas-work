@@ -5,20 +5,20 @@
 
 import type { Editor, Range } from '@tiptap/core';
 import type { IconName } from '$lib/types/iconName';
-import { commandBarStore } from '$lib/stores/commandBarStore';
-import { editorStore } from '$lib/stores/editorStore';
-import { get } from 'svelte/store';
-import { toast } from 'svelte-sonner';
-import { ttsStore } from '$lib/stores/ttsStore';
-import { cardEditorStore } from '$lib/stores/cardEditorStore';
+import type { Modal } from '$lib/types';
 import {
-  modalStore,
-  type MediaModalConfig,
-  type FormulaModalConfig,
-} from '$lib/stores/modalStore';
+  openStrategySession,
+  type StrategySessionContext,
+} from '$lib/stores/commandBarStore.svelte';
+import { editorState } from '$lib/stores/editorStore.svelte';
+import { startReading } from '$lib/stores/ttsStore.svelte';
+import { open as openCardEditor } from '$lib/stores/cardEditorStore.svelte';
+import { openModal } from '$lib/stores/modalStore.svelte';
+// VVVV CORRECTED IMPORT VVVV
+import { documentState } from '$lib/stores/documentStore.svelte';
 import { gett } from '$lib/utils/i18n';
 import { getReadableNodes } from '$lib/utils/ttsUtils';
-import { documentStore } from '$lib/stores/documentStore';
+import { toast } from 'svelte-sonner';
 
 /**
  * Represents a single command in the slash command menu.
@@ -50,12 +50,6 @@ function findCurrentSectionNodeId(editor: Editor): string | null {
   });
   return lastHeadingNodeId;
 }
-
-/**
- * Checks if a heading node is currently "active".
- * @internal
- */
-const hasNodeSelected = () => get(editorStore).selectedNodePos !== null;
 
 /**
  * Retrieves the full list of slash commands.
@@ -200,13 +194,13 @@ export const getCommands = (): CommandItem[] => {
           .run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
-          const config: MediaModalConfig = {
+          const config: Modal.MediaConfig = {
             type: 'media',
             nodeType: 'image',
             nodePos: pos,
             attrs: node.attrs,
           };
-          modalStore.open(config);
+          openModal(config);
         }
       },
     },
@@ -224,41 +218,34 @@ export const getCommands = (): CommandItem[] => {
           .run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
-          const config: MediaModalConfig = {
+          const config: Modal.MediaConfig = {
             type: 'media',
             nodeType: 'youtube',
             nodePos: pos,
             attrs: node.attrs,
           };
-          modalStore.open(config);
+          openModal(config);
         }
       },
     },
-
-    // ✅ --- REFACTORED MATH COMMANDS ---
     {
       title: t('slashCommands.mathBlock.title'),
       description: t('slashCommands.mathBlock.description'),
       group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
-        // First, delete the slash command text
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
-
-        // Insert the math_block node at the cursor's position
         editor.chain().insertContentAt(pos, { type: 'math_block' }).run();
-
-        // Immediately open the editing modal for a seamless user experience
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
-          const config: FormulaModalConfig = {
+          const config: Modal.FormulaConfig = {
             type: 'formula',
             nodePos: pos,
             nodeType: 'math_block',
             initialFormula: node.attrs.formula,
           };
-          modalStore.open(config);
+          openModal(config);
         }
       },
     },
@@ -268,19 +255,18 @@ export const getCommands = (): CommandItem[] => {
       group: t('slashCommands.groups.media'),
       icon: 'plus-slash-minus',
       command: ({ editor, range }) => {
-        // This command follows the same pattern as the mathBlock command
         editor.chain().focus().deleteRange(range).run();
         const pos = range.from;
         editor.chain().insertContentAt(pos, { type: 'math_inline' }).run();
         const node = editor.state.doc.nodeAt(pos);
         if (node) {
-          const config: FormulaModalConfig = {
+          const config: Modal.FormulaConfig = {
             type: 'formula',
             nodePos: pos,
             nodeType: 'math_inline',
             initialFormula: node.attrs.formula,
           };
-          modalStore.open(config);
+          openModal(config);
         }
       },
     },
@@ -293,11 +279,17 @@ export const getCommands = (): CommandItem[] => {
       icon: 'sparkles',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        if (!hasNodeSelected()) {
+        const { selectedNode, selectedNodePos } = editorState;
+        if (!selectedNode || selectedNodePos === null) {
           toast.error(t('slashCommands.expandNode.error'));
           return;
         }
-        commandBarStore.openAiHelper('expand-node');
+        const context: StrategySessionContext = {
+          action: 'expand-node',
+          node: selectedNode,
+          nodePos: selectedNodePos,
+        };
+        openStrategySession(context);
       },
     },
     {
@@ -307,11 +299,17 @@ export const getCommands = (): CommandItem[] => {
       icon: 'zap',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        if (!hasNodeSelected()) {
+        const { selectedNode, selectedNodePos } = editorState;
+        if (!selectedNode || selectedNodePos === null) {
           toast.error(t('slashCommands.generateCards.error'));
           return;
         }
-        commandBarStore.openAiHelper('generate-flashcards-node');
+        const context: StrategySessionContext = {
+          action: 'generate-flashcards-doc',
+          node: selectedNode,
+          nodePos: selectedNodePos,
+        };
+        openStrategySession(context);
       },
     },
 
@@ -328,10 +326,9 @@ export const getCommands = (): CommandItem[] => {
         const startIndex = startNodeId
           ? allNodes.findIndex((node) => node.node.attrs.nodeId === startNodeId)
           : 0;
-
         const playlist = allNodes.slice(startIndex > -1 ? startIndex : 0);
         if (playlist.length > 0) {
-          ttsStore.startReading(playlist);
+          startReading(playlist);
         } else {
           toast.error(t('slashCommands.readNode.error'));
         }
@@ -344,10 +341,10 @@ export const getCommands = (): CommandItem[] => {
       icon: 'edit-3',
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
-        const docId = get(documentStore).docId;
-
+        // VVVV CORRECTED STATE ACCESS VVVV
+        const docId = documentState.docId;
         if (docId) {
-          cardEditorStore.open(docId);
+          openCardEditor(docId);
         } else {
           toast.error(t('slashCommands.editCards.error'));
         }

@@ -2,46 +2,74 @@
   @component
   Screen
 
-  A top-level container for a major UI view (like the main editor or a welcome screen).
-  It handles the mounting and unmounting of its content with a consistent set of
-  enter and exit transitions.
+  An exceptional top-level container for a major UI view. It orchestrates a sophisticated,
+  unified transition for mounting and unmounting its content.
 
-  This component solves a common problem in Svelte where you might want to coordinate
-  animations between a parent and a child. By exposing the `isExiting` state via a
-  slot prop, child components can be made aware that their parent container is in the
-  process of unmounting, allowing them to play their own exit animations simultaneously.
+  It solves the complex challenge of coordinating animations by exposing an `isExiting`
+  slot prop. Child components can use this state to play their own exit animations in perfect
+  sync with the parent screen's outro, creating seamless, app-like page transitions.
 
   Props:
   - `show`: {boolean} - Controls the visibility of the screen.
 
   Slots:
   - `default`: The content of the screen.
-    - `isExiting`: {boolean} - A boolean that is `true` when the screen is playing its exit animation.
+    - `isExiting`: {boolean} - A boolean that is `true` only when the screen is playing its exit animation.
 -->
 <script lang="ts">
   import { quintOut } from 'svelte/easing';
-  import { fade, fly } from 'svelte/transition';
+  import type { TransitionConfig } from 'svelte/transition';
+
+  type ScreenTransitionParams = {
+    duration?: number;
+    easing?: (t: number) => number;
+    y?: number;
+    start?: number;
+  };
+
+  let {
+    /**
+     * @prop {boolean} [show=false] - Controls the visibility of the screen.
+     */
+    show = false,
+  } = $props();
+
+  let isExiting = $state(false);
 
   /**
-   * @prop {boolean} [show=false] - Controls the visibility of the screen.
+   * A custom transition for a more premium, modern feel.
+   * It combines a vertical fly with a subtle scale, fade, and blur.
    */
-  export let show: boolean = false;
-
-  // This internal state tracks whether the component is currently playing its exit animation.
-  let isExiting = false;
+  const screenTransition = (
+    node: Element,
+    {
+      duration = 600,
+      easing = quintOut,
+      y = 15,
+      start = 0.98,
+    }: ScreenTransitionParams
+  ): TransitionConfig => {
+    return {
+      duration,
+      easing,
+      css: (t: number, u: number) => {
+        const eased = easing(t);
+        return `
+          opacity: ${eased};
+          transform: scale(${start + (1 - start) * eased}) translateY(${y * u}px);
+          filter: blur(${u * 4}px);
+        `;
+      },
+    };
+  };
 </script>
 
 {#if show}
   <div
     class="screen-container"
-    in:fly={{
-      y: 20,
-      duration: 500,
-      easing: quintOut,
-    }}
-    out:fade={{ duration: 250 }}
-    on:outrostart={() => (isExiting = true)}
-    on:introend={() => (isExiting = false)}
+    transition:screenTransition={{}}
+    onoutrostart={() => (isExiting = true)}
+    onintroend={() => (isExiting = false)}
   >
     <slot {isExiting} />
   </div>
@@ -51,10 +79,7 @@
   .screen-container {
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    contain: layout style;
     position: relative;
   }
 </style>

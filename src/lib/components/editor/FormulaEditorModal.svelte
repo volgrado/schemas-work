@@ -1,100 +1,85 @@
 <!-- src/lib/components/editor/FormulaEditorModal.svelte -->
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
-  import { get } from 'svelte/store';
+  import { t } from '$lib/utils/i18n';
   import katex from 'katex';
-  import { editorStore } from '$lib/stores/editorStore';
+  import { tick } from 'svelte';
+
+  // --- UI Components ---
+  import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
 
-  export let initialFormula: string;
-  export let nodePos: number;
-  export let nodeType: 'math_block' | 'math_inline';
-  export let onClose: () => void;
+  // --- Svelte 5 Props ---
+  let {
+    show = $bindable(false),
+    initialFormula,
+    nodeType,
+    // FIX 1: Add nodePos to the component's props to resolve the error.
+    nodePos,
+    onsave,
+  } = $props<{
+    show?: boolean;
+    initialFormula: string;
+    nodeType: 'math_block' | 'math_inline';
+    // FIX 1: Define the type for the new nodePos prop.
+    nodePos: number;
+    onsave: (formula: string) => void;
+  }>();
 
-  let latexSource = initialFormula || '';
-  let textareaEl: HTMLTextAreaElement | null = null;
-  let previewEl: HTMLElement | null = null;
+  // --- State ---
+  let latexSource = $state('');
+  let textareaEl = $state<HTMLTextAreaElement | null>(null);
+  let previewEl = $state<HTMLElement | null>(null);
 
-  // ================================================================
-  // --- RENDERIZADO EN VIVO ---
-  // ================================================================
-  function renderPreview(): void {
-    if (!previewEl) return;
-    try {
-      katex.render(latexSource || '\\text{Enter formula...}', previewEl, {
-        throwOnError: false,
-        displayMode: nodeType === 'math_block',
-        colorIsTextColor: true,
-      });
-    } catch (err) {
-      previewEl.textContent = 'Invalid LaTeX syntax';
-      console.error('KaTeX render error:', err);
+  $effect(() => {
+    if (show) {
+      latexSource = initialFormula || '';
+      setTimeout(() => {
+        textareaEl?.focus();
+        textareaEl?.select();
+      }, 50);
     }
-  }
-
-  // Inicializa vista y enfoque
-  onMount(async () => {
-    await tick();
-    textareaEl?.focus();
-    textareaEl?.select();
-    renderPreview();
   });
 
-  // Reactividad controlada solo sobre la fórmula
-  $: if (latexSource !== undefined) {
-    renderPreview();
+  $effect(() => {
+    if (previewEl) {
+      try {
+        katex.render(latexSource || '\\text{Enter formula...}', previewEl, {
+          throwOnError: false,
+          displayMode: nodeType === 'math_block',
+          colorIsTextColor: true,
+        });
+      } catch (err) {
+        previewEl.textContent = 'Invalid LaTeX syntax';
+        console.error('KaTeX render error:', err);
+      }
+    }
+  });
+
+  const hasUnsavedChanges = $derived(latexSource !== initialFormula);
+
+  function requestClose() {
+    if (hasUnsavedChanges) {
+      if (confirm($t('quickCardEditor.unsavedChangesConfirm'))) {
+        show = false;
+      }
+    } else {
+      show = false;
+    }
   }
 
-  // ================================================================
-  // --- GUARDAR CAMBIOS ---
-  // ================================================================
-  function saveChanges(): void {
-    const editor = get(editorStore).instance;
-    if (!editor) {
-      console.error('Editor instance not found.');
-      return;
-    }
-
-    const { tr } = editor.view.state;
-    const node = editor.state.doc.nodeAt(nodePos);
-
-    if (!node) return;
-
-    // Force recreation by replacing the node with a new copy
-    const newNode = node.type.create(
-      { ...node.attrs, formula: latexSource },
-      node.content,
-      node.marks
-    );
-
-    editor.view.dispatch(
-      tr.replaceWith(nodePos, nodePos + node.nodeSize, newNode)
-    );
-    editor.commands.focus();
-    onClose();
+  function handleSave() {
+    onsave(latexSource);
+    show = false;
   }
 
-  // ================================================================
-  // --- ATAJOS DE TECLADO ---
-  // ================================================================
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      onClose();
-    }
+  function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      saveChanges();
+      handleSave();
     }
   }
 
-  // ================================================================
-  // --- INSERCIÓN DE SÍMBOLOS ---
-  // ================================================================
-  async function insertSymbol(
-    snippet: string,
-    cursorOffset: number
-  ): Promise<void> {
+  async function insertSymbol(snippet: string, cursorOffset: number) {
     if (!textareaEl) return;
     const start = textareaEl.selectionStart;
     const end = textareaEl.selectionEnd;
@@ -109,94 +94,95 @@
   }
 </script>
 
-<!-- ================================================================
-     ESTRUCTURA VISUAL
-================================================================ -->
-<div class="formula-editor-modal-wrapper" on:keydown={handleKeydown}>
-  <div class="editor-pane">
-    <div class="symbol-toolbar">
-      <Button
-        title="Fraction (\\frac)"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('\\frac{}{}', 6)}>x/y</Button
-      >
-      <Button
-        title="Superscript"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('^{}', 1)}>x²</Button
-      >
-      <Button
-        title="Subscript"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('_{}', 1)}>x₂</Button
-      >
-      <Button
-        title="Square Root (\\sqrt)"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('\\sqrt{}', 6)}>√</Button
-      >
-      <Button
-        title="Summation (\\sum)"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('\\sum_{}^{}', 5)}>∑</Button
-      >
-      <Button
-        title="Greek Letter Alpha (\\alpha)"
-        variant="ghost"
-        size="sm"
-        iconOnly
-        on:click={() => insertSymbol('\\alpha ', 7)}>α</Button
-      >
+<Modal title={$t('math_editor.title')} bind:show onClose={requestClose}>
+  <form
+    class="formula-editor-modal-wrapper"
+    onsubmit={handleSave}
+    onkeydown={handleKeydown}
+  >
+    <div class="editor-pane">
+      <div class="symbol-toolbar">
+        <!-- FIX 2: Use the idiomatic on:click directive for Svelte components. -->
+        <Button
+          title="Fraction (\\frac)"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('\\frac{}{}', 6)}>x/y</Button
+        >
+        <Button
+          title="Superscript"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('^{}', 1)}>x²</Button
+        >
+        <Button
+          title="Subscript"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('_{}', 1)}>x₂</Button
+        >
+        <Button
+          title="Square Root (\\sqrt)"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('\\sqrt{}', 6)}>√</Button
+        >
+        <Button
+          title="Summation (\\sum)"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('\\sum_{}^{}', 5)}>∑</Button
+        >
+        <Button
+          title="Greek Letter Alpha (\\alpha)"
+          variant="ghost"
+          size="sm"
+          type="button"
+          on:click={() => insertSymbol('\\alpha ', 7)}>α</Button
+        >
+      </div>
+      <textarea
+        bind:this={textareaEl}
+        bind:value={latexSource}
+        class="latex-editor-textarea"
+        placeholder="E = mc^2"
+        rows="4"
+        aria-label={$t('math_editor.editor_aria_label')}
+      />
     </div>
 
-    <textarea
-      bind:this={textareaEl}
-      bind:value={latexSource}
-      class="latex-editor-textarea"
-      placeholder="E = mc^2"
-      rows="4"
-    />
-  </div>
-
-  <div class="preview-pane">
-    <div class="preview-header">Live Preview</div>
-    <div class="katex-preview-container">
-      <div bind:this={previewEl}></div>
+    <div class="preview-pane">
+      <div class="preview-header">{$t('math_editor.live_preview')}</div>
+      <div class="katex-preview-container">
+        <div bind:this={previewEl}></div>
+      </div>
     </div>
-  </div>
 
-  <div class="modal-actions">
-    <Button variant="secondary" on:click={onClose}>Cancel</Button>
-    <Button variant="primary" on:click={saveChanges}>Save Formula</Button>
-  </div>
-</div>
+    <div class="modal-actions">
+      <Button variant="secondary" type="button" on:click={requestClose}
+        >{$t('common.cancel')}</Button
+      >
+      <Button variant="primary" type="submit">{$t('common.save')}</Button>
+    </div>
+  </form>
+</Modal>
 
-<!-- ================================================================
-     ESTILOS
-================================================================ -->
 <style>
   .formula-editor-modal-wrapper {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
   }
-
   .editor-pane {
     border: 1px solid var(--color-border);
-    border-radius: var(--space-sm);
+    border-radius: var(--border-radius-sm);
     overflow: hidden;
   }
-
   .symbol-toolbar {
     display: flex;
     align-items: center;
@@ -205,7 +191,6 @@
     border-bottom: 1px solid var(--color-border);
     background-color: var(--color-gray-50);
   }
-
   .latex-editor-textarea {
     width: 100%;
     border: none;
@@ -217,21 +202,18 @@
     color: var(--color-text);
     padding: var(--space-sm);
   }
-
   .preview-pane {
     border: 1px solid var(--color-border);
-    border-radius: var(--space-sm);
+    border-radius: var(--border-radius-sm);
     background-color: var(--color-gray-50);
   }
-
   .preview-header {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     padding: var(--space-xs) var(--space-md);
     border-bottom: 1px solid var(--color-border);
   }
-
   .katex-preview-container {
     padding: var(--space-md);
     display: flex;
@@ -240,7 +222,6 @@
     min-height: 60px;
     overflow-x: auto;
   }
-
   .modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -248,13 +229,15 @@
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
   }
-
-  :global(.dark-theme) .preview-pane {
-    background-color: var(--color-gray-900);
-  }
-
+  :global(.dark-theme) .preview-pane,
   :global(.dark-theme) .symbol-toolbar {
     background-color: var(--color-gray-800);
     border-color: var(--color-gray-700);
+  }
+  :global(.dark-theme) .preview-header {
+    border-color: var(--color-gray-700);
+  }
+  :global(.dark-theme) .latex-editor-textarea {
+    color: var(--color-text-dark);
   }
 </style>

@@ -1,5 +1,3 @@
-// src/types/iconName.ts
-
 /**
  * @file Defines the IconName type, a union of all valid icon names
  * available in the Icon.svelte component. Provides type safety for
@@ -8,55 +6,70 @@
  *
  * To add a new icon:
  * 1. Add it to the `icons` object in src/lib/components/ui/Icon.svelte
- * 2. Add its key to this type union
+ * 2. Add its key to this type union, keeping the lists alphabetized.
  */
 export type IconName =
   // General & UI
-  | 'plus'
-  | 'minus'
-  | 'x'
-  | 'command'
-  | 'help-circle'
-  | 'check-circle'
-  | 'x-circle'
   | 'alert-triangle'
-  | 'loader'
+  | 'activity'
+  | 'archive'
+  | 'arrow-left'
+  | 'check'
+  | 'check-circle'
+  | 'chevron-down'
+  | 'command'
   | 'copy'
-  | 'trash-2'
   | 'edit-3'
-  | 'pen-tool'
-  | 'folder'
+  | 'eye'
+  | 'file-plus'
   | 'file-text'
-  | 'lock'
+  | 'folder'
+  | 'help-circle'
+  | 'history'
   | 'key'
-  | 'search'
-  | 'plus-square' // ADDED
-  | 'sun'
-  | 'moon'
+  | 'loader'
+  | 'lock'
+  | 'minus'
   | 'monitor'
+  | 'moon'
+  | 'pen-tool'
+  | 'plus'
+  | 'plus-square'
+  | 'refresh-cw'
+  | 'rotate-ccw'
+  | 'search'
   | 'settings'
+  | 'sun'
+  | 'trash-2'
+  | 'x'
+  | 'x-circle'
+
   // Media & Audio
-  | 'play'
-  | 'pause'
-  | 'mic'
-  | 'volume-2'
   | 'fast-forward'
+  | 'image'
+  | 'mic'
+  | 'pause'
+  | 'play'
   | 'skip-back'
   | 'skip-forward'
-  | 'image'
   | 'video'
+  | 'volume-2'
+
   // Text & Formatting
-  | 'type'
   | 'bold'
   | 'italic'
   | 'list'
   | 'list-ordered'
+  | 'type'
+
   // Conceptual & App-Specific
+  | 'award'
   | 'book-open'
-  | 'zap'
-  | 'sparkles'
-  | 'git-branch'
   | 'download-cloud'
+  | 'git-branch'
+  | 'sparkles'
   | 'upload-cloud'
+  | 'zap'
+
   // Special alias
   | 'plus-slash-minus';

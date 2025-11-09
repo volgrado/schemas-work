@@ -2,15 +2,18 @@
   @component
   Textarea
 
-  A standardized, reusable textarea component that automatically resizes to fit its content.
-  It provides consistent styling for form inputs across the application.
+  @description
+  An exceptional, reusable textarea component that automatically resizes to fit its content,
+  optionally displays a character counter, and allows a parent to get a direct reference
+  to the underlying DOM element for advanced control.
 
-  Props:
-  - `value`: {string} - The value of the textarea. This prop is bindable.
-  - `class`: {string} - Additional CSS classes to apply to the textarea element.
+  @props
+  - `value`: {string} (bindable) - The value of the textarea.
+  - `maxlength`: {number} (optional) - The maximum allowed characters. Enables the counter.
+  - `textareaElement`: {HTMLTextAreaElement | null} (bindable) - A reference to the native textarea element.
 
-  @restProps All other standard HTML attributes (e.g., `placeholder`, `rows`, `disabled`) are passed
-  directly to the underlying `<textarea>` element.
+  @restProps All other standard HTML attributes (e.g., `placeholder`, `rows`, `disabled`, `readonly`)
+  are passed directly to the underlying `<textarea>` element.
 -->
 <script lang="ts">
   import type { HTMLTextareaAttributes } from 'svelte/elements';
@@ -23,50 +26,100 @@
      * @bindable
      */
     value = $bindable(''),
+
     /**
-     * @prop {string} [class='']
-     * Optional CSS classes to add to the textarea element for custom styling.
+     * @prop {number | undefined} [maxlength]
+     * If provided, displays a character counter and enforces the maximum length.
      */
-    class: additionalClasses = '',
+    maxlength,
+
+    /**
+     * @prop {HTMLTextAreaElement | null} [textareaElement]
+     * A bindable reference to the underlying native textarea element. Useful for
+     * programmatic focusing or other direct DOM manipulations from a parent.
+     * @bindable
+     */
+    textareaElement = $bindable<HTMLTextAreaElement | null>(),
+
     ...rest
-  } = $props<{ value?: string; class?: string } & HTMLTextareaAttributes>();
+  } = $props<
+    {
+      value?: string;
+      maxlength?: number;
+      textareaElement?: HTMLTextAreaElement | null;
+    } & HTMLTextareaAttributes
+  >();
+
+  const counterId = `textarea-counter-${Math.random().toString(36).substring(2, 9)}`;
+
+  // --- Reactive state for the character counter ---
+  const chars = $derived(value.length);
+  const isOverLimit = $derived(maxlength != null && chars > maxlength);
+  const isNearLimit = $derived(
+    maxlength != null && !isOverLimit && chars >= maxlength * 0.9
+  );
 </script>
 
-<textarea
-  {...rest}
-  class="custom-textarea {additionalClasses}"
-  bind:value
-  use:autosize
-></textarea>
+<div class="textarea-wrapper">
+  <textarea
+    {...rest}
+    class={`textarea ${rest.class ?? ''}`}
+    bind:value
+    {maxlength}
+    use:autosize
+    aria-describedby={maxlength != null ? counterId : undefined}
+    bind:this={textareaElement}
+  ></textarea>
+
+  {#if maxlength != null}
+    <div
+      id={counterId}
+      class="counter"
+      class:near-limit={isNearLimit}
+      class:over-limit={isOverLimit}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {chars} / {maxlength}
+    </div>
+  {/if}
+</div>
 
 <style>
-  .custom-textarea {
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background-color: var(--color-background);
-    color: var(--color-text);
-    font-size: 0.95rem;
-    font-family: inherit;
-    line-height: 1.5;
-    resize: vertical;
-    min-height: 80px; /* A reasonable default minimum height */
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
+  .textarea-wrapper {
+    position: relative;
   }
 
-  .custom-textarea:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px hsl(var(--color-accent-hsl) / 0.2);
+  .textarea {
+    /* All core styles are inherited from the global `textarea` styles in `app.css`. */
+    min-height: 80px;
   }
 
-  /* Basic dark theme adjustments */
-  :global(.dark-theme) .custom-textarea {
-    border-color: var(--color-border-dark);
-    background-color: var(--color-background-dark-raised);
-    color: var(--color-text-dark);
+  .counter {
+    position: absolute;
+    bottom: var(--space-sm);
+    right: var(--space-md);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-page-background);
+    padding: 2px var(--space-xs);
+    border-radius: var(--border-radius-sm);
+    transition: color 0.2s ease;
+    user-select: none;
+  }
+
+  .counter.near-limit {
+    color: var(--color-orange-500);
+    font-weight: 500;
+  }
+
+  .counter.over-limit {
+    color: var(--color-danger);
+    font-weight: 600;
+  }
+
+  :global(.dark-theme) .counter {
+    background-color: var(--color-page-background);
   }
 </style>

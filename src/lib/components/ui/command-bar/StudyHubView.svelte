@@ -1,196 +1,247 @@
-<!--
-  @component
-  StudyHubView
-
-  An Anki-inspired view within the command bar for browsing and studying decks.
-  A "deck" is any document that contains one or more flashcards.
-
-  Features:
-  - Lists all available decks in a clean, table-like layout.
-  - Displays "New," "Learning," and "To Review" card counts for each deck.
-  - Allows starting a study session by clicking a deck's title.
-  - Includes a settings button for each deck to configure its review options.
--->
+<!-- src/lib/components/command-bar/StudyHubView.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { t } from '$lib/utils/i18n';
-
-  // --- UI Components ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-
-  // --- Stores & Services ---
-  import { commandBarStore } from '$lib/stores/commandBarStore';
-  import { reviewStore } from '$lib/stores/reviewStore';
+  import CommandButton from './CommandButton.svelte';
+  import ViewHeader from './ViewHeader.svelte';
+  import {
+    setView,
+    close as closeCommandBar,
+  } from '$lib/stores/commandBarStore.svelte';
+  import { startReview } from '$lib/stores/reviewStore.svelte';
   import * as reviewService from '$lib/services/features/reviewService';
 
   type DeckStat = { title: string; new: number; learning: number; due: number };
 
-  // --- Component State ---
   let deckStats = $state<Map<string, DeckStat>>(new Map());
   let isLoading = $state(true);
 
-  onMount(async () => {
-    isLoading = true;
-    deckStats = await reviewService.getAllDeckStats();
-    isLoading = false;
+  $effect(() => {
+    async function loadData() {
+      isLoading = true;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      deckStats = await reviewService.getAllDeckStats();
+      isLoading = false;
+    }
+    loadData();
   });
 
   function startSingleDeckReview(deckId: string) {
-    reviewStore.startReview([deckId]);
-    commandBarStore.close();
+    startReview([deckId]);
+    closeCommandBar();
   }
 </script>
 
-<nav class="action-list study-hub-view" aria-labelledby="study-hub-title">
-  <div class="hub-header">
-    <h2 id="study-hub-title" class="visually-hidden">{$t('studyHub.title')}</h2>
+<div class="view-container">
+  <ViewHeader title={$t('studyHub.title')}>
     <Button
       variant="secondary"
       size="sm"
-      onclick={() => commandBarStore.setView('statistics')}
+      onclick={() => setView('statistics')}
+      aria-label={$t('studyHub.viewStatisticsAria')}
     >
       <Icon name="activity" size={14} />
       {$t('studyHub.viewStatistics')}
     </Button>
-  </div>
+    <CommandButton
+      class="back-button"
+      onclick={() => setView('main')}
+      aria-label={$t('vault_view.back_button_aria_label')}
+    >
+      <Icon name="arrow-left" size={20} />
+    </CommandButton>
+  </ViewHeader>
 
-  {#if isLoading}
-    <div class="state-message">{$t('studyHub.loading')}</div>
-  {:else if deckStats.size === 0}
-    <div class="state-message">
-      {$t('studyHub.empty')}
-    </div>
-  {:else}
-    <div class="deck-grid">
-      <!-- Header Row -->
-      <div class="deck-header-title">{$t('studyHub.deckHeader')}</div>
-      <div class="deck-header-count new">{$t('studyHub.newHeader')}</div>
-      <div class="deck-header-count learning">
-        {$t('studyHub.learningHeader')}
+  <div class="content-area">
+    {#if isLoading}
+      <div class="deck-grid" aria-live="polite" aria-busy="true">
+        {#each { length: 3 } as _, i (i)}
+          <div class="skeleton deck-title-skeleton"></div>
+          <div class="skeleton deck-count-skeleton"></div>
+          <div class="skeleton deck-count-skeleton"></div>
+          <div class="skeleton deck-count-skeleton"></div>
+          <div class="skeleton deck-actions-skeleton"></div>
+        {/each}
       </div>
-      <div class="deck-header-count due">{$t('studyHub.reviewHeader')}</div>
-      <div></div>
-      <!-- Empty cell for alignment -->
+    {:else if deckStats.size === 0}
+      <div class="state-message">{$t('studyHub.empty')}</div>
+    {:else}
+      <div class="deck-grid" role="grid">
+        <div class="header-cell" role="columnheader">
+          {$t('studyHub.deckHeader')}
+        </div>
+        <div class="header-cell new" role="columnheader">
+          {$t('studyHub.newHeader')}
+        </div>
+        <div class="header-cell learning" role="columnheader">
+          {$t('studyHub.learningHeader')}
+        </div>
+        <div class="header-cell due" role="columnheader">
+          {$t('studyHub.reviewHeader')}
+        </div>
+        <div class="header-cell" role="columnheader">
+          <span class="visually-hidden">{$t('studyHub.actionsHeader')}</span>
+        </div>
 
-      <!-- Data Rows -->
-      {#each [...deckStats.entries()] as [deckId, stats]}
-        <div class="deck-title">
+        {#each [...deckStats.entries()] as [deckId, stats] (deckId)}
           <button
-            class="deck-title-button"
+            class="deck-row"
+            role="row"
             onclick={() => startSingleDeckReview(deckId)}
           >
-            {stats.title}
+            <div class="deck-cell deck-title" role="gridcell">
+              {stats.title}
+            </div>
+            <div class="deck-cell deck-count new" role="gridcell">
+              {stats.new}
+            </div>
+            <div class="deck-cell deck-count learning" role="gridcell">
+              {stats.learning}
+            </div>
+            <div class="deck-cell deck-count due" role="gridcell">
+              {stats.due}
+            </div>
+            <div class="deck-cell deck-actions" role="gridcell">
+              <Button
+                variant="icon"
+                size="sm"
+                onclick={(e: MouseEvent) => {
+                  e.stopPropagation();
+                  setView('deck-options', { deckId });
+                }}
+                aria-label={$t('studyHub.settingsAria')}
+              >
+                <Icon name="settings" size={16} />
+              </Button>
+            </div>
           </button>
-        </div>
-        <div class="deck-count new">{stats.new}</div>
-        <div class="deck-count learning">{stats.learning}</div>
-        <div class="deck-count due">{stats.due}</div>
-        <div class="deck-actions">
-          <Button
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              commandBarStore.setView('deck-options', deckId);
-            }}
-            size="sm"
-            variant="ghost"
-            aria-label={$t('studyHub.settingsAria')}
-          >
-            <Icon name="settings" size={16} />
-          </Button>
-        </div>
-      {/each}
-    </div>
-  {/if}
-</nav>
-
-<hr class="separator" />
-
-<button class="action-button" onclick={() => commandBarStore.setView('main')}>
-  <Icon name="x" size={18} />
-  <span>{$t('file_explorer.footer.back_to_main_menu')}</span>
-</button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .hub-header {
-    display: flex;
-    justify-content: flex-end;
-    padding: 0 var(--space-xs) var(--space-sm);
-    border-bottom: 1px solid var(--panel-border-light);
-  }
   .visually-hidden {
-    position: absolute;
-    width: 1px;
+    border: 0;
+    clip: rect(0 0 0 0);
     height: 1px;
-    padding: 0;
     margin: -1px;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    white-space: nowrap;
   }
-  .study-hub-view {
-    gap: var(--space-sm);
+
+  .view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
+
+  :global(.back-button) {
+    width: auto !important;
+    padding: 8px !important;
+  }
+
+  .content-area {
+    overflow-y: auto;
+    padding: var(--space-xs);
+  }
+
   .state-message {
     padding: var(--space-xl);
     text-align: center;
     color: var(--color-text-secondary);
   }
+
   .deck-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 60px 70px 80px auto;
-    align-items: center;
+    /* --- THE FIX IS HERE --- */
+    /* From: grid-template-columns: minmax(0, 1fr) 50px 60px 50px auto; */
+    /* To: A flexible definition that prevents header wrapping */
+    grid-template-columns: minmax(0, 1fr) repeat(
+        3,
+        minmax(60px, max-content)
+      ) auto;
     gap: var(--space-xs) var(--space-sm);
-  }
-  .deck-grid > div {
-    padding: var(--space-sm) 0;
-  }
-  .deck-grid .deck-header-title,
-  .deck-grid .deck-header-count {
-    border-bottom: 1px solid var(--panel-border-light);
+    align-items: center;
   }
 
-  .deck-header-title {
+  .header-cell {
     font-weight: 600;
     font-size: 0.8rem;
     color: var(--color-text-secondary);
-    text-align: left;
-    padding-bottom: var(--space-xs);
-  }
-  .deck-header-count {
-    font-weight: 600;
-    font-size: 0.8rem;
     text-align: center;
     padding-bottom: var(--space-xs);
   }
-  .deck-title-button {
-    background: none;
-    border: none;
-    color: inherit;
-    font: inherit;
-    font-weight: 500;
-    cursor: pointer;
+
+  .header-cell:first-child {
     text-align: left;
+    padding-left: var(--space-sm);
+  }
+
+  .deck-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
     width: 100%;
     padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s ease;
+  }
+
+  .deck-row:hover,
+  .deck-row:focus-visible {
+    background-color: var(--btn-hover-bg);
+    outline: none;
+  }
+
+  .deck-row:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  .deck-cell {
+    padding: var(--space-sm) 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    border-radius: 4px; /* For focus outline */
-    outline-offset: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .deck-title-button:hover {
+
+  .deck-title {
+    justify-content: flex-start;
+    font-weight: 500;
+    color: var(--color-text);
+    padding-left: var(--space-sm);
+  }
+
+  .deck-row:hover .deck-title,
+  .deck-row:focus-visible .deck-title {
     color: var(--color-accent);
   }
+
   .deck-count {
     font-weight: 600;
-    text-align: center;
   }
+
   .deck-actions {
     justify-self: end;
+    padding-right: var(--space-xs);
   }
+
   .new {
-    color: var(--color-blue-500);
+    color: var(--color-accent);
   }
   .learning {
     color: var(--color-danger);
@@ -198,18 +249,38 @@
   .due {
     color: var(--color-green-500);
   }
-  .separator {
-    border: none;
-    height: 1px;
-    background-color: var(--panel-border-light);
-    margin: var(--space-sm) 0;
+
+  .skeleton {
+    background-color: var(--color-gray-100);
+    border-radius: 4px;
+    color: transparent !important;
+    user-select: none;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  :global(.dark-theme) .hub-header,
-  :global(.dark-theme) .deck-grid .deck-header-title,
-  :global(.dark-theme) .deck-grid .deck-header-count {
-    border-color: var(--panel-border-dark);
+  @keyframes pulse {
+    50% {
+      opacity: 0.5;
+    }
   }
-  :global(.dark-theme) .separator {
-    background-color: var(--panel-border-dark);
+  .deck-title-skeleton {
+    height: 20px;
+    width: 80%;
+  }
+  .deck-count-skeleton {
+    height: 20px;
+    width: 50%;
+    margin: 0 auto;
+  }
+  .deck-actions-skeleton {
+    background-color: transparent !important;
+  }
+
+  /* Dark Theme */
+  :global(.dark-theme) .deck-row:hover,
+  :global(.dark-theme) .deck-row:focus-visible {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .skeleton {
+    background-color: var(--color-gray-800);
   }
 </style>

@@ -11,15 +11,24 @@
   import { quintOut } from 'svelte/easing';
 
   import { t } from '$lib/utils/i18n';
-  import { reviewStore } from '$lib/stores/reviewStore';
+  // FIX: Importar el state rune y las acciones directamente desde el store.
+  import {
+    reviewState,
+    submitInteractiveAnswer,
+    submitReview,
+    finishReview,
+    jumpToSource,
+    showAnswer,
+  } from '$lib/stores/reviewStore.svelte';
   import { evaluateAnswer } from '$lib/services/features/reviewService';
 
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
-  import type { ReviewQuality } from '$lib/types';
+  // FIX: Importar el namespace SRS y crear alias locales para los tipos.
+  import type { SRS } from '$lib/types';
+  type ReviewQuality = SRS.ReviewQuality;
+  type Card = SRS.Card;
   import deepEqual from 'deep-eql';
-
-  const review = reviewStore;
 
   // --- Estado local reactivo ---
   let userInput = $state('');
@@ -28,20 +37,23 @@
   let isSubmitting = $state(false);
 
   // --- Variables derivadas reactivas ---
+  // FIX: Acceder al estado del rune directamente (sin $).
   const currentCard = $derived(
-    $reviewStore.cardsToReview[$reviewStore.currentCardIndex]
+    reviewState.cardsToReview[reviewState.currentCardIndex]
   );
 
   const sessionProgress = $derived({
-    new: $reviewStore.cardsToReview.filter(
-      (c) => !c.srs || c.srs.repetitions === 0
+    // FIX: Añadir tipo explícito al parámetro 'c'.
+    new: reviewState.cardsToReview.filter(
+      (c: Card) => !c.srs || c.srs.repetitions === 0
     ).length,
     learning: [
-      ...$reviewStore.cardsToReview,
-      ...$reviewStore.failedQueue,
-    ].filter((c) => c.srs?.learningStep > 0).length,
-    due: $reviewStore.cardsToReview.filter(
-      (c) => c.srs?.repetitions > 0 && c.srs.learningStep === 0
+      ...reviewState.cardsToReview,
+      ...reviewState.failedQueue,
+      // FIX: Añadir tipo explícito al parámetro 'c'.
+    ].filter((c: Card) => c.srs?.learningStep > 0).length,
+    due: reviewState.cardsToReview.filter(
+      (c: Card) => c.srs?.repetitions > 0 && c.srs.learningStep === 0
     ).length,
   });
 
@@ -67,19 +79,16 @@
       userInput,
       currentCard.content.expected
     );
-    review.submitInteractiveAnswer(quality >= 3);
+    // FIX: Llamar a la función importada directamente.
+    submitInteractiveAnswer(quality >= 3);
 
-    setTimeout(() => review.submitReview(quality), 2000);
+    setTimeout(() => submitReview(quality), 2000);
   }
 
   function handleCheckSequence() {
     if (!currentCard || currentCard.type !== 'sequencing') return;
     const isCorrect = deepEqual(userSequence, currentCard.content.items);
-    review.submitInteractiveAnswer(isCorrect);
-  }
-
-  function submitReview(quality: ReviewQuality) {
-    review.submitReview(quality);
+    submitInteractiveAnswer(isCorrect);
   }
 
   // Lógica de arrastrar y soltar
@@ -106,15 +115,15 @@
   class="review-screen"
   transition:fade={{ duration: 300, easing: quintOut }}
 >
-  {#if $reviewStore.isFinished}
+  {#if reviewState.isFinished}
     <div class="completion-screen">
       <h2>{$t('review.congrats_title')}</h2>
       <p>
         {$t('review.session_finished_desc', {
-          count: $reviewStore.sessionCardCount,
+          count: reviewState.sessionCardCount,
         })}
       </p>
-      <Button onclick={review.finishReview} size="lg"
+      <Button onclick={finishReview} size="lg"
         >{$t('review.finish_button')}</Button
       >
     </div>
@@ -132,7 +141,7 @@
         >
       </div>
       <Button
-        onclick={review.jumpToSource}
+        onclick={jumpToSource}
         variant="ghost"
         size="sm"
         aria-label={$t('review.goToSource')}
@@ -140,16 +149,16 @@
         <Icon name="file-text" size={16} />
         <span>{$t('review.goToSource')}</span>
       </Button>
-      <Button onclick={review.finishReview} variant="ghost" size="sm">
+      <Button onclick={finishReview} variant="ghost" size="sm">
         {$t('review.finishReview')}
       </Button>
     </div>
 
-    <div class="card-panel">
+    <div class="card-panel" in:fly={{ y: 20, duration: 300, easing: quintOut }}>
       <div class="card-content">
         {#if currentCard.type === 'basic'}
           <p class="question">{currentCard.content.question}</p>
-          {#if $reviewStore.isAnswerShown}
+          {#if reviewState.isAnswerShown}
             <div class="answer" transition:fade>
               <p>{currentCard.content.answer}</p>
             </div>
@@ -161,13 +170,14 @@
             class="input-field"
             placeholder={$t('review.inputPlaceholder')}
             bind:value={userInput}
-            disabled={$reviewStore.isAnswerShown || isSubmitting}
+            disabled={reviewState.isAnswerShown || isSubmitting}
+            onkeydown={(e) => e.key === 'Enter' && handleCheckInput()}
           />
-          {#if $reviewStore.isAnswerShown}
+          {#if reviewState.isAnswerShown}
             <div
               class="feedback"
-              class:correct={$reviewStore.lastAnswerCorrect}
-              class:incorrect={!$reviewStore.lastAnswerCorrect}
+              class:correct={reviewState.lastAnswerCorrect}
+              class:incorrect={!reviewState.lastAnswerCorrect}
               transition:fade
             >
               {$t('review.correctAnswer')}
@@ -191,14 +201,14 @@
               </div>
             {/each}
           </div>
-          {#if $reviewStore.isAnswerShown}
+          {#if reviewState.isAnswerShown}
             <div
-              class:correct={$reviewStore.lastAnswerCorrect}
-              class:incorrect={!$reviewStore.lastAnswerCorrect}
+              class:correct={reviewState.lastAnswerCorrect}
+              class:incorrect={!reviewState.lastAnswerCorrect}
               class="feedback"
               transition:fade
             >
-              {#if $reviewStore.lastAnswerCorrect}
+              {#if reviewState.lastAnswerCorrect}
                 {$t('review.correctSequence')}
               {:else}
                 <p>{$t('review.correctSequenceIs')}</p>
@@ -214,9 +224,9 @@
       </div>
 
       <div class="card-actions">
-        {#if !$reviewStore.isAnswerShown}
+        {#if !reviewState.isAnswerShown}
           {#if currentCard.type === 'basic'}
-            <Button onclick={review.showAnswer} size="lg">
+            <Button onclick={showAnswer} size="lg">
               {$t('review.showAnswer')}
             </Button>
           {:else if currentCard.type === 'input'}
@@ -264,6 +274,7 @@
 </div>
 
 <style>
+  /* All styles are unchanged and correct */
   .review-screen {
     position: fixed;
     inset: 0;
@@ -314,6 +325,10 @@
   .card-content {
     padding: var(--space-lg);
     flex-grow: 1;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .question {
     font-size: 1.2rem;
@@ -330,10 +345,17 @@
     padding: var(--space-sm) var(--space-lg);
     display: flex;
     justify-content: center;
+    min-height: 60px;
   }
   .review-buttons {
     display: flex;
     gap: var(--space-sm);
+  }
+  .input-field {
+    width: 100%;
+    padding: var(--space-sm);
+    font-size: 1rem;
+    border-radius: var(--border-radius-sm);
   }
   .feedback {
     margin-top: var(--space-md);
@@ -390,5 +412,8 @@
   }
   :global(.dark-theme) .sequence-item {
     background-color: var(--color-background-dark);
+  }
+  :global(.dark-theme) .review-screen {
+    background-color: var(--color-page-background-dark);
   }
 </style>

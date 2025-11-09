@@ -1,142 +1,96 @@
-<!--
-  @component
-  HelpTooltip
-
-  This component provides a small help icon button that reveals a tooltip with
-  more information on hover or focus. The tooltip's content is flexible and is
-  passed in via the default slot.
-
-  It uses the `@floating-ui/dom` library to intelligently position the tooltip,
-  ensuring it remains visible within the viewport by flipping it to the opposite
-  side if necessary. It also includes an arrow that points to the trigger element.
-
-  Features:
-  - Triggered by mouse enter/leave and focus in/out events.
-  - Dynamic positioning using `@floating-ui/dom`.
-  - Includes middleware for `offset`, `flip`, `shift`, and `arrow`.
-  - Graceful fade transition for visibility.
-  - The tooltip content is fully customizable via a slot.
-
-  Slots:
-  - `default`: The content to be displayed inside the tooltip.
--->
+<!-- src/lib/components/ui/HelpTooltip.svelte -->
 <script lang="ts">
-  import { tick } from 'svelte';
   import { fade } from 'svelte/transition';
+  import type { Placement } from '@floating-ui/dom';
   import {
     computePosition,
     flip,
     shift,
     offset,
     arrow,
+    autoUpdate,
   } from '@floating-ui/dom';
   import Icon from './Icon.svelte';
   import { t } from '$lib/utils/i18n';
 
-  // DOM element references for positioning
-  let referenceEl: HTMLElement; // The trigger button
-  let floatingEl: HTMLElement; // The tooltip container
-  let arrowEl: HTMLElement; // The small arrow element
+  let { placement = 'top' as Placement, children } = $props<{
+    placement?: Placement;
+    children: any;
+  }>();
 
-  /** @state {boolean} isVisible - Controls the visibility of the tooltip. */
-  let isVisible = false;
+  let isVisible = $state(false);
+  let referenceEl = $state<HTMLElement | null>(null);
+  let floatingEl = $state<HTMLElement | null>(null);
+  let arrowEl = $state<HTMLElement | null>(null);
 
-  /**
-   * Calculates and applies the optimal position for the tooltip using Floating UI.
-   */
-  async function updatePosition() {
-    // Ensure all required elements are available before calculating position.
-    if (!referenceEl || !floatingEl || !arrowEl) return;
+  let floatingStyle = $state('');
+  let arrowStyle = $state('');
+  let finalPlacement = $state(placement);
 
-    const { x, y, middlewareData, placement } = await computePosition(
-      referenceEl,
-      floatingEl,
-      {
-        placement: 'top', // Preferred placement
-        middleware: [
-          offset(10), // Distance between tooltip and trigger
-          flip(), // Flip to the opposite side if it overflows
-          shift({ padding: 8 }), // Shift along the axis to prevent overflow
-          arrow({ element: arrowEl }), // Add the arrow pointing to the trigger
-        ],
-      }
-    );
-
-    // Apply the calculated coordinates to the floating element.
-    Object.assign(floatingEl.style, {
-      left: `${x}px`,
-      top: `${y}px`,
-    });
-
-    // Position the arrow correctly.
-    if (middlewareData.arrow) {
-      const { x: arrowX, y: arrowY } = middlewareData.arrow;
-
-      const staticSide = {
-        top: 'bottom',
-        right: 'left',
-        bottom: 'top',
-        left: 'right',
-      }[placement.split('-')[0]];
-
-      if (staticSide) {
-        Object.assign(arrowEl.style, {
-          left: arrowX != null ? `${arrowX}px` : '',
-          top: arrowY != null ? `${arrowY}px` : '',
-          right: '',
-          bottom: '',
-          [staticSide]: '-4px', // Position the arrow just outside the tooltip body
+  $effect(() => {
+    if (isVisible && referenceEl && floatingEl && arrowEl) {
+      const update = async () => {
+        // FIX: Use non-null assertions `!` as we have already checked for null.
+        const {
+          x,
+          y,
+          middlewareData,
+          placement: nextPlacement,
+        } = await computePosition(referenceEl!, floatingEl!, {
+          placement,
+          middleware: [
+            offset(10),
+            flip(),
+            shift({ padding: 8 }),
+            arrow({ element: arrowEl! }),
+          ],
         });
-      }
+
+        floatingStyle = `left: ${x}px; top: ${y}px;`;
+        finalPlacement = nextPlacement;
+
+        if (middlewareData.arrow) {
+          const { x: arrowX, y: arrowY } = middlewareData.arrow;
+          arrowStyle = `left: ${arrowX ?? ''}px; top: ${arrowY ?? ''}px;`;
+        }
+      };
+
+      // FIX: Use non-null assertion `!` for the autoUpdate function as well.
+      const cleanup = autoUpdate(referenceEl!, floatingEl!, update);
+
+      return cleanup;
     }
-  }
-
-  /**
-   * Shows the tooltip and updates its position.
-   */
-  async function show() {
-    isVisible = true;
-    // Wait for the next DOM update cycle for the element to be in the DOM
-    await tick();
-    updatePosition();
-  }
-
-  /**
-   * Hides the tooltip.
-   */
-  function hide() {
-    isVisible = false;
-  }
+  });
 </script>
 
-<!-- The trigger element that the user interacts with. -->
 <button
   class="tooltip-trigger"
   aria-label={$t('tooltip.show_help')}
   bind:this={referenceEl}
-  on:mouseenter={show}
-  on:mouseleave={hide}
-  on:focusin={show}
-  on:focusout={hide}
+  onmouseenter={() => (isVisible = true)}
+  onmouseleave={() => (isVisible = false)}
+  onfocus={() => (isVisible = true)}
+  onblur={() => (isVisible = false)}
 >
   <Icon name="help-circle" size={16} />
 </button>
 
-<!-- The tooltip itself, rendered conditionally. -->
 {#if isVisible}
   <div
     class="tooltip-content"
     role="tooltip"
     bind:this={floatingEl}
+    style={floatingStyle}
+    data-placement={finalPlacement}
     transition:fade={{ duration: 150 }}
   >
-    <!-- The small arrow pointing to the trigger element. -->
-    <div class="tooltip-arrow" bind:this={arrowEl}></div>
-    <slot />
+    <div class="tooltip-arrow" bind:this={arrowEl} style={arrowStyle}></div>
+    {@render children?.()}
   </div>
 {/if}
 
 <style>
+  /* Styles remain the same */
   .tooltip-trigger {
     display: flex;
     align-items: center;
@@ -159,33 +113,51 @@
   }
   .tooltip-content {
     position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 120;
-    background-color: var(--color-background-elevated, #ffffff);
+    z-index: var(--z-context-menu);
+    background-color: var(--color-background-raised);
     color: var(--color-text);
-    border: 1px solid var(--color-border, #e0e0e0);
+    border: 1px solid var(--color-border);
     box-shadow: var(--shadow-lg);
-    border-radius: var(--space-sm);
+    border-radius: var(--border-radius-md);
     padding: var(--space-sm) var(--space-md);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     width: max-content;
-    max-width: 250px;
+    max-width: 280px;
     text-align: left;
     white-space: normal;
   }
   .tooltip-arrow {
     position: absolute;
-    background: var(--color-background-elevated, #ffffff);
-    border-right: 1px solid var(--color-border, #e0e0e0);
-    border-bottom: 1px solid var(--color-border, #e0e0e0);
+    background: var(--color-background-raised);
+    border: 1px solid var(--color-border);
     width: 8px;
     height: 8px;
+  }
+  [data-placement^='top'] > .tooltip-arrow {
+    bottom: -5px;
+    border-top-color: transparent;
+    border-left-color: transparent;
     transform: rotate(45deg);
   }
-
-  /* Dark mode styles */
+  [data-placement^='bottom'] > .tooltip-arrow {
+    top: -5px;
+    border-bottom-color: transparent;
+    border-right-color: transparent;
+    transform: rotate(45deg);
+  }
+  [data-placement^='left'] > .tooltip-arrow {
+    right: -5px;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    transform: rotate(45deg);
+  }
+  [data-placement^='right'] > .tooltip-arrow {
+    left: -5px;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    transform: rotate(45deg);
+  }
   :global(.dark-theme) .tooltip-trigger:hover,
   :global(.dark-theme) .tooltip-trigger:focus-visible {
     background-color: var(--color-gray-800);
@@ -196,7 +168,6 @@
   }
   :global(.dark-theme) .tooltip-arrow {
     background: var(--color-gray-900);
-    border-right: 1px solid var(--color-gray-700);
-    border-bottom: 1px solid var(--color-gray-700);
+    border-color: var(--color-gray-700);
   }
 </style>

@@ -1,12 +1,19 @@
+/**
+ * @file Provides strongly-typed utility functions to convert between ProseMirror's JSON format and Y.js XML Fragments.
+ * @module prosemirror-yjs-utility
+ */
+
 import * as Y from 'yjs';
+import { yDocToProsemirrorJSON, prosemirrorJSONToYDoc } from 'y-prosemirror';
 
 // --- SHARED TYPES ---
-// Define a comprehensive type for a ProseMirror node in JSON format. Both functions will use this.
+// Define a comprehensive type for a ProseMirror node in JSON format.
 export interface ProseMirrorJSONNode {
   type: string;
   attrs?: Record<string, any>;
   content?: ProseMirrorJSONNode[];
   text?: string;
+  marks?: any[]; // It's good practice to include marks for rich text
 }
 
 // Define the shape of the top-level ProseMirror document.
@@ -15,71 +22,36 @@ export interface ProseMirrorJSONDocument {
   content: ProseMirrorJSONNode[];
 }
 
-// --- YOUR EXISTING FUNCTION (Now strongly typed) ---
 /**
- * Converts an array of ProseMirror JSON nodes into a Y.XmlFragment.
- * This is used for writing ProseMirror data INTO Y.js.
+ * Converts a ProseMirror JSON document object into a Y.js document.
+ * This is used for writing ProseMirror data INTO Y.js, for example, when creating a new document with initial content.
+ * NOTE: This function replaces the original `prosemirrorJsonToYXmlFragment` with a more robust implementation.
+ * It populates the default 'prosemirror' fragment inside the Y.Doc.
+ *
+ * @param prosemirrorJson The ProseMirror document in JSON format.
+ * @returns A new Y.Doc containing the converted content.
  */
-export function prosemirrorJsonToYXmlFragment(
-  nodes: ProseMirrorJSONNode[]
-): Y.XmlFragment {
-  const fragment = new Y.XmlFragment();
-
-  nodes.forEach((node) => {
-    if (node.text) {
-      // For text nodes, create a Y.XmlText
-      const textNode = new Y.XmlText(node.text);
-      // Here you could add marks as formatting attributes if needed
-      fragment.push([textNode]);
-    } else {
-      // For element nodes, create a Y.XmlElement
-      const element = new Y.XmlElement(node.type);
-
-      if (node.attrs) {
-        Object.entries(node.attrs).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            element.setAttribute(key, value);
-          }
-        });
-      }
-
-      if (node.content) {
-        // Recursively convert children and insert them
-        const nestedFragment = prosemirrorJsonToYXmlFragment(node.content);
-        const children = nestedFragment
-          .toArray()
-          .filter(
-            (child): child is Y.XmlElement | Y.XmlText =>
-              child instanceof Y.XmlElement || child instanceof Y.XmlText
-          );
-        element.insert(0, children);
-      }
-
-      fragment.push([element]);
-    }
-  });
-
-  return fragment;
+export function prosemirrorJsonToYDoc(
+  prosemirrorJson: ProseMirrorJSONDocument
+): Y.Doc {
+  const ydoc = new Y.Doc();
+  // The second argument is the name of the shared type, which is 'prosemirror' by default in Tiptap.
+  prosemirrorJSONToYDoc(prosemirrorJson, ydoc.getXmlFragment('prosemirror'));
+  return ydoc;
 }
 
-// --- THE NEW FUNCTION THAT searchService NEEDS ---
 /**
- * Converts a Y.js document's 'prosemirror' XmlFragment into a standard
+ * (FIXED) Converts a Y.js document's 'prosemirror' XmlFragment into a standard
  * ProseMirror JSON document structure.
- * This is used for reading ProseMirror data FROM Y.js.
+ * This function uses the official, tested utility from the y-prosemirror library,
+ * which correctly handles the conversion and prevents data loss.
+ *
  * @param ydoc The Y.js document.
  * @returns A ProseMirror JSON document.
  */
-export function yXmlFragmentToProsemirrorJson(
-  ydoc: Y.Doc
-): ProseMirrorJSONDocument {
-  const fragment = ydoc.getXmlFragment('prosemirror');
-
-  // The .toJSON() method on a Y.XmlFragment returns an array of its children's JSON representations.
-  const content = (fragment.toJSON() || []) as ProseMirrorJSONNode[];
-
-  return {
-    type: 'doc',
-    content: content,
-  };
+export function yDocToProsemirrorJson(ydoc: Y.Doc): ProseMirrorJSONDocument {
+  // Use the official utility from y-prosemirror for a reliable conversion.
+  // The second argument, 'prosemirror', is the name of the top-level shared type
+  // that Tiptap's collaboration extension uses by default.
+  return yDocToProsemirrorJSON(ydoc, 'prosemirror');
 }

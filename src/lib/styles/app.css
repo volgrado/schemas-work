@@ -2,14 +2,13 @@
  * src/lib/styles/app.css
  *
  * ========================================================================
- * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V3.1 - Cool Light Theme)
+ * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V5.0 - Serene Sky & Twilight)
  * ========================================================================
  *
  * METHODOLOGY:
  * This stylesheet acts as the single source of truth for the application's
  * design tokens. It follows ITCSS principles, organizing rules from generic
  * to specific to improve predictability, scalability, and maintainability.
- * All colors, spacing, typography, and z-index values should be defined here.
  *
  */
 
@@ -32,34 +31,31 @@
   font-style: italic;
   font-weight: 100 900; /* The italic font is also variable */
   font-display: swap;
-  /* Make sure this file exists in your /static/fonts/ folder! */
   src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.woff2') format('woff2');
 }
 
 /**
- * 1.2. Design Tokens (CSS Variables) - REFINED LIGHT THEME
+ * 1.2. Design Tokens (CSS Variables) - SERENE SKY LIGHT THEME
  * -------------------------------------------------------------------------- */
 :root {
-  /* --- NEW COOL LIGHT THEME PALETTE --- */
-  --color-background: #ffffff;
-  --color-page-background: #f7f9fc; /* A very light, cool gray */
-  --color-text: #2d3748; /* Dark grayish blue */
-  --color-text-secondary: #4a5568;
-  --color-text-tertiary: #718096;
-  --color-accent: #4299e1; /* A nice, friendly blue */
-  --color-accent-hover: #3182ce;
-  --color-accent-hsl: 204 70% 53%;
-  --color-accent-rgb: 66, 153, 225;
-  --color-border: #e2e8f0;
+  /* --- CHANGE: A cool, crisp, and focused "Serene Sky" palette --- */
+  --color-background: hsl(210 20% 98%); /* Soft, cool off-white */
+  --color-page-background: hsl(210 20% 96%); /* Slightly deeper for depth */
+  --color-text: hsl(215 25% 27%); /* Dark Slate Blue for high contrast */
+  --color-text-secondary: hsl(215 15% 55%);
+  --color-text-tertiary: hsl(215 15% 75%);
+  --color-accent: hsl(220 85% 60%); /* A clear, confident Blue */
+  --color-accent-hover: hsl(220 85% 55%); /* Slightly darker for hover */
+  --color-accent-hsl: 220 85% 60%;
+  --color-accent-rgb: 60, 110, 239;
+  --color-border: hsl(210 20% 88%);
 
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
   --color-background-elevated: #ffffff;
-  /* FIX: Use a solid background for panels in light mode for better contrast */
   --color-background-translucent: var(--color-background-raised);
-  --color-border-input: #cbd5e0;
-  /* FIX: Darkened hover background for better contrast */
-  --btn-hover-bg: #eaf0f6;
+  --color-border-input: hsl(210 20% 82%);
+  --btn-hover-bg: hsl(210 20% 94%); /* A subtle, cool hover background */
 
   /* --- Feedback Colors --- */
   --color-danger: #e53e3e;
@@ -69,17 +65,16 @@
   --color-success-bg: #c6f6d5;
   --color-success-text: #2f855a;
   --color-success-border: #9ae6b4;
-  --color-blue-500: #4299e1;
   --color-green-500: #48bb78;
   --color-orange-500: #ed8936;
 
-  /* --- Grayscale Palette (Cool Gray) --- */
-  --color-gray-50: #f7fafc;
-  --color-gray-100: #edf2f7;
-  --color-gray-200: #e2e8f0;
-  --color-gray-400: #a0aec0;
-  --color-gray-500: #718096;
-  --color-gray-600: #4a5568;
+  /* --- Grayscale Palette (Cool Slate Gray) --- */
+  --color-gray-50: hsl(210 20% 96%);
+  --color-gray-100: hsl(210 20% 94%);
+  --color-gray-200: hsl(210 20% 88%);
+  --color-gray-400: hsl(215 15% 75%);
+  --color-gray-500: hsl(215 15% 55%);
+  --color-gray-600: hsl(215 25% 27%);
 
   /* --- Typography --- */
   --font-main:
@@ -90,6 +85,7 @@
     'Courier New', monospace;
 
   /* --- Spacing --- */
+  --space-xxs: 2px;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -97,34 +93,42 @@
   --space-xl: 32px;
   --space-xxl: 64px;
 
-  /* --- Shadows (more subtle for the light theme) --- */
+  /* --- CHANGE: Softer, tinted shadows using the blue accent color --- */
   --shadow-md:
-    0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+    0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.08),
+    0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.08);
   --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+    0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.08),
+    0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.08);
   --shadow-xl:
-    0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.07);
+    0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.08),
+    0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.08);
+
+  /* --- Border Radius --- */
+  --border-radius-sm: 5px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 20px;
+
+  /* --- Transitions --- */
+  --transition-fast: all 0.25s cubic-bezier(0.45, 0, 0.25, 1);
 
   /* --- Misc & Overlays --- */
-  --overlay-bg: rgba(30, 41, 59, 0.5); /* Use a cool-toned overlay */
-  --color-background-faint: hsla(220, 13%, 50%, 0.1);
-
-  /* --- Animation Colors (not used by canvas anymore) --- */
+  --overlay-bg: hsla(215, 30%, 15%, 0.5);
   --color-background-main: var(--color-page-background);
   --color-primary-accent-light: hsl(var(--color-accent-hsl) / 0.2);
 
   /* --- Toasts & Notifications --- */
-  --toast-background: var(--color-background);
+  --toast-background: var(--color-background-raised);
   --toast-color: var(--color-text);
-  --toast-border: var(--color-gray-200);
+  --toast-border: var(--color-border);
   --toast-button-hover-background: var(--color-gray-100);
 
   /* --- Command Bar & Panels --- */
   --panel-bg-light: var(--color-background-translucent);
   --panel-border-light: var(--color-border);
-  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb: hsla(215, 25%, 27%, 0.2);
 
-  /* --- Z-Index Stack --- */
+  /* --- Z-Index Stack (Unchanged) --- */
   --z-base: 1;
   --z-fab: 40;
   --z-header: 50;
@@ -139,54 +143,53 @@
 }
 
 /**
- * 1.3. Dark Theme Overrides
+ * 1.3. Dark Theme Overrides - REFINED TWILIGHT THEME
  * -------------------------------------------------------------------------- */
 html.dark-theme,
 .dark-theme {
-  /* --- Primary Colors --- */
-  --color-background: #1c1c1e;
-  --color-background-dark: #1c1c1e; /* Alias for component compatibility */
-  --color-page-background: #161618;
-  --color-text: rgba(255, 255, 255, 0.9);
-  --color-text-dark: rgba(255, 255, 255, 0.9);
-  --color-text-secondary: #a1a1a6;
-  --color-text-dark-secondary: #a1a1a6;
-  --color-text-tertiary: #8e8e93;
-  --color-text-dark-tertiary: #8e8e93;
-  --color-accent: #ff6347; /* Tomato */
-  --color-accent-hover: #ff4500;
-  --color-accent-hsl: 9 100% 64%;
-  --color-border: #3a3a3c;
-  --color-border-dark: #3a3a3c;
+  /* --- CHANGE: A refined "Twilight" (Dracula-style) palette --- */
+  --color-background: #1a1823; /* Deep, dark purple-slate */
+  --color-background-dark: #1a1823;
+  --color-page-background: #12101a; /* Even darker for depth */
+  --color-text: #e6e0f5; /* Soft lavender-white for comfortable reading */
+  --color-text-dark: #e6e0f5;
+  --color-text-secondary: #a097c2;
+  --color-text-dark-secondary: #a097c2;
+  --color-text-tertiary: #756c91;
+  --color-text-dark-tertiary: #756c91;
+  --color-accent: #8b5cf6; /* A vibrant, modern Violet */
+  --color-accent-hover: #7c3aed;
+  --color-accent-hsl: 258 90% 66%;
+  --color-border: #3c3654;
+  --color-border-dark: #3c3654;
 
   /* --- Animation Colors --- */
   --color-background-main-dark: var(--color-page-background);
   --color-primary-accent-dark: hsl(var(--color-accent-hsl) / 0.3);
 
   /* --- Component Colors --- */
-  --color-background-raised: #2c2c2e;
-  --color-background-dark-raised: #2c2c2e;
-  --color-background-elevated: #3a3a3c;
-  /* FIX: Translucent background is now exclusive to dark mode */
-  --color-background-translucent: hsla(0, 0%, 12%, 0.75);
-  --color-border-input: var(--color-gray-700);
-  --color-border-input-dark: var(--color-gray-700);
-  --btn-hover-bg: #3a3a3c;
-  --btn-hover-bg-dark: #3a3a3c;
+  --color-background-raised: #2a263c;
+  --color-background-dark-raised: #2a263c;
+  --color-background-elevated: #3c3654;
+  --color-background-translucent: hsla(255, 20%, 15%, 0.8);
+  --color-border-input: #4a4369;
+  --color-border-input-dark: #4a4369;
+  --btn-hover-bg: #3c3654;
+  --btn-hover-bg-dark: #3c3654;
 
-  /* --- Grayscale Palette --- */
-  --color-gray-50: #1c1c1e;
-  --color-gray-100: #2c2c2e;
-  --color-gray-200: #3a3a3c;
-  --color-gray-400: #8e8e93;
-  --color-gray-500: #a1a1a6;
-  --color-gray-600: #d1d1d6;
-  --color-gray-700: #48484a;
-  --color-gray-800: #3a3a3c;
-  --color-gray-900: #1c1c1e;
-  --color-gray-950: #121212;
+  /* --- Grayscale Palette (Adjusted for new dark theme) --- */
+  --color-gray-50: #12101a;
+  --color-gray-100: #1a1823;
+  --color-gray-200: #2a263c;
+  --color-gray-400: #a097c2;
+  --color-gray-500: #d1d5db; /* A neutral gray for contrast */
+  --color-gray-600: #e6e0f5;
+  --color-gray-700: #3c3654;
+  --color-gray-800: #2a263c;
+  --color-gray-900: #1a1823;
+  --color-gray-950: #12101a;
 
-  /* --- Shadows --- */
+  /* --- Shadows (Darker, more subtle for dark mode) --- */
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
   --shadow-dark-md: var(--shadow-md);
   --shadow-lg:
@@ -195,12 +198,12 @@ html.dark-theme,
     0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 
   /* --- Command Bar & Panels --- */
-  --panel-bg-dark: rgba(28, 28, 30, 0.85);
-  --panel-border-dark: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-dark: rgba(255, 255, 255, 0.2);
+  --panel-bg-dark: hsla(260, 25%, 10%, 0.85);
+  --panel-border-dark: hsla(250, 30%, 85%, 0.1);
+  --scrollbar-thumb-dark: hsla(250, 30%, 85%, 0.2);
 
   /* --- Misc & Overlays --- */
-  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
 }
 
 /* 3. GENERIC
@@ -208,7 +211,6 @@ html.dark-theme,
 
 /**
  * 3.1. Universal Box-Sizing
- * More intuitive and predictable box model for all elements.
  * -------------------------------------------------------------------------- */
 *,
 *::before,
@@ -221,7 +223,6 @@ html.dark-theme,
 
 /**
  * 4.1. Body Defaults
- * Base typography, background, and rendering quality settings.
  * -------------------------------------------------------------------------- */
 body {
   margin: 0;
@@ -233,11 +234,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-synthesis: none;
+  /** CHANGE: Smooth transitions for theme switching */
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /**
  * 4.2. Selection Styles
- * Customizes the appearance of selected text to match the app's theme.
  * -------------------------------------------------------------------------- */
 ::selection {
   background-color: var(--color-accent);
@@ -258,14 +262,14 @@ kbd {
   background-color: var(--color-gray-100);
   color: var(--color-text);
   padding: 3px 6px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   border: 1px solid var(--color-gray-200);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .dark-theme kbd {
   background-color: var(--color-gray-700);
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-800);
   color: var(--color-text-dark);
 }
 
@@ -274,7 +278,6 @@ kbd {
 
 /**
  * 6.1. Form Elements
- * Global styles for inputs, textareas, and select elements for consistency.
  * -------------------------------------------------------------------------- */
 input[type='text'],
 input[type='url'],
@@ -283,19 +286,17 @@ textarea,
 select {
   box-sizing: border-box;
   width: 100%;
-  padding: var(--space-sm);
+  padding: var(--space-sm) 12px;
   font-family: var(--font-main);
-  font-size: 0.95rem;
+  font-size: 1rem;
   background-color: var(--color-background);
   border: 1px solid var(--color-border-input);
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
   color: var(--color-text);
-  transition:
-    border-color 0.2s,
-    background-color 0.2s,
-    box-shadow 0.2s;
+  transition: var(--transition-fast);
 }
 
+/* CHANGE: Modern focus state. Uses a more prominent, branded shadow. */
 input[type='text']:focus-visible,
 input[type='url']:focus-visible,
 input[type='password']:focus-visible,
@@ -303,11 +304,12 @@ textarea:focus-visible,
 select:focus-visible {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.2);
+  box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.3);
 }
 
 textarea {
   resize: vertical;
+  min-height: 80px;
 }
 
 input[type='range'] {
@@ -322,11 +324,19 @@ input[type='range'] {
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: var(--color-accent);
   cursor: pointer;
   border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.prose:focus {
+  outline: none;
 }
 
 .dark-theme input[type='text'],
@@ -334,17 +344,16 @@ input[type='range']::-webkit-slider-thumb {
 .dark-theme input[type='password'],
 .dark-theme textarea,
 .dark-theme select {
-  background-color: var(--color-background-dark-raised);
+  background-color: var(--color-background-dark);
   border-color: var(--color-border-input-dark);
   color: var(--color-text-dark);
 }
 .dark-theme input[type='range'] {
-  background: hsla(0, 0%, 100%, 0.1);
+  background: var(--color-border-dark);
 }
 
 /**
  * 6.2. ProseMirror Editor (`.prose`)
- * Styles for the main text editor content area.
  * -------------------------------------------------------------------------- */
 .prose {
   caret-color: var(--color-accent);
@@ -361,28 +370,15 @@ input[type='range']::-webkit-slider-thumb {
 
 .prose .selection {
   background-color: hsl(var(--color-accent-hsl) / 0.3);
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm);
 }
 
-/* --- MIGRATION: VISUAL HIERARCHY --- */
-/* Provides visual indentation for nested headings to restore hierarchy
-   after the list-to-heading migration. */
 .prose h3 {
   margin-left: 2em;
 }
 .prose h4 {
   margin-left: 4em;
 }
-/* --- END MIGRATION --- */
-
-/* --- MIGRATION: REMOVED Obsolete role-based selectors --- */
-/*
-:global(.prose p[data-role='term']),
-.prose .schema-term { ... }
-
-:global(.prose p[data-role='description']),
-.prose .schema-description { ... }
-*/
 
 .prose .is-empty::before {
   content: attr(data-placeholder);
@@ -392,7 +388,6 @@ input[type='range']::-webkit-slider-thumb {
   height: 0;
 }
 
-/* --- MIGRATION: KEPT for user-created nested lists --- */
 .prose ul {
   position: relative;
 }
@@ -403,15 +398,14 @@ input[type='range']::-webkit-slider-thumb {
   bottom: 0.5em;
   left: -1em;
   width: 1px;
-  background-color: var(--color-gray-100);
+  background-color: var(--color-gray-200);
   transition: background-color 0.3s;
 }
 
-/* --- NEW MEDIA NODES --- */
 .prose img {
   max-width: 100%;
   height: auto;
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
 }
 
@@ -421,12 +415,12 @@ input[type='range']::-webkit-slider-thumb {
 
 .prose .youtube-wrapper {
   position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  padding-bottom: 56.25%; /* 16:9 */
   height: 0;
   overflow: hidden;
   max-width: 100%;
   background: #000;
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
 }
 
 .prose .youtube-wrapper iframe {
@@ -438,17 +432,12 @@ input[type='range']::-webkit-slider-thumb {
   border: 0;
 }
 
-/* --- OLD MATH STYLES REMOVED FROM HERE --- */
-/* The styles for `.prose .math-inline` and `.prose .math-block` that were here have been deleted. */
-/* They are now handled by more specific component styles. */
-
 .dark-theme .prose ul > li > ul::before {
-  background-color: var(--color-gray-100);
+  background-color: var(--color-gray-800);
 }
 
 /**
  * 6.3. Svelte-Sonner Notifications
- * Overrides to integrate the notification library with the design system.
  * -------------------------------------------------------------------------- */
 :global([data-sonner-toaster]) {
   --normal-bg: var(--toast-background);
@@ -469,11 +458,12 @@ input[type='range']::-webkit-slider-thumb {
 }
 :global([data-sonner-toaster] .toast) {
   font-family: var(--font-main);
+  box-shadow: var(--shadow-lg);
 }
 :global([data-sonner-toaster] [data-button]) {
   background: var(--toast-background);
   border: 1px solid var(--toast-border);
-  color: var(--toast-color);
+  color: var(--color-text);
   transition: background-color 0.2s;
 }
 :global([data-sonner-toaster] [data-button]:hover) {
@@ -488,22 +478,22 @@ input[type='range']::-webkit-slider-thumb {
 
 /**
  * 6.4. Tippy.js Tooltips
- * Overrides for tooltip styles.
  * -------------------------------------------------------------------------- */
 .tippy-box {
   background-color: var(--color-text) !important;
   color: var(--color-background) !important;
   border: none !important;
-  border-radius: var(--space-sm) !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3) !important;
+  border-radius: var(--border-radius-sm) !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-size: 0.875rem;
 }
 .dark-theme .tippy-box {
-  background-color: var(--color-gray-100) !important;
-  color: var(--color-text) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--color-background-raised) !important;
+  color: var(--color-text-dark) !important;
+  border: 1px solid var(--color-border-dark) !important;
 }
 .tippy-content {
-  padding: 0 !important;
+  padding: var(--space-xs) var(--space-sm) !important;
 }
 .tippy-arrow {
   display: none !important;
@@ -511,8 +501,6 @@ input[type='range']::-webkit-slider-thumb {
 
 /**
  * 6.5. Organic Canvas Background
- * Styles for the animated background canvas integrated in the main layout.
- * V19: The canvas now renders its own theme. No CSS filter is needed.
  * -------------------------------------------------------------------------- */
 :global(.organic-canvas) {
   position: fixed;
@@ -520,13 +508,12 @@ input[type='range']::-webkit-slider-thumb {
   left: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.4; /* A subtle opacity for the light theme canvas */
+  opacity: 0.2; /* Adjusted for the new palette */
   transition: opacity 0.5s ease-in-out;
 }
 
-/* In dark mode, make the canvas even more subtle to not distract from the content. */
 .dark-theme :global(.organic-canvas) {
-  opacity: 0.2;
+  opacity: 0.1; /* Adjusted for the new palette */
 }
 
 /* 7. STATES
@@ -534,10 +521,8 @@ input[type='range']::-webkit-slider-thumb {
 
 /**
  * 7.1. Global State Classes
- * These classes are applied to `<body>` or other containers to alter the UI globally.
  * -------------------------------------------------------------------------- */
 
-/* --- Review Mode State --- */
 .is-reviewing .prose > * {
   transition: opacity 0.3s ease;
   opacity: 0.2;
@@ -545,32 +530,25 @@ input[type='range']::-webkit-slider-thumb {
 .is-reviewing .prose .is-current-review-node {
   opacity: 1;
   background-color: hsl(var(--color-accent-hsl) / 0.1);
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
 }
 
-/* --- Read Aloud Mode State --- */
-/* --- MIGRATION: REMOVED Obsolete TTS fading logic for list items --- */
-/*
-.is-reading-aloud .prose ul > li { ... }
-.is-reading-aloud .prose ul > li.is-current-tts-node { ... }
-*/
 .is-reading-aloud .prose h1 {
   opacity: 1; /* Keep the title always visible */
 }
 
-/* This style is still valid, as the class is now applied to headings/paragraphs */
 .is-current-tts-node {
   background-color: hsl(var(--color-accent-hsl) / 0.1);
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
 }
 .is-current-tts-word {
   background-color: hsl(var(--color-accent-hsl) / 0.25);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
 }
 
 .prose .ProseMirror-selectednode {
   background-color: hsl(var(--color-accent-hsl) / 0.1);
-  border-radius: var(--space-sm);
+  border-radius: var(--border-radius-md);
   outline: 2px solid var(--color-accent);
 }
 

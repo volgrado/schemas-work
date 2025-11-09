@@ -1,150 +1,48 @@
+<!-- src/lib/components/ui/Icon.svelte -->
 <script lang="ts">
-  import type { SvelteComponent, ComponentType } from 'svelte';
+  // Step 1: Import the single Icon component from the new library
+  import Icon from '@iconify/svelte';
+  import type { IconName } from '$lib/types/iconName';
 
-  // --- Icons from `svelte-feather-icons` ---
-  import {
-    // General UI
-    PlusIcon,
-    MinusIcon,
-    XIcon,
-    CommandIcon,
-    HelpCircleIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    AlertTriangleIcon,
-    LoaderIcon,
-    CopyIcon,
-    Trash2Icon,
-    Edit3Icon,
-    PenToolIcon,
-    FolderIcon,
-    FileTextIcon,
-    LockIcon,
-    KeyIcon, // ADDED
-    SearchIcon, // ADDED
-    PlusSquareIcon,
-    SunIcon,
-    MoonIcon,
-    MonitorIcon,
-    SettingsIcon,
-
-    // Media & Audio
-    BookOpenIcon,
-    PlayIcon,
-    PauseIcon,
-    MicIcon,
-    Volume2Icon,
-    FastForwardIcon,
-    SkipBackIcon,
-    SkipForwardIcon,
-    ImageIcon,
-    VideoIcon,
-
-    // Text & Formatting
-    TypeIcon,
-    BoldIcon,
-    ItalicIcon,
-    ListIcon,
-
-    // Conceptual
-    ZapIcon,
-    StarIcon, // This is used for 'sparkles'
-    GitBranchIcon,
-    DownloadCloudIcon,
-    UploadCloudIcon,
-  } from 'svelte-feather-icons';
-
-  interface FeatherIconProps {
-    size?: string;
-    strokeWidth?: number;
+  let {
+    name,
+    size = 16,
+    class: additionalClasses = '',
+    ...rest
+  } = $props<{
+    name: IconName;
+    size?: number | string;
     class?: string;
-  }
+    // Allows any other props to be passed through
+    [key: string]: any;
+  }>();
 
-  // --- Icon mapping ---
-  // This record should match the IconName type exactly.
-  const icons: Record<
-    string,
-    ComponentType<SvelteComponent<FeatherIconProps>>
-  > = {
-    // General & UI
-    plus: PlusIcon,
-    minus: MinusIcon,
-    x: XIcon,
-    command: CommandIcon,
-    'help-circle': HelpCircleIcon,
-    'check-circle': CheckCircleIcon,
-    'x-circle': XCircleIcon,
-    'alert-triangle': AlertTriangleIcon,
-    loader: LoaderIcon,
-    copy: CopyIcon,
-    'trash-2': Trash2Icon,
-    'edit-3': Edit3Icon,
-    'pen-tool': PenToolIcon,
-    folder: FolderIcon,
-    'file-text': FileTextIcon,
-    lock: LockIcon,
-    key: KeyIcon, // ADDED
-    search: SearchIcon, // ADDED
-    'plus-square': PlusSquareIcon,
-    sun: SunIcon,
-    moon: MoonIcon,
-    monitor: MonitorIcon,
-    settings: SettingsIcon,
-
-    // Media & Audio
-    play: PlayIcon,
-    pause: PauseIcon,
-    mic: MicIcon,
-    'volume-2': Volume2Icon,
-    'fast-forward': FastForwardIcon,
-    'skip-back': SkipBackIcon,
-    'skip-forward': SkipForwardIcon,
-    image: ImageIcon,
-    video: VideoIcon,
-
-    // Text & Formatting
-    type: TypeIcon,
-    bold: BoldIcon,
-    italic: ItalicIcon,
-    list: ListIcon,
-    'list-ordered': ListIcon, // ADDED (aliased to regular list)
-
-    // Conceptual & App-Specific
-    'book-open': BookOpenIcon,
-    zap: ZapIcon,
-    sparkles: StarIcon,
-    'git-branch': GitBranchIcon,
-    'download-cloud': DownloadCloudIcon,
-    'upload-cloud': UploadCloudIcon,
-
-    // Custom alias
-    'plus-slash-minus': MinusIcon,
-  };
-
-  /** @prop {keyof typeof icons} name - Icon name */
-  export let name: keyof typeof icons;
-
-  /** @prop {string | number} [size='16'] - Icon size in pixels */
-  export let size: string | number = '16';
-
-  /** @prop {number} [strokeWidth=2] - Stroke width */
-  export let strokeWidth: number = 2;
+  // Step 2: Dynamically create the icon string for Iconify.
+  // We assume all icons come from the 'lucide' set, which matches Feather.
+  const iconString = $derived(`lucide:${name}`);
 </script>
 
+<!-- 
+  Step 3: Render the Iconify component.
+  It's simpler and more robust. We don't need the giant switch statement anymore.
+-->
 <span
-  class="icon-wrapper {$$restProps.class || ''}"
+  class="icon-wrapper {additionalClasses}"
   aria-hidden="true"
-  style="width: {size}px; height: {size}px;"
-  {...$$restProps}
+  style="--icon-size: {size}px;"
 >
-  <svelte:component this={icons[name]} size={String(size)} {strokeWidth} />
+  <Icon icon={iconString} width={size} height={size} {...rest} />
 </span>
 
 <style>
   .icon-wrapper {
+    width: var(--icon-size);
+    height: var(--icon-size);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    line-height: 1; /* Prevent extra space below icon */
+    line-height: 1;
+    /* This ensures the icon inherits the color of its parent, like a font */
+    color: inherit;
   }
 </style>

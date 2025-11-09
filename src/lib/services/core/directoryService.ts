@@ -1,26 +1,8 @@
 /**
  * @file Manages the virtual file and folder hierarchy for user-created schemas.
+ *   This service uses localStorage for persistence and provides a reactive store
+ *   to notify the application of changes.
  * @module directoryService
- *
- * @remarks
- * This service is the backbone of the application's file management system. It provides a complete
- * CRUD (Create, Read, Update, Delete) interface for `SchemaMetadata` objects, which represent
- * both the schema documents (files) and the folders that contain them.
- *
- * Key Architectural Decisions:
- * - **Offline-First Persistence**: The entire directory structure is stored as a single JSON object
- *   in `localStorage`. This makes the application inherently offline-first, as all file and folder
- *   metadata is available immediately on load without needing a network request.
- *
- * - **Cross-Tab Synchronization**: The service uses a combination of a Svelte store (`directoryEvents`)
- *   and the browser's `storage` event to achieve real-time synchronization across multiple open tabs.
- *   When a change is made in one tab, the `localStorage` is updated, which triggers the `storage`
- *   event in all other tabs. This service listens for that event and emits a change on the
- *   `directoryEvents` store, allowing the UI in other tabs to update reactively.
- *
- * - **Separation of Concerns**: This service is strictly responsible for the *metadata* of the files
- *   and folders (e.g., title, parentId, timestamps). The actual *content* of the schema documents
- *   is handled by the `documentService` and `persistenceService`.
  */
 
 import { writable } from 'svelte/store';
@@ -29,58 +11,61 @@ import type { SchemaMetadata } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
 import { DIRECTORY_STORAGE_KEY, LAST_ACTIVE_DOC_KEY } from '$lib/constants';
 
-/**
- * A writable Svelte store that emits events when the directory is modified.
- *
- * @remarks
- * The event payload contains the change type (`created`, `updated`, `deleted`)
- * and the affected `SchemaMetadata` item.
- */
-export const directoryEvents = writable<{
-  type: 'created' | 'updated' | 'deleted';
-  item: SchemaMetadata;
-} | null>(null);
+// --- REACTIVE EVENT EMITTER ---
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key === DIRECTORY_STORAGE_KEY) {
-      try {
-        const oldItems: SchemaMetadata[] = event.oldValue
-          ? JSON.parse(event.oldValue)
-          : [];
-        const newItems: SchemaMetadata[] = event.newValue
-          ? JSON.parse(event.newValue)
-          : [];
-        const newIds = new Set(newItems.map((i) => i.id));
-
-        for (const newItem of newItems) {
-          const oldItem = oldItems.find((i) => i.id === newItem.id);
-          if (!oldItem) {
-            directoryEvents.set({ type: 'created', item: newItem });
-          } else if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
-            directoryEvents.set({ type: 'updated', item: newItem });
-          }
-        }
-
-        for (const oldItem of oldItems) {
-          if (!newIds.has(oldItem.id)) {
-            directoryEvents.set({ type: 'deleted', item: oldItem });
-          }
-        }
-      } catch (error) {
-        errorService.reportError(error, {
-          operation: 'storageEventListener',
-          description:
-            'Failed to sync directory data from cross-tab storage event.',
-        });
-      }
-    }
-  });
+export interface DirectoryEvent {
+  type: 'created' | 'updated' | 'deleted' | 'reloaded';
+  item: SchemaMetadata | SchemaMetadata[]; // Allow for single item or full reload
 }
 
 /**
- * Retrieves all items (schemas and folders) from the directory.
- * @returns {Promise<SchemaMetadata[]>} A promise that resolves to an array of all `SchemaMetadata` items.
+ * A writable Svelte store that emits events when the directory changes.
+ * Components can subscribe to this store to reactively update their UI.
+ * This replaces the `$state` rune, which is only valid inside .svelte files.
+ */
+export const directoryEvent = writable<DirectoryEvent | null>(null);
+
+// --- INITIALIZATION FUNCTION ---
+
+/**
+ * Sets up a listener for localStorage changes to sync directory state across browser tabs.
+ * @returns A cleanup function to remove the event listener.
+ */
+export function initializeDirectoryListener(): () => void {
+  if (typeof window === 'undefined') {
+    return () => {}; // Return a no-op function for server-side rendering
+  }
+
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key !== DIRECTORY_STORAGE_KEY) return;
+
+    try {
+      // When another tab changes the storage, emit a 'reloaded' event
+      // to signal that the entire directory might have changed.
+      const newItems: SchemaMetadata[] = event.newValue
+        ? JSON.parse(event.newValue)
+        : [];
+      directoryEvent.set({ type: 'reloaded', item: newItems });
+    } catch (error) {
+      errorService.reportError(error, { operation: 'storageEventListener' });
+    }
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+
+  // Return the cleanup function
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
+}
+
+// =================================================================
+// --- PUBLIC API (CRUD & UTILITIES) ---
+// =================================================================
+
+/**
+ * Retrieves all items from the directory in localStorage.
+ * @returns A promise that resolves to an array of SchemaMetadata.
  */
 export async function getAllItems(): Promise<SchemaMetadata[]> {
   if (typeof window === 'undefined') return [];
@@ -88,18 +73,15 @@ export async function getAllItems(): Promise<SchemaMetadata[]> {
   try {
     return storedDirectory ? JSON.parse(storedDirectory) : [];
   } catch (error) {
-    errorService.reportError(error, {
-      operation: 'getAllItems',
-      description: 'Failed to parse directory from localStorage.',
-    });
-    return [];
+    errorService.reportError(error, { operation: 'getAllItems' });
+    return []; // Return an empty array on parsing error
   }
 }
 
 /**
- * Lists all items that are direct children of a given parent folder ID.
- * @param {string | null} parentId The ID of the parent folder, or `null` for the root.
- * @returns {Promise<SchemaMetadata[]>} A promise that resolves to an array of child `SchemaMetadata` items.
+ * Lists all items that are direct children of a given parent ID.
+ * @param parentId - The ID of the parent folder, or null for the root.
+ * @returns A promise resolving to an array of child items.
  */
 export async function listItemsByParentId(
   parentId: string | null
@@ -109,9 +91,9 @@ export async function listItemsByParentId(
 }
 
 /**
- * Finds a single item by its unique identifier.
- * @param {string} id The ID of the item to retrieve.
- * @returns {Promise<SchemaMetadata | undefined>} A promise that resolves to the `SchemaMetadata` item, or `undefined` if not found.
+ * Finds a single item in the directory by its unique ID.
+ * @param id - The ID of the item to retrieve.
+ * @returns A promise resolving to the found item or undefined.
  */
 export async function getItemById(
   id: string
@@ -121,10 +103,10 @@ export async function getItemById(
 }
 
 /**
- * Creates a new schema document metadata entry.
- * @param {string} title The title of the new schema.
- * @param {string | null} [parentId=null] The ID of the parent folder, or `null` for the root.
- * @returns {Promise<SchemaMetadata>} A promise that resolves to the newly created `SchemaMetadata`.
+ * Creates a new schema metadata object and saves it to the directory.
+ * @param title - The title for the new schema.
+ * @param parentId - The ID of the parent folder, or null for the root.
+ * @returns A promise resolving to the newly created schema metadata.
  */
 export async function createSchema(
   title: string,
@@ -134,7 +116,7 @@ export async function createSchema(
   const siblingExists = allItems.some(
     (item) =>
       item.parentId === parentId &&
-      item.title.toLowerCase() === title.toLowerCase()
+      item.title.toLowerCase() === title.trim().toLowerCase()
   );
   if (siblingExists) {
     throw new Error(
@@ -145,21 +127,23 @@ export async function createSchema(
   const now = Date.now();
   const newSchema: SchemaMetadata = {
     id: uuidv4(),
-    title,
+    title: title.trim(),
     createdAt: now,
     updatedAt: now,
     type: 'schema',
     parentId,
   };
+
   await saveDirectory([...allItems, newSchema]);
+  directoryEvent.set({ type: 'created', item: newSchema }); // Emit event
   return newSchema;
 }
 
 /**
- * Creates a new folder metadata entry.
- * @param {string} title The title of the new folder.
- * @param {string | null} [parentId=null] The ID of the parent folder, or `null` for the root.
- * @returns {Promise<SchemaMetadata>} A promise that resolves to the newly created `SchemaMetadata`.
+ * Creates a new folder metadata object and saves it to the directory.
+ * @param title - The title for the new folder.
+ * @param parentId - The ID of the parent folder, or null for the root.
+ * @returns A promise resolving to the newly created folder metadata.
  */
 export async function createFolder(
   title: string,
@@ -169,7 +153,7 @@ export async function createFolder(
   const siblingExists = allItems.some(
     (item) =>
       item.parentId === parentId &&
-      item.title.toLowerCase() === title.toLowerCase()
+      item.title.toLowerCase() === title.trim().toLowerCase()
   );
   if (siblingExists) {
     throw new Error(
@@ -180,21 +164,23 @@ export async function createFolder(
   const now = Date.now();
   const newFolder: SchemaMetadata = {
     id: uuidv4(),
-    title,
+    title: title.trim(),
     createdAt: now,
     updatedAt: now,
     type: 'folder',
     parentId,
   };
+
   await saveDirectory([...allItems, newFolder]);
+  directoryEvent.set({ type: 'created', item: newFolder }); // Emit event
   return newFolder;
 }
 
 /**
  * Updates an existing item's metadata.
- * @param {string} id The ID of the item to update.
- * @param {Partial<Omit<SchemaMetadata, 'id'>>} updates An object with the properties to update.
- * @returns {Promise<SchemaMetadata>} A promise that resolves to the updated `SchemaMetadata`.
+ * @param id - The ID of the item to update.
+ * @param updates - An object with the properties to update.
+ * @returns A promise resolving to the updated item metadata.
  */
 export async function updateItemMetadata(
   id: string,
@@ -202,6 +188,7 @@ export async function updateItemMetadata(
 ): Promise<SchemaMetadata> {
   const allItems = await getAllItems();
   const itemIndex = allItems.findIndex((s) => s.id === id);
+
   if (itemIndex === -1) {
     const error = new Error(`Item not found for update: ${id}`);
     errorService.reportError(error, { operation: 'updateItemMetadata' });
@@ -209,6 +196,8 @@ export async function updateItemMetadata(
   }
 
   const originalItem = allItems[itemIndex];
+
+  // Check for title conflicts if the title is being changed
   if (updates.title) {
     const newTitle = updates.title.trim();
     const siblingExists = allItems.some(
@@ -226,22 +215,25 @@ export async function updateItemMetadata(
 
   const updatedItem = { ...originalItem, ...updates, updatedAt: Date.now() };
   allItems[itemIndex] = updatedItem;
+
   await saveDirectory(allItems);
+  directoryEvent.set({ type: 'updated', item: updatedItem }); // Emit event
   return updatedItem;
 }
 
 /**
- * Deletes an item and, if it is a folder, all of its descendants recursively.
- * @param {string} itemId The ID of the item to delete.
- * @returns {Promise<void>} A promise that resolves when the deletion is complete.
+ * Deletes an item and all its descendants (if it's a folder).
+ * Also handles deletion of associated IndexedDB databases for schemas.
+ * @param itemId - The ID of the item to delete.
  */
 export async function deleteItem(itemId: string): Promise<void> {
   let allItems = await getAllItems();
   const itemToDelete = allItems.find((item) => item.id === itemId);
-  if (!itemToDelete) return;
+  if (!itemToDelete) return; // Item already deleted
 
   const itemsToDeleteIds = new Set<string>([itemId]);
 
+  // If it's a folder, recursively find all children to delete
   if (itemToDelete.type === 'folder') {
     const findChildrenRecursive = (parentId: string) => {
       const children = allItems.filter((item) => item.parentId === parentId);
@@ -255,37 +247,40 @@ export async function deleteItem(itemId: string): Promise<void> {
     findChildrenRecursive(itemId);
   }
 
+  // For any schemas being deleted, also delete their IndexedDB database
   const dbDeletionPromises: Promise<void>[] = [];
-  itemsToDeleteIds.forEach((id) => {
-    const item = allItems.find((i) => i.id === id);
-    if (item?.type === 'schema' && typeof window !== 'undefined') {
-      dbDeletionPromises.push(
-        new Promise<void>((resolve, reject) => {
-          const request = window.indexedDB.deleteDatabase(id);
-          request.onsuccess = () => resolve();
-          request.onblocked = (event) => {
-            console.warn(`Deletion of database ${id} is blocked.`, event);
-            resolve();
-          };
-          request.onerror = (event) => reject(request.error || event);
-        })
-      );
-    }
-  });
+  if (typeof window !== 'undefined') {
+    itemsToDeleteIds.forEach((id) => {
+      const item = allItems.find((i) => i.id === id);
+      if (item?.type === 'schema') {
+        dbDeletionPromises.push(
+          new Promise<void>((resolve, reject) => {
+            const request = window.indexedDB.deleteDatabase(id);
+            request.onsuccess = () => resolve();
+            request.onblocked = (event) => {
+              console.warn(`Deletion of database ${id} is blocked.`, event);
+              resolve(); // Resolve anyway to not block UI
+            };
+            request.onerror = (event) => reject(request.error || event);
+          })
+        );
+      }
+    });
+  }
 
   const updatedItems = allItems.filter(
     (item) => !itemsToDeleteIds.has(item.id)
   );
-
   await saveDirectory(updatedItems);
-  await Promise.all(dbDeletionPromises);
+  await Promise.all(dbDeletionPromises); // Wait for DB deletions to complete
+
+  directoryEvent.set({ type: 'deleted', item: itemToDelete }); // Emit event
 }
 
 /**
  * Moves an item to a new parent folder.
- * @param {string} itemId The ID of the item to move.
- * @param {string | null} newParentId The ID of the new parent folder, or `null` for the root.
- * @returns {Promise<void>} A promise that resolves when the move is complete.
+ * @param itemId - The ID of the item to move.
+ * @param newParentId - The ID of the new parent folder, or null for the root.
  */
 export async function moveItem(
   itemId: string,
@@ -296,7 +291,11 @@ export async function moveItem(
   if (!itemToMove) {
     throw new Error(`Item to move not found: ${itemId}`);
   }
+  if (itemToMove.parentId === newParentId) {
+    return; // No change needed
+  }
 
+  // Prevent moving a folder into itself or one of its own children
   if (itemToMove.type === 'folder') {
     if (itemId === newParentId) {
       throw new Error('Cannot move a folder into itself.');
@@ -317,12 +316,18 @@ export async function moveItem(
     }
     return item;
   });
+
   await saveDirectory(updatedItems);
+  directoryEvent.set({
+    type: 'updated',
+    item: { ...itemToMove, parentId: newParentId },
+  }); // Emit event
 }
 
+// --- SESSION STATE HELPERS ---
+
 /**
- * Gets the ID of the last viewed document from `localStorage`.
- * @returns {Promise<string | null>} A promise that resolves to the last active document ID, or `null`.
+ * Gets the ID of the last active document from localStorage.
  */
 export async function getLastActiveDocId(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
@@ -330,43 +335,27 @@ export async function getLastActiveDocId(): Promise<string | null> {
 }
 
 /**
- * Sets the ID of the last viewed document in `localStorage`.
- * @param {string} id The ID of the document to set as last active.
- * @returns {Promise<void>} A promise that resolves when the operation is complete.
+ * Sets the ID of the last active document in localStorage.
+ * @param id - The ID of the document.
  */
 export async function setLastActiveDocId(id: string): Promise<void> {
   if (typeof window === 'undefined') return;
   localStorage.setItem(LAST_ACTIVE_DOC_KEY, id);
 }
 
+// --- CORE STORAGE FUNCTIONS ---
+
 /**
- * Saves the entire directory state to `localStorage` and dispatches a storage event.
- * @param {SchemaMetadata[]} items The complete array of `SchemaMetadata` to save.
- * @returns {Promise<void>} A promise that resolves when the directory is saved.
- * @internal
+ * Saves the entire directory array to localStorage.
+ * @param items - The array of all SchemaMetadata items.
  */
 export async function saveDirectory(items: SchemaMetadata[]): Promise<void> {
   if (typeof window === 'undefined') return;
-  const oldValue = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-  const newValue = JSON.stringify(items);
-
-  if (oldValue === newValue) return;
-
-  localStorage.setItem(DIRECTORY_STORAGE_KEY, newValue);
-
-  window.dispatchEvent(
-    new StorageEvent('storage', {
-      key: DIRECTORY_STORAGE_KEY,
-      oldValue: oldValue,
-      newValue: newValue,
-    })
-  );
+  localStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify(items));
 }
 
 /**
- * Clears the entire directory from `localStorage`.
- * @returns {Promise<void>} A promise that resolves when the directory is cleared.
- * @internal
+ * Clears the entire directory from localStorage.
  */
 export async function clearDirectory(): Promise<void> {
   if (typeof window === 'undefined') return;

@@ -1,17 +1,28 @@
+/**
+ * @file aiService.ts
+ * @service
+ *
+ * @description
+ * This service provides a centralized, robust interface for all interactions with external
+ * Generative AI models. It is the sole gateway for content generation and includes a
+ * critical, self-healing retry mechanism to handle AI-generated validation errors.
+ */
+
 import { z } from 'zod';
 import * as errorService from '$lib/services/core/errorService';
 import type { AiModel } from './aiModels';
-// --- NEW ---
-import { settingsStore } from '$lib/stores/settingsStore';
+// REFINEMENT: Keep the correct `get` import for the non-Rune i18n store.
 import { get } from 'svelte/store';
-// --- ADDED ---
 import { t } from '$lib/utils/i18n';
+import { AiValidationError } from './AiValidationError';
 
-// --- NEW ---
-// The official model name for the embedding generator.
-const EMBEDDING_MODEL_ID = 'gemini-embedding-001';
+/** Defines the structure for a message in a multi-turn conversation with the AI. */
+export type AiMessage = {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+};
 
-// --- UNCHANGED ---
+/** Custom error class for AI service-specific issues, allowing for precise user feedback. */
 export class AiServiceError extends Error {
   constructor(message: string) {
     super(message);
@@ -19,48 +30,33 @@ export class AiServiceError extends Error {
   }
 }
 
-// --- NEW FUNCTION ---
 /**
- * Generates a vector embedding for a given piece of text using the Gemini API.
- * This function is used by the Neural Index to create "conceptual fingerprints".
- *
- * @param text The text to embed.
- * @returns A promise that resolves to an array of numbers (the vector).
- * @throws {AiServiceError} If no API key is found or the API call fails.
+ * Makes a direct API call to the Gemini service to generate a vector embedding.
+ * @param text The text content to embed.
+ * @param apiKey The user's API key for authentication.
+ * @returns A promise that resolves to an array of numbers representing the vector embedding.
  */
-export async function generateEmbedding(text: string): Promise<number[]> {
-  // Use the settings store to find any available Gemini key.
-  // The embedding model is not user-selectable and has high rate limits,
-  // so any valid key will do.
-  const settings = get(settingsStore);
-  const apiKey = settings.apiKeys.find((k) => k.provider === 'gemini');
-
-  if (!apiKey) {
-    throw new AiServiceError(
-      get(t)('ai_service.errors.no_gemini_key_embedding')
-    );
-  }
-
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL_ID}:embedContent?key=${apiKey.key}`;
+export async function generateEmbedding(
+  text: string,
+  apiKey: string
+): Promise<number[]> {
+  const modelId = 'gemini-embedding-001';
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:embedContent?key=${apiKey}`;
+  const _t = get(t); // Get the translation function once.
 
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: `models/${EMBEDDING_MODEL_ID}`,
-        content: {
-          parts: [{ text }],
-        },
-      }),
+      body: JSON.stringify({ content: { parts: [{ text }] } }),
     });
 
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        get(t)('ai_service.errors.embedding_api_error', {
+        _t('ai_service.errors.gemini_api_error', {
           status: response.status,
-          message: errorBody.error?.message || 'Unknown API error',
+          message: errorBody.error?.message || 'Unknown embedding API error',
         })
       );
     }
@@ -69,69 +65,64 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     const embedding = jsonResponse.embedding?.values;
 
     if (!embedding || !Array.isArray(embedding)) {
-      throw new AiServiceError(get(t)('ai_service.errors.no_valid_embedding'));
+      throw new AiServiceError(_t('ai_service.errors.no_embedding'));
     }
-
-    // Record usage to participate in rate-limiting and key rotation
-    settingsStore.recordApiKeyUsage(apiKey.id);
 
     return embedding;
   } catch (error) {
     errorService.reportError(error, {
-      operation: `aiService.generateEmbedding (Gemini)`,
+      operation: 'aiService.generateEmbedding',
     });
-    if (error instanceof AiServiceError) {
-      throw error;
-    }
+    if (error instanceof AiServiceError) throw error;
     throw new AiServiceError(
-      get(t)('ai_service.errors.unexpected_embedding_error')
+      _t('ai_service.errors.unexpected_embedding_error')
     );
   }
 }
 
-// --- UNCHANGED ---
 /**
- * Sends a prompt to the Gemini API and returns the parsed, validated JSON response.
+ * Sends a conversational history to the Gemini API and returns the parsed,
+ * validated JSON response. Includes a self-healing retry mechanism.
  *
- * @param prompt The full prompt to send to the AI.
- * @param model The AiModel object defining which model to use.
- * @param apiKey The user's Google AI (Gemini) API key.
- * @param validationSchema A Zod schema to validate the structure of the JSON response.
- * @returns The validated data from the AI response.
- * @throws {AiServiceError} If the API call fails, the response is not valid JSON, or validation fails.
+ * @param messages The conversation history to send to the AI.
+ * @param model The AI model object to use.
+ * @param apiKey The user's API key.
+ * @param validationSchema The Zod schema to validate the AI's response against.
+ * @param retries The number of times to automatically retry on a validation failure.
+ * @returns A promise that resolves to the validated, typed data from the AI response.
  */
 export async function generateContent<T extends z.ZodType<any, any>>(
-  prompt: string,
+  messages: AiMessage[],
   model: AiModel,
   apiKey: string,
-  validationSchema: T
+  validationSchema: T,
+  retries = 1
 ): Promise<z.infer<T>> {
+  const _t = get(t);
+
   if (model.provider !== 'gemini') {
     throw new AiServiceError(
-      get(t)('ai_service.errors.unsupported_provider', {
-        provider: model.provider,
-      })
+      _t('ai_service.errors.unsupported_provider', { provider: model.provider })
     );
   }
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${apiKey}`;
+  let lastResponseText = '';
 
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          response_mime_type: 'application/json',
-        },
+        contents: messages,
+        generationConfig: { response_mime_type: 'application/json' },
       }),
     });
 
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        get(t)('ai_service.errors.gemini_api_error', {
+        _t('ai_service.errors.gemini_api_error', {
           status: response.status,
           message: errorBody.error?.message || 'Unknown API error',
         })
@@ -140,37 +131,52 @@ export async function generateContent<T extends z.ZodType<any, any>>(
 
     const jsonResponse = await response.json();
     const content = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+    lastResponseText = content || '';
 
     if (!content) {
-      throw new AiServiceError(get(t)('ai_service.errors.no_content'));
+      throw new AiServiceError(_t('ai_service.errors.no_content'));
     }
 
     const dataFromApi = JSON.parse(content);
-
     const validation = validationSchema.safeParse(dataFromApi);
+
     if (!validation.success) {
-      errorService.reportError(validation.error, {
-        operation: 'aiService.generateContent.zodValidation',
-        dataFromApi: dataFromApi,
-      });
-      throw new AiServiceError(
-        get(t)('ai_service.errors.validation_failed', {
-          path: validation.error.issues[0].path.join('.'),
-          message: validation.error.issues[0].message,
-        })
-      );
+      throw new AiValidationError(validation.error);
     }
 
     return validation.data;
   } catch (error) {
-    errorService.reportError(error, {
-      operation: `aiService.generateContent (Gemini)`,
-    });
-    if (error instanceof AiServiceError) {
-      throw error;
+    // --- SELF-HEALING BLOCK ---
+    if (error instanceof AiValidationError && retries > 0) {
+      console.warn(
+        `AI response failed validation. Retrying... (${retries} retries left)`
+      );
+      const correctionMessage: AiMessage = {
+        role: 'user',
+        parts: [
+          {
+            text: `Your previous response was not valid. Please analyze your response, correct the formatting error, and return only the perfectly valid JSON object. The validation error was: ${error.message}`,
+          },
+        ],
+      };
+      const failedResponse: AiMessage = {
+        role: 'model',
+        parts: [{ text: lastResponseText }],
+      };
+      return generateContent(
+        [...messages, failedResponse, correctionMessage],
+        model,
+        apiKey,
+        validationSchema,
+        retries - 1
+      );
     }
+
+    errorService.reportError(error, { operation: 'aiService.generateContent' });
+    if (error instanceof AiServiceError || error instanceof AiValidationError)
+      throw error;
     throw new AiServiceError(
-      get(t)('ai_service.errors.unexpected_generate_content_error')
+      _t('ai_service.errors.unexpected_generate_content_error')
     );
   }
 }

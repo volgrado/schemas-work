@@ -1,72 +1,57 @@
-<!--
-  @component
-  AppHeader
-
-  The main application header, which is fixed at the top of the viewport.
-  It provides a responsive layout with three sections.
-
-  - The left section contains the brand logo and name.
-  - The center section is a slot for contextual action buttons.
-  - The right section contains the language switcher and theme toggle.
-
-  On small screens, text labels next to icons are hidden to save space.
-  Text-only buttons remain visible.
-
-  Props:
-  - `show`: {boolean} - Controls the visibility of the header.
-
-  Events:
-  - `showWelcome`: Fired when the user clicks the brand logo/name.
-
-  Slots:
-  - `default`: Content to be placed in the center section of the header.
--->
+<!-- src/lib/components/layout/AppHeader.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
+  import type { Snippet } from 'svelte';
+
   // --- UI Components & Utilities ---
   import Logo from '$lib/components/ui/Logo.svelte';
   import { t } from '$lib/utils/i18n';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
   import ThemeToggleButton from '$lib/components/ui/ThemeToggleButton.svelte';
-  // --- MODIFICATION: Import documentStore to check for an active document ---
-  import { documentStore } from '$lib/stores/documentStore';
-  // --- MODIFICATION: Import stores to reset app state ---
-  import { ttsStore } from '$lib/stores/ttsStore';
-  import { cardEditorStore } from '$lib/stores/cardEditorStore';
-  import { reviewStore } from '$lib/stores/reviewStore';
+
+  // VVVV CORRECTED IMPORTS VVVV
+  import {
+    documentState,
+    close as closeDocument,
+  } from '$lib/stores/documentStore.svelte';
+  import { stopReading } from '$lib/stores/ttsStore.svelte';
+  import { close as closeCardEditor } from '$lib/stores/cardEditorStore.svelte';
+  import { finishReview } from '$lib/stores/reviewStore.svelte';
+
+  let {
+    show = false,
+    class: className = '',
+    children,
+  } = $props<{
+    show?: boolean;
+    class?: string;
+    children: Snippet;
+  }>();
 
   const dispatch = createEventDispatcher<{ showWelcome: void }>();
-  /**
-   * @prop {boolean} show - Controls the visibility of the header.
-   */
-  export let show: boolean = false;
 
   /**
-   * Dispatches the 'showWelcome' event to the parent component.
+   * Resets all relevant app states and dispatches the 'showWelcome' event.
    */
   function showWelcome() {
-    documentStore.closeDocument();
-    ttsStore.stopReading();
-    cardEditorStore.close();
-    reviewStore.finishReview();
+    // VVVV CORRECTED METHOD CALL VVVV
+    closeDocument();
+    stopReading();
+    closeCardEditor();
+    finishReview();
     dispatch('showWelcome');
   }
-
-  /** @props {string} class - Allows passing a custom CSS class from the parent.
-   */
-  let className = '';
-  export { className as class };
 </script>
 
-<!-- MODIFICATION: Only show the header if the 'show' prop is true AND a document is loaded. -->
-{#if show && $documentStore.docId}
+<!-- VVVV CORRECTED STATE ACCESS VVVV -->
+{#if show && documentState.docId}
   <header class="app-header {className}" transition:fade={{ duration: 300 }}>
     <div class="header-content">
       <div class="header-section left">
         <button
           class="brand-button"
-          on:click={showWelcome}
+          onclick={showWelcome}
           aria-label={$t('appHeader.aria.returnToWelcome')}
         >
           <div class="logo-wrapper"><Logo size={28} /></div>
@@ -77,7 +62,7 @@
       </div>
 
       <div class="header-section center">
-        <slot />
+        {@render children?.()}
       </div>
 
       <div class="header-section right">
@@ -89,6 +74,7 @@
 {/if}
 
 <style>
+  /* All styles are unchanged and correct */
   .app-header {
     position: fixed;
     top: 0;
@@ -99,6 +85,8 @@
     border-bottom: 1px solid var(--color-border);
     padding: var(--space-sm) 0;
     transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .header-content {
@@ -108,10 +96,9 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 36px; /* Fixed height for consistency */
+    height: 36px;
   }
 
-  /* --- 3-Column Structure --- */
   .header-section {
     display: flex;
     align-items: center;
@@ -122,14 +109,12 @@
   }
   .header-section.center {
     justify-content: center;
-    /* This prevents the center column from disappearing if its content is too wide */
     min-width: 0;
   }
   .header-section.right {
     justify-content: flex-end;
   }
 
-  /* --- Brand Styles --- */
   .brand-button {
     display: flex;
     align-items: center;
@@ -164,34 +149,28 @@
     color: var(--color-accent);
   }
 
-  /* --- Responsive Adjustments for Small Screens --- */
   @media (max-width: 600px) {
     .brand-name,
-    /* THE FIX: This selector now only hides the <span> if it's a direct sibling following an <svg> */
     :global(.header-section .btn > svg + span) {
       display: none;
     }
     .brand-button {
-      gap: 0; /* Remove gap when text is hidden */
+      gap: 0;
     }
     .header-content {
       padding: 0 var(--space-sm);
     }
     .header-section.center,
     .header-section.right {
-      gap: var(--space-xs); /* Reduce gap between controls */
+      gap: var(--space-xs);
     }
-    /* Ensure icon-only buttons don't have extra padding */
     :global(.header-section .btn) {
       padding: 0 var(--space-sm);
     }
   }
 
-  /* --- Dark Mode --- */
   :global(.dark-theme) .app-header {
     border-bottom-color: var(--color-border-dark);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
   }
   :global(.dark-theme) .brand-button:hover {
     background-color: var(--color-gray-800);

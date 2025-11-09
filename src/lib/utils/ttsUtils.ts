@@ -7,10 +7,10 @@
 
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import type { ReadableNode } from '$lib/types';
+// FIX 1: Import the entire 'TTS' namespace instead of a non-existent member.
+import type { TTS } from '$lib/types';
 
 // --- Configuration ---
-// UPDATED: We now only process headings and paragraphs for the main playlist.
 const SUPPORTED_NODE_TYPES = ['heading', 'paragraph'];
 const TITLE_MAX_LENGTH = 60;
 const ELLIPSIS = '…';
@@ -60,8 +60,8 @@ function truncateTitle(text: string): string {
 function processNode(
   node: ProseMirrorNode,
   pos: number
-): Omit<ReadableNode, 'id'> | null {
-  // SIMPLIFIED: Check if the node is a type we want in our playlist.
+  // FIX 2: Use the namespaced type 'TTS.ReadableNode'.
+): Omit<TTS.ReadableNode, 'id'> | null {
   if (!SUPPORTED_NODE_TYPES.includes(node.type.name)) {
     return null;
   }
@@ -71,8 +71,6 @@ function processNode(
     return null;
   }
 
-  // SIMPLIFIED: For both headings and paragraphs, the title and the text to speak
-  // are the same. The complex logic for listItems is no longer needed.
   const title = fullText;
   const textToSpeak = fullText;
 
@@ -81,7 +79,6 @@ function processNode(
     node,
     title: truncateTitle(title),
     text: textToSpeak,
-    textToSpeak: textToSpeak,
   };
 }
 
@@ -93,8 +90,10 @@ function processNode(
  * @param editor The Tiptap editor instance.
  * @returns An array of `ReadableNode` objects.
  */
-export function getReadableNodes(editor: Editor): ReadableNode[] {
-  const nodes: ReadableNode[] = [];
+// FIX 2: Use the namespaced type 'TTS.ReadableNode'.
+export function getReadableNodes(editor: Editor): TTS.ReadableNode[] {
+  // FIX 2: Use the namespaced type 'TTS.ReadableNode'.
+  const nodes: TTS.ReadableNode[] = [];
 
   editor.state.doc.descendants((node, pos) => {
     const partialNode = processNode(node, pos);
@@ -106,8 +105,6 @@ export function getReadableNodes(editor: Editor): ReadableNode[] {
       });
     }
 
-    // SIMPLIFIED: Always return true. The special rule for not descending
-    // into listItems is obsolete. We want to visit every node.
     return true;
   });
 

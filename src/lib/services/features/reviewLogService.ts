@@ -5,14 +5,15 @@
  * @remarks
  * This service provides a persistence layer for `ReviewLog` objects. Every time a user
  * reviews a flashcard, a log entry is created to record the details of that interaction.
- * This data is crucial for tracking study history, calculating statistics (like retention rate),
- * and visualizing the user's progress over time.
+ * This data is crucial for tracking study history, calculating statistics, and visualizing
+ * the user's progress.
  *
- * It uses Dexie.js to manage an IndexedDB database, ensuring that all study data is
- * stored locally and available offline.
+ * It uses Dexie.js to manage an IndexedDB database, ensuring all study data is stored
+ * locally and available offline.
  */
 import Dexie, { type Table } from 'dexie';
-import type { ReviewQuality } from '$lib/types';
+// REFINEMENT: Import the SRS namespace for the ReviewQuality type.
+import type { SRS } from '$lib/types';
 import * as errorService from '$lib/services/core/errorService';
 
 /**
@@ -29,7 +30,8 @@ export interface ReviewLog {
   /** The timestamp of when the review occurred. */
   reviewTime: number;
   /** The user's self-assessed quality of the review (0-5). */
-  quality: ReviewQuality;
+  // REFINEMENT: Use the namespaced SRS.ReviewQuality type.
+  quality: SRS.ReviewQuality;
   /** The new ease factor of the card after this review. */
   newEase: number;
   /** The new interval (in days) before the card is due again. */
@@ -44,7 +46,7 @@ class LogDB extends Dexie {
   constructor() {
     super('ReviewLogDatabase');
     this.version(1).stores({
-      reviewLogs: '++id, cardId, deckId, reviewTime',
+      reviewLogs: '++id, cardId, deckId, reviewTime', // Define indexes for efficient querying
     });
   }
 }
@@ -63,8 +65,7 @@ export async function logReview(log: Omit<ReviewLog, 'id'>): Promise<void> {
       operation: 'logReview',
       cardId: log.cardId,
     });
-    // We don't re-throw here because failing to log a review
-    // should not interrupt the user's review session.
+    // Failing to log a review should not interrupt the user's session.
   }
 }
 
@@ -77,6 +78,6 @@ export async function getAllLogs(): Promise<ReviewLog[]> {
     return await db.reviewLogs.toArray();
   } catch (error) {
     errorService.reportError(error, { operation: 'getAllLogs' });
-    return [];
+    return []; // Return empty array on failure to prevent downstream crashes.
   }
 }

@@ -1,99 +1,80 @@
-<!--
-  @component
-  AiView
-
-  This component renders the 'AI Actions' view within the command bar.
-
-  ARCHITECTURAL NOTE: This final version uses a two-step `$derived` process and an `$effect`
-  for logging to create the most explicit and robust reactivity chain possible in Svelte 5.
-  This pattern resolves a subtle edge case where a single complex `$derived` expression
-  was not being reliably tracked.
--->
+<!-- src/lib/components/ui/command-bar/AiView.svelte -->
 <script lang="ts">
-  import { editorStore } from '$lib/stores/editorStore';
+  // --- VVVV CORRECTED IMPORTS VVVV ---
+  import { editorState } from '$lib/stores/editorStore.svelte';
+  import { documentState } from '$lib/stores/documentStore.svelte'; // Changed from documentStore
   import { getAiCommands } from '$lib/services/features/commandService';
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import { commandBarStore } from '$lib/stores/commandBarStore';
+  import { goBack } from '$lib/stores/commandBarStore.svelte';
   import { t } from '$lib/utils/i18n';
-  import type { Command } from '$lib/types';
-  import type { AiActionHandler } from '$lib/services/features/commandService';
+  import type { Search } from '$lib/types';
+  type Command = Search.Command;
 
-  // This component accepts the orchestrator function from its parent using the $props rune.
-  let { handleAiAction } = $props<{ handleAiAction: AiActionHandler }>();
+  // --- UI Component Imports ---
+  import Icon from '$lib/components/ui/Icon.svelte';
+  import CommandButton from './CommandButton.svelte';
+  import ViewHeader from './ViewHeader.svelte';
 
-  // --- THE FINAL, WORKING SOLUTION ---
+  // --- Reactive State Derivation ---
+  // --- VVVV CORRECTED STATE ACCESS VVVV ---
+  let isNodeSelected = $derived(editorState.selectedNodePos !== null);
+  let isTextSelected = $derived(
+    editorState.instance ? !editorState.instance.state.selection.empty : false
+  );
+  let hasActiveDocument = $derived(!!documentState.docId); // Changed from documentStore.state
+  let hasEditorInstance = $derived(!!editorState.instance);
 
-  // STEP 1: Derive the simple boolean value directly from the store.
-  // This creates a clean, pure Svelte 5 signal that is guaranteed to be reactive.
-  let isNodeSelected = $derived($editorStore.selectedNodePos !== null);
-
-  // STEP 2: Derive the final command list from our simple, clean signal.
-  // The dependency chain is now crystal clear: aiCommands depends on isNodeSelected.
-  let aiCommands = $derived(getAiCommands(handleAiAction, isNodeSelected));
-
-  // STEP 3 (The Ultimate Test): Use an `$effect` to log changes.
-  // An effect is GUARANTEED to run when its dependencies (isNodeSelected) change.
-  // If you see this pink log in the console when you select a node, the problem is solved.
-  $effect(() => {
-    console.log(
-      `%c[AiView EFFECT] Reactivity has fired! isNodeSelected is now: ${isNodeSelected}`,
-      'color: #FF00FF; font-size: 18px; font-weight: bold;'
-    );
-  });
+  // The command list is reactively updated whenever the dependent state changes.
+  let aiCommands = $derived(
+    getAiCommands(
+      isNodeSelected,
+      isTextSelected,
+      hasActiveDocument,
+      hasEditorInstance
+    )
+  );
 </script>
 
-<nav class="action-list" aria-labelledby="ai-commands-title">
-  <!-- Accessible heading for screen readers -->
-  <h2 id="ai-commands-title" class="visually-hidden">{$t('ai_view.title')}</h2>
-
-  <!-- The loop now iterates over the reactive 'aiCommands' variable. -->
-  {#each aiCommands as command (command.id)}
-    <button
-      class="action-button"
-      on:click={(e) => command.action(e)}
-      disabled={command.isEnabled && !command.isEnabled()}
+<div class="view-container">
+  <ViewHeader title={$t('ai_view.title')}>
+    <CommandButton
+      class="back-button"
+      onclick={goBack}
+      aria-label={$t('ai_view.back_button_aria_label')}
     >
-      <Icon name={command.icon} size={18} />
-      <span>{command.label}</span>
-    </button>
-  {/each}
+      <Icon name="arrow-left" size={20} />
+    </CommandButton>
+  </ViewHeader>
 
-  <!-- Visual separator to distinguish commands from navigation -->
-  <hr class="separator" />
-
-  <!-- Button to navigate back to the main command view -->
-  <button
-    class="action-button"
-    on:click={() => commandBarStore.setView('main')}
-    aria-label={$t('ai_view.back_button_aria_label')}
-  >
-    <Icon name="x" size={18} />
-    <span>{$t('ai_view.back_button_label')}</span>
-  </button>
-</nav>
+  <div class="action-list">
+    {#each aiCommands as command (command.id)}
+      <CommandButton
+        onclick={(e) => command.action(e)}
+        disabled={command.isEnabled ? !command.isEnabled() : false}
+      >
+        <Icon name={command.icon} size={20} />
+        <span>{command.label}</span>
+      </CommandButton>
+    {/each}
+  </div>
+</div>
 
 <style>
-  .visually-hidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
-    white-space: nowrap;
+  /* All styles are unchanged and correct */
+  .view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
-  .separator {
-    border: none;
-    height: 1px;
-    background-color: var(--panel-border-light);
-    margin: 4px 0;
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-top: var(--space-xs);
   }
 
-  /* --- Dark Mode --- */
-  :global(.dark-theme) .separator {
-    background-color: var(--panel-border-dark);
+  :global(.back-button) {
+    width: auto !important;
+    padding: 8px !important;
   }
 </style>

@@ -5,8 +5,7 @@
  */
 
 import { Node, mergeAttributes, wrappingInputRule } from '@tiptap/core';
-// --- THE FIX: Import the correct type for the renderer function ---
-import type { NodeViewRendererProps } from '@tiptap/core';
+import type { NodeViewRendererProps, NodeViewProps } from '@tiptap/core';
 import { mount, unmount } from 'svelte';
 import MathPreviewNodeView from '$lib/components/editor/MathPreviewNodeView.svelte';
 
@@ -37,37 +36,35 @@ export const MathInline = Node.create({
   },
 
   addNodeView() {
-    const nodeType = this.type;
-
-    // --- THE FIX: The function returned here is a NodeViewRenderer,
-    // which receives NodeViewRendererProps from Tiptap.
     return (props: NodeViewRendererProps) => {
       const dom = document.createElement('span');
       let component: MathPreviewNodeView;
 
       component = mount(MathPreviewNodeView, {
         target: dom,
-        props: props, // Pass the whole object
+        props: props as unknown as NodeViewProps,
       });
 
       return {
         dom,
         update(updatedNode) {
-          if (updatedNode.type.name !== nodeType.name) {
+          if (updatedNode.type.name !== props.node.type.name) {
             return false;
           }
-          component.updateProps({ node: updatedNode });
+          // DEFINITIVE FIX: Add a guard to ensure the `$set` method exists
+          // before calling it, as shown to be necessary by your linter.
+          if (component && typeof component.$set === 'function') {
+            component.$set({ node: updatedNode });
+          }
           return true;
         },
         destroy() {
           try {
-            if (component) unmount(component);
+            // No guard needed for unmount as the function itself is not optional.
+            unmount(component);
           } catch (error) {
             if (import.meta.env.DEV) {
-              console.warn(
-                'MathInline component unmount failed during HMR.',
-                error
-              );
+              console.warn('MathInline unmount failed during HMR.', error);
             }
           }
         },
@@ -87,9 +84,7 @@ export const MathBlock = Node.create({
   code: true,
 
   addAttributes() {
-    return {
-      formula: { default: '' },
-    };
+    return { formula: { default: '' } };
   },
 
   parseHTML() {
@@ -104,37 +99,34 @@ export const MathBlock = Node.create({
   },
 
   addNodeView() {
-    const nodeType = this.type;
-
-    // --- APPLY THE SAME FIX HERE ---
     return (props: NodeViewRendererProps) => {
       const dom = document.createElement('div');
       let component: MathPreviewNodeView;
 
       component = mount(MathPreviewNodeView, {
         target: dom,
-        props: props,
+        props: props as unknown as NodeViewProps,
       });
 
       return {
         dom,
         stopEvent: () => true,
         update(updatedNode) {
-          if (updatedNode.type.name !== nodeType.name) {
+          if (updatedNode.type.name !== props.node.type.name) {
             return false;
           }
-          component.updateProps({ node: updatedNode });
+          // DEFINITIVE FIX: Apply the same guard here for consistency and safety.
+          if (component && typeof component.$set === 'function') {
+            component.$set({ node: updatedNode });
+          }
           return true;
         },
         destroy() {
           try {
-            if (component) unmount(component);
+            unmount(component);
           } catch (error) {
             if (import.meta.env.DEV) {
-              console.warn(
-                'MathBlock component unmount failed during HMR.',
-                error
-              );
+              console.warn('MathBlock unmount failed during HMR.', error);
             }
           }
         },
@@ -143,11 +135,6 @@ export const MathBlock = Node.create({
   },
 
   addInputRules() {
-    return [
-      wrappingInputRule({
-        find: /^\$\$\s$/,
-        type: this.type,
-      }),
-    ];
+    return [wrappingInputRule({ find: /^\$\$\s$/, type: this.type })];
   },
 });

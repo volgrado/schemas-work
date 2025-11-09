@@ -2,81 +2,96 @@
   @component
   Popup
 
-  A generic, unstyled popup component that can be positioned relative to a reference element.
-  It uses `@floating-ui/dom` to calculate the optimal position, handling edge collisions
-  and providing a flexible API for building tooltips, menus, or popovers.
-
-  This component is designed to be a foundational UI primitive.
-
-  Key Features:
-  - Dynamic positioning using `@floating-ui/dom`.
-  - Automatically flips and shifts to stay within the viewport.
-  - Configurable placement and offset.
-  - Can be anchored to either a physical DOM element (`referenceEl`) or a virtual
-    element defined by a `DOMRect` (`getReferenceClientRect`).
-
-  Props:
-  - `isVisible`: {boolean} - Controls the visibility of the popup.
-  - `placement`: {Placement} - The preferred placement (e.g., 'bottom-start'). Defaults to 'bottom-start'.
-  - `referenceEl`: {HTMLElement | null} - A direct reference to the anchor DOM element.
-  - `getReferenceClientRect`: {(() => DOMRect) | null} - A function that returns a `DOMRect` for virtual elements.
-  - `offsetValue`: {number} - The distance in pixels to offset the popup from its reference. Defaults to 8.
+  An exceptional, unstyled popup component that serves as a robust UI primitive for tooltips,
+  menus, and popovers. It uses `@floating-ui/dom` with `autoUpdate` to ensure the popup
+  always stays anchored to its reference element during scroll, resize, and other layout shifts.
 -->
 <script lang="ts">
-  import { computePosition, flip, shift, offset } from '@floating-ui/dom';
+  import {
+    computePosition,
+    flip,
+    shift,
+    offset,
+    autoUpdate,
+  } from '@floating-ui/dom';
   import type { Placement, VirtualElement } from '@floating-ui/dom';
+  import { quintOut } from 'svelte/easing';
+  import type { Snippet } from 'svelte';
+  // FIX 1: Import `TransitionConfig` from the correct 'svelte/transition' module.
+  import type { TransitionConfig } from 'svelte/transition';
 
-  // --- Props ---
-  /** @prop {boolean} isVisible - Controls the visibility of the popup. */
-  export let isVisible = false;
-  /** @prop {Placement} placement - The preferred placement of the popup. */
-  export let placement: Placement = 'bottom-start';
-  /** @prop {HTMLElement | null} referenceEl - The anchor DOM element. */
-  export let referenceEl: HTMLElement | null = null;
-  /** @prop {(() => DOMRect) | null} getReferenceClientRect - A function returning a DOMRect for virtual elements. */
-  export let getReferenceClientRect: (() => DOMRect) | null = null;
-  /** @prop {number} offsetValue - The distance to offset the popup from its reference. */
-  export let offsetValue: number = 8;
+  // --- Props Definition (Svelte 5 Runes) ---
+  let {
+    isVisible = $bindable(false),
+    placement = 'bottom-start' as Placement,
+    referenceEl = null as HTMLElement | null,
+    getReferenceClientRect = null as (() => DOMRect) | null,
+    offsetValue = 8,
+    children,
+  } = $props<{
+    isVisible: boolean;
+    placement?: Placement;
+    referenceEl?: HTMLElement | null;
+    getReferenceClientRect?: (() => DOMRect) | null;
+    offsetValue?: number;
+    children: Snippet;
+  }>();
 
-  let floatingEl: HTMLElement;
-  let style = 'position: fixed; left: -9999px; top: -9999px; opacity: 0;'; // Start off-screen
+  let floatingEl = $state<HTMLElement | null>(null);
+  let x = $state(0);
+  let y = $state(0);
 
-  /**
-   * Calculates and updates the popup's position using Floating UI.
-   */
-  async function updatePosition() {
-    if (!floatingEl || (!referenceEl && !getReferenceClientRect)) return;
+  // This reactive effect handles the positioning logic.
+  $effect(() => {
+    if (isVisible && floatingEl && (referenceEl || getReferenceClientRect)) {
+      const reference: VirtualElement | HTMLElement = referenceEl || {
+        getBoundingClientRect: getReferenceClientRect!,
+      };
 
-    const reference: VirtualElement | HTMLElement = referenceEl || {
-      getBoundingClientRect: getReferenceClientRect!,
+      const cleanup = autoUpdate(reference, floatingEl, () => {
+        computePosition(reference, floatingEl!, {
+          placement,
+          middleware: [offset(offsetValue), flip(), shift({ padding: 8 })],
+        }).then(({ x: newX, y: newY }) => {
+          x = newX;
+          y = newY;
+        });
+      });
+
+      return cleanup;
+    }
+  });
+
+  const fadeScale = (
+    node: Element,
+    { duration = 150, easing = quintOut, start = 0.95 } = {}
+  ): TransitionConfig => {
+    return {
+      duration,
+      easing,
+      // FIX 2: Add the explicit `number` type to the `t` parameter.
+      css: (t: number) => `
+        opacity: ${t};
+        transform: scale(${start + (1 - start) * t});
+      `,
     };
-
-    // Calculate the x and y coordinates.
-    const { x, y } = await computePosition(reference, floatingEl, {
-      placement,
-      middleware: [offset(offsetValue), flip(), shift({ padding: 8 })],
-    });
-
-    style = `position: fixed; left: ${x}px; top: ${y}px; opacity: 1;`;
-  }
-
-  // Reactively update the position whenever visibility, placement, or the reference changes.
-  $: if (isVisible && (referenceEl || getReferenceClientRect)) {
-    updatePosition();
-  } else {
-    style = 'position: fixed; left: -9999px; top: -9999px; opacity: 0;';
-  }
+  };
 </script>
 
 {#if isVisible}
-  <div bind:this={floatingEl} {style} class="popup-container">
-    <slot />
+  <div
+    bind:this={floatingEl}
+    style="position: fixed; left: {x}px; top: {y}px;"
+    class="popup-container"
+    transition:fadeScale
+  >
+    {@render children?.()}
   </div>
 {/if}
 
 <style>
   .popup-container {
-    z-index: 100;
-    transition: opacity 0.1s ease-in-out;
+    z-index: var(--z-context-menu);
+    transform-origin: top left;
   }
 </style>

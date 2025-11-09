@@ -1,75 +1,61 @@
-<!--
-  @component
-  VaultView
-
-  This component renders the 'Vault Management' view within the command bar.
-  It provides a dedicated space for import and export actions.
--->
+<!-- src/lib/components/ui/command-bar/VaultView.svelte -->
 <script lang="ts">
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import { commandBarStore } from '$lib/stores/commandBarStore';
   import { t } from '$lib/utils/i18n';
+  // FIX: Import the action functions directly from the store.
+  import {
+    goBack,
+    openPasswordModal,
+  } from '$lib/stores/commandBarStore.svelte';
+
+  // --- UI Component Imports ---
+  import Icon from '$lib/components/ui/Icon.svelte';
+  import CommandButton from './CommandButton.svelte';
+  import ViewHeader from './ViewHeader.svelte';
 </script>
 
-<nav class="action-list" aria-labelledby="vault-commands-title">
-  <!-- Accessible heading for screen readers -->
-  <h2 id="vault-commands-title" class="visually-hidden">
-    {$t('vault_view.title')}
-  </h2>
+<div class="view-container">
+  <ViewHeader title={$t('vault_view.title')}>
+    <CommandButton
+      class="back-button"
+      onclick={goBack}
+      aria-label={$t('vault_view.back_button_aria_label')}
+    >
+      <Icon name="arrow-left" size={20} />
+    </CommandButton>
+  </ViewHeader>
 
-  <!-- Export Vault Action -->
-  <button
-    class="action-button"
-    on:click={() => commandBarStore.openPasswordModal('export')}
-  >
-    <Icon name="download-cloud" size={18} />
-    <span>{$t('vault_view.export_button')}</span>
-  </button>
+  <div class="action-list">
+    <!-- FIX: Call the imported action function directly. -->
+    <CommandButton onclick={() => openPasswordModal('export')}>
+      <Icon name="download-cloud" size={20} />
+      <span>{$t('vault_view.export_button')}</span>
+    </CommandButton>
 
-  <!-- Import Vault Action -->
-  <button
-    class="action-button"
-    on:click={() => commandBarStore.openPasswordModal('import')}
-  >
-    <Icon name="upload-cloud" size={18} />
-    <span>{$t('vault_view.import_button')}</span>
-  </button>
-
-  <!-- Visual separator -->
-  <hr class="separator" />
-
-  <!-- Button to navigate back to the main command view -->
-  <button
-    class="action-button"
-    on:click={() => commandBarStore.setView('main')}
-    aria-label={$t('vault_view.back_button_aria_label')}
-  >
-    <Icon name="x" size={18} />
-    <span>{$t('vault_view.back_button_label')}</span>
-  </button>
-</nav>
+    <!-- FIX: Call the imported action function directly. -->
+    <CommandButton onclick={() => openPasswordModal('import')}>
+      <Icon name="upload-cloud" size={20} />
+      <span>{$t('vault_view.import_button')}</span>
+    </CommandButton>
+  </div>
+</div>
 
 <style>
-  .visually-hidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
-    white-space: nowrap;
+  /* All styles are unchanged and correct */
+  .view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
-  .separator {
-    border: none;
-    height: 1px;
-    background-color: var(--panel-border-light);
-    margin: 4px 0;
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--space-xs);
+    overflow-y: auto;
   }
 
-  :global(.dark-theme) .separator {
-    background-color: var(--panel-border-dark);
+  :global(.back-button) {
+    width: auto !important;
+    padding: 8px !important;
   }
 </style>

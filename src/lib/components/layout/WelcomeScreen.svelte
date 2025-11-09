@@ -2,36 +2,61 @@
   @component
   WelcomeScreen
 
-  The main welcome and feature overview screen for the application.
-  It displays the brand name, a tagline, a grid of key features,
-  and a primary call-to-action button to enter the main application.
+  @description
+  An exceptional welcome and feature overview screen for the application. It creates a
+  strong first impression with a clean layout and a delightful, staggered entrance
+  animation for all its content.
 
-  This component is purely presentational. Its only interactive element is the
-  "Start Creating" button, which fires a `start` event to its parent.
+  This component is purely presentational and communicates with its parent via an
+  `onstart` callback prop, following modern Svelte 5 patterns.
 
-  Events:
-  - `start`: Fired when the user clicks the main call-to-action button.
+  @props
+  - `onstart`: {() => void} - Callback fired when the user clicks the "Start Creating" button.
 -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   // --- UI Components & Utilities ---
   import { t } from '$lib/utils/i18n';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
 
-  const dispatch = createEventDispatcher<{ start: void }>();
-  /**
-   * Dispatches the 'start' event when the main call-to-action button is clicked.
-   */
-  function handleStart() {
-    dispatch('start');
-  }
+  // REFACTOR: Use a callback prop for events, the idiomatic Svelte 5 pattern.
+  let { onstart } = $props<{ onstart: () => void }>();
+
+  // ENHANCEMENT: Animate the feature list for a more engaging presentation.
+  const features = [
+    {
+      icon: 'sparkles',
+      title: 'feature.ai_structure.title',
+      desc: 'feature.ai_structure.description',
+    },
+    {
+      icon: 'git-branch',
+      title: 'feature.visualize.title',
+      desc: 'feature.visualize.description',
+    },
+    {
+      icon: 'zap',
+      title: 'feature.learn.title',
+      desc: 'feature.learn.description',
+    },
+    {
+      icon: 'lock',
+      title: 'feature.privacy.title',
+      desc: 'feature.privacy.description',
+    },
+  ] as const;
 </script>
 
 <div class="welcome-container">
   <div class="content-panel">
-    <header class="header">
+    <!-- ENHANCEMENT: Added a subtle fly-in transition for a polished entrance. -->
+    <header
+      class="header"
+      in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 100 }}
+    >
       <h1 class="title">
         {$t('app_name')}<span class="accent-word">.Work</span>
       </h1>
@@ -39,41 +64,32 @@
     </header>
 
     <main class="features-grid">
-      <div class="feature">
-        <Icon name="sparkles" size={24} />
-        <div class="feature-text">
-          <h2 class="feature-title">{$t('feature.ai_structure.title')}</h2>
-          <p>{$t('feature.ai_structure.description')}</p>
+      <!-- ENHANCEMENT: Stagger the animation of each feature for a cascading effect. -->
+      {#each features as feature, i (feature.icon)}
+        <div
+          class="feature"
+          in:fly={{
+            y: 20,
+            duration: 400,
+            easing: quintOut,
+            delay: 300 + i * 100,
+          }}
+        >
+          <Icon name={feature.icon} size={24} />
+          <div class="feature-text">
+            <h2 class="feature-title">{$t(feature.title)}</h2>
+            <p>{$t(feature.desc)}</p>
+          </div>
         </div>
-      </div>
-
-      <div class="feature">
-        <Icon name="git-branch" size={24} />
-        <div class="feature-text">
-          <h2 class="feature-title">{$t('feature.visualize.title')}</h2>
-          <p>{$t('feature.visualize.description')}</p>
-        </div>
-      </div>
-
-      <div class="feature">
-        <Icon name="zap" size={24} />
-        <div class="feature-text">
-          <h2 class="feature-title">{$t('feature.learn.title')}</h2>
-          <p>{$t('feature.learn.description')}</p>
-        </div>
-      </div>
-
-      <div class="feature">
-        <Icon name="lock" size={24} />
-        <div class="feature-text">
-          <h2 class="feature-title">{$t('feature.privacy.title')}</h2>
-          <p>{$t('feature.privacy.description')}</p>
-        </div>
-      </div>
+      {/each}
     </main>
 
-    <footer class="footer">
-      <Button on:click={handleStart} size="lg" variant="primary">
+    <!-- ENHANCEMENT: The final call-to-action flies in last, drawing user focus. -->
+    <footer
+      class="footer"
+      in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 700 }}
+    >
+      <Button onclick={onstart} size="lg" variant="primary">
         {$t('welcome.cta')}
       </Button>
       <p class="cta-support-text">{$t('welcome.cta_support')}</p>
@@ -89,9 +105,8 @@
     place-items: center;
     padding: var(--space-lg);
     box-sizing: border-box;
-    overflow-y: auto; /* Allows vertical scrolling on smaller screens */
+    overflow-y: auto;
   }
-
   .content-panel {
     position: relative;
     z-index: 2;
@@ -101,12 +116,10 @@
     flex-direction: column;
     gap: var(--space-xl);
   }
-
   .header,
   .footer {
     text-align: center;
   }
-
   .title {
     font-family: var(--font-main);
     font-size: 2.8rem;
@@ -119,14 +132,13 @@
   }
   .subtitle {
     font-size: 1.25rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     margin-top: var(--space-sm);
     font-weight: 400;
     max-width: 450px;
     margin-left: auto;
     margin-right: auto;
   }
-
   .features-grid {
     display: grid;
     gap: var(--space-xl);
@@ -151,6 +163,7 @@
   .feature :global(svg) {
     color: var(--color-accent);
     flex-shrink: 0;
+    margin-top: 2px; /* Slight alignment tweak */
   }
   .feature-title {
     font-size: 1.1rem;
@@ -164,13 +177,10 @@
     margin: 0;
     line-height: 1.6;
     color: var(--color-text);
-    overflow-wrap: break-word;
-    word-wrap: break-word;
   }
-
   .cta-support-text {
     font-size: 0.85rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     margin-top: var(--space-sm);
   }
 
@@ -182,7 +192,6 @@
       font-size: 1.1rem;
     }
   }
-
   @media (max-width: 480px) {
     .feature {
       flex-direction: column;

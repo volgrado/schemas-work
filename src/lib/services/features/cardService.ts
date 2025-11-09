@@ -1,24 +1,25 @@
 /**
- * @file Manages the persistence and lifecycle of "cards" using a local IndexedDB database.
- * @module cardService
+ * @file cardService.ts
+ * @service
+ *
+ * @description
+ * This service manages the persistence and lifecycle of all study cards using a local
+ * IndexedDB database via the Dexie.js library. It provides a robust, fully-typed API
+ * for all CRUD operations and correctly handles Svelte 5 Proxy objects passed from the UI.
  */
 
-import type { Card, NewCard } from '$lib/types';
-
+import type { SRS } from '$lib/types';
 import Dexie, { type Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/services/core/errorService';
 
-/**
- * Defines the IndexedDB database schema for storing cards.
- */
 class CardDB extends Dexie {
-  cards!: Table<Card>;
+  cards!: Table<SRS.Card>;
 
   constructor() {
     super('CardDatabase');
     this.version(1).stores({
-      cards: '++id, deckId', // MODIFIED: Index by deckId instead of nodeId
+      cards: '++id, deckId',
     });
   }
 }
@@ -26,18 +27,21 @@ class CardDB extends Dexie {
 const db = new CardDB();
 
 /**
- * Creates a fully-typed card from a `NewCard` object and a `deckId`.
- * @param deckId - The ID of the deck to associate the card with.
- * @param card - The card data to add.
- * @returns {Card} - The newly created card.
+ * Creates a fully-typed Card object from a NewCard object and a deckId.
  * @internal
  */
-function createCard(deckId: string, card: NewCard): Card {
+function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
   const id = uuidv4();
 
-  const baseSrs = {
-    ...card.srs,
-    learningStep: 1, // Start at step 1 of the learning phase
+  // CORRECTION: Spread the incoming `card.srs` object first, then provide the
+  // defaults. This ensures that defaults are only applied if they don't already exist.
+  const baseSrs: SRS.Data = {
+    ...(card.srs || {}),
+    easeFactor: card.srs?.easeFactor ?? 2.5,
+    interval: card.srs?.interval ?? 0,
+    repetitions: card.srs?.repetitions ?? 0,
+    dueDate: card.srs?.dueDate ?? Date.now(),
+    learningStep: 1, // Always start in the learning step for a new card.
   };
 
   switch (card.type) {
@@ -46,7 +50,7 @@ function createCard(deckId: string, card: NewCard): Card {
         id,
         deckId,
         type: 'basic',
-        content: card.content, // { question, answer }
+        content: card.content,
         srs: baseSrs,
         tags: [],
         suspended: false,
@@ -56,7 +60,7 @@ function createCard(deckId: string, card: NewCard): Card {
         id,
         deckId,
         type: 'input',
-        content: card.content, // { prompt, expected }
+        content: card.content,
         srs: baseSrs,
         tags: [],
         suspended: false,
@@ -66,24 +70,19 @@ function createCard(deckId: string, card: NewCard): Card {
         id,
         deckId,
         type: 'sequencing',
-        content: card.content, // { prompt, items }
+        content: card.content,
         srs: baseSrs,
         tags: [],
         suspended: false,
       };
     default:
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       const _exhaustiveCheck: never = card;
-      throw new Error(`Unhandled card type: ${_exhaustiveCheck}`);
+      throw new Error(`Unhandled card type: ${(_exhaustiveCheck as any).type}`);
   }
 }
 
-/**
- * Retrieves all cards from the database.
- * @returns {Promise<Card[]>}
- */
-export async function getAllCards(): Promise<Card[]> {
+/** Retrieves all cards from the database. */
+export async function getAllCards(): Promise<SRS.Card[]> {
   try {
     return await db.cards.toArray();
   } catch (error) {
@@ -92,11 +91,8 @@ export async function getAllCards(): Promise<Card[]> {
   }
 }
 
-/**
- * Retrieves all cards associated with a specific deck (document) ID.
- * @param deckId - The unique identifier of the deck.
- */
-export async function getCardsByDeckId(deckId: string): Promise<Card[]> {
+/** Retrieves all cards associated with a specific deck ID. */
+export async function getCardsByDeckId(deckId: string): Promise<SRS.Card[]> {
   try {
     return await db.cards.where('deckId').equals(deckId).toArray();
   } catch (error) {
@@ -105,11 +101,10 @@ export async function getCardsByDeckId(deckId: string): Promise<Card[]> {
   }
 }
 
-/**
- * Retrieves all cards associated with an array of deck IDs.
- * @param deckIds - An array of unique identifiers of the decks.
- */
-export async function getCardsByDeckIds(deckIds: string[]): Promise<Card[]> {
+/** Retrieves all cards for multiple deck IDs in a single query. */
+export async function getCardsByDeckIds(
+  deckIds: string[]
+): Promise<SRS.Card[]> {
   if (deckIds.length === 0) return [];
   try {
     return await db.cards.where('deckId').anyOf(deckIds).toArray();
@@ -122,15 +117,14 @@ export async function getCardsByDeckIds(deckIds: string[]): Promise<Card[]> {
   }
 }
 
-/**
- * Adds a single new card to the database.
- * @param deckId - The ID of the deck to associate the card with.
- * @param card - The card data to add.
- * @returns {Promise<Card>} - The newly created card.
- */
-export async function addCard(deckId: string, card: NewCard): Promise<Card> {
-  const newCard = createCard(deckId, card);
+/** Adds a single new card to the database. */
+export async function addCard(
+  deckId: string,
+  card: SRS.NewCard
+): Promise<SRS.Card> {
   try {
+    const plainCard = JSON.parse(JSON.stringify(card));
+    const newCard = createCard(deckId, plainCard);
     await db.cards.add(newCard);
     return newCard;
   } catch (error) {
@@ -139,17 +133,16 @@ export async function addCard(deckId: string, card: NewCard): Promise<Card> {
   }
 }
 
-/**
- * Adds multiple cards for a specific deck in a single transaction.
- * @param deckId - The ID of the deck to associate the cards with.
- * @param cards - An array of card data to add.
- */
+/** Adds multiple cards for a specific deck in a single, efficient transaction. */
 export async function addCards(
   deckId: string,
-  cards: NewCard[]
+  cards: SRS.NewCard[]
 ): Promise<void> {
-  const newCards = cards.map((card) => createCard(deckId, card));
   try {
+    const plainCards = JSON.parse(JSON.stringify(cards));
+    const newCards = plainCards.map((card: SRS.NewCard) =>
+      createCard(deckId, card)
+    );
     await db.cards.bulkAdd(newCards);
   } catch (error) {
     errorService.reportError(error, { operation: 'addCards', deckId });
@@ -157,13 +150,11 @@ export async function addCards(
   }
 }
 
-/**
- * Updates an existing card or creates it if it doesn't exist (upsert).
- * @param card - The card object to update or create.
- */
-export async function updateCard(card: Card): Promise<void> {
+/** Updates an existing card in the database. */
+export async function updateCard(card: SRS.Card): Promise<void> {
   try {
-    await db.cards.put(card);
+    const plainCard = JSON.parse(JSON.stringify(card));
+    await db.cards.put(plainCard);
   } catch (error) {
     errorService.reportError(error, {
       operation: 'updateCard',
@@ -173,10 +164,7 @@ export async function updateCard(card: Card): Promise<void> {
   }
 }
 
-/**
- * Deletes a card from the database by its unique identifier.
- * @param cardId - The ID of the card to delete.
- */
+/** Deletes a card from the database by its unique identifier. */
 export async function deleteCard(cardId: string): Promise<void> {
   try {
     await db.cards.delete(cardId);

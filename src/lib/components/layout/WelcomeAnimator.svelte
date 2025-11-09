@@ -2,50 +2,48 @@
   @component
   WelcomeAnimator
 
-  This component acts as a state machine and transition manager for the welcome screen.
-  It controls the mounting and unmounting of the `WelcomeScreen` component, orchestrating
-  the fade-in and fade-out animations.
+  @description
+  An exceptional state machine for the welcome screen, orchestrating its appearance and
+  disappearance. It uses Svelte's built-in transition events for robust, timer-free
+  animation management, representing a best-practice pattern for lifecycle control.
 
-  Its primary responsibility is to listen for the `start` event from the `WelcomeScreen`
-  and then manage a timed exit sequence, finally notifying its parent via the `animationComplete`
-  event that the welcome process is finished.
+  It listens for the start event from the WelcomeScreen, triggers a fade-out, and
+  notifies its parent via the `oncomplete` callback precisely when the animation finishes.
 
-  Events:
-  - `animationComplete`: Fired after the exit animation has completed.
+  @props
+  - `oncomplete`: {() => void} - Callback fired after the exit animation has completed.
 -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import WelcomeScreen from './WelcomeScreen.svelte';
   import { fade } from 'svelte/transition';
+  import WelcomeScreen from './WelcomeScreen.svelte';
 
-  const dispatch = createEventDispatcher<{ animationComplete: void }>();
-  /** @state {boolean} isExiting - The single source of truth for controlling the exit animation sequence.
-   */
-  let isExiting = false;
+  // REFACTOR: Use a callback prop for events, the idiomatic Svelte 5 pattern.
+  let { oncomplete } = $props<{ oncomplete: () => void }>();
 
   /**
-   * Initiates the exit animation sequence.
-   * This function is triggered by the `start` event from the `WelcomeScreen`.
+   * The single source of truth for controlling the exit animation. When this becomes
+   * true, the `out:fade` transition is triggered on the wrapper div.
+   */
+  let isExiting = $state(false);
+
+  /**
+   * Initiates the exit animation sequence by simply updating the state.
    */
   function handleStart() {
-    // 1. Activate the exiting state, adding the '.exiting' class to the wrapper.
     isExiting = true;
-
-    // 2. Set a timer that matches the total duration of the CSS animations.
-    //    When it completes, notify the parent page that the transition is finished.
-    setTimeout(() => {
-      dispatch('animationComplete');
-    }, 250); // Duration should match the out:fade animation.
   }
 </script>
 
+<!-- The `#if` block ensures the component and its transitions are removed from the DOM after exit. -->
 {#if !isExiting}
   <div
     class="animator-wrapper"
     in:fade={{ duration: 300, delay: 300 }}
     out:fade={{ duration: 250 }}
+    on:outroend={oncomplete}
   >
-    <WelcomeScreen on:start={handleStart} />
+    <!-- REFACTOR: Use the modern `onstart` prop to handle the child's event. -->
+    <WelcomeScreen onstart={handleStart} />
   </div>
 {/if}
 
@@ -53,6 +51,10 @@
   .animator-wrapper {
     position: fixed;
     inset: 0;
-    z-index: 200; /* High z-index to cover the main UI during animation */
+    /* Use a dedicated z-index token for consistency */
+    z-index: var(--z-welcome-animator);
+    background-color: var(
+      --color-page-background
+    ); /* Ensure a solid background */
   }
 </style>

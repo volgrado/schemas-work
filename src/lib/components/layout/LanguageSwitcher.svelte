@@ -2,129 +2,166 @@
   @component
   LanguageSwitcher
 
-  This component provides a UI for the user to switch the application's language.
-  It displays the current language and, upon interaction, shows a dropdown menu
-  with all available languages. Selecting a new language updates the URL,
-  triggering SvelteKit's routing to render the page in the chosen locale.
+  @description
+  An exceptional, robust, and fully accessible language switcher component. It leverages
+  the `Popup` UI primitive and a custom `clickOutside` action to provide a polished
+  and intuitive user experience, adhering to modern Svelte 5 patterns.
 -->
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-
-  // --- Svelte and SvelteKit Imports ---
   import { locale, translations, t } from '$lib/utils/i18n';
+  import type { Action } from 'svelte/action';
 
-  /** @state {boolean} showLangMenu - Toggles the visibility of the language dropdown. */
-  let showLangMenu = false;
+  // --- UI Components ---
+  import Popup from '$lib/components/ui/Popup.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
 
-  /**
-   * Toggles the language menu's visibility.
-   */
-  const handleLangMenu = () => {
-    showLangMenu = !showLangMenu;
+  // --- Svelte 5 State ---
+  let menuVisible = $state(false);
+  // FIX: This will now refer to the wrapper div, so the more general `HTMLElement` is the correct type.
+  let triggerEl = $state<HTMLElement | null>(null);
+  let menuEl = $state<HTMLUListElement | null>(null);
+
+  const clickOutside: Action<HTMLElement, () => void> = (node, callback) => {
+    const handleClick = (event: MouseEvent) => {
+      if (
+        node &&
+        !node.contains(event.target as Node) &&
+        !event.defaultPrevented
+      ) {
+        callback();
+      }
+    };
+    document.addEventListener('mousedown', handleClick, true);
+    return {
+      destroy() {
+        document.removeEventListener('mousedown', handleClick, true);
+      },
+    };
   };
 
-  /**
-   * Updates the global locale store with the new language.
-   * @param {string} lang - The language code to switch to (e.g., 'en', 'es').
-   */
-  const changeLanguage = (lang: string) => {
-    locale.set(lang);
-    showLangMenu = false;
-  };
+  $effect(() => {
+    if (!menuVisible) return;
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        menuVisible = false;
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  });
+
+  $effect(() => {
+    if (menuVisible && menuEl) {
+      setTimeout(() => {
+        const firstItem =
+          menuEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+        firstItem?.focus();
+      }, 100);
+    }
+  });
+
+  function changeLanguage(lang: string) {
+    if ($locale !== lang) {
+      locale.set(lang);
+    }
+    menuVisible = false;
+  }
 </script>
 
 <div class="lang-switcher">
-  <!-- Button displaying the current language, which also opens the menu. -->
-  <button
-    on:click={handleLangMenu}
-    aria-haspopup="true"
-    aria-expanded={showLangMenu}
-  >
-    {$locale.toUpperCase()}
-  </button>
+  <!--
+    FIX: Wrap the Button component in a native element.
+    `bind:this` now correctly captures the `HTMLDivElement` for the Popup to use.
+  -->
+  <div bind:this={triggerEl}>
+    <Button
+      variant="ghost"
+      size="sm"
+      onclick={() => (menuVisible = !menuVisible)}
+      aria-haspopup="true"
+      aria-expanded={menuVisible}
+      aria-label={$t('languages.switcher_aria_label')}
+    >
+      {$locale.toUpperCase()}
+    </Button>
+  </div>
 
-  <!-- The language selection menu, shown when `showLangMenu` is true. -->
-  {#if showLangMenu}
-    <ul class="lang-menu" role="menu">
+  <Popup
+    isVisible={menuVisible}
+    referenceEl={triggerEl}
+    placement="bottom-end"
+    offsetValue={4}
+  >
+    <ul
+      class="lang-menu"
+      bind:this={menuEl}
+      role="menu"
+      use:clickOutside={() => (menuVisible = false)}
+    >
       {#each Object.keys(translations) as lang (lang)}
         <li role="presentation">
-          <button role="menuitem" on:click={() => changeLanguage(lang)}>
+          <button
+            role="menuitem"
+            class:current={$locale === lang}
+            onclick={() => changeLanguage(lang)}
+          >
             {$t(`languages.${lang}`)}
           </button>
         </li>
       {/each}
     </ul>
-  {/if}
+  </Popup>
 </div>
 
 <style>
   .lang-switcher {
     position: relative;
+    /* This ensures the triggerEl div doesn't take up extra space */
+    display: inline-block;
   }
-
-  /* Styling for the button that shows the current language and opens the menu */
-  button {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: var(--color-gray-600);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--space-sm);
-    transition:
-      background-color 0.2s,
-      color 0.2s;
-  }
-
-  button:hover {
-    background-color: var(--btn-hover-bg);
-    color: var(--color-text);
-  }
-
-  /* Styling for the language dropdown menu */
   .lang-menu {
-    position: absolute;
-    top: calc(100% + var(--space-xs));
-    right: 0;
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
-    border-radius: var(--space-sm);
     padding: var(--space-xs);
     list-style: none;
     margin: 0;
-    z-index: 10; /* Ensures the menu appears above other elements */
+    min-width: 150px;
+    background-color: var(--color-background-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-lg);
-    min-width: 120px;
   }
-
   .lang-menu li button {
+    display: block;
     width: 100%;
     text-align: left;
+    padding: var(--space-sm);
+    border-radius: var(--border-radius-sm);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
     color: var(--color-text);
+    transition: background-color 0.2s ease;
   }
-
-  .lang-menu li button:hover {
+  .lang-menu li button:hover,
+  .lang-menu li button:focus-visible {
     background-color: var(--btn-hover-bg);
-    color: var(--color-text);
+    outline: none;
   }
-
-  /* Dark Mode Styles */
-  :global(.dark-theme) button {
-    color: var(--color-text-dark-secondary);
-  }
-  :global(.dark-theme) button:hover {
-    background-color: var(--btn-hover-bg-dark);
-    color: var(--color-text-dark);
+  .lang-menu li button.current {
+    font-weight: 600;
+    color: var(--color-accent);
   }
   :global(.dark-theme) .lang-menu {
-    background-color: var(--color-background-dark-raised);
-    border-color: var(--color-border-dark);
+    background-color: var(--panel-bg-dark);
+    border-color: var(--panel-border-dark);
   }
   :global(.dark-theme) .lang-menu li button {
     color: var(--color-text-dark);
   }
-  :global(.dark-theme) .lang-menu li button:hover {
+  :global(.dark-theme) .lang-menu li button:hover,
+  :global(.dark-theme) .lang-menu li button:focus-visible {
     background-color: var(--btn-hover-bg-dark);
   }
 </style>

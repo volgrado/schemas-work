@@ -32,14 +32,8 @@
       "utilities": "Utilities",
       "content": "Content"
     },
-    "term": {
-      "title": "Term",
-      "description": "Add a new concept or term."
-    },
-    "list": {
-      "title": "List",
-      "description": "Create a bulleted list."
-    },
+    "term": { "title": "Term", "description": "Add a new concept or term." },
+    "list": { "title": "List", "description": "Create a bulleted list." },
     "numberedList": {
       "title": "Numbered List",
       "description": "Create an ordered list (1, 2, 3...)"
@@ -48,30 +42,18 @@
       "title": "Heading 1",
       "description": "The main title of the schema."
     },
-    "h2": {
-      "title": "Heading 2",
-      "description": "Add a section subtitle."
-    },
-    "h3": {
-      "title": "Heading 3",
-      "description": "Add a nested subtitle."
-    },
+    "h2": { "title": "Heading 2", "description": "Add a section subtitle." },
+    "h3": { "title": "Heading 3", "description": "Add a nested subtitle." },
     "separator": {
       "title": "Separator",
       "description": "Add a horizontal line."
     },
-    "bold": {
-      "title": "Bold",
-      "description": "Highlight the selected text."
-    },
+    "bold": { "title": "Bold", "description": "Highlight the selected text." },
     "italic": {
       "title": "Italic",
       "description": "Emphasize the selected text."
     },
-    "image": {
-      "title": "Image",
-      "description": "Add an image from a URL."
-    },
+    "image": { "title": "Image", "description": "Add an image from a URL." },
     "youtube": {
       "title": "YouTube Video",
       "description": "Embed a YouTube video."
@@ -108,9 +90,7 @@
     }
   },
   "appHeader": {
-    "aria": {
-      "returnToWelcome": "Return to the welcome screen"
-    }
+    "aria": { "returnToWelcome": "Return to the welcome screen" }
   },
   "review": {
     "inputPlaceholder": "Type your answer...",
@@ -238,7 +218,8 @@
     "close": "Close",
     "loading": "Loading...",
     "send": "Send",
-    "volume": "Volume"
+    "volume": "Volume",
+    "back": "Back"
   },
   "doc_view": {
     "untitled_schema": "Untitled Schema",
@@ -247,9 +228,7 @@
       "term": "Type '/' for commands",
       "description": "Add a description..."
     },
-    "media": {
-      "edit_button": "Edit"
-    }
+    "media": { "edit_button": "Edit" }
   },
   "formula_editor": {
     "title": "Edit Formula",
@@ -296,20 +275,14 @@
     "operation_failed": "Operation failed",
     "operation_failed_details": "Incorrect password or corrupted file.",
     "password_modal": {
-      "title": {
-        "export": "Export Vault",
-        "import": "Import Vault"
-      },
+      "title": { "export": "Export Vault", "import": "Import Vault" },
       "description": {
         "export": "Please enter a password to encrypt your vault. This will be required for import.",
         "import": "Please enter the password for the vault you are importing."
       },
       "password_placeholder": "Enter password...",
       "cancel_button": "Cancel",
-      "confirm_button": {
-        "export": "Export",
-        "import": "Import"
-      }
+      "confirm_button": { "export": "Export", "import": "Import" }
     },
     "close_aria_label": "Close command bar",
     "toast": {
@@ -351,9 +324,7 @@
     "success": {
       "diagnostic_report_copied": "Diagnostic report copied to clipboard."
     },
-    "error": {
-      "could_not_copy_report": "Could not copy the report."
-    }
+    "error": { "could_not_copy_report": "Could not copy the report." }
   },
   "first_time_hint": {
     "command_bar_hint": "Press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open the command menu.",
@@ -364,10 +335,7 @@
     "default_aria_label": "Modal window"
   },
   "file_explorer": {
-    "item_type": {
-      "folder": "folder",
-      "schema": "schema"
-    },
+    "item_type": { "folder": "folder", "schema": "schema" },
     "header": {
       "root_breadcrumb": "Home",
       "new_schema_button": "New Schema",
@@ -386,11 +354,7 @@
       "description": "Are you sure? This will permanently delete the {itemType} and all its contents.",
       "action": "Delete"
     },
-    "context_menu": {
-      "open": "Open",
-      "rename": "Rename",
-      "delete": "Delete"
-    },
+    "context_menu": { "open": "Open", "rename": "Rename", "delete": "Delete" },
     "toast": {
       "folder_created": "Folder \"{name}\" created.",
       "schema_created": "Schema \"{name}\" created.",
@@ -402,17 +366,10 @@
       "item_moved": "\"{title}\" was moved.",
       "move_failed": "Failed to move item."
     },
-    "errors": {
-      "load_failed": "Failed to load items."
-    },
+    "errors": { "load_failed": "Failed to load items." },
     "default_schema_name": "New Schema",
-    "item_actions": {
-      "rename": "Rename item",
-      "delete": "Delete item"
-    },
-    "footer": {
-      "back_to_main_menu": "Back to Main Menu"
-    }
+    "item_actions": { "rename": "Rename item", "delete": "Delete item" },
+    "footer": { "back_to_main_menu": "Back to Main Menu" }
   },
   "ai_view": {
     "title": "AI Assistant Actions",
@@ -448,35 +405,17 @@
       "cards": "Cards"
     }
   },
-  "languages": {
-    "en": "English",
-    "es": "Spanish",
-    "el": "Greek"
-  },
+  "languages": { "en": "English", "es": "Spanish", "el": "Greek" },
   "media_editor": {
-    "title": {
-      "image": "Edit Image",
-      "youtube": "Edit YouTube Video"
-    },
-    "label": {
-      "image": "Image URL",
-      "youtube": "YouTube URL"
-    },
-    "preview": {
-      "alt": "Image preview"
-    },
+    "title": { "image": "Edit Image", "youtube": "Edit YouTube Video" },
+    "label": { "image": "Image URL", "youtube": "YouTube URL" },
+    "preview": { "alt": "Image preview" },
     "cancel_button": "Cancel",
     "save_button": "Save"
   },
-  "tooltip": {
-    "show_help": "Show help"
-  },
-  "slash_menu": {
-    "empty_state": "No matching commands"
-  },
-  "main_view": {
-    "title": "Commands"
-  },
+  "tooltip": { "show_help": "Show help" },
+  "slash_menu": { "empty_state": "No matching commands" },
+  "main_view": { "title": "Commands" },
   "command": {
     "new_schema": "New Schema",
     "explore_schemas": "Explore Schemas",
@@ -486,6 +425,7 @@
     "vault_management": "Vault Management",
     "diagnostics_and_error_report": "Diagnostics & Error Report",
     "create_schema_from_text": "Create Schema From Text",
+    "refine_document_with_ai": "Refine Document with AI",
     "generate_study_cards_for_document": "Generate Study Cards for Document",
     "generate_study_cards_for_node": "Generate Study Cards for this Node",
     "expand_this_node": "Expand This Node",
@@ -641,21 +581,46 @@
   },
   "search_view": {
     "recent_searches": "Recent Searches",
-    "group": {
-      "commands": "Commands",
-      "knowledge": "Knowledge"
-    },
+    "group": { "commands": "Commands", "knowledge": "Knowledge" },
     "relevancy_score_tooltip": "Relevancy score",
     "prompt": "Start typing to search your entire vault.",
     "error": "There was an error performing the search.",
     "no_results": "No results found for your query."
   },
+
   "strategy_session": {
-    "title": "AI Strategy Session",
-    "analysis_brief_placeholder": "Analysis complete. I've identified key concepts in this document that could be turned into study cards.",
-    "concepts_title": "Concepts for this Document",
-    "draft_button": "Draft {count, plural, =1 {1 Card} other {# Cards}}",
-    "command_placeholder": "What's next? You can refine the cards or add more.",
-    "send": "Send"
+    "create_schema": {
+      "title": "Create Document from Text",
+      "input_label": "Paste your text, notes, or transcript below",
+      "placeholder": "For example: The mitochondria is the powerhouse of the cell...",
+      "success": "Document '{title}' created successfully."
+    },
+    "expand_node": {
+      "title": "Expand Node with AI",
+      "quantity": "Number of Sub-points",
+      "tone": "Tone",
+      "success": "Node expanded successfully."
+    },
+    "generate_cards": {
+      "title": "Generate Study Cards",
+      "quantity": "Number of Cards",
+      "types": "Card Types",
+      "success": "{count, plural, =1 {1 card created.} other {# cards created.}}"
+    },
+    "tones": {
+      "didactic": "Didactic",
+      "casual": "Casual",
+      "academic": "Academic"
+    },
+    "settings_title": "Settings",
+    "refine_title": "Refine",
+    "refine_description": "The draft isn't quite right? Tell the AI what to change.",
+    "refine_placeholder": "e.g., Make it more concise...",
+    "preview_title": "Preview",
+    "preview_empty": "Configure the settings and click 'Generate' to see a preview.",
+    "generate_button": "Generate",
+    "regenerate_button": "Regenerate",
+    "accept_button": "Accept & Insert",
+    "error": "An error occurred during generation."
   }
 }

@@ -1,24 +1,42 @@
 /**
- * @file Calculates and aggregates study statistics from review logs and card data.
- * @module statisticsService
+ * @file statisticsService.ts
+ * @service
+ * @description Provides business logic for generating study statistics and data visualizations.
+ *
+ * This service processes raw data from `reviewLogService` and `cardService` to derive
+ * high-level insights, such as daily review counts, retention rates for different card
+ * maturity levels, and the overall distribution of card statuses in the user's collection.
  */
-import * as reviewLogService from '$lib/services/features/reviewLogService';
-import * as cardService from '$lib/services/features/cardService';
-import type { Card } from '$lib/types'; // Import your main Card type from your types file
 
-// --- Type Definitions ---
+import * as reviewLogService from './reviewLogService';
+import * as cardService from './cardService';
+import type { SRS } from '$lib/types';
 
+// --- Constants ---
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const MATURE_CARD_INTERVAL_DAYS = 21; // Standard Anki definition for a "mature" card
+
+// =================================================================
+// --- TYPE DEFINITIONS ---
+// =================================================================
+
+/** Data for the calendar heatmap component. */
 export interface CalendarData {
   date: string; // YYYY-MM-DD format
   count: number;
 }
 
+/** Retention rates for mature vs. young cards. */
 export interface RetentionData {
+  /** Percentage of correct reviews for mature cards (interval >= 21 days). */
   mature: number;
+  /** Percentage of correct reviews for young cards (interval < 21 days). */
   young: number;
+  /** Overall percentage of correct reviews. */
   total: number;
 }
 
+/** The complete statistics payload for the main dashboard. */
 export interface Statistics {
   totalReviews: number;
   reviewsToday: number;
@@ -26,6 +44,7 @@ export interface Statistics {
   retention: RetentionData;
 }
 
+/** The distribution of cards across different learning stages. */
 export interface CardStatusDistribution {
   new: number;
   learning: number;
@@ -33,52 +52,71 @@ export interface CardStatusDistribution {
   mature: number;
 }
 
-// --- Service Functions ---
+// =================================================================
+// --- SERVICE FUNCTIONS ---
+// =================================================================
 
 /**
- * Generates comprehensive study statistics from all review logs.
- * This function focuses on PAST performance and review history.
+ * Generates comprehensive study statistics from all review logs and card data.
+ * This is the primary function for populating the main statistics dashboard.
+ * @returns {Promise<Statistics>} A promise that resolves to the complete statistics object.
  */
-export async function getStatistics(): Promise<Statistics> {
-  const logs = await reviewLogService.getAllLogs();
-  const now = new Date();
-  const todayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  ).getTime();
+export async function generateStatistics(): Promise<Statistics> {
+  const allLogs = await reviewLogService.getAllLogs();
+  const allCards = await cardService.getAllCards();
+  const cardMap = new Map(allCards.map((card) => [card.id, card]));
 
-  // --- Total and Today's Reviews ---
-  const totalReviews = logs.length;
-  const reviewsToday = logs.filter(
-    (log) => log.reviewTime >= todayStart
+  // --- Basic Counts ---
+  const totalReviews = allLogs.length;
+  const oneDayAgo = Date.now() - ONE_DAY_MS;
+  const reviewsToday = allLogs.filter(
+    (log) => log.reviewTime > oneDayAgo
   ).length;
 
   // --- Calendar Heatmap Data ---
-  const reviewsPerDay = new Map<string, number>();
-  for (const log of logs) {
+  const heatmap = new Map<string, number>();
+  for (const log of allLogs) {
     const date = new Date(log.reviewTime).toISOString().split('T')[0];
-    reviewsPerDay.set(date, (reviewsPerDay.get(date) || 0) + 1);
+    heatmap.set(date, (heatmap.get(date) || 0) + 1);
   }
-  const calendarHeatmap = Array.from(reviewsPerDay.entries()).map(
+  const calendarHeatmap: CalendarData[] = Array.from(
+    heatmap,
     ([date, count]) => ({ date, count })
   );
 
-  // --- Retention Rate ---
-  const reviewLogs = logs.filter((log) => log.state === 'review');
-  const retention: RetentionData = {
-    mature: 0,
-    young: 0,
-    total: reviewLogs.length,
-  };
+  // --- Retention Rate Calculation ---
+  let matureCorrect = 0,
+    matureTotal = 0;
+  let youngCorrect = 0,
+    youngTotal = 0;
 
-  for (const log of reviewLogs) {
-    if (log.newInterval > 21) {
-      if (log.quality >= 3) retention.mature++;
+  for (const log of allLogs) {
+    // Only calculate retention for 'review' state, not 'learn' or 'relearn'.
+    if (log.state !== 'review') continue;
+
+    const card = cardMap.get(log.cardId);
+    if (!card || !card.srs) continue;
+
+    const isCorrect = log.quality >= 3;
+    const isMature = card.srs.interval >= MATURE_CARD_INTERVAL_DAYS;
+
+    if (isMature) {
+      matureTotal++;
+      if (isCorrect) matureCorrect++;
     } else {
-      if (log.quality >= 3) retention.young++;
+      youngTotal++;
+      if (isCorrect) youngCorrect++;
     }
   }
+
+  const retention: RetentionData = {
+    mature: matureTotal > 0 ? (matureCorrect / matureTotal) * 100 : 0,
+    young: youngTotal > 0 ? (youngCorrect / youngTotal) * 100 : 0,
+    total:
+      matureTotal + youngTotal > 0
+        ? ((matureCorrect + youngCorrect) / (matureTotal + youngTotal)) * 100
+        : 0,
+  };
 
   return {
     totalReviews,
@@ -89,14 +127,11 @@ export async function getStatistics(): Promise<Statistics> {
 }
 
 /**
- * Calculates the distribution of cards by their CURRENT status.
- * This function is now corrected to work with your actual SrsData type,
- * where the state is derived from `learningStep` and `repetitions`.
- * @returns A promise that resolves to an object with counts for each card status.
+ * Calculates the distribution of all cards across different SRS statuses.
+ * @returns {Promise<CardStatusDistribution>} A promise that resolves to the distribution object.
  */
 export async function getCardStatusDistribution(): Promise<CardStatusDistribution> {
-  const allCards: Card[] = await cardService.getAllCards();
-
+  const allCards = await cardService.getAllCards();
   const distribution: CardStatusDistribution = {
     new: 0,
     learning: 0,
@@ -105,24 +140,18 @@ export async function getCardStatusDistribution(): Promise<CardStatusDistributio
   };
 
   for (const card of allCards) {
+    if (card.suspended) continue;
+
     const srs = card.srs;
 
-    // --- THIS IS THE CORRECTED LOGIC BASED ON YOUR types.ts ---
-    if (srs.learningStep > 0) {
-      // If the card is in a learning step, its state is 'learning'.
-      distribution.learning++;
-    } else if (srs.repetitions > 0) {
-      // If it's graduated (learningStep is 0) and has been seen before, it's a 'review' card.
-      // We then check its interval to distinguish between young and mature.
-      // Anki's standard definition of a "mature" card is one with an interval >= 21 days.
-      if (srs.interval >= 21) {
-        distribution.mature++;
-      } else {
-        distribution.young++;
-      }
-    } else {
-      // If it's not learning and has never been reviewed, it must be 'new'.
+    if (!srs || srs.repetitions === 0) {
       distribution.new++;
+    } else if (srs.learningStep > 0) {
+      distribution.learning++;
+    } else if (srs.interval >= MATURE_CARD_INTERVAL_DAYS) {
+      distribution.mature++;
+    } else {
+      distribution.young++;
     }
   }
 

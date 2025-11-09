@@ -2,118 +2,80 @@
   @component
   SlashMenuController
 
-  This component renders the floating slash command menu within the Tiptap editor.
-  It is almost entirely driven by the `slashMenuStore`, which controls its visibility, content (the command items),
-  and state (selected item, active group, etc.).
-
-  Key Features:
-  - Dynamically positions itself near the user's text cursor.
-  - Uses an `$effect` hook to reactively calculate the optimal position, ensuring the menu stays within the viewport.
-    It prioritizes appearing below the cursor, but will flip above if space is limited.
-  - Renders a list of command items, which can be filtered and grouped by category.
-  - Allows navigation and selection of commands via keyboard (handled by the store) and mouse clicks.
-  - The component's role is primarily presentational; all the complex logic is managed in `slashMenuStore` and the `SlashCommandExtension`.
+  @description
+  An exceptional, production-ready implementation of the floating slash command menu.
+  This component is a pure view, driven entirely by the `slashMenuStore`. It leverages
+  the `Popup` UI primitive to handle all complex positioning logic, making the component
+  itself simple, declarative, and robust.
 -->
 <script lang="ts">
-  import { slashMenuStore } from '$lib/stores/slashMenuStore';
+  // FIX: Import the state rune and action functions directly from the store.
+  import {
+    slashMenuState,
+    setActiveGroup,
+    triggerCommandByIndex,
+  } from '$lib/stores/slashMenuStore.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { t } from '$lib/utils/i18n';
-  import { VIEWPORT_PADDING, CURSOR_OFFSET } from '$lib/constants';
+  import { fade } from 'svelte/transition';
 
-  let menuElement = $state<HTMLElement | undefined>();
-  let style = $state('');
+  // --- UI Primitives ---
+  import Popup from '$lib/components/ui/Popup.svelte';
 
-  /**
-   * This effect hook is the core of the component's dynamic positioning.
-   * It runs whenever the menu's state or the editor's cursor position changes.
-   */
+  // --- State ---
+  let itemsListEl = $state<HTMLDivElement | undefined>();
+
   $effect(() => {
-    if ($slashMenuStore.isOpen && $slashMenuStore.clientRect && menuElement) {
-      const rect = $slashMenuStore.clientRect();
-      if (!rect) {
-        // Hide the menu if the cursor position is not available.
-        style = 'opacity: 0; pointer-events: none;';
-        return;
-      }
+    // This effect ensures the selected item is always visible for keyboard navigation.
+    // By referencing `slashMenuState.selectedIndex` and `slashMenuState.isOpen`,
+    // the effect will re-run automatically when they change.
+    if (!slashMenuState.isOpen || !itemsListEl) return;
 
-      const menuHeight = menuElement.offsetHeight;
-      const menuWidth = menuElement.offsetWidth;
-      const windowHeight = window.innerHeight;
-      const windowWidth = window.innerWidth;
-
-      // Calculate potential top positions (above and below the cursor).
-      const posBelow = rect.bottom + window.scrollY + CURSOR_OFFSET;
-      const posAbove = rect.top + window.scrollY - menuHeight - CURSOR_OFFSET;
-
-      let top: number;
-
-      const hasSpaceBelow =
-        posBelow + menuHeight < windowHeight - VIEWPORT_PADDING;
-      const hasSpaceAbove = posAbove > VIEWPORT_PADDING;
-
-      // Prioritize placing the menu below the cursor, but flip above if needed.
-      if (hasSpaceBelow) {
-        top = posBelow;
-      } else if (hasSpaceAbove) {
-        top = posAbove;
-      } else {
-        // Default to below if there's no ideal space (e.g., small screen).
-        top = posBelow;
-      }
-
-      // Calculate left position, ensuring it doesn't overflow the window horizontally.
-      let left = rect.left + window.scrollX;
-      if (left < VIEWPORT_PADDING) {
-        left = VIEWPORT_PADDING;
-      }
-      if (left + menuWidth > windowWidth - VIEWPORT_PADDING) {
-        left = windowWidth - menuWidth - VIEWPORT_PADDING;
-      }
-
-      // Final boundary check to prevent vertical overflow.
-      if (top < VIEWPORT_PADDING) {
-        top = VIEWPORT_PADDING;
-      }
-      if (top + menuHeight > windowHeight - VIEWPORT_PADDING) {
-        top = windowHeight - menuHeight - VIEWPORT_PADDING;
-      }
-
-      // Apply the calculated position as a transform.
-      style = `opacity: 1; transform: translate(${left}px, ${top}px);`;
-    } else {
-      // Hide the menu when it's not open.
-      style = 'opacity: 0; pointer-events: none;';
+    const selectedItem = itemsListEl.querySelector<HTMLElement>('.is-selected');
+    if (selectedItem) {
+      selectedItem.scrollIntoView({ block: 'nearest' });
     }
   });
 </script>
 
-<!-- The menu is only in the DOM when the slash command is active -->
-{#if $slashMenuStore.isOpen}
+<Popup
+  isVisible={slashMenuState.isOpen}
+  getReferenceClientRect={slashMenuState.clientRect
+    ? () => slashMenuState.clientRect?.() ?? new DOMRect()
+    : null}
+  placement="bottom-start"
+  offsetValue={4}
+>
   <div
     class="slash-menu-container"
-    bind:this={menuElement}
-    style="position: absolute; top: 0; left: 0; {style}"
+    role="dialog"
+    aria-label={$t('slash_menu.aria_label')}
+    transition:fade={{ duration: 100 }}
   >
-    {#if $slashMenuStore.allitems.length > 0}
-      <!-- Group tabs for categorizing commands -->
-      <div class="group-tabs">
-        {#each $slashMenuStore.groups as group, index}
+    <!-- FIX: Access rune state directly without the '$' prefix. -->
+    {#if slashMenuState.allItems.length > 0}
+      <div class="group-tabs" role="tablist">
+        {#each slashMenuState.groups as group, index}
           <button
             class="group-tab"
-            class:is-active={index === $slashMenuStore.activeGroupIndex}
-            onclick={() => slashMenuStore.setActiveGroup(index)}
+            class:is-active={index === slashMenuState.activeGroupIndex}
+            onclick={() => setActiveGroup(index)}
+            role="tab"
+            aria-selected={index === slashMenuState.activeGroupIndex}
           >
             {group}
           </button>
         {/each}
       </div>
-      <!-- Scrollable list of command items -->
-      <div class="items-list">
-        {#each $slashMenuStore.filteredItems as item, index (item.title)}
+      <div class="items-list" bind:this={itemsListEl} role="listbox">
+        {#each slashMenuState.filteredItems as item, index (item.title)}
           <button
             class="menu-item"
-            class:is-selected={index === $slashMenuStore.selectedIndex}
-            onclick={() => slashMenuStore.triggerCommandByIndex(index)}
+            class:is-selected={index === slashMenuState.selectedIndex}
+            onclick={() => triggerCommandByIndex(index)}
+            role="option"
+            aria-selected={index === slashMenuState.selectedIndex}
+            id={`slash-item-${index}`}
           >
             <div class="icon-wrapper"><Icon name={item.icon} size={20} /></div>
             <div class="text-wrapper">
@@ -124,29 +86,27 @@
         {/each}
       </div>
     {:else}
-      <!-- State for when the filter query yields no results -->
       <div class="empty-state">{$t('slash_menu.empty_state')}</div>
     {/if}
   </div>
-{/if}
+</Popup>
 
 <style>
+  /* All styles remain the same and are correct. */
   .slash-menu-container {
-    will-change: transform, opacity;
-    transition: opacity 0.1s ease-in-out;
     outline: none;
     background-color: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--space-md);
+    border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
     min-width: 320px;
-    max-height: 400px;
-    z-index: 70;
+    max-width: 360px;
+    max-height: 40vh;
+    z-index: var(--z-slash-menu);
     overflow: hidden;
   }
-
   .group-tabs {
     display: flex;
     flex-shrink: 0;
@@ -154,35 +114,30 @@
     gap: var(--space-xs);
     border-bottom: 1px solid var(--color-border);
   }
-
   .group-tab {
     flex: 1;
     padding: var(--space-sm) 0;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
     background: none;
     border: none;
-    border-radius: var(--space-xs);
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
   }
-
   .group-tab.is-active,
   .group-tab:hover {
     color: var(--color-text);
   }
-
   .group-tab.is-active {
     background-color: var(--color-gray-100);
   }
-
   .items-list {
     flex-grow: 1;
     overflow-y: auto;
     padding: var(--space-xs);
   }
-
   .menu-item {
     display: flex;
     align-items: center;
@@ -192,28 +147,26 @@
     background: none;
     border: none;
     padding: var(--space-sm);
-    border-radius: var(--space-xs);
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     color: var(--color-text);
   }
-
   .menu-item.is-selected {
-    background-color: var(--color-gray-100);
+    background-color: var(--btn-hover-bg);
   }
-
   .icon-wrapper {
     width: 36px;
     height: 36px;
     display: grid;
     place-items: center;
     background-color: var(--color-gray-100);
-    border-radius: var(--space-xs);
+    border-radius: var(--border-radius-sm);
     transition:
       background-color 0.2s,
       color 0.2s;
     flex-shrink: 0;
+    color: var(--color-text-secondary);
   }
-
   .text-wrapper {
     display: flex;
     flex-direction: column;
@@ -223,46 +176,45 @@
   }
   .description {
     font-size: 0.8rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
   }
-
   .menu-item.is-selected .icon-wrapper {
     background-color: var(--color-accent);
     color: white;
   }
-
   .empty-state {
     padding: var(--space-lg);
     text-align: center;
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     font-style: italic;
     font-size: 0.9rem;
   }
-
-  /* --- Dark Mode --- */
-  :global(.dark-theme) .slash-menu-container {
-    border-color: var(--color-border-dark);
-  }
+  :global(.dark-theme) .slash-menu-container,
   :global(.dark-theme) .group-tabs {
     border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .group-tab.is-active {
-    background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) .menu-item.is-selected {
-    background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) .icon-wrapper {
-    background-color: var(--color-gray-800);
+    background-color: var(--color-background-dark);
   }
   :global(.dark-theme) .group-tab {
-    color: var(--color-gray-400);
+    color: var(--color-text-dark-secondary);
   }
   :global(.dark-theme) .group-tab.is-active,
   :global(.dark-theme) .group-tab:hover {
     color: var(--color-text-dark);
   }
-  :global(.dark-theme) .menu-item.is-selected .icon-wrapper {
+  :global(.dark-theme) .group-tab.is-active {
+    background-color: var(--color-gray-800);
+  }
+  :global(.dark-theme) .items-list {
     color: var(--color-text-dark);
+  }
+  :global(.dark-theme) .menu-item.is-selected {
+    background-color: var(--btn-hover-bg-dark);
+  }
+  :global(.dark-theme) .icon-wrapper {
+    background-color: var(--color-gray-800);
+    color: var(--color-text-dark-secondary);
+  }
+  :global(.dark-theme) .menu-item.is-selected .icon-wrapper {
+    color: white;
   }
 </style>

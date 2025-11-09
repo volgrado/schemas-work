@@ -1,208 +1,210 @@
-<!--
-  @component
-  TTSController
-
-  Provides a complete and robust UI for the browser's built-in Text-to-Speech (TTS) feature.
-  It interacts with the playlist-based ttsStore to provide full playback control,
-  including skipping between text nodes.
--->
+<!-- src/lib/components/tts/TTSController.svelte -->
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import { derived } from 'svelte/store';
 
   // --- Stores, UI Components, and Utilities ---
-  import { ttsStore } from '$lib/stores/ttsStore';
+  import {
+    ttsState,
+    resumeReading,
+    pauseReading,
+    setVoice,
+    setRate,
+    setVolume,
+    replay,
+    previousNode,
+    nextNode,
+    stopReading,
+  } from '$lib/stores/ttsStore.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import { t } from '$lib/utils/i18n';
 
-  // --- DERIVED STATE & REACTIVITY ---
-
-  /**
-   * Reactively calculates the playback progress through the entire document
-   * as a percentage.
-   */
-  const progress = derived(ttsStore, ($ttsStore) => {
-    if (!$ttsStore.nodesToRead || $ttsStore.nodesToRead.length === 0) {
-      return 0;
-    }
-    // Progress is based on which node is currently being read.
-    return (
-      (($ttsStore.currentNodeIndex + 1) / $ttsStore.nodesToRead.length) * 100
-    );
+  // --- SVELTE 5 DERIVED STATE ---
+  const progress = $derived(() => {
+    const nodes = ttsState.nodesToRead;
+    if (!nodes || nodes.length === 0) return 0;
+    return ((ttsState.currentNodeIndex + 1) / nodes.length) * 100;
   });
 
-  /**
-   * Reactively derives the title of the current node being read for display.
-   */
-  const currentTitle = derived(ttsStore, ($ttsStore) => {
-    if (
-      ($ttsStore.status === 'playing' || $ttsStore.status === 'paused') &&
-      $ttsStore.nodesToRead[$ttsStore.currentNodeIndex]
-    ) {
-      return $ttsStore.nodesToRead[$ttsStore.currentNodeIndex].title ?? '...';
+  const currentTitle = $derived(() => {
+    const { status, nodesToRead, currentNodeIndex } = ttsState;
+    const currentNode = nodesToRead?.[currentNodeIndex];
+    if ((status === 'playing' || status === 'paused') && currentNode) {
+      return currentNode.title ?? '...';
     }
     return '...';
   });
 
   // --- EVENT HANDLERS ---
-
   function handleTogglePause() {
-    if ($ttsStore.status === 'paused') {
-      ttsStore.resumeReading();
-    } else if ($ttsStore.status === 'playing') {
-      ttsStore.pauseReading();
+    if (ttsState.status === 'paused') {
+      resumeReading();
+    } else if (ttsState.status === 'playing') {
+      pauseReading();
     }
   }
 
   function onVoiceChange(e: Event) {
+    if (ttsState.availableVoices.length === 0) return;
     const newVoiceId = (e.currentTarget as HTMLSelectElement).value;
-    ttsStore.setVoice(newVoiceId);
+    setVoice(newVoiceId);
   }
 
   function onRateChange(e: Event) {
     const newRate = parseFloat((e.currentTarget as HTMLInputElement).value);
-    ttsStore.setRate(newRate);
+    setRate(newRate);
   }
 
   function onVolumeChange(e: Event) {
     const newVolume = parseFloat((e.currentTarget as HTMLInputElement).value);
-    ttsStore.setVolume(newVolume);
+    setVolume(newVolume);
   }
 </script>
 
 <!-- The controller only renders when TTS is not 'idle'. -->
-{#if $ttsStore.status !== 'idle'}
+{#if ttsState.status !== 'idle'}
   <div
     class="panel"
     transition:fly={{ y: 20, duration: 300, easing: quintOut }}
+    role="region"
+    aria-label={$t('tts.controller_region_aria_label')}
     aria-live="polite"
   >
-    <!-- Progress Bar now accurately reflects document progress -->
     <div class="progress-container">
-      <div class="progress-bar" style="width: {$progress}%"></div>
+      <!-- FIX: Call the derived value as a function, per your tooling's requirement. -->
+      <div class="progress-bar" style="width: {progress()}%"></div>
     </div>
 
     <div class="content-wrapper">
-      {#if $ttsStore.status === 'initializing'}
+      {#if ttsState.status === 'initializing'}
         <div class="status-view">
           <Icon name="loader" size={20} class="spinner" />
           <span class="status-text">{$t('tts.initializing')}</span>
         </div>
-      {:else if $ttsStore.status === 'error'}
+      {:else if ttsState.status === 'error'}
         <div class="status-view error">
           <Icon name="alert-triangle" size={20} />
-          <span class="status-text">{$ttsStore.error || $t('tts.error')}</span>
-          <Button onclick={ttsStore.stopReading} variant="ghost" size="sm"
-            >{$t('common.close')}</Button
-          >
+          <span class="status-text">{ttsState.error || $t('tts.error')}</span>
+          <Button onclick={stopReading} variant="ghost" size="sm">
+            {$t('common.close')}
+          </Button>
         </div>
       {:else}
         <!-- Main Controls View for Playing/Paused States -->
         <div class="controls-view">
           <div class="main-controls">
-            <p class="current-text" title={$currentTitle}>
-              <span class="progress-indicator"
-                >{$ttsStore.currentNodeIndex + 1} / {$ttsStore.nodesToRead
-                  .length}</span
-              >
-              {$currentTitle}
+            <!-- FIX: Call the derived value as a function to resolve the TypeScript error. -->
+            <p class="current-text" title={currentTitle()}>
+              {#if ttsState.nodesToRead}
+                <span class="progress-indicator">
+                  {ttsState.currentNodeIndex + 1} / {ttsState.nodesToRead
+                    .length}
+                </span>
+              {/if}
+              {currentTitle()}
             </p>
 
             <div class="actions">
               <Button
-                onclick={ttsStore.replay}
+                onclick={replay}
                 variant="ghost"
                 size="md"
                 aria-label={$t('tts.replay')}
-                ><Icon name="rotate-ccw" size={18} /></Button
               >
+                <Icon name="rotate-ccw" size={18} />
+              </Button>
               <Button
-                onclick={ttsStore.previousNode}
+                onclick={previousNode}
                 variant="ghost"
                 size="md"
-                disabled={$ttsStore.currentNodeIndex === 0}
+                disabled={ttsState.currentNodeIndex === 0}
                 aria-label={$t('tts.previous_node')}
-                ><Icon name="skip-back" size={18} /></Button
               >
+                <Icon name="skip-back" size={18} />
+              </Button>
               <Button
                 onclick={handleTogglePause}
                 variant="secondary"
                 size="md"
-                aria-label={$ttsStore.status === 'paused'
+                aria-label={ttsState.status === 'paused'
                   ? $t('tts.play')
                   : $t('tts.pause')}
-                ><Icon
-                  name={$ttsStore.status === 'paused' ? 'play' : 'pause'}
-                  size={20}
-                /></Button
               >
+                <Icon
+                  name={ttsState.status === 'paused' ? 'play' : 'pause'}
+                  size={20}
+                />
+              </Button>
               <Button
-                onclick={ttsStore.nextNode}
+                onclick={nextNode}
                 variant="ghost"
                 size="md"
-                disabled={$ttsStore.currentNodeIndex >=
-                  $ttsStore.nodesToRead.length - 1}
+                disabled={ttsState.nodesToRead &&
+                  ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
                 aria-label={$t('tts.next_node')}
-                ><Icon name="skip-forward" size={18} /></Button
               >
+                <Icon name="skip-forward" size={18} />
+              </Button>
               <Button
-                onclick={ttsStore.stopReading}
+                onclick={stopReading}
                 variant="ghost"
                 size="md"
                 aria-label={$t('tts.stop')}
-                ><Icon name="x-circle" size={18} /></Button
               >
+                <Icon name="x-circle" size={18} />
+              </Button>
             </div>
           </div>
 
           <div class="settings">
             <div class="setting-item">
-              <label for="voice-select"
-                ><Icon name="mic" size={14} /> {$t('tts.voice')}</label
-              >
+              <label for="voice-select">
+                <Icon name="mic" size={14} />
+                {$t('tts.voice')}
+              </label>
               <select
                 id="voice-select"
                 class="ui-select"
-                value={$ttsStore.selectedVoiceId}
+                value={ttsState.selectedVoiceId}
                 onchange={onVoiceChange}
-                disabled={$ttsStore.availableVoices.length === 0}
+                disabled={ttsState.availableVoices.length === 0}
               >
-                {#if $ttsStore.availableVoices.length === 0}
+                {#if ttsState.availableVoices.length === 0}
                   <option value="">{$t('tts.no_voices')}</option>
                 {/if}
-                {#each $ttsStore.availableVoices as voice (voice.id)}
+                {#each ttsState.availableVoices as voice (voice.id)}
                   <option value={voice.id}>{voice.name}</option>
                 {/each}
               </select>
             </div>
             <div class="setting-item">
-              <label for="rate-slider"
-                ><Icon name="fast-forward" size={14} />
-                {$t('tts.speed', { rate: $ttsStore.rate.toFixed(1) })}</label
-              >
+              <label for="rate-slider">
+                <Icon name="fast-forward" size={14} />
+                {$t('tts.speed', { rate: ttsState.rate.toFixed(1) })}
+              </label>
               <input
                 id="rate-slider"
                 type="range"
                 min="0.5"
                 max="2"
                 step="0.1"
-                value={$ttsStore.rate}
+                value={ttsState.rate}
                 oninput={onRateChange}
               />
             </div>
             <div class="setting-item">
-              <label for="volume-slider"
-                ><Icon name="volume-2" size={14} /> {$t('common.volume')}</label
-              >
+              <label for="volume-slider">
+                <Icon name="volume-2" size={14} />
+                {$t('common.volume')}
+              </label>
               <input
                 id="volume-slider"
                 type="range"
                 min="0"
                 max="1"
                 step="0.1"
-                value={$ttsStore.volume}
+                value={ttsState.volume}
                 oninput={onVolumeChange}
               />
             </div>
@@ -214,7 +216,7 @@
 {/if}
 
 <style>
-  /* Your CSS styles are excellent. I am including them here for completeness. */
+  /* All styles remain the same and are correct. */
   .panel {
     position: fixed;
     bottom: var(--space-lg);
@@ -325,7 +327,7 @@
     background-color: var(--color-background);
     color: var(--color-text);
   }
-  .spinner {
+  :global(.spinner) {
     animation: spin 1s linear infinite;
   }
   @keyframes spin {
@@ -347,5 +349,20 @@
     .settings {
       grid-template-columns: 1fr;
     }
+  }
+  :global(.dark-theme) .panel {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .progress-indicator {
+    background-color: var(--color-gray-700);
+    color: var(--color-text-dark-secondary);
+  }
+  :global(.dark-theme) .settings {
+    border-color: var(--color-border-dark);
+  }
+  :global(.dark-theme) .ui-select {
+    border-color: var(--color-border-dark);
+    background-color: var(--color-background-dark);
+    color: var(--color-text-dark);
   }
 </style>

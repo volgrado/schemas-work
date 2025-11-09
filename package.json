@@ -20,7 +20,9 @@
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.22.0",
+    "@iconify/svelte": "^5.1.0",
     "@playwright/test": "^1.49.1",
+    "@sveltejs/adapter-auto": "^7.0.0",
     "@sveltejs/adapter-cloudflare": "^7.2.4",
     "@sveltejs/kit": "^2.22.0",
     "@testing-library/svelte": "^5.2.8",
@@ -72,7 +74,6 @@
     "idb": "^8.0.3",
     "katex": "^0.16.11",
     "sharp": "^0.34.4",
-    "svelte-feather-icons": "^4.2.0",
     "svelte-sonner": "^1.0.5",
     "uuid": "^13.0.0",
     "y-indexeddb": "^9.0.12",

@@ -6,22 +6,14 @@
  * This file implements the "Strategy Pattern" for embedding generation. It decouples
  * the core application logic (like the Neural Index) from the specific method
  * used to create embeddings (e.g., a cloud API vs. a local model).
- *
- * The core components are:
- * 1.  IEmbeddingStrategy: An interface that defines a universal contract for any embedding generator.
- * 2.  Concrete Strategies: Classes (like `GeminiCloudStrategy`) that implement the contract.
- * 3.  The Strategy Manager: A single function (`getEmbedding`) that the rest of the app calls.
- *     This manager is responsible for selecting and using the correct strategy based on
- *     application settings.
- *
- * This architecture allows us to add new embedding methods (like a local, on-device model)
- * in the future with minimal changes to the rest of the codebase. We would simply add a
- * new strategy class and update the manager's selection logic.
  */
 
 import * as aiService from '$lib/services/ai/aiService';
-import { settingsStore } from '$lib/stores/settingsStore';
-import { get } from 'svelte/store';
+import {
+  settingsState,
+  getNextAvailableKey,
+  recordApiKeyUsage,
+} from '$lib/stores/settingsStore.svelte';
 
 // --- 1. The "Strategy" Interface (The Contract) ---
 
@@ -37,34 +29,41 @@ export interface IEmbeddingStrategy {
 
 /**
  * STRATEGY 1: The Cloud-Based Gemini Embedder
- * This class fulfills the IEmbeddingStrategy contract by calling the Gemini API via our aiService.
+ * Fulfills the IEmbeddingStrategy contract by calling the Gemini API via our aiService.
  */
 class GeminiCloudStrategy implements IEmbeddingStrategy {
-  /**
-   * Generates an embedding by delegating to the aiService's generateEmbedding function.
-   * @param text The text to be embedded.
-   * @returns A promise that resolves to the vector embedding.
-   */
   async generate(text: string): Promise<number[]> {
-    return await aiService.generateEmbedding(text);
+    const apiKeyObject = getNextAvailableKey('gemini');
+
+    if (!apiKeyObject) {
+      throw new Error(
+        'No available Gemini API key. Please add a key in settings or wait for the rate limit to expire.'
+      );
+    }
+
+    try {
+      const embedding = await aiService.generateEmbedding(
+        text,
+        apiKeyObject.key
+      );
+      recordApiKeyUsage(apiKeyObject.id);
+      return embedding;
+    } catch (error) {
+      console.error(
+        `Embedding generation failed with key: ${apiKeyObject.nickname || apiKeyObject.id}`
+      );
+      throw error;
+    }
+    // CORRECTION: Removed the stray 'a' character.
   }
 }
 
 /**
  * STRATEGY 2: The Local On-Device Embedder (FUTURE IMPLEMENTATION)
- * This is a placeholder for our future work. It demonstrates how easily a new
- * strategy can be added. It currently throws an error if called.
+ * A placeholder for future on-device model integration.
  */
 class LocalTransformerStrategy implements IEmbeddingStrategy {
-  /**
-   * (Not Implemented) This method will one day use a library like Transformers.js
-   * to generate embeddings locally on the user's device.
-   * @param text The text to be embedded.
-   * @throws Error because this feature is not yet implemented.
-   */
   async generate(text: string): Promise<number[]> {
-    // In the future, this is where the logic for running a local model would go.
-    // For now, it serves as a placeholder and a guard.
     console.error(
       'Local embedding strategy called but is not yet implemented.'
     );
@@ -74,38 +73,27 @@ class LocalTransformerStrategy implements IEmbeddingStrategy {
 
 // --- 3. The "Strategy Manager" (The Foreman) ---
 
-/**
- * A private object that holds an instance of each available strategy.
- * This ensures we only create one instance of each class.
- * @internal
- */
 const strategies = {
   cloud: new GeminiCloudStrategy(),
-  local: new LocalTransformerStrategy(), // It's ready and waiting
+  local: new LocalTransformerStrategy(),
 };
 
 /**
  * The single, public-facing function that the rest of the application will use
- * to generate an embedding. It abstracts away the "how".
- *
- * It reads the user's settings to determine which strategy to use ('cloud' or 'local'),
- * gets the appropriate strategy instance, and then calls its `generate` method.
+ * to generate an embedding. It dynamically selects and executes the correct strategy
+ * based on the user's current settings.
  *
  * @param text The text to be embedded.
  * @returns A promise that resolves to the vector embedding.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
-  // In the future, you will add a property to your settingsStore, e.g., 'embeddingMethod'.
-  // const { embeddingMethod } = get(settingsStore);
-  // For now, we hardcode the strategy to 'cloud' as per our plan.
-  const chosenStrategy: 'cloud' | 'local' = 'cloud';
+  const { embeddingMethod } = settingsState;
 
-  const strategy = strategies[chosenStrategy];
+  const strategy = strategies[embeddingMethod];
 
   if (!strategy) {
-    // This is a failsafe in case the setting is invalid. Default to the most reliable option.
     console.warn(
-      `Invalid embedding strategy '${chosenStrategy}'. Defaulting to 'cloud'.`
+      `Invalid embedding strategy '${embeddingMethod}'. Defaulting to 'cloud'.`
     );
     return await strategies.cloud.generate(text);
   }

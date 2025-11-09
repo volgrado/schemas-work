@@ -1,45 +1,38 @@
 /**
  * @file Centralized service for capturing, storing, and managing application-wide errors.
  * @module errorService
- *
- * @remarks
- * This service provides a unified, persistent error handling mechanism for the entire application.
- * Instead of scattering `console.error` calls throughout the codebase, other modules can delegate
- * error handling to this service. This approach offers several key advantages:
- *
- * 1.  **Centralization**: All error reporting logic is in one place, making it easy to modify
- *     or extend. For example, you could add a remote logging service (like Sentry or LogRocket)
- *     by changing only this file.
- * 2.  **Persistence**: By storing errors in `localStorage`, we can diagnose issues that occur
- *     over time or across sessions. Users can also access these logs to provide more detailed
- *     bug reports.
- * 3.  **Contextualization**: The `reportError` function accepts a `context` object, allowing
- *     developers to attach relevant data to an error, which is invaluable for debugging.
- * 4.  **Safety**: The service includes safety checks (like capping the number of logs and handling
- *     parsing errors) to prevent it from becoming a source of new problems.
  */
 
 import { ERROR_LOGS_STORAGE_KEY, MAX_ERROR_LOGS } from '$lib/constants';
 
-/**
- * Defines the structure for a single error entry in the log.
- */
 export interface ErrorLog {
-  /** The ISO 8601 timestamp when the error was logged. */
   timestamp: string;
-  /** The primary error message. */
   message: string;
-  /** The stack trace of the error, if available. */
   stack?: string;
-  /** Additional context about the error. */
   context?: Record<string, any>;
 }
 
+// --- NITPICK IMPLEMENTED: Type guard for generic error-like objects ---
 /**
- * Retrieves all stored error logs from `localStorage`.
- *
- * @returns {ErrorLog[]} An array of `ErrorLog` objects, sorted from most recent to oldest.
+ * A helper interface to describe the shape of an object that might be an error,
+ * but isn't an instance of the `Error` class.
  */
+interface PotentialError {
+  message: unknown;
+  stack?: unknown;
+}
+
+/**
+ * Type guard function to check if an object has a 'message' property,
+ * narrowing its type to `PotentialError` for safer property access.
+ * @param value The value to check.
+ * @returns True if the value is an object with a 'message' property.
+ */
+function isPotentialError(value: object): value is PotentialError {
+  return 'message' in value;
+}
+// --- End of Implementation ---
+
 export function getLogs(): ErrorLog[] {
   try {
     if (typeof window === 'undefined') return [];
@@ -55,19 +48,43 @@ export function getLogs(): ErrorLog[] {
 /**
  * Captures, formats, and logs a new error.
  *
- * @param {Error | any} error The captured error object.
+ * @param {unknown} error The captured error object. Using `unknown` is safer than `any`.
  * @param {Record<string, any>} [context] Optional context about the error.
  */
 export function reportError(
-  error: Error | any,
+  error: unknown,
   context?: Record<string, any>
 ): void {
   if (typeof window === 'undefined') return;
 
+  let message = 'An unknown error occurred.';
+  let stack: string | undefined;
+
+  // 1. Handle actual Error instances (most common and reliable case)
+  if (error instanceof Error) {
+    message = error.message;
+    stack = error.stack;
+  }
+  // 2. Handle primitive strings being thrown
+  else if (typeof error === 'string') {
+    message = error;
+  }
+  // 3. NITPICK IMPLEMENTED: Handle generic objects using the type guard
+  else if (
+    typeof error === 'object' &&
+    error !== null &&
+    isPotentialError(error)
+  ) {
+    // The type guard narrows `error` to `PotentialError`, allowing safe access to `message` and `stack`.
+    message =
+      typeof error.message === 'string' ? error.message : JSON.stringify(error);
+    stack = typeof error.stack === 'string' ? error.stack : undefined;
+  }
+
   const newLog: ErrorLog = {
     timestamp: new Date().toISOString(),
-    message: error?.message || 'An unknown error occurred.',
-    stack: error?.stack,
+    message,
+    stack,
     context,
   };
 
@@ -78,7 +95,34 @@ export function reportError(
   try {
     localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
   } catch (e) {
-    console.error('Could not save new error log to localStorage:', e);
+    // Proactive quota management. If storage is full, it removes
+    // the oldest log and retries the operation once.
+    if (
+      e instanceof DOMException &&
+      (e.name === 'QuotaExceededError' || e.code === 22)
+    ) {
+      console.warn(
+        'LocalStorage quota exceeded. Removing oldest log and retrying...'
+      );
+      if (trimmedLogs.length > 1) {
+        // Create a new array without the oldest entry
+        const logsWithOldestRemoved = trimmedLogs.slice(0, -1);
+        try {
+          // Retry the save operation
+          localStorage.setItem(
+            ERROR_LOGS_STORAGE_KEY,
+            JSON.stringify(logsWithOldestRemoved)
+          );
+        } catch (retryError) {
+          console.error(
+            'Could not save error log even after trimming:',
+            retryError
+          );
+        }
+      }
+    } else {
+      console.error('Could not save new error log to localStorage:', e);
+    }
   }
 
   if (import.meta.env.DEV) {
@@ -89,9 +133,6 @@ export function reportError(
   }
 }
 
-/**
- * Deletes all error logs from `localStorage`.
- */
 export function clearLogs(): void {
   try {
     if (typeof window === 'undefined') return;

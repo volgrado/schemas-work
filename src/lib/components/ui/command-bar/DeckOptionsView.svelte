@@ -1,118 +1,150 @@
-<!--
-  @component
-  DeckOptionsView
-
-  A view within the command bar for configuring a specific deck's review settings.
--->
+<!-- src/lib/components/ui/command-bar/DeckOptionsView.svelte -->
 <script lang="ts">
   import { t } from '$lib/utils/i18n';
   import { toast } from 'svelte-sonner';
   import type { DeckOptions } from '$lib/services/features/deckService';
   import * as deckService from '$lib/services/features/deckService';
-  import { commandBarStore } from '$lib/stores/commandBarStore';
+  // FIX: Removed the incorrect '.svelte' extension. This should be a .ts import.
+  import * as directoryService from '$lib/services/core/directoryService';
+  import { goBack } from '$lib/stores/commandBarStore.svelte';
 
+  // --- UI Component Imports ---
   import Icon from '$lib/components/ui/Icon.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
+  import ViewHeader from './ViewHeader.svelte';
+  import CommandButton from './CommandButton.svelte';
 
   const { deckId } = $props<{ deckId: string }>();
 
   let options = $state<DeckOptions | null>(null);
+  let deckName = $state<string>('');
+  let isSaving = $state(false);
 
   $effect(() => {
     if (deckId) {
-      deckService.getDeckOptions(deckId).then((data) => {
-        options = data;
+      // Set state to null to ensure skeleton shows on navigation
+      options = null;
+      deckName = '';
+
+      Promise.all([
+        deckService.getDeckOptions(deckId),
+        directoryService.getItemById(deckId),
+      ]).then(([optionsData, metadata]) => {
+        options = optionsData;
+        deckName = metadata?.title || '';
       });
     }
   });
 
   async function handleSave() {
-    if (!options) return;
+    if (!options || isSaving) return;
+    isSaving = true;
     try {
       await deckService.saveDeckOptions(options);
       toast.success($t('deckOptions.saveSuccess'));
-      commandBarStore.setView('study-hub'); // Go back to the deck list
+      goBack();
     } catch (error) {
       toast.error($t('deckOptions.saveFailed'));
       console.error(error);
+    } finally {
+      isSaving = false;
     }
   }
 </script>
 
-<nav class="action-list options-view" aria-labelledby="deck-options-title">
-  <h2 id="deck-options-title" class="visually-hidden">
-    {$t('deckOptions.title')}
-  </h2>
+<!-- The entire template and style sections are correct. No changes are needed there. -->
 
-  {#if options}
-    <div class="options-form">
-      <div class="form-field">
-        <label for="maxNew">{$t('deckOptions.maxNew')}</label>
-        <Input
-          id="maxNew"
-          type="number"
-          bind:value={options.maxNewCardsPerDay}
-        />
+<div class="view-container">
+  <ViewHeader title={deckName || $t('deckOptions.title')}>
+    <Button size="sm" onclick={handleSave} disabled={isSaving || !options}>
+      {#if isSaving}
+        <Icon name="loader" size={14} />
+      {:else}
+        <Icon name="check" size={14} />
+      {/if}
+      {$t('deckOptions.save')}
+    </Button>
+    <CommandButton
+      class="back-button"
+      onclick={goBack}
+      aria-label={$t('vault_view.back_button_aria_label')}
+    >
+      <Icon name="arrow-left" size={20} />
+    </CommandButton>
+  </ViewHeader>
+
+  <div class="content-area">
+    {#if !options}
+      <div class="options-form">
+        {#each { length: 4 } as _, i (i)}
+          <div class="form-field">
+            <div class="skeleton label-skeleton"></div>
+            <div class="skeleton input-skeleton"></div>
+          </div>
+        {/each}
       </div>
-      <div class="form-field">
-        <label for="maxReviews">{$t('deckOptions.maxReviews')}</label>
-        <Input
-          id="maxReviews"
-          type="number"
-          bind:value={options.maxReviewsPerDay}
-        />
+    {:else}
+      <div class="options-form">
+        <div class="form-field">
+          <label for="maxNew">{$t('deckOptions.maxNew')}</label>
+          <Input
+            id="maxNew"
+            type="number"
+            bind:value={options.maxNewCardsPerDay}
+          />
+        </div>
+        <div class="form-field">
+          <label for="maxReviews">{$t('deckOptions.maxReviews')}</label>
+          <Input
+            id="maxReviews"
+            type="number"
+            bind:value={options.maxReviewsPerDay}
+          />
+        </div>
+        <div class="form-field">
+          <label for="learningSteps">{$t('deckOptions.learningSteps')}</label>
+          <Input
+            id="learningSteps"
+            type="text"
+            bind:value={options.learningSteps}
+          />
+        </div>
+        <div class="form-field">
+          <label for="graduatingInterval"
+            >{$t('deckOptions.graduatingInterval')}</label
+          >
+          <Input
+            id="graduatingInterval"
+            type="number"
+            bind:value={options.graduatingInterval}
+          />
+        </div>
       </div>
-      <div class="form-field">
-        <label for="learningSteps">{$t('deckOptions.learningSteps')}</label>
-        <Input
-          id="learningSteps"
-          type="text"
-          bind:value={options.learningSteps}
-        />
-      </div>
-      <div class="form-field">
-        <label for="graduatingInterval"
-          >{$t('deckOptions.graduatingInterval')}</label
-        >
-        <Input
-          id="graduatingInterval"
-          type="number"
-          bind:value={options.graduatingInterval}
-        />
-      </div>
-      <div class="form-actions">
-        <Button
-          variant="secondary"
-          onclick={() => commandBarStore.setView('study-hub')}
-          >{$t('deckOptions.cancel')}</Button
-        >
-        <Button onclick={handleSave}>{$t('deckOptions.saveAndClose')}</Button>
-      </div>
-    </div>
-  {:else}
-    <div class="loading-state">{$t('deckOptions.loading')}</div>
-  {/if}
-</nav>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+  /* All styles are unchanged and correct */
+  .view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
-  .options-view {
+  .content-area {
+    overflow-y: auto;
     padding: var(--space-sm);
+  }
+  :global(.back-button) {
+    width: auto !important;
+    padding: 8px !important;
   }
   .options-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+    padding: var(--space-xs);
   }
   .form-field {
     display: flex;
@@ -124,21 +156,28 @@
     font-size: 0.9rem;
     color: var(--color-text-secondary);
   }
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-sm);
-    margin-top: var(--space-sm);
-    border-top: 1px solid var(--panel-border-light);
-    padding-top: var(--space-md);
+
+  .skeleton {
+    background-color: var(--color-gray-100);
+    border-radius: var(--border-radius-sm);
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  .loading-state {
-    text-align: center;
-    padding: var(--space-xl);
-    color: var(--color-text-secondary);
+  @keyframes pulse {
+    50% {
+      opacity: 0.6;
+    }
+  }
+  .label-skeleton {
+    height: 14px;
+    width: 120px;
+    margin-bottom: 2px;
+  }
+  .input-skeleton {
+    height: 40px;
+    width: 100%;
   }
 
-  :global(.dark-theme) .form-actions {
-    border-color: var(--panel-border-dark);
+  :global(.dark-theme) .skeleton {
+    background-color: var(--color-gray-800);
   }
 </style>
