@@ -5,7 +5,6 @@
   import {
     commandBarState,
     closeStrategySession,
-    type AiHelperAction,
   } from '$lib/stores/commandBarStore.svelte';
   import {
     settingsState,
@@ -15,9 +14,7 @@
   import * as aiService from '$lib/services/ai/aiService';
   import { fade, fly } from 'svelte/transition';
   import type { AiMessage } from '$lib/services/ai/aiService';
-  import type { SRS } from '$lib/types';
-  type Card = SRS.Card;
-  type NewCard = SRS.NewCard;
+  import { normalizeTiptapJSON } from '$lib/utils/tiptapUtils';
 
   // --- UI Components ---
   import Modal from '$lib/components/ui/Modal.svelte';
@@ -26,9 +23,12 @@
   import TiptapPreview from '$lib/components/ai/TiptapPreview.svelte';
   import CardPreview from '$lib/components/ai/CardPreview.svelte';
   import { t } from '$lib/utils/i18n';
+  import type { SRS } from '$lib/types';
+  type Card = SRS.Card;
 
   let { show } = $props<{ show: boolean }>();
 
+  // --- STATE ---
   type View = 'configure' | 'loading' | 'refine' | 'error';
   let view = $state<View>('configure');
   let errorMessage = $state('');
@@ -37,11 +37,10 @@
   let configurationInput = $state('');
   let configTextarea = $state<HTMLTextAreaElement | null>(null);
   let refineTextarea = $state<HTMLTextAreaElement | null>(null);
+  let tiptapPreviewInstance = $state<TiptapPreview | null>(null);
 
-  let workbenchState = $state<WorkbenchState>({
-    selectedText: null,
-    selectedCards: [],
-  });
+  // This boolean is updated ONLY on mouse up to provide cheap, performant UI feedback.
+  let hasSelection = $state(false);
 
   const command = $derived(
     commandBarState.strategySessionContext?.action
@@ -55,26 +54,32 @@
     errorMessage = '';
     refinementText = '';
     configurationInput = '';
-    workbenchState = { selectedText: null, selectedCards: [] };
+    hasSelection = false;
   }
 
   $effect(() => {
     if (show) {
       const context = commandBarState.strategySessionContext;
-      // REMOVED: The check for `context?.action === 'expand-node'` is gone.
+
+      // Logic for "Refine" actions: Load existing content, do NOT call API.
       if (context?.action.startsWith('refine-')) {
-        view = 'refine';
-        runGeneration('');
-      } else {
+        const initialDocument = context.fullDocumentJSON;
+        if (initialDocument) {
+          draftContent = normalizeTiptapJSON(initialDocument);
+          view = 'refine';
+          setTimeout(() => refineTextarea?.focus(), 100);
+        } else {
+          errorMessage = 'The document content was not available to refine.';
+          view = 'error';
+        }
+      }
+      // Logic for "Configure" actions: Show the configuration screen.
+      else {
         view = 'configure';
         setTimeout(() => configTextarea?.focus(), 100);
       }
     }
     return () => resetState();
-  });
-
-  $effect(() => {
-    if (view === 'refine') setTimeout(() => refineTextarea?.focus(), 100);
   });
 
   async function runGeneration(instruction: string) {
@@ -89,24 +94,35 @@
       return;
     }
     view = 'loading';
+
+    // Get a "snapshot" of the selection at the moment of the request.
+    const selection = tiptapPreviewInstance?.getCurrentSelection();
+    const currentWorkbenchState: WorkbenchState = {
+      selectedText: selection?.text || null,
+      draftContent: draftContent, // Pass current draft for the AI to refine
+      selectedCards: [],
+    };
+
     const promptContext = { ...context, initialInput: configurationInput };
     const prompt = command.getPrompt(
       promptContext,
-      workbenchState,
+      currentWorkbenchState,
       instruction
     );
     const messages: AiMessage[] = [{ role: 'user', parts: [{ text: prompt }] }];
 
     try {
-      const result = await aiService.generateContent(
+      const rawResult = await aiService.generateContent(
         messages,
         model,
         apiKeyObject.key,
         command.validationSchema
       );
-      draftContent = result;
+      const normalizedResult = normalizeTiptapJSON(rawResult);
+      draftContent = normalizedResult;
       refinementText = '';
       view = 'refine';
+      setTimeout(() => refineTextarea?.focus(), 100);
     } catch (err: any) {
       errorMessage = err.message || $t('aiHelper.errors.unknown');
       view = 'error';
@@ -124,7 +140,16 @@
   }
 
   function handleCardSelectionUpdate(event: CustomEvent<Card[]>) {
-    workbenchState.selectedCards = event.detail;
+    // This logic remains for card previews, if used.
+  }
+
+  // This handler is cheap and only fires once when the user releases the mouse,
+  // providing performant UI feedback.
+  function handlePointerUp() {
+    if (tiptapPreviewInstance) {
+      const selection = tiptapPreviewInstance.getCurrentSelection();
+      hasSelection = !!selection;
+    }
   }
 </script>
 
@@ -134,7 +159,7 @@
   title={command?.title || $t('ai_workbench.default_title')}
   width="xl"
 >
-  <div class="session-container" class:loading={view === 'loading'}>
+  <div class="session-container">
     {#if view === 'loading'}
       <div class="status-overlay" transition:fade>
         <Icon name="loader" size={32} />
@@ -145,93 +170,98 @@
         <Icon name="alert-triangle" size={32} />
         <p>{$t('ai_workbench.error_title')}</p>
         <pre>{errorMessage}</pre>
-        <Button onclick={() => (view = 'configure')} variant="secondary"
-          >{$t('common.try_again')}</Button
-        >
+        <Button onclick={() => (view = 'configure')} variant="secondary">
+          {$t('common.try_again')}
+        </Button>
       </div>
     {/if}
 
-    <div
-      class="left-panel"
-      in:fly={{ y: 10, duration: 300, delay: 200 }}
-      out:fade
-    >
-      {#if view === 'configure'}
-        <div class="panel-section">
-          <h4 class="panel-title">
-            <Icon name="file-plus" /><span>
-              {$t('ai_workbench.configure.title')}
-            </span>
-          </h4>
-          <p class="panel-description">
-            {$t('ai_workbench.configure.description')}
-          </p>
-          <textarea
-            bind:this={configTextarea}
-            bind:value={configurationInput}
-            rows="15"
-            placeholder={$t('ai_workbench.configure.placeholder')}
-          ></textarea>
-        </div>
-      {:else if view === 'refine'}
-        <div class="panel-section">
-          <h4 class="panel-title">
-            <Icon name="edit-3" /><span>{$t('ai_workbench.refine.title')}</span>
-          </h4>
-          <p class="panel-description">
-            {$t('ai_workbench.refine.description')}
-          </p>
-          <div class="quick-actions">
-            {#each command?.quickActions || [] as action}
-              <Button
-                onclick={() => runGeneration(action.instruction)}
-                variant="secondary">{action.label}</Button
-              >
-            {/each}
+    <div class="panels-wrapper" class:loading={view === 'loading'}>
+      <div
+        class="left-panel"
+        in:fly={{ y: 10, duration: 300, delay: 200 }}
+        out:fade
+      >
+        {#if view === 'configure'}
+          <div class="panel-section">
+            <h4 class="panel-title">
+              <Icon name="file-plus" />
+              <span>{$t('ai_workbench.configure.title')}</span>
+            </h4>
+            <p class="panel-description">
+              {$t('ai_workbench.configure.description')}
+            </p>
+            <textarea
+              bind:this={configTextarea}
+              bind:value={configurationInput}
+              rows="15"
+              placeholder={$t('ai_workbench.configure.placeholder')}
+            ></textarea>
           </div>
-          <textarea
-            bind:this={refineTextarea}
-            bind:value={refinementText}
-            rows="5"
-            placeholder={$t('ai_workbench.refine.placeholder')}
-          ></textarea>
-        </div>
-      {/if}
-    </div>
-
-    <div
-      class="right-panel"
-      in:fly={{ y: 10, duration: 300, delay: 300 }}
-      out:fade
-    >
-      <h4 class="panel-title">
-        <Icon name="eye" /><span>{$t('ai_workbench.preview_title')}</span>
-      </h4>
-      <div class="preview-content">
-        {#if !draftContent}
-          <div class="empty-preview">
-            <Icon name="sparkles" size={48} />
-            <p>{$t('ai_workbench.empty_preview.title')}</p>
-            <span>{$t('ai_workbench.empty_preview.description')}</span>
+        {:else if view === 'refine'}
+          <div class="panel-section">
+            <h4 class="panel-title">
+              <Icon name="edit-3" />
+              <span>{$t('ai_workbench.refine.title')}</span>
+            </h4>
+            <p class="panel-description">
+              {$t('ai_workbench.refine.description')}
+            </p>
+            <div class="quick-actions">
+              {#each command?.quickActions || [] as action}
+                <Button
+                  onclick={() => runGeneration(action.instruction)}
+                  variant="secondary">{action.label}</Button
+                >
+              {/each}
+            </div>
+            <textarea
+              bind:this={refineTextarea}
+              bind:value={refinementText}
+              rows="5"
+              placeholder={hasSelection
+                ? $t('ai_workbench.refine.placeholder_with_selection')
+                : $t('ai_workbench.refine.placeholder')}
+            ></textarea>
           </div>
-        {:else}
-          {@const action = commandBarState.strategySessionContext?.action}
-          <!-- REMOVED: The check for `action === 'expand-node'` is gone. -->
-          {#if action?.includes('document') || action?.includes('schema')}
-            <TiptapPreview
-              content={draftContent}
-              onSelectionUpdate={(from, to, text) =>
-                (workbenchState.selectedText = from === to ? null : text)}
-            />
-          {:else if action?.includes('cards')}
-            <CardPreview
-              cards={draftContent}
-              on:selectionUpdate={handleCardSelectionUpdate}
-            />
-          {:else}
-            <pre>{JSON.stringify(draftContent, null, 2)}</pre>
-          {/if}
         {/if}
+      </div>
+
+      <div
+        class="right-panel"
+        in:fly={{ y: 10, duration: 300, delay: 300 }}
+        out:fade
+      >
+        <h4 class="panel-title">
+          <Icon name="eye" />
+          <span>{$t('ai_workbench.preview_title')}</span>
+        </h4>
+        <div class="preview-content-wrapper" on:pointerup={handlePointerUp}>
+          <div class="preview-content">
+            {#if !draftContent}
+              <div class="empty-preview">
+                <Icon name="sparkles" size={48} />
+                <p>{$t('ai_workbench.empty_preview.title')}</p>
+                <span>{$t('ai_workbench.empty_preview.description')}</span>
+              </div>
+            {:else}
+              {@const action = commandBarState.strategySessionContext?.action}
+              {#if action?.includes('document') || action?.includes('schema')}
+                <TiptapPreview
+                  bind:this={tiptapPreviewInstance}
+                  content={draftContent}
+                />
+              {:else if action?.includes('cards')}
+                <CardPreview
+                  cards={draftContent}
+                  on:selectionUpdate={handleCardSelectionUpdate}
+                />
+              {:else}
+                <pre>{JSON.stringify(draftContent, null, 2)}</pre>
+              {/if}
+            {/if}
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -269,14 +299,16 @@
 <style>
   .session-container {
     position: relative;
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: var(--space-lg);
     min-height: 480px;
+  }
+  .panels-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
     padding: var(--space-sm) 0;
     transition: filter 0.3s ease;
   }
-  .session-container.loading {
+  .panels-wrapper.loading {
     filter: blur(4px);
     pointer-events: none;
   }
@@ -328,8 +360,22 @@
     gap: var(--space-md);
   }
   .left-panel {
-    border-right: 1px solid var(--color-border);
-    padding-right: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-lg);
+  }
+  .right-panel {
+    min-height: 300px;
+  }
+  @media (min-width: 768px) {
+    .panels-wrapper {
+      grid-template-columns: 350px 1fr;
+    }
+    .left-panel {
+      border-right: 1px solid var(--color-border);
+      border-bottom: none;
+      padding-right: var(--space-lg);
+      padding-bottom: 0;
+    }
   }
   .panel-title {
     display: flex;
@@ -352,12 +398,18 @@
     gap: var(--space-sm);
     margin: var(--space-sm) 0 var(--space-md);
   }
+  .preview-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    border-radius: var(--border-radius-sm);
+  }
   .preview-content {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
     background: var(--color-page-background);
-    border-radius: var(--border-radius-sm);
     overflow: hidden;
   }
   .empty-preview {

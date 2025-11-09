@@ -8,7 +8,7 @@
  * context-aware set of instructions for the language model to perform a specific task.
  */
 
-// REFINEMENT: Import the SRS namespace for card-related types.
+import type { JSONContent } from '@tiptap/core';
 import type { SRS } from '$lib/types';
 
 /**
@@ -89,7 +89,6 @@ Now, expand the concept "${nodeText}" according to all rules and constraints.
 export function getGenerateCardsPrompt(
   settings: {
     quantity: number;
-    // REFINEMENT: Use the namespaced SRS.CardType.
     types: SRS.CardType[];
   },
   documentText: string
@@ -128,50 +127,58 @@ Now, create the JSON array of study cards based on the document and all the rule
 
 /**
  * The "Master" prompt for the Interactive Document Workbench.
- * It provides the full document for context, but can be given a specific
- * selection to operate on, along with a user instruction.
+ * It provides the current draft of a document for context and can be given a
+ * specific selection to operate on, along with a user instruction.
  */
 export function getInteractiveRefinementPrompt(
-  fullDocumentText: string,
+  fullDocumentJSON: JSONContent,
   selectedText: string | null,
   instruction: string
 ): string {
-  const selectionBlock = selectedText
-    ? `
-**TEXT TO MODIFY (ONLY THIS PART):**
+  // Case 1: The user has selected a specific piece of text to refine.
+  if (selectedText && selectedText.trim() !== '') {
+    return `
+You are an expert editor and Tiptap JSON specialist. Your task is to refine a specific part of a larger document based on the user's instruction.
+
+USER'S INSTRUCTION:
+"${instruction}"
+
+SELECTED TEXT TO REFINE:
+The user has selected the following text block to apply the instruction to:
 ---
 ${selectedText}
 ---
-`
-    : '';
 
-  const mainInstruction =
-    instruction ||
-    (selectedText
-      ? 'Refine the selected text based on my next instruction.'
-      : 'Analyze the full document and await my instruction.');
+FULL DOCUMENT CONTEXT (CURRENT DRAFT):
+For context, here is the full document in Tiptap JSON format. The "SELECTED TEXT" is a part of this document. Do not modify any other part of the document.
+\`\`\`json
+${JSON.stringify(fullDocumentJSON, null, 2)}
+\`\`\`
 
-  return `
-**ROLE AND OBJECTIVE:**
-You are a world-class editor and Tiptap JSON specialist. Your task is to act as a writing partner. You will receive an entire document for context and a specific user instruction. If a "TEXT TO MODIFY" block is present, you must apply your changes ONLY to that part of the document, ensuring it integrates seamlessly. Your output must ALWAYS be the complete, rewritten Tiptap JSON for the entire document.
-
-**USER INSTRUCTION:**
-"${mainInstruction}"
-
-${selectionBlock}
-
-**RULES AND OUTPUT STRUCTURE:**
-1.  Your entire response MUST be a single, valid Tiptap JSON object for the **entire document**.
-2.  The root object must be of type \`doc\`.
-3.  Apply the user's instruction precisely. If a "TEXT TO MODIFY" block is present, apply the changes ONLY to that part of the document, ensuring it integrates perfectly with the surrounding, unchanged content.
-4.  Do NOT include comments, markdown, or any text outside of the final JSON object.
-
-**FULL DOCUMENT CONTEXT:**
----
-${fullDocumentText}
----
-
-**BEGIN TASK:**
-Now, return the complete and revised Tiptap JSON for the entire document based on the instruction.
+YOUR TASK:
+1.  Locate the content that corresponds to the "SELECTED TEXT" within the full document.
+2.  Apply the user's instruction ONLY to that specific part.
+3.  Return the ENTIRE, complete document in the exact same Tiptap JSON format, with only the relevant section modified. Your output must be a single, valid JSON object that can be parsed directly.
 `;
+  }
+
+  // Case 2: No text is selected. The instruction applies to the entire document.
+  else {
+    return `
+You are an expert editor and Tiptap JSON specialist. Your task is to refine an entire document based on the user's instruction.
+
+USER'S INSTRUCTION:
+"${instruction}"
+
+FULL DOCUMENT (CURRENT DRAFT):
+Here is the full document in Tiptap JSON format:
+\`\`\`json
+${JSON.stringify(fullDocumentJSON, null, 2)}
+\`\`\`
+
+YOUR TASK:
+1.  Apply the user's instruction to the entire document.
+2.  Return the ENTIRE, complete document in the exact same Tiptap JSON format. Your output must be a single, valid JSON object that can be parsed directly.
+`;
+  }
 }

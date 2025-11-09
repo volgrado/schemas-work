@@ -51,6 +51,7 @@
     "@floating-ui/dom": "^1.7.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@tiptap/core": "^3.6.1",
+    "@tiptap/extension-blockquote": "^3.10.4",
     "@tiptap/extension-bold": "^3.6.1",
     "@tiptap/extension-bullet-list": "^3.6.1",
     "@tiptap/extension-collaboration": "^3.6.1",

@@ -10,7 +10,8 @@
 
 import type { StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
 import type { z } from 'zod';
-// REFINEMENT: Import the SRS namespace for all card-related types.
+// FIX: Import the JSONContent type for Tiptap documents.
+import type { JSONContent } from '@tiptap/core';
 import type { SRS } from '$lib/types';
 
 /**
@@ -30,8 +31,12 @@ export interface QuickAction {
  */
 export interface WorkbenchState {
   selectedText: string | null;
-  // REFINEMENT: Use the namespaced SRS types.
   selectedCards: (SRS.Card | SRS.NewCard)[];
+
+  // FIX: Add draftContent as an optional property to the state.
+  // This is the current version of the document being edited in the workbench,
+  // and it's crucial context for refinement commands.
+  draftContent?: JSONContent | null;
 }
 
 /**
