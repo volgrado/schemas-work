@@ -46,15 +46,3 @@
     <WelcomeScreen onstart={handleStart} />
   </div>
 {/if}
-
-<style>
-  .animator-wrapper {
-    position: fixed;
-    inset: 0;
-    /* Use a dedicated z-index token for consistency */
-    z-index: var(--z-welcome-animator);
-    background-color: var(
-      --color-page-background
-    ); /* Ensure a solid background */
-  }
-</style>
