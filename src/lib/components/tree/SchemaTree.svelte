@@ -292,7 +292,7 @@
   }
   :global(.tree-svg .link) {
     fill: none;
-    stroke: var(--color-gray-100);
+    stroke: var(--color-gray-200);
     stroke-width: 1px;
     transition:
       stroke 300ms,
@@ -307,7 +307,7 @@
   }
   :global(.tree-svg .node rect) {
     fill: var(--color-background);
-    stroke: var(--color-gray-100);
+    stroke: var(--color-gray-200);
     stroke-width: 1px;
     transition:
       fill 0.2s,
@@ -351,7 +351,7 @@
     stroke: var(--color-accent);
   }
   :global(.tree-svg .node.has-children rect) {
-    fill: var(--color-gray-100);
+    fill: var(--color-gray-200);
   }
   :global(.tree-svg .node:hover rect) {
     stroke: var(--color-accent);

@@ -29,7 +29,8 @@
       "formatting": "Formato",
       "media": "Multimedia",
       "ai": "IA",
-      "utilities": "Utilidades"
+      "utilities": "Utilidades",
+      "content": "Contenido"
     },
     "term": {
       "title": "Término",
@@ -55,6 +56,18 @@
       "title": "Título 3",
       "description": "Añadir un subtítulo anidado."
     },
+    "h4": {
+      "title": "Título 4",
+      "description": "Encabezado de sección pequeño."
+    },
+    "h5": {
+      "title": "Título 5",
+      "description": "Encabezado de sección muy pequeño."
+    },
+    "h6": {
+      "title": "Título 6",
+      "description": "El encabezado de sección más pequeño."
+    },
     "separator": {
       "title": "Separador",
       "description": "Añadir una línea horizontal."
@@ -79,7 +92,7 @@
       "title": "Fórmula (Bloque)",
       "description": "Añadir una fórmula matemática (KaTeX)."
     },
-    "mathInline": {
+    "math_inline": {
       "title": "Fórmula (En línea)",
       "description": "Añadir una fórmula en la misma línea."
     },
@@ -134,7 +147,15 @@
     "review_started_toast": "{type} iniciado con {count, plural, =1 {1 tarjeta} other {# tarjetas}}.",
     "card_will_reappear_toast": "Esta tarjeta volverá a aparecer en esta sesión.",
     "review_complete_toast": "¡Repaso completo!",
-    "review_complete_description": "Estudiaste {count, plural, =1 {1 tarjeta} other {# tarjetas}}."
+    "review_complete_description": "Estudiaste {count, plural, =1 {1 tarjeta} other {# tarjetas}}.",
+    "congrats_title": "¡Felicidades!",
+    "session_finished_desc": "Has finalizado esta sesión de estudio. Repasaste {count, plural, =1 {1 tarjeta} other {# tarjetas}}.",
+    "finish_button": "Finalizar",
+    "progress": {
+      "new_tooltip": "Tarjetas nuevas",
+      "learning_tooltip": "Tarjetas en aprendizaje",
+      "due_tooltip": "Tarjetas a repasar"
+    }
   },
   "card_editor": {
     "load_error": "No se pudieron cargar las tarjetas para este nodo.",
@@ -174,7 +195,9 @@
     "card_deleted_toast": "Tarjeta eliminada.",
     "undo_button": "Deshacer",
     "empty_title": "Aún no hay tarjetas",
-    "empty_message": "Añade tu primera tarjeta de estudio para este documento para empezar."
+    "empty_message": "Añade tu primera tarjeta de estudio para este documento para empezar.",
+    "close_aria": "Cerrar editor de tarjetas",
+    "delete_card_aria": "Eliminar tarjeta"
   },
   "document": {
     "invalid_document_error": "El elemento no es un documento válido: {docId}",
@@ -196,13 +219,20 @@
     "stopped_due_to_changes_toast": "La reproducción se detuvo debido a cambios en el documento.",
     "init_error": "No se pudo inicializar la conversión de texto a voz.",
     "no_readable_content_toast": "No hay contenido legible en el documento.",
-    "node_not_found_error": "No se pudo encontrar el nodo especificado para iniciar la lectura."
+    "node_not_found_error": "No se pudo encontrar el nodo especificado para iniciar la lectura.",
+    "no_voices": "No hay voces disponibles",
+    "voice_changed_toast": "Voz cambiada. Presiona reproducir para continuar con la nueva voz.",
+    "speed_changed_toast": "Velocidad cambiada. Presiona reproducir para continuar con la nueva velocidad.",
+    "volume_changed_toast": "Volumen cambiado. Presiona reproducir para continuar con el nuevo volumen.",
+    "controller_region_aria_label": "Controlador de texto a voz",
+    "replay": "Repetir"
   },
   "aiHelper": {
     "errors": {
       "jsonFormatIncorrect": "El formato JSON es incorrecto.",
       "notValidJson": "El texto proporcionado no es un JSON válido.",
-      "zodValidationError": "Error en '{path}': {message}"
+      "zodValidationError": "Error en '{path}': {message}",
+      "config_missing": "El modelo de IA o la clave de API no está configurado. Por favor, revisa la configuración de IA."
     },
     "promptCopied": "Prompt copiado al portapapeles.",
     "copyError": "No se pudo copiar el prompt.",
@@ -216,11 +246,42 @@
       "placeholder": "Pega la respuesta JSON de la IA aquí..."
     }
   },
+  "ai_workbench": {
+    "default_title": "Taller de IA",
+    "loading_text": "Generando borrador...",
+    "error_title": "Falló la Generación",
+    "configure": {
+      "title": "Entrada",
+      "description": "Proporciona el texto inicial o el contexto para que la IA trabaje.",
+      "placeholder": "Pega tu texto, notas o artículo aquí..."
+    },
+    "refine": {
+      "title": "Refinar",
+      "description": "¿El borrador no es del todo correcto? Dile a la IA qué cambiar.",
+      "placeholder": "p. ej., Hazlo más conciso..."
+    },
+    "preview_title": "Vista Previa",
+    "empty_preview": {
+      "title": "Esperando Generación",
+      "description": "Configura tu entrada y haz clic en 'Generar' para ver una vista previa de la salida de la IA aquí."
+    }
+  },
   "common": {
     "copy": "Copiar",
     "cancel": "Cancelar",
     "applyChanges": "Aplicar Cambios",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "send": "Enviar",
+    "volume": "Volumen",
+    "back": "Atrás",
+    "editor_not_ready": "El editor no está listo. Por favor, inténtalo de nuevo en breve.",
+    "processing": "Procesando...",
+    "try_again": "Intentar de nuevo",
+    "generate": "Generar",
+    "regenerate": "Regenerar",
+    "accept_close": "Aceptar y Cerrar",
+    "save": "Guardar"
   },
   "doc_view": {
     "untitled_schema": "Esquema sin título",
@@ -250,7 +311,13 @@
       "greek_letters": "Letras Griegas:"
     }
   },
+  "math_editor": {
+    "edit_aria_label": "Editar fórmula",
+    "editor_aria_label": "Entrada de fórmula LaTeX",
+    "live_preview": "Vista Previa en Vivo"
+  },
   "command_bar": {
+    "title": "Barra de Comandos",
     "ai_helper": {
       "create_schema": {
         "title": "Crear Esquema desde Texto",
@@ -270,8 +337,11 @@
         "error": {
           "no_node_id": "No se pudieron generar las tarjetas. El documento actual no tiene un ID válido.",
           "save_failed": "Error al guardar las tarjetas generadas.",
-          "no_node_selected": "Para generar tarjetas, primero debes seleccionar un nodo en el editor."
-        }
+          "no_node_selected": "Para generar tarjetas, primero debes seleccionar un nodo en el editor.",
+          "no_doc": "Error de Guardado: No se pudo encontrar el ID del documento activo para guardar las tarjetas.",
+          "critical": "Ocurrió un error crítico al intentar guardar las nuevas tarjetas."
+        },
+        "info_no_cards": "La IA no generó ninguna tarjeta."
       }
     },
     "export_success": "Bóveda exportada con éxito.",
@@ -293,14 +363,38 @@
         "import": "Importar"
       }
     },
-    "close_aria_label": "Cerrar barra de comandos"
+    "close_aria_label": "Cerrar barra de comandos",
+    "toast": {
+      "running_action": "Ejecutando acción de IA con {modelName}...",
+      "action_success": "¡Acción de IA completada con éxito!",
+      "action_failed": "Falló la Acción de IA: {message}",
+      "manual_helper_info": "Tecla Mayús presionada. Abriendo ayudante de IA manual.",
+      "rate_limit_info": "Todas las claves de {provider} están actualmente con límite de tasa. Por favor, espera.",
+      "no_key_info": "No se encontró clave de API para {provider}. Por favor, añade una en la Configuración de IA.",
+      "generating_schema": "Generando nuevo esquema con {modelName}...",
+      "schema_created_success": "¡Esquema creado con éxito!"
+    },
+    "errors": {
+      "invalid_action_config": "Configuración de acción de IA no válida.",
+      "node_selection_required": "Se debe seleccionar un nodo para esta acción.",
+      "automated_flow_error": "Esta acción no debería ejecutarse en un flujo automatizado basado en nodos."
+    },
+    "text_input_modal": {
+      "title": "Crear Esquema desde Texto",
+      "placeholder": "Pega tus notas, un artículo o cualquier bloque de texto aquí...",
+      "generate_button": "Generar",
+      "cancel_button": "Cancelar"
+    }
   },
   "error_diagnostic": {
     "title": "Diagnóstico de Errores",
     "explanation": "Este es un registro de los errores que han ocurrido en la aplicación. Si tienes problemas, copia este informe y envíalo al desarrollador para obtener ayuda.",
     "explanation.privacy": "Este informe no contiene ningún dato personal.",
     "report_header": "Informe de Errores",
-    "empty_state": "No se han registrado errores.",
+    "empty_state": {
+      "title": "No se han Registrado Errores",
+      "text": "Todo funciona correctamente."
+    },
     "clear_logs": "Limpiar Registros",
     "copy_report": "Copiar Informe"
   },
@@ -325,6 +419,7 @@
     "default_aria_label": "Ventana modal"
   },
   "file_explorer": {
+    "title": "Explorar Esquemas",
     "item_type": {
       "folder": "carpeta",
       "schema": "esquema"
@@ -412,7 +507,8 @@
   "languages": {
     "en": "Inglés",
     "es": "Español",
-    "el": "Griego"
+    "el": "Griego",
+    "switcher_aria_label": "Cambiar idioma"
   },
   "media_editor": {
     "title": {
@@ -421,10 +517,21 @@
     },
     "label": {
       "image": "URL de la Imagen",
-      "youtube": "URL de YouTube"
+      "youtube": "URL de YouTube",
+      "alt_text": "Texto Alternativo (para accesibilidad)",
+      "title_text": "Texto de Título (para tooltips)",
+      "start_time": "Tiempo de Inicio (en segundos)",
+      "width": "Ancho",
+      "height": "Alto"
+    },
+    "placeholder": {
+      "alt_text": "Una descripción de la imagen",
+      "title_text": "Texto de tooltip al pasar el cursor",
+      "start_time": "p. ej., 30 para 0:30"
     },
     "preview": {
-      "alt": "Vista previa de la imagen"
+      "alt": "Vista previa de la imagen",
+      "youtube_alt": "Vista previa de la miniatura del video de YouTube"
     },
     "cancel_button": "Cancelar",
     "save_button": "Guardar"
@@ -433,7 +540,8 @@
     "show_help": "Mostrar ayuda"
   },
   "slash_menu": {
-    "empty_state": "No hay comandos que coincidan"
+    "empty_state": "No hay comandos que coincidan",
+    "aria_label": "Menú de Comandos Slash"
   },
   "main_view": {
     "title": "Comandos"
@@ -447,8 +555,12 @@
     "vault_management": "Gestión de Bóveda",
     "diagnostics_and_error_report": "Diagnóstico y Reporte de Errores",
     "create_schema_from_text": "Crear Esquema desde Texto",
-    "generate_study_cards": "Generar Tarjetas de Estudio",
-    "expand_this_node": "Expandir este Nodo"
+    "refine_document_with_ai": "Refinar Documento con IA",
+    "generate_study_cards_for_document": "Generar Tarjetas de Estudio para el Documento",
+    "generate_study_cards_for_node": "Generar Tarjetas de Estudio para este Nodo",
+    "expand_this_node": "Expandir este Nodo",
+    "set_api_key": "Establecer Clave de API",
+    "search_vault": "Buscar en la Bóveda..."
   },
   "theme": {
     "aria": {
@@ -468,7 +580,13 @@
     "breakdownTitle": "Distribución de la Colección",
     "chartEmpty": "Añade algunas tarjetas para ver la distribución de tu colección.",
     "backToDecks": "Volver a los Mazos",
-    "viewStatistics": "Ver Estadísticas"
+    "viewStatistics": "Ver Estadísticas",
+    "chart": {
+      "new": "Nuevas",
+      "learning": "Aprendizaje",
+      "young": "Jóvenes",
+      "mature": "Maduras"
+    }
   },
   "deckOptions": {
     "title": "Opciones del Mazo",
@@ -485,12 +603,14 @@
   "studyHub": {
     "title": "Mazo de Estudio",
     "viewStatistics": "Ver Estadísticas",
+    "viewStatisticsAria": "Ver todas las estadísticas de estudio",
     "loading": "Cargando mazos...",
     "empty": "No se encontraron mazos con tarjetas. Añade tarjetas a un documento para empezar.",
     "deckHeader": "Mazo",
     "newHeader": "Nuevas",
     "learningHeader": "Aprendizaje",
     "reviewHeader": "A Repasar",
+    "actionsHeader": "Acciones",
     "settingsAria": "Opciones del Mazo"
   },
   "quickCardEditor": {
@@ -513,6 +633,7 @@
     "updateSuccess": "Tarjeta actualizada correctamente.",
     "updateFailed": "Error al guardar los cambios de la tarjeta.",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar esta tarjeta permanentemente?",
+    "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?",
     "deleteSuccess": "Tarjeta eliminada.",
     "deleteFailed": "Error al eliminar la tarjeta."
   },
@@ -525,6 +646,143 @@
     "noSelectionError": "Por favor, selecciona un nuevo documento.",
     "alreadyInDocInfo": "La tarjeta ya está en este documento.",
     "updateSuccess": "Fuente de la tarjeta actualizada correctamente.",
-    "updateFailed": "Error al actualizar la fuente de la tarjeta."
+    "updateFailed": "Error al actualizar la fuente de la tarjeta.",
+    "current": "Actual"
+  },
+  "ai_service": {
+    "errors": {
+      "no_gemini_key_embedding": "No se encontró clave de API de Gemini para generar embeddings.",
+      "embedding_api_error": "Error de API de Embedding de Gemini: {status} - {message}",
+      "no_valid_embedding": "La respuesta de Gemini no contenía un embedding válido.",
+      "unexpected_embedding_error": "Ocurrió un error inesperado al generar el embedding.",
+      "unsupported_provider": "Proveedor de IA no soportado: {provider}",
+      "gemini_api_error": "Error de API de Gemini: {status} - {message}",
+      "no_content": "La respuesta de Gemini no contenía ningún contenido.",
+      "validation_failed": "Falló la validación de la respuesta de la IA: {path} - {message}",
+      "unexpected_generate_content_error": "Ocurrió un error inesperado al contactar el servicio de IA."
+    }
+  },
+  "ai_commands": {
+    "create_schema": {
+      "title": "Crear Documento desde Texto",
+      "default_title": "Nuevo Esquema",
+      "success": "Documento '{title}' creado con éxito."
+    },
+    "refine_document": {
+      "title": "Refinar Documento",
+      "success": "Documento refinado con éxito.",
+      "error_invalid": "La IA devolvió una estructura de documento no válida."
+    },
+    "generate_cards": {
+      "title": "Generar Tarjetas de Estudio"
+    }
+  },
+  "apiKeyModal": {
+    "toast": {
+      "invalid_key_error": "Clave de API no válida o error de red.",
+      "empty_key_error": "La clave de API no puede estar vacía.",
+      "key_added_success": "¡Nueva clave de Gemini añadida!",
+      "key_removed_info": "Clave de API eliminada."
+    },
+    "confirm": {
+      "remove_key": "¿Estás seguro de que quieres eliminar la clave \"{name}\"?"
+    },
+    "title": "Configuración de IA",
+    "explanation": "Gestiona tus claves de API y selecciona tu modelo de IA preferido. Las claves se almacenan de forma segura en el almacenamiento local de tu navegador.",
+    "explanation_models": "Selecciona el modelo generativo que quieres usar para crear contenido. Los modelos disponibles se descubren automáticamente usando tu clave de API.",
+    "explanation_keys": "Añade tu clave de API de Google AI Studio para habilitar las funciones generativas. Puedes añadir múltiples claves para gestionar los límites de tasa.",
+    "model_selector_label": "Modelo de IA Preferido",
+    "optgroup": {
+      "supported": "Modelos Soportados",
+      "discovered": "Modelos Descubiertos (Experimental)"
+    },
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "your_keys_header": "Tus Claves de API",
+    "empty_state": "Aún no has añadido ninguna clave de API.",
+    "untitled_key": "Clave sin título",
+    "usage_tooltip": "Uso estimado de la API para el modelo seleccionado.",
+    "rpm_label": "RPM",
+    "rpd_label": "RPD",
+    "remove_key_aria": "Eliminar clave",
+    "add_key_header": "Añadir una Nueva Clave de Gemini",
+    "nickname_label": "Apodo (Opcional)",
+    "nickname_placeholder": "p. ej., Clave de Proyecto Personal",
+    "api_key_label": "Clave de API",
+    "api_key_placeholder": "Introduce tu clave de API aquí",
+    "get_key_link": "Obtener una Clave de Gemini",
+    "add_key_button": "Añadir Clave",
+    "tabs": {
+      "models": "Modelos",
+      "keys": "Claves de API"
+    }
+  },
+  "backup_service": {
+    "errors": {
+      "password_required_export": "Se requiere una contraseña para cifrar y exportar la bóveda.",
+      "invalid_json_file": "El archivo seleccionado no es un archivo de respaldo JSON válido.",
+      "corrupt_vault": "Los datos de la bóveda están corruptos o tienen un formato no válido después del descifrado."
+    },
+    "toast": {
+      "export_success": "Bóveda exportada con éxito.",
+      "export_failed_title": "Falló la Exportación",
+      "export_failed_desc": "No se pudo generar el archivo de respaldo. Consulta la consola de errores para más detalles.",
+      "password_required_import": "Se requiere una contraseña para descifrar e importar la bóveda.",
+      "import_success": "¡Bóveda importada con éxito! La página se recargará ahora.",
+      "import_failed_title": "Falló la Importación",
+      "import_failed_desc": "La contraseña puede ser incorrecta o el archivo seleccionado puede estar dañado o no ser válido."
+    }
+  },
+  "search_view": {
+    "recent_searches": "Búsquedas Recientes",
+    "group": {
+      "commands": "Comandos",
+      "knowledge": "Conocimiento"
+    },
+    "relevancy_score_tooltip": "Puntuación de relevancia",
+    "prompt": "Empieza a escribir para buscar en toda tu bóveda.",
+    "error": "Hubo un error al realizar la búsqueda.",
+    "no_results": "No se encontraron resultados para tu consulta."
+  },
+  "card_workbench": {
+    "select_all_aria_label": "Seleccionar o deseleccionar todas las tarjetas visibles",
+    "deselect_all": "Deseleccionar Todo",
+    "select_all": "Seleccionar Todo",
+    "cards_visible": "tarjetas visibles"
+  },
+  "strategy_session": {
+    "create_schema": {
+      "title": "Crear Documento desde Texto",
+      "input_label": "Pega tu texto, notas o transcripción a continuación",
+      "placeholder": "Por ejemplo: La mitocondria es la central energética de la célula...",
+      "success": "Documento '{title}' creado con éxito."
+    },
+    "expand_node": {
+      "title": "Expandir Nodo con IA",
+      "quantity": "Número de Subpuntos",
+      "tone": "Tono",
+      "success": "Nodo expandido con éxito."
+    },
+    "generate_cards": {
+      "title": "Generar Tarjetas de Estudio",
+      "quantity": "Número de Tarjetas",
+      "types": "Tipos de Tarjetas",
+      "success": "{count, plural, =1 {1 tarjeta creada.} other {# tarjetas creadas.}}"
+    },
+    "tones": {
+      "didactic": "Didáctico",
+      "casual": "Casual",
+      "academic": "Académico"
+    },
+    "settings_title": "Configuración",
+    "refine_title": "Refinar",
+    "refine_description": "¿El borrador no es del todo correcto? Dile a la IA qué cambiar.",
+    "refine_placeholder": "p. ej., Hazlo más conciso...",
+    "preview_title": "Vista Previa",
+    "preview_empty": "Configura los ajustes y haz clic en 'Generar' para ver una vista previa.",
+    "generate_button": "Generar",
+    "regenerate_button": "Regenerar",
+    "accept_button": "Aceptar e Insertar",
+    "error": "Ocurrió un error durante la generación."
   }
 }

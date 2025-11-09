@@ -7,9 +7,9 @@
   of study cards with a robust skeleton loading state, allows for accessible batch selection,
   and uses a stable keying strategy for flawless animations.
 -->
+<!-- CardPreview.svelte -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  // FIX: Import the 'SRS' namespace and create local aliases for the types.
+  import { onMount, createEventDispatcher } from 'svelte';
   import type { SRS } from '$lib/types';
   type Card = SRS.Card;
   type NewCard = SRS.NewCard;
@@ -32,6 +32,14 @@
   let selectedCardIds = $state<Set<string>>(new Set());
   let selectAllCheckbox = $state<HTMLInputElement | null>(null);
 
+  // --- NEW: Restore initial communication with the parent ---
+  onMount(() => {
+    // Inform the parent component of the initial, empty selection state
+    // when the component first loads. This allows the parent to proceed
+    // with its initial rendering logic.
+    dispatch('selectionUpdate', []);
+  });
+
   const cardKeys = new WeakMap<PreviewCard, string>();
   let keyCounter = 0;
   function getCardKey(card: PreviewCard) {
@@ -42,14 +50,12 @@
   }
 
   // --- Derived State ---
-  // FIX: Add explicit type to the `c` parameter in the filter callback.
   const selectableCards = $derived(
     cards.filter((c: PreviewCard): c is Card => 'id' in c)
   );
 
   const allSelected = $derived(
     selectableCards.length > 0 &&
-      // FIX: Add explicit type to the `c` parameter.
       selectableCards.every((c: Card) => selectedCardIds.has(c.id))
   );
   const isIndeterminate = $derived(selectedCardIds.size > 0 && !allSelected);
@@ -61,32 +67,41 @@
     }
   });
 
+  // This effect cleans up the selection if the `cards` prop changes.
   $effect(() => {
-    // FIX: Add explicit type to the `c` parameter.
-    const selected = selectableCards.filter((c: Card) =>
-      selectedCardIds.has(c.id)
-    );
-    dispatch('selectionUpdate', selected);
-  });
-
-  $effect(() => {
-    // FIX: Add explicit type to the `c` parameter.
-    const visibleCardIds = new Set(selectableCards.map((c: Card) => c.id));
+    const visibleCardIds = new Set(selectableCards.map((c) => c.id));
     const newSelection = new Set<string>();
+
     for (const id of selectedCardIds) {
-      if (visibleCardIds.has(id)) newSelection.add(id);
+      if (visibleCardIds.has(id)) {
+        newSelection.add(id);
+      }
     }
-    selectedCardIds = newSelection;
+
+    // Only update state if the new selection is actually different from the old one.
+    if (
+      newSelection.size !== selectedCardIds.size ||
+      [...newSelection].some((id) => !selectedCardIds.has(id))
+    ) {
+      selectedCardIds = newSelection;
+    }
   });
 
   // --- Event Handlers ---
   function toggleSelectAll() {
+    let newSelection: Set<string>;
     if (allSelected) {
-      selectedCardIds = new Set();
+      newSelection = new Set();
     } else {
-      // FIX: Add explicit type to the `c` parameter.
-      selectedCardIds = new Set(selectableCards.map((c: Card) => c.id));
+      newSelection = new Set(selectableCards.map((c: Card) => c.id));
     }
+    selectedCardIds = newSelection;
+
+    // Dispatch update directly on user action
+    const selected = selectableCards.filter((c: Card) =>
+      newSelection.has(c.id)
+    );
+    dispatch('selectionUpdate', selected);
   }
 
   function handleCardToggle(cardId: string, isChecked: boolean) {
@@ -94,6 +109,12 @@
     if (isChecked) newSelection.add(cardId);
     else newSelection.delete(cardId);
     selectedCardIds = newSelection;
+
+    // Dispatch update directly on user action
+    const selected = selectableCards.filter((c: Card) =>
+      newSelection.has(c.id)
+    );
+    dispatch('selectionUpdate', selected);
   }
 
   function formatInputPrompt(prompt: string): string {

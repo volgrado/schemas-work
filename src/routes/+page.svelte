@@ -17,9 +17,11 @@
   import TTSController from '$lib/components/tts/TTSController.svelte';
   import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
   import FormulaEditorModal from '$lib/components/editor/FormulaEditorModal.svelte';
+  import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
 
   // --- Stores ---
   import { modalState, closeModal } from '$lib/stores/modalStore.svelte';
+  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
   import {
     documentState,
     load as loadDocument,
@@ -46,7 +48,6 @@
 
   // --- Lifecycle & Logic ---
   onMount(async () => {
-    console.log('[+page.svelte] Component has mounted.');
     if (!localStorage.getItem(WELCOME_KEY)) {
       showWelcomeUI = true;
     } else {
@@ -59,7 +60,6 @@
   });
 
   async function initialDocumentLoad() {
-    console.log('[+page.svelte] initialDocumentLoad started.');
     const lastActiveId = await directoryService.getLastActiveDocId();
     if (lastActiveId) {
       await loadDocument(lastActiveId);
@@ -73,7 +73,6 @@
         await createDocument(get(t)('document.first_schema_title'));
       }
     }
-    console.log('[+page.svelte] initialDocumentLoad finished.');
   }
 
   function onWelcomeAnimationComplete() {
@@ -92,42 +91,23 @@
     currentView = currentView === 'editor' ? 'tree' : 'editor';
   }
 
-  // ==========================================================
-  // --- VVVV FINAL FIX: USING $state and $effect VVVV ---
-  // ==========================================================
-
-  // 1. Create a state variable to hold the tree data.
   let treeData = $state<ReturnType<
     typeof schemaService.documentToTreeData
   > | null>(null);
 
-  // 2. Create an effect that re-calculates the tree data whenever its dependencies change.
   $effect(() => {
-    // Read dependencies to register them for this effect
     const revision = editorState.revision;
     const docStatus = documentState.status;
     const editorDoc = editorState.instance?.state.doc;
 
-    console.log(
-      `[+page.svelte] $effect RUNNING. Revision: ${revision}, Status: ${docStatus}, Doc available: ${!!editorDoc}`
-    );
-
     if (docStatus === 'ready' && editorDoc) {
-      console.log(
-        '[+page.svelte] Conditions MET. Generating tree via $effect...'
-      );
       const generatedTree = schemaService.documentToTreeData(editorDoc);
-      console.log('[+page.svelte] Generated tree data:', generatedTree);
-
-      // 3. Assign the new tree data to our state variable.
       treeData = generatedTree;
     } else {
       treeData = null;
     }
   });
 </script>
-
-<!-- The rest of your file (the template starting with {#if showWelcomeUI}) remains exactly the same -->
 
 {#if showWelcomeUI}
   <WelcomeAnimator oncomplete={onWelcomeAnimationComplete} />
@@ -178,7 +158,11 @@
         </div>
       </AppHeader>
 
-      <main class="main-content page-container">
+      <main
+        class="main-content"
+        class:is-editor-view={currentView === 'editor'}
+        class:is-tree-view={currentView === 'tree'}
+      >
         {#if documentState.status === 'loading'}
           <div class="status-message">{$t('page.status.loading_schema')}</div>
         {:else if documentState.status === 'error'}
@@ -186,9 +170,10 @@
         {:else if documentState.ydoc}
           {@const currentTreeData = treeData}
 
+          <!-- Editor View Wrapper -->
           <div
             class="view-wrapper"
-            style:display={currentView === 'editor' ? 'contents' : 'none'}
+            style:display={currentView === 'editor' ? 'flex' : 'none'}
           >
             <div class="sheet-container">
               <DocumentView
@@ -199,9 +184,10 @@
             </div>
           </div>
 
+          <!-- Tree View Wrapper -->
           <div
             class="view-wrapper"
-            style:display={currentView === 'tree' ? 'contents' : 'none'}
+            style:display={currentView === 'tree' ? 'block' : 'none'}
           >
             <div class="tree-container">
               {#if currentTreeData}
@@ -217,7 +203,7 @@
                         (node: ProseMirrorNode, pos: number) => {
                           if (node.attrs.nodeId === e.detail.id) {
                             foundPos = pos;
-                            return false; // Stop searching
+                            return false;
                           }
                           return true;
                         }
@@ -225,7 +211,7 @@
                       if (foundPos !== null) {
                         const node = editor.state.doc.nodeAt(foundPos);
                         if (node) updateSelection(node, foundPos);
-                        setFocusCommand(e.detail.id); // Use direct function
+                        setFocusCommand(e.detail.id);
                         currentView = 'editor';
                       }
                     }
@@ -244,6 +230,15 @@
       <CardEditorPanel />
       <TTSController />
       <SlashMenuController />
+
+      {#if documentState.docId}
+        <FloatingActionButton
+          icon="command"
+          label={$t('page.fab.menu')}
+          position="right"
+          on:click={openCommandBar}
+        />
+      {/if}
 
       {#if modalState.isOpen && modalState.config}
         {#if modalState.config.type === 'formula'}
@@ -278,33 +273,56 @@
 {/if}
 
 <style>
-  /* Styles remain unchanged */
-  .view-wrapper {
-    width: 100%;
-    height: 100%;
-    display: contents;
-  }
   .main-app-container {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* Prevents the whole page from scrolling */
   }
+
   .main-content {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    padding: calc(60px + var(--space-xl)) var(--space-lg) var(--space-xxl);
+    flex-grow: 1; /* Correctly fills the space below the header */
+    position: relative; /* Establishes a positioning context for the wrapper */
+    overflow: hidden; /* Prevents content from spilling out */
   }
-  .page-container {
-    height: 100%;
-    position: relative;
+
+  /* --- THE CORE FIX --- */
+  /* Make the view-wrapper fill its parent completely */
+  .view-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
   }
+
+  /* --- VIEW-SPECIFIC STYLES --- */
+
+  /* 1. For the Editor View: */
+  .main-content.is-editor-view .view-wrapper {
+    overflow-y: auto; /* Allow this wrapper to scroll */
+    padding: var(--space-xl) var(--space-lg) var(--space-xxl);
+    /* The 60px header height is now handled by the AppHeader's position */
+    padding-top: calc(60px + var(--space-xl));
+    display: flex; /* Use flexbox to easily center the sheet */
+    justify-content: center;
+  }
+
+  /* 2. For the Tree View: */
+  .main-content.is-tree-view .view-wrapper {
+    /* Add padding to push the tree below the 60px header */
+    padding-top: 60px;
+    /* CRITICAL: This ensures padding is included inside the 100% height, not added to it */
+    box-sizing: border-box;
+  }
+
+  /* --- CHILD CONTAINER STYLES --- */
+
   .sheet-container {
     width: 100%;
     max-width: 820px;
-    height: fit-content;
-    margin: 0 auto;
+    height: fit-content; /* Sheet should only be as tall as its content */
+    margin: 0; /* Centering is now handled by the parent flexbox */
     padding: 3rem 4rem;
     background-color: var(--color-background-translucent);
     border: 1px solid var(--color-border);
@@ -314,15 +332,17 @@
     -webkit-backdrop-filter: blur(16px);
     transition: var(--transition-fast);
   }
+
   :global(.dark-theme) .sheet-container {
     background-color: var(--panel-bg-dark);
   }
+
   .tree-container {
     width: 100%;
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
+    height: 100%; /* This now correctly fills the padded space of its parent wrapper */
   }
+
+  /* --- Unchanged Utility Styles --- */
   .status-message {
     display: flex;
     justify-content: center;

@@ -32,8 +32,14 @@
       "utilities": "Utilities",
       "content": "Content"
     },
-    "term": { "title": "Term", "description": "Add a new concept or term." },
-    "list": { "title": "List", "description": "Create a bulleted list." },
+    "term": {
+      "title": "Term",
+      "description": "Add a new concept or term."
+    },
+    "list": {
+      "title": "List",
+      "description": "Create a bulleted list."
+    },
     "numberedList": {
       "title": "Numbered List",
       "description": "Create an ordered list (1, 2, 3...)"
@@ -42,18 +48,42 @@
       "title": "Heading 1",
       "description": "The main title of the schema."
     },
-    "h2": { "title": "Heading 2", "description": "Add a section subtitle." },
-    "h3": { "title": "Heading 3", "description": "Add a nested subtitle." },
+    "h2": {
+      "title": "Heading 2",
+      "description": "Add a section subtitle."
+    },
+    "h3": {
+      "title": "Heading 3",
+      "description": "Add a nested subtitle."
+    },
+    "h4": {
+      "title": "Heading 4",
+      "description": "Small section heading."
+    },
+    "h5": {
+      "title": "Heading 5",
+      "description": "Very small section heading."
+    },
+    "h6": {
+      "title": "Heading 6",
+      "description": "The smallest section heading."
+    },
     "separator": {
       "title": "Separator",
       "description": "Add a horizontal line."
     },
-    "bold": { "title": "Bold", "description": "Highlight the selected text." },
+    "bold": {
+      "title": "Bold",
+      "description": "Highlight the selected text."
+    },
     "italic": {
       "title": "Italic",
       "description": "Emphasize the selected text."
     },
-    "image": { "title": "Image", "description": "Add an image from a URL." },
+    "image": {
+      "title": "Image",
+      "description": "Add an image from a URL."
+    },
     "youtube": {
       "title": "YouTube Video",
       "description": "Embed a YouTube video."
@@ -62,7 +92,7 @@
       "title": "Formula (Block)",
       "description": "Add a mathematical formula (KaTeX)."
     },
-    "mathInline": {
+    "math_inline": {
       "title": "Formula (Inline)",
       "description": "Add a formula in the same line."
     },
@@ -90,7 +120,9 @@
     }
   },
   "appHeader": {
-    "aria": { "returnToWelcome": "Return to the welcome screen" }
+    "aria": {
+      "returnToWelcome": "Return to the welcome screen"
+    }
   },
   "review": {
     "inputPlaceholder": "Type your answer...",
@@ -191,13 +223,16 @@
     "no_voices": "No voices available",
     "voice_changed_toast": "Voice changed. Press play to resume with the new voice.",
     "speed_changed_toast": "Speed changed. Press play to resume with the new speed.",
-    "volume_changed_toast": "Volume changed. Press play to resume with the new volume."
+    "volume_changed_toast": "Volume changed. Press play to resume with the new volume.",
+    "controller_region_aria_label": "Text-to-speech controller",
+    "replay": "Replay"
   },
   "aiHelper": {
     "errors": {
       "jsonFormatIncorrect": "The JSON format is incorrect.",
       "notValidJson": "The provided text is not valid JSON.",
-      "zodValidationError": "Error in '{path}': {message}"
+      "zodValidationError": "Error in '{path}': {message}",
+      "config_missing": "AI model or API key is not configured. Please check AI settings."
     },
     "promptCopied": "Prompt copied to clipboard.",
     "copyError": "Could not copy the prompt.",
@@ -211,6 +246,26 @@
       "placeholder": "Paste the AI's JSON response here..."
     }
   },
+  "ai_workbench": {
+    "default_title": "AI Workbench",
+    "loading_text": "Generating draft...",
+    "error_title": "Generation Failed",
+    "configure": {
+      "title": "Input",
+      "description": "Provide the initial text or context for the AI to work with.",
+      "placeholder": "Paste your text, notes, or article here..."
+    },
+    "refine": {
+      "title": "Refine",
+      "description": "The draft isn't quite right? Tell the AI what to change.",
+      "placeholder": "e.g., Make it more concise..."
+    },
+    "preview_title": "Preview",
+    "empty_preview": {
+      "title": "Awaiting Generation",
+      "description": "Configure your input and click 'Generate' to see a preview of the AI's output here."
+    }
+  },
   "common": {
     "copy": "Copy",
     "cancel": "Cancel",
@@ -219,7 +274,14 @@
     "loading": "Loading...",
     "send": "Send",
     "volume": "Volume",
-    "back": "Back"
+    "back": "Back",
+    "editor_not_ready": "The editor is not ready. Please try again shortly.",
+    "processing": "Processing...",
+    "try_again": "Try Again",
+    "generate": "Generate",
+    "regenerate": "Regenerate",
+    "accept_close": "Accept & Close",
+    "save": "Save"
   },
   "doc_view": {
     "untitled_schema": "Untitled Schema",
@@ -228,7 +290,9 @@
       "term": "Type '/' for commands",
       "description": "Add a description..."
     },
-    "media": { "edit_button": "Edit" }
+    "media": {
+      "edit_button": "Edit"
+    }
   },
   "formula_editor": {
     "title": "Edit Formula",
@@ -247,7 +311,13 @@
       "greek_letters": "Greek Letters:"
     }
   },
+  "math_editor": {
+    "edit_aria_label": "Edit formula",
+    "editor_aria_label": "LaTeX formula input",
+    "live_preview": "Live Preview"
+  },
   "command_bar": {
+    "title": "Command Bar",
     "ai_helper": {
       "create_schema": {
         "title": "Create Schema from Text",
@@ -267,22 +337,31 @@
         "error": {
           "no_node_id": "Could not generate cards. The current document does not have a valid ID.",
           "save_failed": "Failed to save the generated cards.",
-          "no_node_selected": "To generate cards, you must first select a node in the editor."
-        }
+          "no_node_selected": "To generate cards, you must first select a node in the editor.",
+          "no_doc": "Save Error: Could not find the active document ID to save cards to.",
+          "critical": "A critical error occurred while trying to save the new cards."
+        },
+        "info_no_cards": "The AI did not generate any cards."
       }
     },
     "export_success": "Vault exported successfully.",
     "operation_failed": "Operation failed",
     "operation_failed_details": "Incorrect password or corrupted file.",
     "password_modal": {
-      "title": { "export": "Export Vault", "import": "Import Vault" },
+      "title": {
+        "export": "Export Vault",
+        "import": "Import Vault"
+      },
       "description": {
         "export": "Please enter a password to encrypt your vault. This will be required for import.",
         "import": "Please enter the password for the vault you are importing."
       },
       "password_placeholder": "Enter password...",
       "cancel_button": "Cancel",
-      "confirm_button": { "export": "Export", "import": "Import" }
+      "confirm_button": {
+        "export": "Export",
+        "import": "Import"
+      }
     },
     "close_aria_label": "Close command bar",
     "toast": {
@@ -312,7 +391,10 @@
     "explanation": "This is a log of errors that have occurred in the application. If you are experiencing problems, copy this report and send it to the developer for assistance.",
     "explanation.privacy": "This report does not contain any personal data.",
     "report_header": "Error Report",
-    "empty_state": "No errors have been recorded.",
+    "empty_state": {
+      "title": "No Errors Recorded",
+      "text": "Everything is running smoothly."
+    },
     "clear_logs": "Clear Logs",
     "copy_report": "Copy Report"
   },
@@ -324,7 +406,9 @@
     "success": {
       "diagnostic_report_copied": "Diagnostic report copied to clipboard."
     },
-    "error": { "could_not_copy_report": "Could not copy the report." }
+    "error": {
+      "could_not_copy_report": "Could not copy the report."
+    }
   },
   "first_time_hint": {
     "command_bar_hint": "Press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open the command menu.",
@@ -335,7 +419,11 @@
     "default_aria_label": "Modal window"
   },
   "file_explorer": {
-    "item_type": { "folder": "folder", "schema": "schema" },
+    "title": "Explore Schemas",
+    "item_type": {
+      "folder": "folder",
+      "schema": "schema"
+    },
     "header": {
       "root_breadcrumb": "Home",
       "new_schema_button": "New Schema",
@@ -354,7 +442,11 @@
       "description": "Are you sure? This will permanently delete the {itemType} and all its contents.",
       "action": "Delete"
     },
-    "context_menu": { "open": "Open", "rename": "Rename", "delete": "Delete" },
+    "context_menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "delete": "Delete"
+    },
     "toast": {
       "folder_created": "Folder \"{name}\" created.",
       "schema_created": "Schema \"{name}\" created.",
@@ -366,10 +458,17 @@
       "item_moved": "\"{title}\" was moved.",
       "move_failed": "Failed to move item."
     },
-    "errors": { "load_failed": "Failed to load items." },
+    "errors": {
+      "load_failed": "Failed to load items."
+    },
     "default_schema_name": "New Schema",
-    "item_actions": { "rename": "Rename item", "delete": "Delete item" },
-    "footer": { "back_to_main_menu": "Back to Main Menu" }
+    "item_actions": {
+      "rename": "Rename item",
+      "delete": "Delete item"
+    },
+    "footer": {
+      "back_to_main_menu": "Back to Main Menu"
+    }
   },
   "ai_view": {
     "title": "AI Assistant Actions",
@@ -405,17 +504,48 @@
       "cards": "Cards"
     }
   },
-  "languages": { "en": "English", "es": "Spanish", "el": "Greek" },
+  "languages": {
+    "en": "English",
+    "es": "Spanish",
+    "el": "Greek",
+    "switcher_aria_label": "Change language"
+  },
   "media_editor": {
-    "title": { "image": "Edit Image", "youtube": "Edit YouTube Video" },
-    "label": { "image": "Image URL", "youtube": "YouTube URL" },
-    "preview": { "alt": "Image preview" },
+    "title": {
+      "image": "Edit Image",
+      "youtube": "Edit YouTube Video"
+    },
+    "label": {
+      "image": "Image URL",
+      "youtube": "YouTube URL",
+      "alt_text": "Alt Text (for accessibility)",
+      "title_text": "Title Text (for tooltips)",
+      "start_time": "Start Time (in seconds)",
+      "width": "Width",
+      "height": "Height"
+    },
+    "placeholder": {
+      "alt_text": "A description of the image",
+      "title_text": "Tooltip text on hover",
+      "start_time": "e.g., 30 for 0:30"
+    },
+    "preview": {
+      "alt": "Image preview",
+      "youtube_alt": "YouTube video thumbnail preview"
+    },
     "cancel_button": "Cancel",
     "save_button": "Save"
   },
-  "tooltip": { "show_help": "Show help" },
-  "slash_menu": { "empty_state": "No matching commands" },
-  "main_view": { "title": "Commands" },
+  "tooltip": {
+    "show_help": "Show help"
+  },
+  "slash_menu": {
+    "empty_state": "No matching commands",
+    "aria_label": "Slash Command Menu"
+  },
+  "main_view": {
+    "title": "Commands"
+  },
   "command": {
     "new_schema": "New Schema",
     "explore_schemas": "Explore Schemas",
@@ -473,12 +603,14 @@
   "studyHub": {
     "title": "Study Decks",
     "viewStatistics": "View Statistics",
+    "viewStatisticsAria": "View all study statistics",
     "loading": "Loading decks...",
     "empty": "No decks with cards found. Add cards to a document to get started.",
     "deckHeader": "Deck",
     "newHeader": "New",
     "learningHeader": "Learning",
     "reviewHeader": "To Review",
+    "actionsHeader": "Actions",
     "settingsAria": "Deck Settings"
   },
   "quickCardEditor": {
@@ -501,6 +633,7 @@
     "updateSuccess": "Card updated successfully.",
     "updateFailed": "Failed to save card changes.",
     "deleteConfirm": "Are you sure you want to permanently delete this card?",
+    "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
     "deleteSuccess": "Card deleted.",
     "deleteFailed": "Failed to delete card."
   },
@@ -513,7 +646,8 @@
     "noSelectionError": "Please select a new document.",
     "alreadyInDocInfo": "Card is already in this document.",
     "updateSuccess": "Card source updated successfully.",
-    "updateFailed": "Failed to update card source."
+    "updateFailed": "Failed to update card source.",
+    "current": "Current"
   },
   "ai_service": {
     "errors": {
@@ -528,8 +662,24 @@
       "unexpected_generate_content_error": "An unexpected error occurred while contacting the AI service."
     }
   },
+  "ai_commands": {
+    "create_schema": {
+      "title": "Create Document from Text",
+      "default_title": "New Schema",
+      "success": "Document '{title}' created successfully."
+    },
+    "refine_document": {
+      "title": "Refine Document",
+      "success": "Document refined successfully.",
+      "error_invalid": "AI returned an invalid document structure."
+    },
+    "generate_cards": {
+      "title": "Generate Study Cards"
+    }
+  },
   "apiKeyModal": {
     "toast": {
+      "invalid_key_error": "Invalid API key or network error.",
       "empty_key_error": "API Key cannot be empty.",
       "key_added_success": "New Gemini key added!",
       "key_removed_info": "API Key removed."
@@ -539,15 +689,15 @@
     },
     "title": "AI Settings",
     "explanation": "Manage your API keys and select your preferred AI model. Keys are stored securely in your browser's local storage.",
+    "explanation_models": "Select the generative model you want to use for creating content. Available models are discovered automatically using your API key.",
+    "explanation_keys": "Add your Google AI Studio API key to enable generative features. You can add multiple keys to manage rate limits.",
     "model_selector_label": "Preferred AI Model",
     "optgroup": {
       "supported": "Supported Models",
       "discovered": "Discovered Models (Experimental)"
     },
-    "model_loading": "(...)",
-    "model_available": " ✓",
-    "model_unavailable": " (Unavailable)",
-    "discovered_model_tooltip": "*This is a discovered model. Rate limits are set to a conservative default.",
+    "available": "Available",
+    "unavailable": "Unavailable",
     "your_keys_header": "Your API Keys",
     "empty_state": "You haven't added any API keys yet.",
     "untitled_key": "Untitled Key",
@@ -561,7 +711,11 @@
     "api_key_label": "API Key",
     "api_key_placeholder": "Enter your API key here",
     "get_key_link": "Get a Gemini Key",
-    "add_key_button": "Add Key"
+    "add_key_button": "Add Key",
+    "tabs": {
+      "models": "Models",
+      "keys": "API Keys"
+    }
   },
   "backup_service": {
     "errors": {
@@ -581,13 +735,21 @@
   },
   "search_view": {
     "recent_searches": "Recent Searches",
-    "group": { "commands": "Commands", "knowledge": "Knowledge" },
+    "group": {
+      "commands": "Commands",
+      "knowledge": "Knowledge"
+    },
     "relevancy_score_tooltip": "Relevancy score",
     "prompt": "Start typing to search your entire vault.",
     "error": "There was an error performing the search.",
     "no_results": "No results found for your query."
   },
-
+  "card_workbench": {
+    "select_all_aria_label": "Select or deselect all visible cards",
+    "deselect_all": "Deselect All",
+    "select_all": "Select All",
+    "cards_visible": "cards visible"
+  },
   "strategy_session": {
     "create_schema": {
       "title": "Create Document from Text",

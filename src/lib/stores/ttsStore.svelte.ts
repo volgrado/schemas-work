@@ -1,4 +1,5 @@
 // src/lib/stores/ttsStore.svelte.ts
+
 /**
  * @file Manages Text-to-Speech (TTS) playback using Svelte 5 Runes and the Web Speech API.
  */
@@ -9,7 +10,7 @@ import { t } from '$lib/utils/i18n';
 import type { TTS } from '$lib/types';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-// --- VVVV THIS IS THE FIX (1/2): Import the reactive state object directly. VVVV ---
+// Import the reactive state object directly for use in effects.
 import { editorState } from './editorStore.svelte';
 
 // --- State Definition ---
@@ -49,6 +50,7 @@ const initialState: TTSState = {
 export const ttsState = $state<TTSState>({ ...initialState });
 
 // --- Private Helper Functions ---
+
 function generateSimpleUUID(): string {
   if (crypto && crypto.randomUUID) return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -57,6 +59,7 @@ function generateSimpleUUID(): string {
     return v.toString(16);
   });
 }
+
 function transitionToIdle(): void {
   if (browser) window.speechSynthesis.cancel();
   ttsState.status = 'idle';
@@ -66,9 +69,65 @@ function transitionToIdle(): void {
   ttsState.currentSpeechId = null;
   ttsState.isConfigDirty = false;
 }
+
+// --- VVVV THIS IS THE CORRECTED IMPLEMENTATION (1/1) VVVV ---
+/**
+ * Asynchronously loads the available Speech Synthesis voices from the browser.
+ * This function handles the common issue where voices are not immediately available
+ * on page load by listening for the `voiceschanged` event.
+ */
 async function loadVoices(): Promise<void> {
-  // This logic remains the same
+  return new Promise((resolve, reject) => {
+    if (!browser || !('speechSynthesis' in window)) {
+      ttsState.error = getStoreValue(t)('tts.not_supported');
+      ttsState.status = 'error';
+      return reject(new Error('Speech Synthesis not supported.'));
+    }
+
+    const populateVoiceList = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const mappedVoices: TTS.Voice[] = voices.map((v) => ({
+          id: v.voiceURI, // Use voiceURI for a stable and unique ID
+          name: `${v.name} (${v.lang})`,
+          lang: v.lang,
+        }));
+
+        ttsState.availableVoices = mappedVoices;
+
+        // Set a default voice if one isn't already selected or the old one is gone
+        const voiceExists = mappedVoices.some(
+          (v) => v.id === ttsState.selectedVoiceId
+        );
+        if (!ttsState.selectedVoiceId || !voiceExists) {
+          // Prefer a local, English voice as a default, otherwise pick the first.
+          const defaultVoice =
+            mappedVoices.find(
+              (v) => v.lang.includes('en') && v.id.includes('local')
+            ) ||
+            mappedVoices.find((v) => v.lang.includes('en')) ||
+            mappedVoices[0];
+
+          if (defaultVoice) {
+            ttsState.selectedVoiceId = defaultVoice.id;
+          }
+        }
+
+        resolve(); // Resolve the promise once voices are populated
+      }
+    };
+
+    // Attempt to populate the list immediately in case they're already loaded.
+    populateVoiceList();
+
+    // If the list is still empty, we must wait for the browser's event.
+    // The `voiceschanged` event will fire when the list is ready.
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+  });
 }
+
 function speakNodeAtIndex(index: number): void {
   const { nodesToRead, selectedVoiceId, rate, volume } = ttsState;
   if (index >= nodesToRead.length) {
@@ -100,7 +159,7 @@ function speakNodeAtIndex(index: number): void {
       nextNode();
     }
   };
-  utterance.onerror = (e) => {
+  utterance.onerror = () => {
     if (ttsState.currentSpeechId === speechId) {
       ttsState.status = 'error';
       ttsState.error = getStoreValue(t)('tts.playback_error');
@@ -126,14 +185,18 @@ export function initialize(): void {
   ttsState.isInitialized = true;
   ttsState.status = 'initializing';
 
-  loadVoices().then(() => {
-    ttsState.status = 'idle';
-    ttsState.isServiceReady = true;
-  });
+  loadVoices()
+    .then(() => {
+      ttsState.status = 'idle';
+      ttsState.isServiceReady = true;
+    })
+    .catch((error) => {
+      console.error('TTS Initialization failed:', error);
+      // State is already set to 'error' inside loadVoices if it fails
+    });
 
   // This effect creates the decoration for the currently speaking node.
   $effect(() => {
-    // --- VVVV THIS IS THE FIX (2/2): Access the reactive state directly. VVVV ---
     const { instance: editor } = editorState;
     const { status, nodesToRead, currentNodeIndex } = ttsState;
 
@@ -235,6 +298,7 @@ export function replay(): void {
   const currentNodes = [...ttsState.nodesToRead];
   if (currentNodes.length > 0) {
     transitionToIdle();
+    // Use a short timeout to ensure the previous `cancel()` has fully processed.
     setTimeout(() => startReading(currentNodes), 50);
   }
 }
