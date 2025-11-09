@@ -253,17 +253,37 @@
     "configure": {
       "title": "Entrada",
       "description": "Proporciona el texto inicial o el contexto para que la IA trabaje.",
-      "placeholder": "Pega tu texto, notas o artículo aquí..."
+      "placeholder": "Pega tu texto, notas o artículo aquí...",
+      "pdf_context_title": "Añadir Contexto PDF (Opcional)"
     },
     "refine": {
       "title": "Refinar",
       "description": "¿El borrador no es del todo correcto? Dile a la IA qué cambiar.",
-      "placeholder": "p. ej., Hazlo más conciso..."
+      "placeholder": "p. ej., Hazlo más conciso...",
+      "placeholder_with_selection": "p. ej., Reescribe esta selección para que sea más formal..."
     },
     "preview_title": "Vista Previa",
     "empty_preview": {
       "title": "Esperando Generación",
       "description": "Configura tu entrada y haz clic en 'Generar' para ver una vista previa de la salida de la IA aquí."
+    },
+    "errors": {
+      "file_too_large": "El archivo es demasiado grande. El tamaño máximo es {limit} MB."
+    },
+    "manual": {
+      "toggle_label": "Modo Manual",
+      "prompt": {
+        "title": "Paso 1: Copia la Instrucción Generada",
+        "description": "Copia esta instrucción y pégala en tu herramienta de IA preferida (como Google AI Studio).",
+        "copy_button": "Copiar al Portapapeles",
+        "next_button": "Siguiente: Pegar Respuesta"
+      },
+      "paste": {
+        "title": "Paso 2: Pega la Respuesta JSON",
+        "description": "Después de ejecutar la instrucción, pega la salida JSON completa y sin procesar de la herramienta de IA a continuación.",
+        "placeholder": "Pega la respuesta JSON de la IA aquí...",
+        "process_button": "Procesar y Previsualizar"
+      }
     }
   },
   "common": {
@@ -281,7 +301,10 @@
     "generate": "Generar",
     "regenerate": "Regenerar",
     "accept_close": "Aceptar y Cerrar",
-    "save": "Guardar"
+    "save": "Guardar",
+    "change_file": "Cambiar PDF",
+    "upload_file": "Subir PDF",
+    "get_prompt": "Obtener Instrucción"
   },
   "doc_view": {
     "untitled_schema": "Esquema sin título",

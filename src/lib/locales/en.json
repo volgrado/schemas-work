@@ -253,17 +253,38 @@
     "configure": {
       "title": "Input",
       "description": "Provide the initial text or context for the AI to work with.",
-      "placeholder": "Paste your text, notes, or article here..."
+      "placeholder": "Paste your text, notes, or article here...",
+      "pdf_context_title": "Add PDF Context (Optional)"
     },
     "refine": {
       "title": "Refine",
       "description": "The draft isn't quite right? Tell the AI what to change.",
-      "placeholder": "e.g., Make it more concise..."
+      "placeholder": "e.g., Make it more concise...",
+      "placeholder_with_selection": "e.g., Rewrite this selection to be more formal..."
     },
     "preview_title": "Preview",
     "empty_preview": {
       "title": "Awaiting Generation",
       "description": "Configure your input and click 'Generate' to see a preview of the AI's output here."
+    },
+    "//": "--- ADDED SECTION FOR MANUAL MODE ---",
+    "errors": {
+      "file_too_large": "File is too large. The maximum size is {limit} MB."
+    },
+    "manual": {
+      "toggle_label": "Manual Mode",
+      "prompt": {
+        "title": "Step 1: Copy the Generated Prompt",
+        "description": "Copy this prompt and paste it into your preferred AI tool (like Google AI Studio).",
+        "copy_button": "Copy to Clipboard",
+        "next_button": "Next: Paste Response"
+      },
+      "paste": {
+        "title": "Step 2: Paste the JSON Response",
+        "description": "After running the prompt, paste the complete, raw JSON output from the AI tool below.",
+        "placeholder": "Paste the JSON response from the AI here...",
+        "process_button": "Process & Preview"
+      }
     }
   },
   "common": {
@@ -281,7 +302,11 @@
     "generate": "Generate",
     "regenerate": "Regenerate",
     "accept_close": "Accept & Close",
-    "save": "Save"
+    "save": "Save",
+    "//": "--- ADDED SECTION ---",
+    "change_file": "Change PDF",
+    "upload_file": "Upload PDF",
+    "get_prompt": "Get Prompt"
   },
   "doc_view": {
     "untitled_schema": "Untitled Schema",

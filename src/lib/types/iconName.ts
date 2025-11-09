@@ -32,6 +32,7 @@ export type IconName =
   | 'minus'
   | 'monitor'
   | 'moon'
+  | 'paperclip' // <-- ADDED THIS LINE
   | 'pen-tool'
   | 'plus'
   | 'plus-square'

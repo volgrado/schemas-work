@@ -15,6 +15,8 @@
   import { fade, fly } from 'svelte/transition';
   import type { AiMessage } from '$lib/services/ai/aiService';
   import { normalizeTiptapJSON } from '$lib/utils/tiptapUtils';
+  import { get } from 'svelte/store';
+  import { toast } from 'svelte-sonner';
 
   // --- UI Components ---
   import Modal from '$lib/components/ui/Modal.svelte';
@@ -24,22 +26,37 @@
   import CardPreview from '$lib/components/ai/CardPreview.svelte';
   import { t } from '$lib/utils/i18n';
   import type { SRS } from '$lib/types';
+  import Toggle from '$lib/components/ui/Toggle.svelte';
   type Card = SRS.Card;
+
+  const FILE_API_SIZE_LIMIT_MB = 50;
 
   let { show } = $props<{ show: boolean }>();
 
   // --- STATE ---
-  type View = 'configure' | 'loading' | 'refine' | 'error';
+  type View =
+    | 'configure'
+    | 'loading'
+    | 'refine'
+    | 'error'
+    | 'manual-prompt'
+    | 'manual-paste';
+
   let view = $state<View>('configure');
   let errorMessage = $state('');
   let draftContent = $state<any>(null);
   let refinementText = $state('');
   let configurationInput = $state('');
+  let selectedPdfFile = $state<File | null>(null);
+
+  // --- State for manual mode ---
+  let isManualMode = $state(false);
+  let generatedPrompt = $state('');
+  let pastedJson = $state('');
+
   let configTextarea = $state<HTMLTextAreaElement | null>(null);
   let refineTextarea = $state<HTMLTextAreaElement | null>(null);
   let tiptapPreviewInstance = $state<TiptapPreview | null>(null);
-
-  // This boolean is updated ONLY on mouse up to provide cheap, performant UI feedback.
   let hasSelection = $state(false);
 
   const command = $derived(
@@ -55,13 +72,16 @@
     refinementText = '';
     configurationInput = '';
     hasSelection = false;
+    selectedPdfFile = null;
+    generatedPrompt = '';
+    pastedJson = '';
+    // isManualMode is preserved intentionally to maintain user's choice across sessions.
   }
 
   $effect(() => {
     if (show) {
       const context = commandBarState.strategySessionContext;
 
-      // Logic for "Refine" actions: Load existing content, do NOT call API.
       if (context?.action.startsWith('refine-')) {
         const initialDocument = context.fullDocumentJSON;
         if (initialDocument) {
@@ -72,9 +92,7 @@
           errorMessage = 'The document content was not available to refine.';
           view = 'error';
         }
-      }
-      // Logic for "Configure" actions: Show the configuration screen.
-      else {
+      } else {
         view = 'configure';
         setTimeout(() => configTextarea?.focus(), 100);
       }
@@ -82,9 +100,58 @@
     return () => resetState();
   });
 
+  function handleFileSelect(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (file) {
+      if (file.size > FILE_API_SIZE_LIMIT_MB * 1024 * 1024) {
+        toast.error(
+          get(t)('ai_workbench.errors.file_too_large', {
+            default: `File is too large. The maximum size is ${FILE_API_SIZE_LIMIT_MB} MB.`,
+            limit: FILE_API_SIZE_LIMIT_MB,
+          })
+        );
+        target.value = '';
+        selectedPdfFile = null;
+        return;
+      }
+      selectedPdfFile = file;
+    }
+  }
+
   async function runGeneration(instruction: string) {
     if (!command) return;
-    const context = commandBarState.strategySessionContext!;
+
+    const currentWorkbenchState: WorkbenchState = {
+      selectedText: null,
+      draftContent: draftContent,
+      selectedCards: [],
+    };
+    const promptContext = {
+      ...commandBarState.strategySessionContext!,
+      initialInput: configurationInput,
+    };
+    const textPrompt = command.getPrompt(
+      promptContext,
+      currentWorkbenchState,
+      instruction
+    );
+
+    // --- BRANCH 1: MANUAL MODE ---
+    if (isManualMode) {
+      let finalPrompt = textPrompt;
+      if (selectedPdfFile) {
+        finalPrompt =
+          `[USER NOTE: A PDF file named "${selectedPdfFile.name}" was attached. Remember to upload this file in your external tool before using the prompt below.]\n\n---\n\n` +
+          textPrompt;
+      }
+      generatedPrompt = finalPrompt;
+      view = 'manual-prompt';
+      return;
+    }
+
+    // --- BRANCH 2: AUTOMATIC API CALL ---
     const model = getModelById(settingsState.selectedModelId);
     const apiKeyObject = getNextAvailableKey('gemini');
 
@@ -95,28 +162,17 @@
     }
     view = 'loading';
 
-    // Get a "snapshot" of the selection at the moment of the request.
-    const selection = tiptapPreviewInstance?.getCurrentSelection();
-    const currentWorkbenchState: WorkbenchState = {
-      selectedText: selection?.text || null,
-      draftContent: draftContent, // Pass current draft for the AI to refine
-      selectedCards: [],
-    };
-
-    const promptContext = { ...context, initialInput: configurationInput };
-    const prompt = command.getPrompt(
-      promptContext,
-      currentWorkbenchState,
-      instruction
-    );
-    const messages: AiMessage[] = [{ role: 'user', parts: [{ text: prompt }] }];
+    const messages: AiMessage[] = [
+      { role: 'user', parts: [{ text: textPrompt }] },
+    ];
 
     try {
       const rawResult = await aiService.generateContent(
         messages,
         model,
         apiKeyObject.key,
-        command.validationSchema
+        command.validationSchema,
+        selectedPdfFile
       );
       const normalizedResult = normalizeTiptapJSON(rawResult);
       draftContent = normalizedResult;
@@ -125,6 +181,36 @@
       setTimeout(() => refineTextarea?.focus(), 100);
     } catch (err: any) {
       errorMessage = err.message || $t('aiHelper.errors.unknown');
+      view = 'error';
+    }
+  }
+
+  function handleCopyToClipboard() {
+    navigator.clipboard.writeText(generatedPrompt);
+    toast.success('Prompt copied to clipboard!');
+  }
+
+  function handleProcessPastedJson() {
+    if (!pastedJson || !command) return;
+    try {
+      const parsedData = JSON.parse(pastedJson);
+      const validation = command.validationSchema.safeParse(parsedData);
+
+      if (!validation.success) {
+        errorMessage =
+          'Pasted JSON is not valid for this command: ' +
+          validation.error.message;
+        view = 'error';
+        return;
+      }
+
+      const normalizedResult = normalizeTiptapJSON(validation.data);
+      draftContent = normalizedResult;
+      refinementText = '';
+      pastedJson = '';
+      view = 'refine';
+    } catch (err: any) {
+      errorMessage = 'Invalid JSON provided: ' + err.message;
       view = 'error';
     }
   }
@@ -139,12 +225,8 @@
     }
   }
 
-  function handleCardSelectionUpdate(event: CustomEvent<Card[]>) {
-    // This logic remains for card previews, if used.
-  }
+  function handleCardSelectionUpdate(event: CustomEvent<Card[]>) {}
 
-  // This handler is cheap and only fires once when the user releases the mouse,
-  // providing performant UI feedback.
   function handlePointerUp() {
     if (tiptapPreviewInstance) {
       const selection = tiptapPreviewInstance.getCurrentSelection();
@@ -176,97 +258,187 @@
       </div>
     {/if}
 
-    <div class="panels-wrapper" class:loading={view === 'loading'}>
-      <div
-        class="left-panel"
-        in:fly={{ y: 10, duration: 300, delay: 200 }}
-        out:fade
-      >
-        {#if view === 'configure'}
-          <div class="panel-section">
-            <h4 class="panel-title">
-              <Icon name="file-plus" />
-              <span>{$t('ai_workbench.configure.title')}</span>
-            </h4>
-            <p class="panel-description">
-              {$t('ai_workbench.configure.description')}
-            </p>
-            <textarea
-              bind:this={configTextarea}
-              bind:value={configurationInput}
-              rows="15"
-              placeholder={$t('ai_workbench.configure.placeholder')}
-            ></textarea>
-          </div>
-        {:else if view === 'refine'}
-          <div class="panel-section">
-            <h4 class="panel-title">
-              <Icon name="edit-3" />
-              <span>{$t('ai_workbench.refine.title')}</span>
-            </h4>
-            <p class="panel-description">
-              {$t('ai_workbench.refine.description')}
-            </p>
-            <div class="quick-actions">
-              {#each command?.quickActions || [] as action}
-                <Button
-                  onclick={() => runGeneration(action.instruction)}
-                  variant="secondary">{action.label}</Button
-                >
-              {/each}
-            </div>
-            <textarea
-              bind:this={refineTextarea}
-              bind:value={refinementText}
-              rows="5"
-              placeholder={hasSelection
-                ? $t('ai_workbench.refine.placeholder_with_selection')
-                : $t('ai_workbench.refine.placeholder')}
-            ></textarea>
-          </div>
-        {/if}
-      </div>
-
-      <div
-        class="right-panel"
-        in:fly={{ y: 10, duration: 300, delay: 300 }}
-        out:fade
-      >
+    {#if view === 'manual-prompt'}
+      <div class="manual-flow-panel" transition:fade>
         <h4 class="panel-title">
-          <Icon name="eye" />
-          <span>{$t('ai_workbench.preview_title')}</span>
+          <Icon name="copy" />
+          <span>Step 1: Copy the Generated Prompt</span>
         </h4>
-        <div class="preview-content-wrapper" on:pointerup={handlePointerUp}>
-          <div class="preview-content">
-            {#if !draftContent}
-              <div class="empty-preview">
-                <Icon name="sparkles" size={48} />
-                <p>{$t('ai_workbench.empty_preview.title')}</p>
-                <span>{$t('ai_workbench.empty_preview.description')}</span>
+        <p class="panel-description">
+          Copy this prompt and paste it into your preferred AI tool (like Google
+          AI Studio).
+        </p>
+        <textarea readonly rows="15">{generatedPrompt}</textarea>
+        <div class="manual-actions">
+          <Button onclick={handleCopyToClipboard} variant="secondary">
+            <Icon name="copy" size={16} />
+            Copy to Clipboard
+          </Button>
+          <Button onclick={() => (view = 'manual-paste')} variant="primary">
+            Next: Paste Response
+          </Button>
+        </div>
+      </div>
+    {:else if view === 'manual-paste'}
+      <div class="manual-flow-panel" transition:fade>
+        <h4 class="panel-title">
+          <Icon name="pen-tool" />
+          <span>Step 2: Paste the JSON Response</span>
+        </h4>
+        <p class="panel-description">
+          After running the prompt, paste the complete, raw JSON output from the
+          AI tool below.
+        </p>
+        <textarea
+          bind:value={pastedJson}
+          rows="15"
+          placeholder="Paste the JSON response from the AI here..."
+        ></textarea>
+        <div class="manual-actions">
+          <Button onclick={() => (view = 'manual-prompt')} variant="secondary">
+            Back
+          </Button>
+          <Button
+            onclick={handleProcessPastedJson}
+            variant="primary"
+            disabled={!pastedJson}
+          >
+            Process & Preview
+          </Button>
+        </div>
+      </div>
+    {:else}
+      <!-- ▼▼▼ FIX 1: Corrected class:loading logic ▼▼▼ -->
+      <div class="panels-wrapper" class:loading={view === 'loading'}>
+        <div
+          class="left-panel"
+          in:fly={{ y: 10, duration: 300, delay: 200 }}
+          out:fade
+        >
+          {#if view === 'configure'}
+            <div class="panel-section">
+              <h4 class="panel-title">
+                <Icon name="file-plus" />
+                <span>{$t('ai_workbench.configure.title')}</span>
+              </h4>
+              <p class="panel-description">
+                {$t('ai_workbench.configure.description')}
+              </p>
+              <textarea
+                bind:this={configTextarea}
+                bind:value={configurationInput}
+                rows="10"
+                placeholder={$t('ai_workbench.configure.placeholder')}
+              ></textarea>
+              <div class="context-upload-section">
+                <h5 class="panel-subtitle">
+                  <Icon name="paperclip" size={16} />
+                  <span
+                    >{$t('ai_workbench.configure.pdf_context_title', {
+                      default: 'Add PDF Context (Optional)',
+                    })}</span
+                  >
+                </h5>
+                <!-- ▼▼▼ FIX 2: Svelte 5 event handler syntax ▼▼▼ -->
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onchange={handleFileSelect}
+                  id="pdf-upload"
+                  class="file-input"
+                />
+                <label for="pdf-upload" class="file-label">
+                  <Icon name="upload-cloud" size={16} />
+                  {selectedPdfFile
+                    ? $t('common.change_file', { default: 'Change PDF' })
+                    : $t('common.upload_file', { default: 'Upload PDF' })}
+                </label>
+                {#if selectedPdfFile}
+                  <p class="file-status" title={selectedPdfFile.name}>
+                    <Icon name="file-text" size={14} />
+                    {selectedPdfFile.name}
+                  </p>
+                {/if}
               </div>
-            {:else}
-              {@const action = commandBarState.strategySessionContext?.action}
-              {#if action?.includes('document') || action?.includes('schema')}
-                <TiptapPreview
-                  bind:this={tiptapPreviewInstance}
-                  content={draftContent}
-                />
-              {:else if action?.includes('cards')}
-                <CardPreview
-                  cards={draftContent}
-                  on:selectionUpdate={handleCardSelectionUpdate}
-                />
+            </div>
+          {:else if view === 'refine'}
+            <div class="panel-section">
+              <h4 class="panel-title">
+                <Icon name="edit-3" />
+                <span>{$t('ai_workbench.refine.title')}</span>
+              </h4>
+              <p class="panel-description">
+                {$t('ai_workbench.refine.description')}
+              </p>
+              <div class="quick-actions">
+                {#each command?.quickActions || [] as action}
+                  <Button
+                    onclick={() => runGeneration(action.instruction)}
+                    variant="secondary">{action.label}</Button
+                  >
+                {/each}
+              </div>
+              <textarea
+                bind:this={refineTextarea}
+                bind:value={refinementText}
+                rows="5"
+                placeholder={hasSelection
+                  ? $t('ai_workbench.refine.placeholder_with_selection')
+                  : $t('ai_workbench.refine.placeholder')}
+              ></textarea>
+            </div>
+          {/if}
+        </div>
+
+        <div
+          class="right-panel"
+          in:fly={{ y: 10, duration: 300, delay: 300 }}
+          out:fade
+        >
+          <h4 class="panel-title">
+            <Icon name="eye" />
+            <span>{$t('ai_workbench.preview_title')}</span>
+          </h4>
+          <!-- ▼▼▼ FIX 3: Svelte 5 event handler syntax ▼▼▼ -->
+          <div class="preview-content-wrapper" onpointerup={handlePointerUp}>
+            <div class="preview-content">
+              {#if !draftContent}
+                <div class="empty-preview">
+                  <Icon name="sparkles" size={48} />
+                  <p>{$t('ai_workbench.empty_preview.title')}</p>
+                  <span>{$t('ai_workbench.empty_preview.description')}</span>
+                </div>
               {:else}
-                <pre>{JSON.stringify(draftContent, null, 2)}</pre>
+                {@const action = commandBarState.strategySessionContext?.action}
+                {#if action?.includes('document') || action?.includes('schema')}
+                  <TiptapPreview
+                    bind:this={tiptapPreviewInstance}
+                    content={draftContent}
+                  />
+                {:else if action?.includes('cards')}
+                  <CardPreview
+                    cards={draftContent}
+                    on:selectionUpdate={handleCardSelectionUpdate}
+                  />
+                {:else}
+                  <pre>{JSON.stringify(draftContent, null, 2)}</pre>
+                {/if}
               {/if}
-            {/if}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    {/if}
   </div>
 
   <footer class="modal-actions" out:fade>
+    <div class="manual-toggle-wrapper">
+      <Toggle
+        bind:checked={isManualMode}
+        labelText="Manual Mode"
+        id="manual-mode-toggle"
+      />
+    </div>
     <Button onclick={closeStrategySession} variant="secondary">
       {$t('common.cancel')}
     </Button>
@@ -274,10 +446,10 @@
       <Button
         onclick={() => runGeneration('')}
         variant="primary"
-        disabled={!configurationInput}
+        disabled={!configurationInput && !selectedPdfFile}
       >
         <Icon name="zap" size={16} />
-        {$t('common.generate')}
+        {isManualMode ? 'Get Prompt' : $t('common.generate')}
       </Button>
     {:else if view === 'refine'}
       <Button
@@ -442,6 +614,7 @@
   .modal-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: var(--space-sm);
     margin-top: var(--space-lg);
     padding-top: var(--space-lg);
@@ -453,5 +626,74 @@
   }
   :global(.dark-theme) .empty-preview {
     border-color: var(--color-border-dark);
+  }
+
+  .context-upload-section {
+    margin-top: var(--space-lg);
+  }
+  .panel-subtitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-sm) 0;
+  }
+  .file-input {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+  .file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+  }
+  .file-label:hover {
+    background-color: var(--color-bg-tertiary);
+  }
+  .file-status {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: var(--space-sm) 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  /* --- Styles for Manual Mode --- */
+  .manual-flow-panel {
+    padding: var(--space-md) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    min-height: 480px;
+  }
+  .manual-flow-panel textarea {
+    flex-grow: 1;
+  }
+  .manual-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+  .manual-toggle-wrapper {
+    margin-right: auto;
   }
 </style>

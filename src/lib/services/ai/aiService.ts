@@ -6,20 +6,33 @@
  * This service provides a centralized, robust interface for all interactions with external
  * Generative AI models. It is the sole gateway for content generation and includes a
  * critical, self-healing retry mechanism to handle AI-generated validation errors.
+ * It also intelligently handles multimodal inputs, including large files via the File API.
  */
 
 import { z } from 'zod';
 import * as errorService from '$lib/services/core/errorService';
 import type { AiModel } from './aiModels';
-// REFINEMENT: Keep the correct `get` import for the non-Rune i18n store.
 import { get } from 'svelte/store';
 import { t } from '$lib/utils/i18n';
 import { AiValidationError } from './AiValidationError';
+import { fileToBase64 } from '$lib/utils/fileUtils';
+
+// --- CONSTANTS ---
+// The threshold for switching to the File API. Set slightly below 20MB to be safe.
+const INLINE_FILE_SIZE_LIMIT_BYTES = 19.5 * 1024 * 1024;
+// The Gemini File API's absolute maximum file size.
+const FILE_API_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
+
+/** Defines a part of a multimodal message for the AI. */
+export type AiMessagePart =
+  | { text: string }
+  | { inline_data: { mime_type: string; data: string } }
+  | { file_data: { mime_type: string; file_uri: string } };
 
 /** Defines the structure for a message in a multi-turn conversation with the AI. */
 export type AiMessage = {
   role: 'user' | 'model';
-  parts: { text: string }[];
+  parts: AiMessagePart[];
 };
 
 /** Custom error class for AI service-specific issues, allowing for precise user feedback. */
@@ -42,7 +55,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const modelId = 'gemini-embedding-001';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:embedContent?key=${apiKey}`;
-  const _t = get(t); // Get the translation function once.
+  const _t = get(t);
 
   try {
     const response = await fetch(apiUrl, {
@@ -81,21 +94,58 @@ export async function generateEmbedding(
 }
 
 /**
- * Sends a conversational history to the Gemini API and returns the parsed,
- * validated JSON response. Includes a self-healing retry mechanism.
- *
- * @param messages The conversation history to send to the AI.
- * @param model The AI model object to use.
- * @param apiKey The user's API key.
- * @param validationSchema The Zod schema to validate the AI's response against.
- * @param retries The number of times to automatically retry on a validation failure.
- * @returns A promise that resolves to the validated, typed data from the AI response.
+ * @private
+ * Uploads a file using the Gemini File API.
+ * WARNING: In a real production application, this sensitive API call should be
+ * proxied through your own backend server to protect your API key.
+ * @param file The file to upload.
+ * @param apiKey The Gemini API key.
+ * @returns The unique name/identifier of the uploaded file (e.g., "files/12345abc").
+ */
+async function uploadFile(file: File, apiKey: string): Promise<string> {
+  const _t = get(t);
+  const uploadUrl = `https://generativelanguage.googleapis.com/v1beta/files?key=${apiKey}`;
+
+  const formData = new FormData();
+
+  // Part 1: The metadata as a JSON Blob
+  const metadata = { file: { display_name: file.name } };
+  formData.append(
+    'file',
+    new Blob([JSON.stringify(metadata)], { type: 'application/json' })
+  );
+
+  // Part 2: The actual file content
+  formData.append('file', file, file.name);
+
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json();
+    throw new AiServiceError(
+      _t('ai_service.errors.file_api_upload_failed', {
+        message: errorBody.error?.message || 'Unknown file upload error',
+      })
+    );
+  }
+
+  const result = await response.json();
+  return result.file.name;
+}
+
+/**
+ * Sends a conversational history (potentially with a file) to the Gemini API.
+ * It automatically chooses the correct method (inline vs. File API) based on file size.
  */
 export async function generateContent<T extends z.ZodType<any, any>>(
   messages: AiMessage[],
   model: AiModel,
   apiKey: string,
   validationSchema: T,
+  file: File | null = null,
   retries = 1
 ): Promise<z.infer<T>> {
   const _t = get(t);
@@ -106,6 +156,31 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     );
   }
 
+  const finalParts: AiMessagePart[] = [...(messages[0]?.parts || [])];
+
+  if (file) {
+    if (file.size > FILE_API_SIZE_LIMIT_BYTES) {
+      throw new AiServiceError(
+        _t('ai_service.errors.file_too_large_hard_limit', {
+          limit: FILE_API_SIZE_LIMIT_BYTES / (1024 * 1024),
+        })
+      );
+    }
+
+    if (file.size > INLINE_FILE_SIZE_LIMIT_BYTES) {
+      const fileName = await uploadFile(file, apiKey);
+      finalParts.unshift({
+        file_data: { mime_type: file.type, file_uri: fileName },
+      });
+    } else {
+      const base64Data = await fileToBase64(file);
+      finalParts.unshift({
+        inline_data: { mime_type: file.type, data: base64Data },
+      });
+    }
+  }
+
+  const finalMessages: AiMessage[] = [{ role: 'user', parts: finalParts }];
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${apiKey}`;
   let lastResponseText = '';
 
@@ -114,7 +189,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: messages,
+        contents: finalMessages,
         generationConfig: { response_mime_type: 'application/json' },
       }),
     });
@@ -163,11 +238,30 @@ export async function generateContent<T extends z.ZodType<any, any>>(
         role: 'model',
         parts: [{ text: lastResponseText }],
       };
+
+      // Create a text-only version of the original conversation for the retry.
+      const retryConversation: AiMessage[] = JSON.parse(
+        JSON.stringify(messages)
+      );
+      const lastMessage = retryConversation[retryConversation.length - 1];
+      if (lastMessage && lastMessage.role === 'user') {
+        lastMessage.parts = lastMessage.parts.filter(
+          (part: AiMessagePart) => 'text' in part
+        );
+      }
+
+      const fullRetryMessages: AiMessage[] = [
+        ...retryConversation,
+        failedResponse,
+        correctionMessage,
+      ];
+
       return generateContent(
-        [...messages, failedResponse, correctionMessage],
+        fullRetryMessages,
         model,
         apiKey,
         validationSchema,
+        null, // Do not include the file in the retry
         retries - 1
       );
     }

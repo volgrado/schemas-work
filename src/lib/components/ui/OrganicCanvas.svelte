@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  // FIX: Correct the import path to match your filename ('themestore.svelte.ts')
+  // Assumes your store is in 'src/lib/stores'
   import { themeStore } from '$lib/stores/themeStore.svelte';
-  import type { Theme } from '$lib/stores/themeStore.svelte'; // Keep type import
+  import type { Theme } from '$lib/stores/themeStore.svelte';
+  // Assumes your canvas drawing functions are in 'src/lib/utils'
   import { drawStars, drawArtisticDetails } from '$lib/utils/canvas-themes';
   import type { CanvasTheme } from '$lib/utils/canvas-themes';
+  // Import the reusable utilities
+  import { debounce } from '$lib/utils/debounce';
+  import { mulberry32 } from '$lib/utils/prng'; // 1. Import the PRNG utility
 
   let { isExiting = false } = $props<{ isExiting?: boolean }>();
 
@@ -16,7 +20,17 @@
   let cachedCanvas: HTMLCanvasElement | null = null;
   let cachedTheme: CanvasTheme | null = null;
 
-  // Animation state
+  // 2. Define a constant seed for the deterministic background generation.
+  // Changing this number will generate a completely different (but still stable) universe.
+  const STARFIELD_SEED = 2024;
+
+  // --- Resize Optimization State ---
+  let lastRenderedWidth = 0;
+  let lastRenderedHeight = 0;
+  const RESIZE_DEBOUNCE_MS = 250;
+  const RESIZE_THRESHOLD_PX = 100;
+
+  // --- Animation State ---
   interface ShootingStar {
     x: number;
     y: number;
@@ -30,11 +44,33 @@
   let artisticDetailsAlpha = 0;
   let currentTheme: CanvasTheme = 'dark';
 
-  // ... (All canvas drawing functions like init, animate, etc. remain the same) ...
-  function init() {
+  /**
+   * Initializes and draws the static background canvas.
+   * This is the expensive operation we want to optimize.
+   * @param force - If true, the resize threshold check is ignored.
+   */
+  function init(force = false) {
     if (!canvasEl) return;
-    canvasEl.width = window.innerWidth;
-    canvasEl.height = window.innerHeight;
+
+    const widthChanged =
+      Math.abs(window.innerWidth - lastRenderedWidth) > RESIZE_THRESHOLD_PX;
+    const heightChanged =
+      Math.abs(window.innerHeight - lastRenderedHeight) > RESIZE_THRESHOLD_PX;
+
+    if (!force && !widthChanged && !heightChanged) {
+      return;
+    }
+
+    lastRenderedWidth = window.innerWidth;
+    lastRenderedHeight = window.innerHeight;
+    canvasEl.width = lastRenderedWidth;
+    canvasEl.height = lastRenderedHeight;
+
+    // 3. Create a new PRNG instance from our seed *every time* we init.
+    // This "resets" the sequence of random numbers, ensuring the same star
+    // pattern is drawn regardless of canvas size.
+    const random = mulberry32(STARFIELD_SEED);
+
     if (
       cachedCanvas &&
       cachedCanvas.width === canvasEl.width &&
@@ -54,16 +90,27 @@
       if (!staticCtx) return;
       staticCtx.fillStyle = currentTheme === 'dark' ? '#000000' : '#f0f4f8';
       staticCtx.fillRect(0, 0, staticBgCanvas.width, staticBgCanvas.height);
-      drawStars(staticCtx, canvasEl.width, canvasEl.height, currentTheme);
+
+      // 4. Pass the seeded 'random' function to the drawing utilities.
+      drawStars(
+        staticCtx,
+        canvasEl.width,
+        canvasEl.height,
+        currentTheme,
+        random
+      );
+
       setTimeout(() => {
         if (!staticBgCanvas) return;
         const staticCtx = staticBgCanvas.getContext('2d');
         if (!staticCtx) return;
+        // Also pass it to the artistic details function.
         drawArtisticDetails(
           staticCtx,
           canvasEl.width,
           canvasEl.height,
-          currentTheme
+          currentTheme,
+          random
         );
         cachedCanvas = staticBgCanvas;
         cachedTheme = currentTheme;
@@ -74,6 +121,9 @@
     if (shootingStarInterval) clearInterval(shootingStarInterval);
     shootingStarInterval = window.setInterval(createShootingStar, 25000);
   }
+
+  // This function remains unchanged. We want shooting stars to be truly random,
+  // not deterministic like the background.
   function createShootingStar() {
     if (!canvasEl) return;
     const scaleFactor = Math.max(0.5, Math.min(canvasEl.width / 1200, 1.2));
@@ -102,6 +152,8 @@
       alpha: 1,
     });
   }
+
+  // ... (animate, handleVisibilityChange, $effect, onMount, onDestroy are unchanged and correct)
   function animate() {
     animationFrameId = requestAnimationFrame(animate);
     if (!canvasEl) return;
@@ -145,6 +197,7 @@
       ctx.stroke();
     }
   }
+
   function handleVisibilityChange() {
     if (document.hidden) {
       cancelAnimationFrame(animationFrameId);
@@ -155,50 +208,42 @@
     }
   }
 
-  // --- REACTIVE EFFECT ---
   $effect(() => {
     const resolveTheme = (t: Theme): CanvasTheme => {
       if (t === 'system') {
-        // This check only runs client-side, so `window` is safe.
         return window.matchMedia('(prefers-color-scheme: dark)').matches
           ? 'dark'
           : 'light';
       }
       return t;
     };
-
-    // FIX: Read the theme from the store's public .theme property.
-    // This creates the reactive link.
     const effectiveTheme = resolveTheme(themeStore.theme);
-
     if (effectiveTheme !== currentTheme) {
       currentTheme = effectiveTheme;
-      init(); // Re-initialize the canvas when the theme changes.
+      init(true);
     }
-
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
-      // FIX: Also check the .theme property here.
       if (themeStore.theme === 'system') {
         const newEffectiveTheme = resolveTheme('system');
         if (newEffectiveTheme !== currentTheme) {
           currentTheme = newEffectiveTheme;
-          init();
+          init(true);
         }
       }
     };
-
     mediaQuery.addEventListener('change', handleSystemChange);
     return () => mediaQuery.removeEventListener('change', handleSystemChange);
   });
 
   onMount(() => {
+    const debouncedFinalResize = debounce(() => init(true), RESIZE_DEBOUNCE_MS);
+    init(true);
     animate();
-    window.addEventListener('resize', init);
+    window.addEventListener('resize', debouncedFinalResize);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
-      window.removeEventListener('resize', init);
+      window.removeEventListener('resize', debouncedFinalResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   });
