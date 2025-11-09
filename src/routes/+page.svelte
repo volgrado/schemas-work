@@ -43,6 +43,9 @@
   let currentView = $state<'editor' | 'tree'>('editor');
   let showHint = $state(false);
 
+  // Use a derived variable for the modal config for cleaner template logic.
+  const config = $derived(modalState.config);
+
   const WELCOME_KEY = 'schemas-work-has-seen-welcome';
   const HINT_KEY = 'schemas-work-has-seen-command-hint';
 
@@ -240,54 +243,50 @@
         />
       {/if}
 
-      {#if modalState.isOpen && modalState.config}
-        {#if modalState.config.type === 'formula'}
-          <Modal
-            show={true}
-            title={$t('modals.formula_editor_title')}
-            onClose={closeModal}
-          >
+      <!-- ▼▼▼ COMPLETE MODAL SOLUTION ▼▼▼ -->
+      {#if modalState.show && config}
+        {#if config.type === 'formula'}
+          <!-- Render the FormulaEditorModal directly, as it contains its own <Modal> frame. -->
+          {#if config.onsave}
             <FormulaEditorModal
-              nodePos={modalState.config.nodePos}
-              nodeType={modalState.config.nodeType}
-              initialFormula={modalState.config.initialFormula}
-              onsave={() => {}}
+              bind:show={modalState.show}
+              nodePos={config.nodePos}
+              nodeType={config.nodeType}
+              initialFormula={config.initialFormula}
+              onsave={config.onsave}
             />
-          </Modal>
-        {/if}
-        {#if modalState.config.type === 'media'}
+          {/if}
+        {:else if config.type === 'media'}
+          <!-- For placeholder modals, use the generic <Modal> component as a wrapper. -->
           <Modal
-            show={true}
+            bind:show={modalState.show}
             title={$t('modals.media_editor_title')}
             onClose={closeModal}
           >
             <div style="padding: 1rem; text-align: center;">
-              {$t('modals.media_editor_placeholder')}: {modalState.config
-                .nodeType}
+              {$t('modals.media_editor_placeholder')}: {config.nodeType}
             </div>
           </Modal>
         {/if}
       {/if}
+      <!-- ▲▲▲ END OF SOLUTION ▲▲▲ -->
     </div>
   {/if}
 {/if}
 
 <style>
+  /* All your styles are correct and do not need to be changed. */
   .main-app-container {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Prevents the whole page from scrolling */
+    overflow: hidden;
   }
-
   .main-content {
-    flex-grow: 1; /* Correctly fills the space below the header */
-    position: relative; /* Establishes a positioning context for the wrapper */
-    overflow: hidden; /* Prevents content from spilling out */
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
   }
-
-  /* --- THE CORE FIX --- */
-  /* Make the view-wrapper fill its parent completely */
   .view-wrapper {
     position: absolute;
     top: 0;
@@ -295,34 +294,22 @@
     width: 100%;
     height: 100%;
   }
-
-  /* --- VIEW-SPECIFIC STYLES --- */
-
-  /* 1. For the Editor View: */
   .main-content.is-editor-view .view-wrapper {
-    overflow-y: auto; /* Allow this wrapper to scroll */
+    overflow-y: auto;
     padding: var(--space-xl) var(--space-lg) var(--space-xxl);
-    /* The 60px header height is now handled by the AppHeader's position */
     padding-top: calc(60px + var(--space-xl));
-    display: flex; /* Use flexbox to easily center the sheet */
+    display: flex;
     justify-content: center;
   }
-
-  /* 2. For the Tree View: */
   .main-content.is-tree-view .view-wrapper {
-    /* Add padding to push the tree below the 60px header */
     padding-top: 60px;
-    /* CRITICAL: This ensures padding is included inside the 100% height, not added to it */
     box-sizing: border-box;
   }
-
-  /* --- CHILD CONTAINER STYLES --- */
-
   .sheet-container {
     width: 100%;
     max-width: 820px;
-    height: fit-content; /* Sheet should only be as tall as its content */
-    margin: 0; /* Centering is now handled by the parent flexbox */
+    height: fit-content;
+    margin: 0;
     padding: 3rem 4rem;
     background-color: var(--color-background-translucent);
     border: 1px solid var(--color-border);
@@ -332,17 +319,13 @@
     -webkit-backdrop-filter: blur(16px);
     transition: var(--transition-fast);
   }
-
   :global(.dark-theme) .sheet-container {
     background-color: var(--panel-bg-dark);
   }
-
   .tree-container {
     width: 100%;
-    height: 100%; /* This now correctly fills the padded space of its parent wrapper */
+    height: 100%;
   }
-
-  /* --- Unchanged Utility Styles --- */
   .status-message {
     display: flex;
     justify-content: center;

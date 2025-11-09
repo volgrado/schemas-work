@@ -181,30 +181,6 @@ export const getCommands = (): CommandItem[] => {
 
     // --- Group: Media ---
     {
-      title: t('slashCommands.image.title'),
-      description: t('slashCommands.image.description'),
-      group: t('slashCommands.groups.media'),
-      icon: 'image',
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).run();
-        const pos = range.from;
-        editor
-          .chain()
-          .insertContentAt(pos, { type: 'image', attrs: { src: null } })
-          .run();
-        const node = editor.state.doc.nodeAt(pos);
-        if (node) {
-          const config: Modal.MediaConfig = {
-            type: 'media',
-            nodeType: 'image',
-            nodePos: pos,
-            attrs: node.attrs,
-          };
-          openModal(config);
-        }
-      },
-    },
-    {
       title: t('slashCommands.youtube.title'),
       description: t('slashCommands.youtube.description'),
       group: t('slashCommands.groups.media'),
@@ -268,48 +244,6 @@ export const getCommands = (): CommandItem[] => {
           };
           openModal(config);
         }
-      },
-    },
-
-    // --- Group: AI ---
-    {
-      title: t('slashCommands.expandNode.title'),
-      description: t('slashCommands.expandNode.description'),
-      group: t('slashCommands.groups.ai'),
-      icon: 'sparkles',
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).run();
-        const { selectedNode, selectedNodePos } = editorState;
-        if (!selectedNode || selectedNodePos === null) {
-          toast.error(t('slashCommands.expandNode.error'));
-          return;
-        }
-        const context: StrategySessionContext = {
-          action: 'expand-node',
-          node: selectedNode,
-          nodePos: selectedNodePos,
-        };
-        openStrategySession(context);
-      },
-    },
-    {
-      title: t('slashCommands.generateCards.title'),
-      description: t('slashCommands.generateCards.description'),
-      group: t('slashCommands.groups.ai'),
-      icon: 'zap',
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).run();
-        const { selectedNode, selectedNodePos } = editorState;
-        if (!selectedNode || selectedNodePos === null) {
-          toast.error(t('slashCommands.generateCards.error'));
-          return;
-        }
-        const context: StrategySessionContext = {
-          action: 'generate-flashcards-doc',
-          node: selectedNode,
-          nodePos: selectedNodePos,
-        };
-        openStrategySession(context);
       },
     },
 

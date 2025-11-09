@@ -14,7 +14,10 @@
   import * as aiService from '$lib/services/ai/aiService';
   import { fade, fly } from 'svelte/transition';
   import type { AiMessage } from '$lib/services/ai/aiService';
-  import { normalizeTiptapJSON } from '$lib/utils/tiptapUtils';
+  import {
+    normalizeTiptapJSON,
+    postProcessKaTeX,
+  } from '$lib/utils/tiptapUtils';
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
 
@@ -190,11 +193,20 @@
         return;
       }
 
-      const normalizedResult = normalizeTiptapJSON(rawResult);
+      // Step 1: Ensure the AI output has a valid Tiptap document structure.
+      let normalizedResult = normalizeTiptapJSON(rawResult);
 
+      // Step 2: If it's a document, scan it for KaTeX text and convert it to nodes.
+      if (actionStr.includes('document') || actionStr.includes('schema')) {
+        normalizedResult = postProcessKaTeX(normalizedResult);
+      }
+
+      // Step 3: Set the final content based on the action type.
       if (actionStr.includes('cards')) {
+        // For cards, we expect an array, which normalizeTiptapJSON places in the `content` property.
         draftContent = normalizedResult.content || [];
       } else {
+        // For documents, we use the entire processed document object.
         draftContent = normalizedResult;
       }
 
@@ -226,7 +238,15 @@
         return;
       }
 
-      const normalizedResult = normalizeTiptapJSON(validation.data);
+      let normalizedResult = normalizeTiptapJSON(validation.data);
+      // Also process KaTeX in manually pasted JSON
+      if (
+        currentAction?.includes('document') ||
+        currentAction?.includes('schema')
+      ) {
+        normalizedResult = postProcessKaTeX(normalizedResult);
+      }
+
       draftContent = normalizedResult;
       refinementText = '';
       pastedJson = '';

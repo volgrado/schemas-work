@@ -4,19 +4,16 @@
 
 import type { Modal } from '$lib/types';
 
-/** Defines the shape of the modal store's state. */
 interface ModalState {
-  isOpen: boolean;
+  show: boolean; // Renamed from isOpen for consistency
   config: Modal.Config | null;
 }
 
-/** The initial state of the modal store. */
 const initialState: ModalState = {
-  isOpen: false,
+  show: false,
   config: null,
 };
 
-// This is now VALID because the file is named .svelte.ts
 export const modalState = $state<ModalState>({ ...initialState });
 
 /**
@@ -24,13 +21,15 @@ export const modalState = $state<ModalState>({ ...initialState });
  * @param {Modal.Config} config - The configuration object for the modal to open.
  */
 export function openModal(config: Modal.Config): void {
-  modalState.isOpen = true;
   modalState.config = config;
+  modalState.show = true;
 }
 
 /**
- * Closes the currently active modal and resets the store to its initial state.
+ * Closes the currently active modal.
  */
 export function closeModal(): void {
-  Object.assign(modalState, initialState);
+  modalState.show = false;
+  // We don't nullify the config immediately to allow for closing animations.
+  // It will be replaced the next time openModal is called.
 }

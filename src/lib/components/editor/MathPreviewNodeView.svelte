@@ -1,6 +1,6 @@
+<!-- src/lib/components/editor/MathPreviewNodeView.svelte -->
 <script lang="ts">
   import type { Editor } from '@tiptap/core';
-  // FIX: Import ProseMirrorNode to use in the inline props type.
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
   import katex from 'katex';
   import { openModal } from '$lib/stores/modalStore.svelte';
@@ -8,8 +8,6 @@
   import { t } from '$lib/utils/i18n';
 
   // --- Props from Tiptap Node View ---
-  // FIX: Use an inline type for `$props` to ensure tooling compatibility.
-  // This resolves the "Expected 0 type arguments" error.
   let { editor, node, getPos, selected } = $props<{
     editor: Editor;
     node: ProseMirrorNode;
@@ -19,6 +17,7 @@
 
   let previewEl: HTMLElement | null = $state(null);
 
+  // This effect reactively renders the KaTeX formula whenever the node's attributes change.
   $effect(() => {
     if (!previewEl) return;
     try {
@@ -33,6 +32,26 @@
     }
   });
 
+  /**
+   * CORRECTED: Creates the function that will save the data back to the Tiptap editor.
+   * This function has access to the `editor` instance and knows how to update the node.
+   */
+  function handleSaveFormula(newFormula: string): void {
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+
+    // Use the Tiptap editor's command chain to update the node's 'formula' attribute.
+    editor
+      .chain()
+      .focus()
+      .setNodeSelection(pos)
+      .updateAttributes(node.type.name, { formula: newFormula })
+      .run();
+  }
+
+  /**
+   * Opens the formula editor modal, passing both the initial data and the save callback.
+   */
   function openEditModal(): void {
     const pos = getPos();
     if (typeof pos !== 'number') return;
@@ -42,9 +61,14 @@
       nodePos: pos,
       nodeType: node.type.name as 'math_block' | 'math_inline',
       initialFormula: node.attrs.formula,
+      // CORRECTED: Pass the save function in the modal configuration.
+      // This is the key to connecting the modal's "Save" button back to this component.
+      onsave: handleSaveFormula,
     };
     openModal(config);
   }
+
+  // --- Event Handlers ---
 
   function handleWrapperClick(event: MouseEvent): void {
     event.preventDefault();
@@ -75,7 +99,6 @@
 </span>
 
 <style>
-  /* Styles are unchanged and correct */
   .math-preview-node-view-wrapper {
     cursor: pointer;
     transition:

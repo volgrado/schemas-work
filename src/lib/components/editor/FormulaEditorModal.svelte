@@ -9,18 +9,17 @@
   import Button from '$lib/components/ui/Button.svelte';
 
   // --- Svelte 5 Props ---
+  // This component is designed to receive the `onsave` function as a prop.
   let {
     show = $bindable(false),
     initialFormula,
     nodeType,
-    // FIX 1: Add nodePos to the component's props to resolve the error.
     nodePos,
     onsave,
   } = $props<{
     show?: boolean;
     initialFormula: string;
     nodeType: 'math_block' | 'math_inline';
-    // FIX 1: Define the type for the new nodePos prop.
     nodePos: number;
     onsave: (formula: string) => void;
   }>();
@@ -30,9 +29,11 @@
   let textareaEl = $state<HTMLTextAreaElement | null>(null);
   let previewEl = $state<HTMLElement | null>(null);
 
+  // Effect to initialize the editor's content when the modal is shown.
   $effect(() => {
     if (show) {
       latexSource = initialFormula || '';
+      // Focus and select the text for a better user experience.
       setTimeout(() => {
         textareaEl?.focus();
         textareaEl?.select();
@@ -40,6 +41,7 @@
     }
   });
 
+  // Effect to render the KaTeX preview whenever the source text changes.
   $effect(() => {
     if (previewEl) {
       try {
@@ -55,8 +57,14 @@
     }
   });
 
+  // Derived state to check for unsaved changes.
   const hasUnsavedChanges = $derived(latexSource !== initialFormula);
 
+  // --- Event Handlers ---
+
+  /**
+   * Handles the request to close the modal, checking for unsaved changes first.
+   */
   function requestClose() {
     if (hasUnsavedChanges) {
       if (confirm($t('quickCardEditor.unsavedChangesConfirm'))) {
@@ -67,11 +75,17 @@
     }
   }
 
+  /**
+   * Saves the content by calling the `onsave` function passed in from the parent.
+   */
   function handleSave() {
     onsave(latexSource);
     show = false;
   }
 
+  /**
+   * Handles keyboard shortcuts (Ctrl/Cmd + Enter) for saving.
+   */
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
@@ -79,6 +93,9 @@
     }
   }
 
+  /**
+   * Inserts a LaTeX snippet into the textarea at the current cursor position.
+   */
   async function insertSymbol(snippet: string, cursorOffset: number) {
     if (!textareaEl) return;
     const start = textareaEl.selectionStart;
@@ -87,8 +104,9 @@
     latexSource =
       latexSource.slice(0, start) + snippet + latexSource.slice(end);
 
+    // Position the cursor intelligently inside the inserted snippet.
     const newCursorPos = start + cursorOffset;
-    await tick();
+    await tick(); // Wait for the DOM to update.
     textareaEl.focus();
     textareaEl.setSelectionRange(newCursorPos, newCursorPos);
   }
@@ -102,7 +120,6 @@
   >
     <div class="editor-pane">
       <div class="symbol-toolbar">
-        <!-- FIX 2: Use the idiomatic on:click directive for Svelte components. -->
         <Button
           title="Fraction (\\frac)"
           variant="ghost"

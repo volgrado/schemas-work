@@ -135,10 +135,20 @@ export function getInteractiveRefinementPrompt(
   selectedText: string | null,
   instruction: string
 ): string {
+  // --- NEW: Define the KaTeX rule to be used in both cases ---
+  const katexRule = `
+**MATHEMATICAL NOTATION RULE:**
+- When you need to include mathematical formulas or symbols, you MUST format them using KaTeX syntax.
+- For **inline math**, like mentioning π in a sentence, use the \`\\( ... \\)\` delimiters. Example: "The formula is \\( E = mc^2 \\)."
+- For **block-level math**, which should be on its own line, use the \`\\[ ... \\]\` delimiters. Example: "The Pythagorean theorem is expressed as: \\[ a^2 + b^2 = c^2 \\]"
+`;
+
   // Case 1: The user has selected a specific piece of text to refine.
   if (selectedText && selectedText.trim() !== '') {
     return `
 You are an expert editor and Tiptap JSON specialist. Your task is to refine a specific part of a larger document based on the user's instruction.
+
+${katexRule}
 
 USER'S INSTRUCTION:
 "${instruction}"
@@ -157,7 +167,7 @@ ${JSON.stringify(fullDocumentJSON, null, 2)}
 
 YOUR TASK:
 1.  Locate the content that corresponds to the "SELECTED TEXT" within the full document.
-2.  Apply the user's instruction ONLY to that specific part.
+2.  Apply the user's instruction ONLY to that specific part, following all formatting rules.
 3.  Return the ENTIRE, complete document in the exact same Tiptap JSON format, with only the relevant section modified. Your output must be a single, valid JSON object that can be parsed directly.
 `;
   }
@@ -166,6 +176,8 @@ YOUR TASK:
   else {
     return `
 You are an expert editor and Tiptap JSON specialist. Your task is to refine an entire document based on the user's instruction.
+
+${katexRule}
 
 USER'S INSTRUCTION:
 "${instruction}"
@@ -177,8 +189,36 @@ ${JSON.stringify(fullDocumentJSON, null, 2)}
 \`\`\`
 
 YOUR TASK:
-1.  Apply the user's instruction to the entire document.
+1.  Apply the user's instruction to the entire document, following all formatting rules.
 2.  Return the ENTIRE, complete document in the exact same Tiptap JSON format. Your output must be a single, valid JSON object that can be parsed directly.
 `;
   }
+}
+
+/**
+ * NEW: Generates a prompt specifically for converting a natural language
+ * math description into a clean KaTeX string.
+ */
+export function getGenerateFormulaPrompt(description: string): string {
+  return `
+**ROLE AND OBJECTIVE:**
+You are a mathematics professor and a world-class LaTeX expert. Your sole mission is to convert the user's plain text description of a mathematical concept into a single, clean, and syntactically perfect KaTeX string.
+
+**TASK & CONSTRAINTS:**
+- Analyze the user's request: "${description}"
+- Generate ONLY the corresponding KaTeX formula.
+
+**RULES AND OUTPUT STRUCTURE:**
+1.  Your entire response MUST be ONLY the raw KaTeX string.
+2.  Do NOT include any delimiters like \`\\(\`, \`\\[\`, or \`$\`.
+3.  Do NOT include any JSON, markdown, or explanatory text. Just the formula itself.
+
+**EXAMPLES:**
+- User Request: "the quadratic formula" -> Your Output: "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"
+- User Request: "the integral of x squared" -> Your Output: "\\int x^2 \\,dx"
+- User Request: "einstein's mass energy equivalence" -> Your Output: "E = mc^2"
+
+**BEGIN TASK:**
+Now, convert the user's request into a single KaTeX string.
+`;
 }
