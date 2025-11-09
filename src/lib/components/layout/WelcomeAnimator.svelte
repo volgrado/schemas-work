@@ -40,7 +40,7 @@
     class="animator-wrapper"
     in:fade={{ duration: 300, delay: 300 }}
     out:fade={{ duration: 250 }}
-    on:outroend={oncomplete}
+    onoutroend={oncomplete}
   >
     <!-- REFACTOR: Use the modern `onstart` prop to handle the child's event. -->
     <WelcomeScreen onstart={handleStart} />

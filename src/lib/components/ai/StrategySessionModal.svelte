@@ -48,6 +48,7 @@
   let refinementText = $state('');
   let configurationInput = $state('');
   let selectedPdfFile = $state<File | null>(null);
+  let cardQuantity = $state(10);
 
   // --- State for manual mode ---
   let isManualMode = $state(false);
@@ -65,6 +66,10 @@
       : null
   );
 
+  const currentAction = $derived(
+    commandBarState.strategySessionContext?.action
+  );
+
   function resetState() {
     view = 'configure';
     draftContent = null;
@@ -75,14 +80,14 @@
     selectedPdfFile = null;
     generatedPrompt = '';
     pastedJson = '';
-    // isManualMode is preserved intentionally to maintain user's choice across sessions.
+    cardQuantity = 10;
   }
 
   $effect(() => {
     if (show) {
       const context = commandBarState.strategySessionContext;
 
-      if (context?.action.startsWith('refine-')) {
+      if (context?.action?.startsWith('refine-')) {
         const initialDocument = context.fullDocumentJSON;
         if (initialDocument) {
           draftContent = normalizeTiptapJSON(initialDocument);
@@ -121,24 +126,31 @@
   }
 
   async function runGeneration(instruction: string) {
-    if (!command) return;
+    const currentCommand = command;
+    const actionStr = currentAction;
+
+    if (!currentCommand || !actionStr) {
+      return;
+    }
 
     const currentWorkbenchState: WorkbenchState = {
       selectedText: null,
       draftContent: draftContent,
       selectedCards: [],
     };
+
     const promptContext = {
       ...commandBarState.strategySessionContext!,
       initialInput: configurationInput,
+      quantity: cardQuantity,
     };
-    const textPrompt = command.getPrompt(
+
+    const textPrompt = currentCommand.getPrompt(
       promptContext,
       currentWorkbenchState,
       instruction
     );
 
-    // --- BRANCH 1: MANUAL MODE ---
     if (isManualMode) {
       let finalPrompt = textPrompt;
       if (selectedPdfFile) {
@@ -151,7 +163,6 @@
       return;
     }
 
-    // --- BRANCH 2: AUTOMATIC API CALL ---
     const model = getModelById(settingsState.selectedModelId);
     const apiKeyObject = getNextAvailableKey('gemini');
 
@@ -171,11 +182,22 @@
         messages,
         model,
         apiKeyObject.key,
-        command.validationSchema,
+        currentCommand.validationSchema,
         selectedPdfFile
       );
+
+      if (commandBarState.strategySessionContext?.action !== actionStr) {
+        return;
+      }
+
       const normalizedResult = normalizeTiptapJSON(rawResult);
-      draftContent = normalizedResult;
+
+      if (actionStr.includes('cards')) {
+        draftContent = normalizedResult.content || [];
+      } else {
+        draftContent = normalizedResult;
+      }
+
       refinementText = '';
       view = 'refine';
       setTimeout(() => refineTextarea?.focus(), 100);
@@ -224,8 +246,6 @@
       closeStrategySession();
     }
   }
-
-  function handleCardSelectionUpdate(event: CustomEvent<Card[]>) {}
 
   function handlePointerUp() {
     if (tiptapPreviewInstance) {
@@ -308,7 +328,6 @@
         </div>
       </div>
     {:else}
-      <!-- ▼▼▼ FIX 1: Corrected class:loading logic ▼▼▼ -->
       <div class="panels-wrapper" class:loading={view === 'loading'}>
         <div
           class="left-panel"
@@ -321,14 +340,32 @@
                 <Icon name="file-plus" />
                 <span>{$t('ai_workbench.configure.title')}</span>
               </h4>
+
+              {#if currentAction?.includes('cards')}
+                <div class="config-option">
+                  <label for="card-quantity">Number of Cards</label>
+                  <input
+                    type="number"
+                    id="card-quantity"
+                    bind:value={cardQuantity}
+                    min="1"
+                    max="50"
+                  />
+                </div>
+              {/if}
+
               <p class="panel-description">
-                {$t('ai_workbench.configure.description')}
+                {$t(
+                  command?.description || 'ai_workbench.configure.description'
+                )}
               </p>
               <textarea
                 bind:this={configTextarea}
                 bind:value={configurationInput}
                 rows="10"
-                placeholder={$t('ai_workbench.configure.placeholder')}
+                placeholder={$t(
+                  command?.placeholder || 'ai_workbench.configure.placeholder'
+                )}
               ></textarea>
               <div class="context-upload-section">
                 <h5 class="panel-subtitle">
@@ -339,7 +376,6 @@
                     })}</span
                   >
                 </h5>
-                <!-- ▼▼▼ FIX 2: Svelte 5 event handler syntax ▼▼▼ -->
                 <input
                   type="file"
                   accept=".pdf"
@@ -371,10 +407,10 @@
                 {$t('ai_workbench.refine.description')}
               </p>
               <div class="quick-actions">
-                {#each command?.quickActions || [] as action}
+                {#each command?.quickActions || [] as quickAction}
                   <Button
-                    onclick={() => runGeneration(action.instruction)}
-                    variant="secondary">{action.label}</Button
+                    onclick={() => runGeneration(quickAction.instruction)}
+                    variant="secondary">{quickAction.label}</Button
                   >
                 {/each}
               </div>
@@ -399,7 +435,6 @@
             <Icon name="eye" />
             <span>{$t('ai_workbench.preview_title')}</span>
           </h4>
-          <!-- ▼▼▼ FIX 3: Svelte 5 event handler syntax ▼▼▼ -->
           <div class="preview-content-wrapper" onpointerup={handlePointerUp}>
             <div class="preview-content">
               {#if !draftContent}
@@ -408,21 +443,15 @@
                   <p>{$t('ai_workbench.empty_preview.title')}</p>
                   <span>{$t('ai_workbench.empty_preview.description')}</span>
                 </div>
+              {:else if currentAction?.includes('document') || currentAction?.includes('schema')}
+                <TiptapPreview
+                  bind:this={tiptapPreviewInstance}
+                  content={draftContent}
+                />
+              {:else if currentAction?.includes('cards')}
+                <CardPreview cards={draftContent} />
               {:else}
-                {@const action = commandBarState.strategySessionContext?.action}
-                {#if action?.includes('document') || action?.includes('schema')}
-                  <TiptapPreview
-                    bind:this={tiptapPreviewInstance}
-                    content={draftContent}
-                  />
-                {:else if action?.includes('cards')}
-                  <CardPreview
-                    cards={draftContent}
-                    on:selectionUpdate={handleCardSelectionUpdate}
-                  />
-                {:else}
-                  <pre>{JSON.stringify(draftContent, null, 2)}</pre>
-                {/if}
+                <pre>{JSON.stringify(draftContent, null, 2)}</pre>
               {/if}
             </div>
           </div>
@@ -562,7 +591,7 @@
     font-size: 0.9rem;
     color: var(--color-text-secondary);
     line-height: 1.5;
-    margin: -5px 0 0 0;
+    margin: var(--space-sm) 0;
   }
   .quick-actions {
     display: grid;
@@ -676,7 +705,21 @@
     gap: var(--space-xs);
   }
 
-  /* --- Styles for Manual Mode --- */
+  .config-option {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin: var(--space-sm) 0;
+  }
+  .config-option label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+  .config-option input {
+    max-width: 120px;
+  }
+
   .manual-flow-panel {
     padding: var(--space-md) 0;
     display: flex;

@@ -5,11 +5,11 @@
  */
 
 import type { IAICommand, WorkbenchState } from './IAICommand';
+// VVVV THIS TYPE IS THE ONE WE'RE MODIFYING IN THE MODAL VVVV
 import { type StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { documentState } from '$lib/stores/documentStore.svelte';
-// VVVV THIS LINE IS NOW CORRECTED VVVV
 import * as cardService from '$lib/services/features/cardService';
 import { toast } from 'svelte-sonner';
 import type { SRS } from '$lib/types';
@@ -33,15 +33,22 @@ export class GenerateCardsCommand implements IAICommand {
    * Generates the prompt for the card generation task.
    */
   public getPrompt(
-    context: StrategySessionContext,
+    // We expect `quantity` to be passed in the context from the modal.
+    context: StrategySessionContext & { quantity?: number },
     workbenchState: WorkbenchState,
     instruction: string
   ): string {
     const documentText = context.fullDocumentText || '';
+
+    // ▼▼▼ THIS IS THE CORRECTED LOGIC ▼▼▼
     const settings = {
-      quantity: 5,
+      // Use the quantity from the UI if it's provided, otherwise default to 5.
+      quantity: context.quantity ?? 5,
+      // You could also add a UI for this in the future.
       types: ['basic', 'input'] as SRS.CardType[],
     };
+    // ▲▲▲ END OF CORRECTION ▲▲▲
+
     return Prompts.getGenerateCardsPrompt(settings, documentText);
   }
 
