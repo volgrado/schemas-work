@@ -248,3 +248,74 @@
 </script>
 
 <div bind:this={element}></div>
+
+<!--
+  =================================================================
+  --- THEMED STYLES FOR RESIZABLE IMAGE ---
+  This updated <style> block now uses the CSS variables from your
+  app.css for perfect theme consistency.
+  =================================================================
+-->
+<style>
+  /*
+   * Use :global() to style the Tiptap/ProseMirror elements that are
+   * rendered inside the editor div.
+  */
+  :global(.resizable-image-wrapper) {
+    position: relative;
+    display: inline-block; /* Or 'block' */
+    /* Prevents the outline from being cut off */
+    margin: 2px;
+  }
+
+  /*
+   * The selection outline now uses your theme's accent color.
+   * This rule is already in your app.css, but including it here
+   * ensures the component is self-contained.
+  */
+  :global(.resizable-image-wrapper.ProseMirror-selectednode) {
+    outline: 3px solid var(--color-accent);
+    border-radius: var(--border-radius-md);
+  }
+
+  /*
+   * Base styles for all resize handles.
+  */
+  :global(.resize-handle) {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    z-index: var(--z-base, 10); /* Use z-index from theme if available */
+
+    /* --- THEME INTEGRATION --- */
+    background-color: var(--color-accent);
+    border: 2px solid var(--color-background-raised, white); /* Contrast border */
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-md); /* Use theme's shadow for depth */
+  }
+
+  /* Position each handle and set the appropriate resize cursor */
+  :global(.resize-handle.top-left) {
+    top: -8px;
+    left: -8px;
+    cursor: nwse-resize;
+  }
+
+  :global(.resize-handle.top-right) {
+    top: -8px;
+    right: -8px;
+    cursor: nesw-resize;
+  }
+
+  :global(.resize-handle.bottom-left) {
+    bottom: -8px;
+    left: -8px;
+    cursor: nesw-resize;
+  }
+
+  :global(.resize-handle.bottom-right) {
+    bottom: -8px;
+    right: -8px;
+    cursor: nwse-resize;
+  }
+</style>

@@ -34,9 +34,8 @@ async function compressImage(file: File): Promise<File> {
 // =================================================================
 
 /**
- * REFINEMENT: A dedicated class for the Image Node View.
- * This encapsulates all DOM manipulation and event handling logic,
- * keeping the Tiptap extension definition clean and focused.
+ * A dedicated class for the Image Node View that correctly handles
+ * resize handles based on editor state and node selection.
  */
 class ResizableImageView {
   private dom: HTMLElement;
@@ -57,21 +56,43 @@ class ResizableImageView {
 
     this.dom = document.createElement('div');
     this.dom.className = 'resizable-image-wrapper';
-    this.dom.contentEditable = 'false';
+    this.dom.contentEditable = 'false'; // The wrapper itself is not editable
 
     this.img = document.createElement('img');
     this.img.setAttribute('src', this.node.attrs.src);
     this.img.style.width = this.node.attrs.width;
     this.dom.append(this.img);
+  }
 
-    if (editor.isEditable) {
+  // --- LIFECYCLE METHODS (THE FIX) ---
+
+  /**
+   * Called by Tiptap/ProseMirror when the node is selected.
+   * This is the correct place to add UI elements like resize handles.
+   */
+  selectNode() {
+    this.dom.classList.add('ProseMirror-selectednode');
+    // Only add handles if the editor is in an editable state.
+    if (this.editor.isEditable) {
       this.createResizeHandles();
-    } else {
-      this.dom.classList.add('non-editable');
     }
   }
 
+  /**
+   * Called by Tiptap/ProseMirror when the node is deselected.
+   * This is the correct place to clean up the UI elements.
+   */
+  deselectNode() {
+    this.dom.classList.remove('ProseMirror-selectednode');
+    this.removeResizeHandles();
+  }
+
+  // --- PRIVATE DOM HELPERS ---
+
   private createResizeHandles() {
+    // Prevent adding handles if they already exist
+    if (this.dom.querySelector('.resize-handle')) return;
+
     const directions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
     directions.forEach((dir) => {
       const handle = document.createElement('div');
@@ -81,8 +102,14 @@ class ResizableImageView {
     });
   }
 
+  private removeResizeHandles() {
+    const handles = this.dom.querySelectorAll('.resize-handle');
+    handles.forEach((handle) => handle.remove());
+  }
+
   private startResize(e: MouseEvent) {
     e.preventDefault();
+    e.stopPropagation(); // Prevent editor from losing focus
     const startX = e.clientX;
     const startWidth = this.img.clientWidth;
 
@@ -120,6 +147,10 @@ class ResizableImageView {
     this.img.style.width = this.node.attrs.width;
     return true;
   }
+
+  destroy() {
+    this.removeResizeHandles();
+  }
 }
 
 // =================================================================
@@ -143,12 +174,10 @@ export const ResizableImage = Image.extend({
         renderHTML: (attrs) => ({ width: attrs.width }),
         parseHTML: (el) => el.style.width || el.getAttribute('width'),
       },
-      // Draggable is handled by the Node View, so it's not needed here.
     };
   },
 
   addNodeView() {
-    // REFINEMENT: The Node View is now clean, simply instantiating our dedicated class.
     return ({ editor, node, getPos }) => {
       return new ResizableImageView(node, editor.view, getPos, editor);
     };
@@ -166,10 +195,10 @@ export const ResizableImage = Image.extend({
             );
 
             if (imageItems.length === 0) {
-              return false; // Let Tiptap handle non-image pastes
+              return false;
             }
 
-            event.preventDefault(); // Stop default paste behavior
+            event.preventDefault();
 
             imageItems.forEach(async (item) => {
               const file = item.getAsFile();
@@ -190,7 +219,7 @@ export const ResizableImage = Image.extend({
               }
             });
 
-            return true; // We handled the paste
+            return true;
           },
         },
       }),
