@@ -169,7 +169,31 @@
         {#if documentState.status === 'loading'}
           <div class="status-message">{$t('page.status.loading_schema')}</div>
         {:else if documentState.status === 'error'}
-          <div class="status-message error">{$t('page.status.load_error')}</div>
+          <div class="status-container">
+            <div class="error-content">
+              <Icon
+                name="alert-triangle"
+                size={48}
+                color="var(--color-danger)"
+              />
+              <h2>{$t('page.status.load_error_title')}</h2>
+              <p>{$t('page.status.load_error_message')}</p>
+              <div class="error-actions">
+                <Button
+                  variant="primary"
+                  on:click={() =>
+                    createDocument(get(t)('document.new_schema_title'))}
+                >
+                  <Icon name="file-plus" />
+                  {$t('page.actions.create_new')}
+                </Button>
+                <Button variant="secondary" on:click={openCommandBar}>
+                  <Icon name="command" />
+                  {$t('page.actions.open_menu')}
+                </Button>
+              </div>
+            </div>
+          </div>
         {:else if documentState.ydoc}
           {@const currentTreeData = treeData}
 
@@ -234,16 +258,13 @@
       <TTSController />
       <SlashMenuController />
 
-      {#if documentState.docId}
-        <FloatingActionButton
-          icon="command"
-          label={$t('page.fab.menu')}
-          position="right"
-          on:click={openCommandBar}
-        />
-      {/if}
+      <FloatingActionButton
+        icon="command"
+        label={$t('page.fab.menu')}
+        position="right"
+        on:click={openCommandBar}
+      />
 
-      <!-- ▼▼▼ COMPLETE MODAL SOLUTION ▼▼▼ -->
       {#if modalState.show && config}
         {#if config.type === 'formula'}
           <!-- Render the FormulaEditorModal directly, as it contains its own <Modal> frame. -->
@@ -269,13 +290,11 @@
           </Modal>
         {/if}
       {/if}
-      <!-- ▲▲▲ END OF SOLUTION ▲▲▲ -->
     </div>
   {/if}
 {/if}
 
 <style>
-  /* All your styles are correct and do not need to be changed. */
   .main-app-container {
     height: 100vh;
     display: flex;
@@ -334,13 +353,43 @@
     color: var(--color-text-tertiary);
     font-style: italic;
   }
-  .status-message.error {
-    color: var(--color-danger);
-    font-style: normal;
-  }
   .header-actions {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+  }
+
+  /* --- Styles for the new error panel --- */
+  .status-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 2rem;
+    box-sizing: border-box;
+  }
+  .error-content {
+    text-align: center;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    color: var(--color-text-secondary);
+  }
+  .error-content h2 {
+    color: var(--color-text-primary);
+    margin: 0;
+    font-size: var(--font-size-xl);
+  }
+  .error-content p {
+    margin: 0;
+    line-height: 1.6;
+  }
+  .error-actions {
+    margin-top: var(--space-lg);
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
   }
 </style>

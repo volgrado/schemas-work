@@ -516,6 +516,8 @@
       }
     },
     "status": {
+      "load_error_title": "Document Not Found",
+      "load_error_message": "The requested document could not be loaded. It may have been deleted or there was a problem retrieving it.",
       "loading_schema": "Loading schema...",
       "load_error": "There was an error loading the document.",
       "empty_schema": {
@@ -523,6 +525,12 @@
         "hint": "Start typing or use '/' for commands."
       }
     },
+
+    "actions": {
+      "create_new": "Create New",
+      "open_menu": "Open Menu"
+    },
+
     "fab": {
       "tree": "Tree",
       "editor": "Editor",

@@ -515,6 +515,8 @@
       }
     },
     "status": {
+      "load_error_title": "Documento No Encontrado",
+      "load_error_message": "No se pudo cargar el documento solicitado. Puede que haya sido eliminado o que haya habido un problema al recuperarlo.",
       "loading_schema": "Cargando esquema...",
       "load_error": "Hubo un error al cargar el documento.",
       "empty_schema": {
@@ -522,6 +524,12 @@
         "hint": "Empieza a escribir o usa '/' para ver los comandos."
       }
     },
+
+    "actions": {
+      "create_new": "Crear Nuevo",
+      "open_menu": "Abrir Menú"
+    },
+
     "fab": {
       "tree": "Árbol",
       "editor": "Editor",
