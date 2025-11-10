@@ -7,6 +7,7 @@
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
   import type { IndexeddbPersistence } from 'y-indexeddb';
   import * as Y from 'yjs';
+  import { Decoration, DecorationSet } from 'prosemirror-view';
 
   // --- TIPTAP CORE & EXTENSIONS ---
   import { Editor } from '@tiptap/core';
@@ -39,7 +40,6 @@
     destroyEditor,
     syncState,
   } from '$lib/stores/editorStore.svelte';
-  // VVVV CORRECTED IMPORTS VVVV
   import {
     documentState,
     updateTitle,
@@ -75,9 +75,9 @@
       titleNode.type.name === 'heading' &&
       titleNode.attrs.level === 1
     ) {
-      updateTitle(titleNode.textContent); // Use direct function
+      updateTitle(titleNode.textContent);
     } else {
-      updateTitle(''); // Use direct function
+      updateTitle('');
     }
   }, 750);
 
@@ -91,7 +91,7 @@
     if (transaction.docChanged) {
       syncState();
       syncTitleWithStore(updatedEditor);
-      const currentDocId = documentState.docId; // Use direct state
+      const currentDocId = documentState.docId;
       if (currentDocId) {
         neuralIndexService.indexDocument(currentDocId, updatedEditor.state.doc);
       }
@@ -133,7 +133,6 @@
       return;
     }
 
-    // 1. Create the Tiptap Editor instance
     const editor = new Editor({
       element: element,
       extensions: [
@@ -178,20 +177,17 @@
     localEditorInstance = editor;
     setInstance(editor);
 
-    // 2. Handle initial content if provided (e.g., for a new document)
     if (initialContent) {
       editor.commands.setContent(initialContent, { emitUpdate: false });
-      const currentDocId = documentState.docId; // Use direct state
+      const currentDocId = documentState.docId;
       if (currentDocId) {
         neuralIndexService.indexDocument(currentDocId, editor.state.doc);
       }
-      clearInitialContent(); // Use direct function
+      clearInitialContent();
     }
 
     syncTitleWithStore(editor);
 
-    // 3. FIX: Safely manage the editor's editable state
-    // This listener unlocks the editor once the provider is fully synced.
     const onSync = (event: { synced: boolean }) => {
       if (editor && !editor.isDestroyed) {
         editor.setEditable(event.synced);
@@ -199,120 +195,157 @@
     };
 
     if (provider) {
-      // Set initial state and listen for changes
       editor.setEditable(provider.synced);
       provider.on('synced', onSync);
     } else {
-      // If there's no provider, the editor should be editable by default.
       editor.setEditable(true);
     }
 
-    // 4. Return the cleanup function, which runs when the component is destroyed
     return () => {
       destroyEditor();
       localEditorInstance = null;
       if (provider) {
-        provider.off('synced', onSync); // Important to prevent memory leaks
+        provider.off('synced', onSync);
       }
     };
   });
 
-  // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER BRIDGE ---
-  // This is a correct use of $effect, as it needs to react to store changes.
+  /**
+   * Smoothly scrolls the editor to keep the currently highlighted element
+   * in a comfortable reading position (the vertical center of the viewport).
+   */
+  function autoscrollToHighlight() {
+    if (!localEditorInstance) return;
+
+    // Find the most specific highlight available: first the word, fall back to the node.
+    const targetEl =
+      localEditorInstance.view.dom.querySelector('.is-current-tts-word') ||
+      localEditorInstance.view.dom.querySelector('.is-current-tts-node');
+
+    if (!targetEl) return;
+
+    // To prevent distracting small scrolls, we only scroll if the element
+    // is outside of a comfortable central viewing area ("dead zone").
+    const rect = targetEl.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const topThreshold = viewportHeight * 0.3; // 30% from the top
+    const bottomThreshold = viewportHeight * 0.7; // 70% from the top
+
+    if (rect.top < topThreshold || rect.bottom > bottomThreshold) {
+      targetEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
+      });
+    }
+  }
+
+  // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER BRIDGE FOR REVIEWS ---
   $effect(() => {
     const reviewDecorations = reviewState.decorationSet;
-    const ttsDecorations = ttsState.decorationSet;
-
     if (!localEditorInstance) return;
     const pluginState = DYNAMIC_HIGHLIGHTER_PLUGIN_KEY.getState(
       localEditorInstance.state
     );
-    if (!pluginState) return;
-
-    if (
-      pluginState.reviewDecorations.eq(reviewDecorations) &&
-      pluginState.ttsDecorations.eq(ttsDecorations)
-    ) {
+    if (!pluginState || pluginState.reviewDecorations.eq(reviewDecorations)) {
       return;
     }
-
     const tr = localEditorInstance.state.tr
-      .setMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY, {
-        reviewDecorations,
-        ttsDecorations,
-      })
+      .setMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY, { reviewDecorations })
       .setMeta('isHighlighterUpdate', true);
-
     localEditorInstance.view.dispatch(tr);
+  });
+
+  // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER & AUTOSCROLL BRIDGE FOR TTS ---
+  $effect(() => {
+    const { status, nodesToRead, currentNodeIndex, currentWordRange } =
+      ttsState;
+    if (!localEditorInstance) return;
+
+    // Create the highlight for the current node (paragraph/heading)
+    let nodeDecoSet = DecorationSet.empty;
+    if (['playing', 'paused'].includes(status) && nodesToRead.length > 0) {
+      const currentNode = nodesToRead[currentNodeIndex];
+      if (currentNode && currentNode.pos !== undefined && currentNode.node) {
+        const deco = Decoration.node(
+          currentNode.pos,
+          currentNode.pos + currentNode.node.nodeSize,
+          { class: 'is-current-tts-node' }
+        );
+        nodeDecoSet = DecorationSet.create(localEditorInstance.state.doc, [
+          deco,
+        ]);
+      }
+    }
+
+    // Create the highlight for the current word
+    let wordDecoSet = DecorationSet.empty;
+    if (currentWordRange) {
+      const wordDeco = Decoration.inline(
+        currentWordRange.from,
+        currentWordRange.to,
+        { class: 'is-current-tts-word' }
+      );
+      wordDecoSet = DecorationSet.create(localEditorInstance.state.doc, [
+        wordDeco,
+      ]);
+    }
+
+    // Dispatch a transaction to update both highlight types in the plugin
+    const tr = localEditorInstance.state.tr;
+    tr.setMeta(DYNAMIC_HIGHLIGHTER_PLUGIN_KEY, {
+      ttsDecorations: nodeDecoSet,
+      ttsWordDecorations: wordDecoSet,
+    });
+    localEditorInstance.view.dispatch(tr);
+
+    // Trigger the autoscroll after the browser has rendered the new highlights
+    if (status === 'playing') {
+      setTimeout(autoscrollToHighlight, 0);
+    }
   });
 </script>
 
 <div bind:this={element}></div>
 
-<!--
-  =================================================================
-  --- THEMED STYLES FOR RESIZABLE IMAGE ---
-  This updated <style> block now uses the CSS variables from your
-  app.css for perfect theme consistency.
-  =================================================================
--->
 <style>
-  /*
-   * Use :global() to style the Tiptap/ProseMirror elements that are
-   * rendered inside the editor div.
-  */
+  /* All highlight styles are now handled by the global app.css,
+     so this component only needs styles for its specific extensions. */
+
   :global(.resizable-image-wrapper) {
     position: relative;
-    display: inline-block; /* Or 'block' */
-    /* Prevents the outline from being cut off */
+    display: inline-block;
     margin: 2px;
   }
-
-  /*
-   * The selection outline now uses your theme's accent color.
-   * This rule is already in your app.css, but including it here
-   * ensures the component is self-contained.
-  */
   :global(.resizable-image-wrapper.ProseMirror-selectednode) {
     outline: 3px solid var(--color-accent);
     border-radius: var(--border-radius-md);
   }
-
-  /*
-   * Base styles for all resize handles.
-  */
   :global(.resize-handle) {
     position: absolute;
     width: 12px;
     height: 12px;
-    z-index: var(--z-base, 10); /* Use z-index from theme if available */
-
-    /* --- THEME INTEGRATION --- */
+    z-index: var(--z-base, 10);
     background-color: var(--color-accent);
-    border: 2px solid var(--color-background-raised, white); /* Contrast border */
+    border: 2px solid var(--color-background-raised, white);
     border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-md); /* Use theme's shadow for depth */
+    box-shadow: var(--shadow-md);
   }
-
-  /* Position each handle and set the appropriate resize cursor */
   :global(.resize-handle.top-left) {
     top: -8px;
     left: -8px;
     cursor: nwse-resize;
   }
-
   :global(.resize-handle.top-right) {
     top: -8px;
     right: -8px;
     cursor: nesw-resize;
   }
-
   :global(.resize-handle.bottom-left) {
     bottom: -8px;
     left: -8px;
     cursor: nesw-resize;
   }
-
   :global(.resize-handle.bottom-right) {
     bottom: -8px;
     right: -8px;

@@ -17,6 +17,7 @@ export type IconName =
   | 'check'
   | 'check-circle'
   | 'chevron-down'
+  | 'chevron-up' // Added for the collapsible TTS controller
   | 'command'
   | 'copy'
   | 'edit-3'
@@ -32,7 +33,7 @@ export type IconName =
   | 'minus'
   | 'monitor'
   | 'moon'
-  | 'paperclip' // <-- ADDED THIS LINE
+  | 'paperclip' // Added as requested
   | 'pen-tool'
   | 'plus'
   | 'plus-square'

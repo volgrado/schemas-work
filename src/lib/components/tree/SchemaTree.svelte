@@ -1,3 +1,4 @@
+<!-- src/lib/components/visualization/TreeView.svelte -->
 <script module lang="ts">
   /**
    * @interface TreeNodeData
@@ -11,10 +12,11 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, tick } from 'svelte'; // <-- 1. IMPORT TICK
+  import { createEventDispatcher, tick } from 'svelte';
   import * as d3 from 'd3';
+  import { ttsState } from '$lib/stores/ttsStore.svelte';
 
-  // Use $props() for Svelte 5 props
+  // --- COMPONENT PROPERTIES ---
   let {
     treeData,
     selectedNodeId,
@@ -25,47 +27,58 @@
 
   const dispatch = createEventDispatcher<{ nodeClick: { id: string } }>();
 
-  // --- State managed by Svelte 5 Runes ---
+  // --- SVELTE 5 STATE ---
   let svgEl = $state<SVGSVGElement | undefined>();
   let gEl = $state<SVGGElement | undefined>();
   let rootNode = $state<d3.HierarchyNode<TreeNodeData> | null>(null);
   let expandedNodeIds = $state<Set<string>>(new Set(['root-title']));
 
-  // --- Constants ---
+  // --- STATE FOR CINEMATIC FEATURES ---
+  let zoomBehavior = $state<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(
+    null
+  );
+  let previousTreeNodeId = $state<string | null>(null);
+
+  // --- D3 CONSTANTS & TYPES ---
   const nodeWidth = 140;
   const nodeHeight = 40;
-  const transitionDuration = 300;
-
-  // Type alias for cleaner code
+  const transitionDuration = 350; // Slightly slower for a more graceful feel
   type PointNode = d3.HierarchyPointNode<TreeNodeData> & {
     x0?: number;
     y0?: number;
     _children?: d3.HierarchyNode<TreeNodeData>[];
   };
 
-  // --- D3 setup effect ---
+  // --- CORE D3 EFFECTS ---
+
+  // Effect for one-time SVG setup. We now store the zoomBehavior for later use.
   $effect(() => {
     if (!svgEl) return;
     const svg = d3.select(svgEl);
     svg.selectAll('*').remove();
     const g = svg.append('g').attr('class', 'content-group');
     gEl = g.node()!;
-    const zoomBehavior = d3
+
+    // Create and store the zoom behavior to enable programmatic panning.
+    const newZoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 2])
       .on('zoom', (event) => g.attr('transform', event.transform.toString()));
-    svg.call(zoomBehavior).on('dblclick.zoom', null);
+    zoomBehavior = newZoomBehavior;
+
+    svg.call(newZoomBehavior).on('dblclick.zoom', null);
+
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries?.[0] || !gEl) return;
       const { height } = entries[0].contentRect;
       const initialTransform = d3.zoomIdentity.translate(80, height / 2);
-      svg.call(zoomBehavior.transform, initialTransform);
+      svg.call(newZoomBehavior.transform, initialTransform);
     });
     resizeObserver.observe(svgEl);
     return () => resizeObserver.disconnect();
   });
 
-  // --- Data processing effect ---
+  // Effect to process incoming treeData into a D3 hierarchy
   $effect(() => {
     if (!treeData) {
       rootNode = null;
@@ -74,7 +87,8 @@
     const root = d3.hierarchy(treeData);
     (root as PointNode).x0 = 0;
     (root as PointNode).y0 = 0;
-    root.descendants().forEach((d) => {
+    root.each((d) => {
+      // Use .each() to process the full tree
       const node = d as PointNode;
       if (node.children && !expandedNodeIds.has(node.data.id)) {
         node._children = node.children;
@@ -84,20 +98,18 @@
     rootNode = root;
   });
 
-  // --- Drawing effect ---
+  // Effect to trigger the main D3 drawing function when the data changes
   $effect(() => {
     if (!rootNode || !gEl) {
       if (gEl) d3.select(gEl).selectAll('*').remove();
       return;
     }
-    // <-- 2. WRAP THE UPDATE CALL IN TICK()
-    // This ensures Svelte has finished its DOM updates before D3 tries to manipulate it.
     tick().then(() => {
       update(rootNode as PointNode);
     });
   });
 
-  // --- Selection effect ---
+  // Effect to apply the 'is-selected' class based on the prop
   $effect(() => {
     if (!gEl) return;
     d3.select(gEl)
@@ -105,12 +117,160 @@
       .classed('is-selected', (d) => d.data.id === selectedNodeId);
   });
 
-  /**
-   * The D3 update function.
-   */
+  // --- HELPER FUNCTIONS FOR CINEMATIC ANIMATION ---
+
+  /** Finds a D3 node in the full hierarchy (including collapsed nodes) by its data ID. */
+  function findNodeById(id: string): PointNode | undefined {
+    if (!rootNode) return undefined;
+    let foundNode: PointNode | undefined;
+    rootNode.each((d) => {
+      // .each() traverses the entire tree, visible or not
+      if (d.data.id === id) {
+        foundNode = d as PointNode;
+      }
+    });
+    return foundNode;
+  }
+
+  /** Programmatically pans the SVG camera to center on a given node. */
+  function panToNode(targetNode: PointNode) {
+    if (!svgEl || !zoomBehavior) return;
+
+    const svg = d3.select(svgEl);
+    const { width, height } = svg.node()!.getBoundingClientRect();
+    const currentTransform = d3.zoomTransform(svg.node()!);
+    const currentScale = currentTransform.k;
+
+    const newTransform = d3.zoomIdentity
+      .translate(
+        width / 2 - targetNode.y * currentScale,
+        height / 2 - targetNode.x * currentScale
+      )
+      .scale(currentScale);
+
+    svg
+      .transition()
+      .duration(transitionDuration + 200) // Pan slightly slower for a fluid feel
+      .call(zoomBehavior.transform, newTransform);
+  }
+
+  /** Expands the tree path to make the target node visible. */
+  function expandPathToNode(targetNode: PointNode) {
+    let changed = false;
+    targetNode.ancestors().forEach((ancestor) => {
+      if (!expandedNodeIds.has(ancestor.data.id)) {
+        expandedNodeIds.add(ancestor.data.id);
+        changed = true;
+      }
+    });
+    if (changed) {
+      expandedNodeIds = new Set(expandedNodeIds);
+    }
+  }
+
+  /** Applies the hover highlight classes to a node and its path. */
+  function highlightNodePath(targetNode: PointNode | null) {
+    if (!gEl) return;
+    const g = d3.select(gEl);
+    const allNodes = g.selectAll<SVGGElement, PointNode>('g.node');
+    const allLinks = g.selectAll<
+      SVGPathElement,
+      d3.HierarchyPointLink<TreeNodeData>
+    >('path.link');
+
+    allNodes.classed('is-dimmed is-ancestor is-descendant', false);
+    allLinks.classed('is-dimmed is-ancestor is-descendant', false);
+
+    if (!targetNode) return;
+
+    allNodes.classed('is-dimmed', true);
+    allLinks.classed('is-dimmed', true);
+
+    const ancestors = targetNode.ancestors();
+    const descendants = targetNode.descendants();
+    const ancestorIds = new Set(ancestors.map((n) => n.data.id));
+    const descendantIds = new Set(descendants.map((n) => n.data.id));
+
+    allNodes
+      .filter((n) => ancestorIds.has(n.data.id))
+      .classed('is-dimmed', false)
+      .classed('is-ancestor', true);
+    allNodes
+      .filter((n) => descendantIds.has(n.data.id))
+      .classed('is-dimmed', false)
+      .classed('is-descendant', true);
+    allNodes
+      .filter((n) => n.data.id === targetNode.data.id)
+      .classed('is-ancestor', false);
+
+    allLinks
+      .filter(
+        (l) =>
+          ancestorIds.has(l.source.data.id) && ancestorIds.has(l.target.data.id)
+      )
+      .classed('is-dimmed', false)
+      .classed('is-ancestor', true);
+    allLinks
+      .filter(
+        (l) =>
+          descendantIds.has(l.source.data.id) &&
+          descendantIds.has(l.target.data.id)
+      )
+      .classed('is-dimmed', false)
+      .classed('is-descendant', true);
+  }
+
+  // --- FINAL, UPGRADED TTS ANIMATION EFFECT ---
+  $effect(() => {
+    const { activeTreeNodeId, status } = ttsState;
+
+    if (status === 'idle' || !activeTreeNodeId) {
+      highlightNodePath(null);
+      previousTreeNodeId = null;
+      return;
+    }
+
+    if (activeTreeNodeId === previousTreeNodeId) return;
+
+    const currentNode = findNodeById(activeTreeNodeId);
+    const previousNode = previousTreeNodeId
+      ? findNodeById(previousTreeNodeId)
+      : null;
+    if (!currentNode) return;
+
+    // 1. Collapse Logic
+    if (previousNode) {
+      // Only collapse the previous node if the new node is NOT its child.
+      const isDescendant = previousNode
+        .descendants()
+        .some((d) => d.data.id === currentNode.data.id);
+      if (!isDescendant) {
+        expandedNodeIds.delete(previousNode.data.id);
+      }
+    }
+
+    // 2. Expand Logic
+    expandPathToNode(currentNode);
+
+    // 3. Animation Logic (Pan & Highlight)
+    // We wait for Svelte to process the expand/collapse state change.
+    tick().then(() => {
+      // After the DOM is updated by D3's `update`, trigger the pan.
+      panToNode(currentNode);
+
+      // After the pan starts, apply the highlight for a connected feel.
+      setTimeout(() => {
+        highlightNodePath(currentNode);
+      }, 100);
+    });
+
+    // 4. Update Tracking State
+    previousTreeNodeId = activeTreeNodeId;
+  });
+
+  /** The main D3 update function for drawing nodes and links. */
   function update(source: PointNode) {
     if (!gEl || !rootNode) return;
-
     const g = d3.select(gEl);
     const dx = nodeHeight + 20;
     const dy = nodeWidth + 60;
@@ -119,11 +279,9 @@
     const nodes = layoutRoot.descendants().reverse() as PointNode[];
     const links = layoutRoot.links();
     const transition = d3.transition().duration(transitionDuration);
-
     const node = g
       .selectAll<SVGGElement, PointNode>('g.node')
       .data(nodes, (d) => d.data.id);
-
     const nodeEnter = node
       .enter()
       .append('g')
@@ -131,68 +289,23 @@
       .attr('transform', `translate(${source.y0 ?? 0},${source.x0 ?? 0})`)
       .attr('opacity', 0)
       .on('click', (event: MouseEvent, d: PointNode) => {
-        if (d.children) {
-          d._children = d.children;
-          d.children = undefined;
-          expandedNodeIds.delete(d.data.id);
-        } else {
-          d.children = d._children as PointNode[] | undefined;
-          d._children = undefined;
-          expandedNodeIds.add(d.data.id);
+        if (d.children || d._children) {
+          expandedNodeIds.has(d.data.id)
+            ? expandedNodeIds.delete(d.data.id)
+            : expandedNodeIds.add(d.data.id);
+          expandedNodeIds = new Set(expandedNodeIds);
         }
-        update(d);
       })
       .on('dblclick', (event: MouseEvent, d: PointNode) => {
         event.stopPropagation();
         dispatch('nodeClick', { id: d.data.id });
       })
       .on('mouseover', (event: MouseEvent, d: PointNode) => {
-        const allNodes = g.selectAll<SVGGElement, PointNode>('g.node');
-        const allLinks = g.selectAll<
-          SVGPathElement,
-          d3.HierarchyPointLink<TreeNodeData>
-        >('path.link');
-        allNodes.classed('is-dimmed', true);
-        allLinks.classed('is-dimmed', true);
-        const ancestors = d.ancestors();
-        const descendants = d.descendants();
-        const ancestorIds = new Set(ancestors.map((n) => n.data.id));
-        const descendantIds = new Set(descendants.map((n) => n.data.id));
-        allNodes
-          .filter((n) => ancestorIds.has(n.data.id))
-          .classed('is-dimmed', false)
-          .classed('is-ancestor', true);
-        allNodes
-          .filter((n) => descendantIds.has(n.data.id))
-          .classed('is-dimmed', false)
-          .classed('is-descendant', true);
-        allNodes
-          .filter((n) => n.data.id === d.data.id)
-          .classed('is-ancestor', false);
-        allLinks
-          .filter(
-            (l) =>
-              ancestorIds.has(l.source.data.id) &&
-              ancestorIds.has(l.target.data.id)
-          )
-          .classed('is-dimmed', false)
-          .classed('is-ancestor', true);
-        allLinks
-          .filter(
-            (l) =>
-              descendantIds.has(l.source.data.id) &&
-              descendantIds.has(l.target.data.id)
-          )
-          .classed('is-dimmed', false)
-          .classed('is-descendant', true);
+        if (ttsState.status === 'idle') highlightNodePath(d);
       })
       .on('mouseout', () => {
-        g.selectAll('.is-dimmed, .is-ancestor, .is-descendant').classed(
-          'is-dimmed is-ancestor is-descendant',
-          false
-        );
+        if (ttsState.status === 'idle') highlightNodePath(null);
       });
-
     nodeEnter
       .append('rect')
       .attr('width', nodeWidth)
@@ -210,7 +323,6 @@
       .attr('class', 'node-label')
       .html((d: PointNode) => d.data.content);
     nodeEnter.append('circle').attr('class', 'indicator').attr('r', 4);
-
     const nodeUpdate = node.merge(nodeEnter);
     nodeUpdate.select('div.node-label').html((d: PointNode) => d.data.content);
     nodeUpdate
@@ -231,14 +343,12 @@
       .remove()
       .attr('transform', `translate(${source.y ?? 0},${source.x ?? 0})`)
       .attr('opacity', 0);
-
     const link = g
       .selectAll<
         SVGPathElement,
         d3.HierarchyPointLink<TreeNodeData>
       >('path.link')
       .data(links, (d) => d.target.data.id);
-
     function customLinkGenerator(d: d3.HierarchyPointLink<TreeNodeData>) {
       const startX = (d.source.y ?? 0) + nodeWidth;
       const startY = d.source.x ?? 0;
@@ -247,7 +357,6 @@
       const midX = startX + (endX - startX) / 2;
       return `M ${startX},${startY} C ${midX},${startY} ${midX},${endY} ${endX},${endY}`;
     }
-
     const linkEnter = link
       .enter()
       .insert('path', 'g')
@@ -265,7 +374,6 @@
         const o = { x: source.x ?? 0, y: source.y ?? 0 };
         return customLinkGenerator({ source: o, target: o } as any);
       });
-
     layoutRoot.each((d) => {
       const node = d as PointNode;
       node.x0 = node.x;
@@ -279,7 +387,7 @@
 </div>
 
 <style>
-  /* Your existing <style> block is perfect and does not need to be changed. */
+  /* All your styles are correct and do not need to be changed. */
   .tree-container,
   .tree-svg {
     width: 100%;

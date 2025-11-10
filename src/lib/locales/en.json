@@ -206,6 +206,7 @@
   },
   "tts": {
     "initializing": "Initializing audio...",
+    "section_indicator": "Section {index}",
     "error": "An unknown error occurred.",
     "previous_node": "Previous",
     "play": "Play",

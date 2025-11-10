@@ -7,7 +7,6 @@
 
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-// FIX 1: Import the entire 'TTS' namespace instead of a non-existent member.
 import type { TTS } from '$lib/types';
 
 // --- Configuration ---
@@ -25,16 +24,13 @@ const ELLIPSIS = '…';
  */
 function cleanTextForSpeech(text: string): string {
   if (!text) return '';
-
   let cleaned = text;
-
   // Handle URLs first
   cleaned = cleaned.replace(/(https?:\/\/[^\s]+)/g, 'link');
   // Strip Markdown
   cleaned = cleaned.replace(/([*_`~=])/g, '');
   // Normalize whitespace
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
-
   return cleaned;
 }
 
@@ -51,61 +47,78 @@ function truncateTitle(text: string): string {
 }
 
 /**
- * Processes a single ProseMirror node to determine if it's readable
- * and transforms it into a partial ReadableNode.
- * @param node The ProseMirror node.
- * @param pos The position of the node in the document.
- * @returns A partial ReadableNode object (without an 'id'), or null if the node should be skipped.
- */
-function processNode(
-  node: ProseMirrorNode,
-  pos: number
-  // FIX 2: Use the namespaced type 'TTS.ReadableNode'.
-): Omit<TTS.ReadableNode, 'id'> | null {
-  if (!SUPPORTED_NODE_TYPES.includes(node.type.name)) {
-    return null;
-  }
-
-  const fullText = cleanTextForSpeech(node.textContent);
-  if (!fullText) {
-    return null;
-  }
-
-  const title = fullText;
-  const textToSpeak = fullText;
-
-  return {
-    pos,
-    node,
-    title: truncateTitle(title),
-    text: textToSpeak,
-  };
-}
-
-/**
- * Parses the editor's document to extract a flat list of nodes
- * that can be read aloud (headings and paragraphs). It creates a simple,
- * linear playlist of the document's content.
+ * Parses the editor's document to extract a structured list of nodes
+ * that can be read aloud. It generates hierarchical numbering and links
+ * paragraphs to their parent headings.
  *
  * @param editor The Tiptap editor instance.
- * @returns An array of `ReadableNode` objects.
+ * @returns An array of `TTS.ReadableNode` objects with hierarchical context.
  */
-// FIX 2: Use the namespaced type 'TTS.ReadableNode'.
 export function getReadableNodes(editor: Editor): TTS.ReadableNode[] {
-  // FIX 2: Use the namespaced type 'TTS.ReadableNode'.
   const nodes: TTS.ReadableNode[] = [];
+  if (!editor) return nodes;
 
-  editor.state.doc.descendants((node, pos) => {
-    const partialNode = processNode(node, pos);
+  // This array tracks the current count for each heading level (h1, h2, h3, etc.)
+  const headingCounters = [0, 0, 0, 0, 0, 0];
+  // This object holds the context of the current section.
+  let currentHeadingInfo: { id: string | undefined; index: string } = {
+    id: undefined,
+    index: '0',
+  };
 
-    if (partialNode) {
-      nodes.push({
-        ...partialNode,
-        id: nodes.length, // The ID is simply the node's index in the final playlist.
-      });
+  // Iterate through every top-level node in the document.
+  editor.state.doc.forEach((node: ProseMirrorNode, pos: number) => {
+    const nodeType = node.type.name;
+    const textContent = cleanTextForSpeech(node.textContent);
+
+    if (!textContent) {
+      return; // Skip empty nodes
     }
 
-    return true;
+    if (nodeType === 'heading') {
+      const level = node.attrs.level; // e.g., 1 for h1, 2 for h2
+
+      // Increment the counter for the current heading level.
+      headingCounters[level - 1]++;
+
+      // Reset all counters for deeper levels to ensure correct numbering.
+      // e.g., after a new H2, the H3/H4 counters must reset to 0.
+      for (let i = level; i < headingCounters.length; i++) {
+        headingCounters[i] = 0;
+      }
+
+      // Create the hierarchical index string (e.g., "2", "2.1", "3.1.4").
+      const hierarchicalIndex = headingCounters.slice(0, level).join('.');
+      const nodeId = node.attrs.nodeId;
+
+      // Update the "current section" information.
+      currentHeadingInfo = { id: nodeId, index: hierarchicalIndex };
+
+      nodes.push({
+        id: nodes.length,
+        pos,
+        node,
+        title: truncateTitle(textContent),
+        text: textContent,
+        treeNodeId: nodeId,
+        hierarchicalIndex: hierarchicalIndex,
+        parentHeadingId: nodeId, // A heading is its own parent in this context
+      });
+    } else if (nodeType === 'paragraph') {
+      // Paragraphs belong to the last seen heading.
+      nodes.push({
+        id: nodes.length,
+        pos,
+        node,
+        title: truncateTitle(textContent),
+        text: textContent,
+        treeNodeId: undefined, // Paragraphs don't have a direct tree node
+        // Paragraphs inherit the hierarchical index of their parent heading.
+        hierarchicalIndex: currentHeadingInfo.index,
+        // Link the paragraph back to its parent heading's unique ID.
+        parentHeadingId: currentHeadingInfo.id,
+      });
+    }
   });
 
   return nodes;

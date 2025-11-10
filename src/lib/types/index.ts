@@ -5,7 +5,8 @@
 
 // --- Svelte & Tiptap Imports for Type Augmentation ---
 import type { IconName } from './iconName';
-import type { Node as ProseMirrorNode, JSONContent } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from 'prosemirror-model';
+import type { JSONContent } from '@tiptap/core';
 
 // =================================================================
 // --- Global & Primitive Types ---
@@ -122,7 +123,6 @@ export namespace Modal {
     nodePos: number;
     nodeType: 'math_block' | 'math_inline';
     initialFormula: string;
-    // ▼▼▼ FIX: Add the onsave callback to complete the data round trip. ▼▼▼
     onsave?: (formula: string) => void;
   }
 
@@ -152,12 +152,22 @@ export namespace Modal {
 // =================================================================
 
 export namespace TTS {
+  /**
+   * Represents a single, readable segment of the document, enriched with
+   * hierarchical context for a cinematic reading experience.
+   */
   export interface ReadableNode {
     id: number;
     pos: number;
     node: ProseMirrorNode;
     title: string;
     text: string;
+    /** For headings, this links directly to the corresponding node in the TreeView visualization. */
+    treeNodeId?: string;
+    /** The hierarchical index of this node (e.g., "1.2", "3.1.4"). */
+    hierarchicalIndex: string;
+    /** For any node (heading or paragraph), this is the ID of the containing heading section. */
+    parentHeadingId?: string;
   }
 
   export interface Voice {

@@ -1,17 +1,13 @@
-// src/lib/stores/ttsStore.svelte.ts
-
 /**
  * @file Manages Text-to-Speech (TTS) playback using Svelte 5 Runes and the Web Speech API.
+ * This store holds the state for TTS, including node/word-level tracking for editor
+ * highlighting and persistent, section-based highlighting for the tree visualization.
  */
 import { browser } from '$app/environment';
 import { toast } from 'svelte-sonner';
 import { get as getStoreValue } from 'svelte/store';
 import { t } from '$lib/utils/i18n';
 import type { TTS } from '$lib/types';
-import { Decoration, DecorationSet } from 'prosemirror-view';
-
-// Import the reactive state object directly for use in effects.
-import { editorState } from './editorStore.svelte';
 
 // --- State Definition ---
 
@@ -19,7 +15,6 @@ export interface TTSState {
   status: TTS.Status;
   nodesToRead: TTS.ReadableNode[];
   currentNodeIndex: number;
-  decorationSet: DecorationSet;
   availableVoices: TTS.Voice[];
   selectedVoiceId: string | null;
   rate: number;
@@ -29,13 +24,14 @@ export interface TTSState {
   isConfigDirty: boolean;
   isServiceReady: boolean;
   currentSpeechId: string | null;
+  currentWordRange: { from: number; to: number } | null;
+  activeTreeNodeId: string | null; // Tracks the ID of the tree node being narrated
 }
 
 const initialState: TTSState = {
   status: 'idle',
   nodesToRead: [],
   currentNodeIndex: 0,
-  decorationSet: DecorationSet.empty,
   availableVoices: [],
   selectedVoiceId: null,
   rate: 1,
@@ -45,6 +41,8 @@ const initialState: TTSState = {
   isConfigDirty: false,
   isServiceReady: false,
   currentSpeechId: null,
+  currentWordRange: null,
+  activeTreeNodeId: null, // Initialize as null
 };
 
 export const ttsState = $state<TTSState>({ ...initialState });
@@ -67,15 +65,11 @@ function transitionToIdle(): void {
   ttsState.currentNodeIndex = 0;
   ttsState.nodesToRead = [];
   ttsState.currentSpeechId = null;
+  ttsState.currentWordRange = null;
+  ttsState.activeTreeNodeId = null; // Reset the active tree node ID
   ttsState.isConfigDirty = false;
 }
 
-// --- VVVV THIS IS THE CORRECTED IMPLEMENTATION (1/1) VVVV ---
-/**
- * Asynchronously loads the available Speech Synthesis voices from the browser.
- * This function handles the common issue where voices are not immediately available
- * on page load by listening for the `voiceschanged` event.
- */
 async function loadVoices(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!browser || !('speechSynthesis' in window)) {
@@ -88,40 +82,30 @@ async function loadVoices(): Promise<void> {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         const mappedVoices: TTS.Voice[] = voices.map((v) => ({
-          id: v.voiceURI, // Use voiceURI for a stable and unique ID
+          id: v.voiceURI,
           name: `${v.name} (${v.lang})`,
           lang: v.lang,
         }));
-
         ttsState.availableVoices = mappedVoices;
-
-        // Set a default voice if one isn't already selected or the old one is gone
         const voiceExists = mappedVoices.some(
           (v) => v.id === ttsState.selectedVoiceId
         );
         if (!ttsState.selectedVoiceId || !voiceExists) {
-          // Prefer a local, English voice as a default, otherwise pick the first.
           const defaultVoice =
             mappedVoices.find(
               (v) => v.lang.includes('en') && v.id.includes('local')
             ) ||
             mappedVoices.find((v) => v.lang.includes('en')) ||
             mappedVoices[0];
-
           if (defaultVoice) {
             ttsState.selectedVoiceId = defaultVoice.id;
           }
         }
-
-        resolve(); // Resolve the promise once voices are populated
+        resolve();
       }
     };
 
-    // Attempt to populate the list immediately in case they're already loaded.
     populateVoiceList();
-
-    // If the list is still empty, we must wait for the browser's event.
-    // The `voiceschanged` event will fire when the list is ready.
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = populateVoiceList;
     }
@@ -135,8 +119,19 @@ function speakNodeAtIndex(index: number): void {
     transitionToIdle();
     return;
   }
+
+  // Clear previous word highlight when moving to a new node.
+  ttsState.currentWordRange = null;
+
   const node = nodesToRead[index];
-  const text = (node.text || (node as any).textToSpeak || '').trim();
+  const text = (node.text || '').trim();
+
+  // --- FINAL, SIMPLIFIED LOGIC FOR PERSISTENT HIGHLIGHT ---
+  // The active tree node is ALWAYS the parent heading ID of the current node
+  // being read (whether it's a heading or a paragraph). This is provided
+  // by our intelligent `getReadableNodes` function.
+  ttsState.activeTreeNodeId = node.parentHeadingId ?? null;
+
   if (!text) {
     nextNode();
     return;
@@ -151,7 +146,32 @@ function speakNodeAtIndex(index: number): void {
   if (browserVoice) utterance.voice = browserVoice;
   utterance.rate = rate;
   utterance.volume = volume;
+
+  utterance.onboundary = (event) => {
+    if (
+      event.name !== 'word' ||
+      ttsState.status !== 'playing' ||
+      ttsState.currentSpeechId !== speechId
+    ) {
+      return;
+    }
+    const charIndex = event.charIndex;
+    let charEnd = text.substring(charIndex).search(/[\s.,;!?\n\r]/);
+    if (charEnd === -1) {
+      charEnd = text.length;
+    } else {
+      charEnd += charIndex;
+    }
+    if (node.pos >= 0) {
+      // Only calculate for valid ProseMirror nodes
+      const from = node.pos + 1 + charIndex;
+      const to = node.pos + 1 + charEnd;
+      ttsState.currentWordRange = { from, to };
+    }
+  };
+
   utterance.onend = () => {
+    ttsState.currentWordRange = null;
     if (
       ttsState.status === 'playing' &&
       ttsState.currentSpeechId === speechId
@@ -159,7 +179,9 @@ function speakNodeAtIndex(index: number): void {
       nextNode();
     }
   };
+
   utterance.onerror = () => {
+    ttsState.currentWordRange = null;
     if (ttsState.currentSpeechId === speechId) {
       ttsState.status = 'error';
       ttsState.error = getStoreValue(t)('tts.playback_error');
@@ -177,8 +199,8 @@ function speakNodeAtIndex(index: number): void {
 // --- Public Action Functions ---
 
 /**
- * Initializes the TTS system and its reactive effects.
- * This function should be called once from the root layout.
+ * Initializes the TTS system by loading voices.
+ * This should be called once from a root component.
  */
 export function initialize(): void {
   if (ttsState.isInitialized || !browser) return;
@@ -192,41 +214,13 @@ export function initialize(): void {
     })
     .catch((error) => {
       console.error('TTS Initialization failed:', error);
-      // State is already set to 'error' inside loadVoices if it fails
     });
-
-  // This effect creates the decoration for the currently speaking node.
-  $effect(() => {
-    const { instance: editor } = editorState;
-    const { status, nodesToRead, currentNodeIndex } = ttsState;
-
-    if (
-      !editor ||
-      !['playing', 'paused'].includes(status) ||
-      nodesToRead.length === 0
-    ) {
-      if (ttsState.decorationSet.find().length > 0) {
-        ttsState.decorationSet = DecorationSet.empty;
-      }
-      return;
-    }
-
-    const currentNode = nodesToRead[currentNodeIndex];
-    if (currentNode && currentNode.pos !== undefined && currentNode.node) {
-      const deco = Decoration.node(
-        currentNode.pos,
-        currentNode.pos + currentNode.node.nodeSize,
-        { class: 'is-current-tts-node' }
-      );
-      ttsState.decorationSet = DecorationSet.create(editor.state.doc, [deco]);
-    } else {
-      ttsState.decorationSet = DecorationSet.empty;
-    }
-  });
 }
 
 export function startReading(nodes: TTS.ReadableNode[]): void {
-  if (!ttsState.isInitialized) initialize();
+  if (!ttsState.isInitialized) {
+    initialize();
+  }
   transitionToIdle();
   if (nodes.length === 0) {
     toast.info(getStoreValue(t)('tts.no_readable_content_toast'));
@@ -298,7 +292,6 @@ export function replay(): void {
   const currentNodes = [...ttsState.nodesToRead];
   if (currentNodes.length > 0) {
     transitionToIdle();
-    // Use a short timeout to ensure the previous `cancel()` has fully processed.
     setTimeout(() => startReading(currentNodes), 50);
   }
 }

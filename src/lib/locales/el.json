@@ -207,6 +207,7 @@
   "tts": {
     "initializing": "Προετοιμασία ήχου...",
     "error": "Παρουσιάστηκε ένα άγνωστο σφάλμα.",
+    "section_indicator": "Τμήμα {index}",
     "previous_node": "Προηγούμενο",
     "play": "Αναπαραγωγή",
     "pause": "Παύση",

@@ -12,7 +12,6 @@ import {
   setView,
   close,
 } from '$lib/stores/commandBarStore.svelte';
-// --- VVVV FULLY CORRECTED IMPORTS VVVV ---
 import {
   documentState,
   create as createDocument,
@@ -41,7 +40,6 @@ export function getCommands(
       icon: 'plus',
       action: () => {
         const parentId = commandBarState.viewPayload?.parentId || null;
-        // VVVV CORRECTED METHOD CALL VVVV
         createDocument(
           _t('file_explorer.default_schema_name'),
           undefined,
@@ -72,10 +70,19 @@ export function getCommands(
       id: 'read-aloud',
       label: _t('command.read_schema'),
       icon: 'volume-2',
+      // --- FINAL, ROBUST ACTION TO SOLVE TIMING ISSUES ---
       action: () => {
         const { instance: editor } = editorState;
         if (editor) {
+          // 1. Force ID Generation: Run the command from your NodeIdExtension
+          //    to retroactively add IDs to any nodes that are missing them.
+          editor.chain().focus().ensureNodeIds().run();
+
+          // 2. Get Readable Nodes: Now that we know the IDs exist,
+          //    call your utility function to create the narration script.
           const nodesToRead = getReadableNodes(editor);
+
+          // 3. Start Reading: Pass the perfectly formed script to the store.
           startReading(nodesToRead);
         } else {
           toast.error(_t('common.editor_not_ready'));
@@ -146,7 +153,6 @@ export function getAiCommands(
       label: _t('command.generate_study_cards_for_document'),
       icon: 'zap',
       action: () => {
-        // VVVV CORRECTED STATE ACCESS VVVV
         const docId = documentState.docId;
         const { instance: editorInstance } = editorState;
         if (docId && editorInstance) {
@@ -167,7 +173,6 @@ export async function searchCommands(
   options: SearchOptions
 ): Promise<Search.Command[]> {
   const ttsStatus = ttsState.status;
-  // VVVV CORRECTED STATE ACCESS VVVV
   const hasEditorInstance = !!editorState.instance;
   const isNodeSelected = editorState.selectedNode !== null;
   const isTextSelected = hasEditorInstance

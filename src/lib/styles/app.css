@@ -538,11 +538,14 @@ input[type='range']::-webkit-slider-thumb:hover {
 }
 
 .is-current-tts-node {
-  background-color: hsl(var(--color-accent-hsl) / 0.1);
+  background-color: hsl(
+    var(--color-accent-hsl) / 0.2
+  ); /* Increased from 0.1 to 0.2 */
   border-radius: var(--border-radius-md);
+  transition: background-color 0.3s ease; /* Add a smooth transition */
 }
 .is-current-tts-word {
-  background-color: hsl(var(--color-accent-hsl) / 0.25);
+  background-color: hsl(var(--color-accent-hsl) / 0.25); /* 25% opacity */
   border-radius: var(--border-radius-sm);
 }
 

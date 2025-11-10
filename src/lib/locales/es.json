@@ -207,6 +207,8 @@
   "tts": {
     "initializing": "Inicializando audio...",
     "error": "Ocurrió un error desconocido.",
+    "section_indicator": "Sección {index}",
+
     "previous_node": "Anterior",
     "play": "Reproducir",
     "pause": "Pausar",

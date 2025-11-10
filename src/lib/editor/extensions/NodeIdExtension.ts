@@ -4,7 +4,23 @@
  */
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
+import type { Node as ProseMirrorNode } from 'prosemirror-model';
+import type { CommandProps, RawCommands } from '@tiptap/core';
 import { v4 as uuidv4 } from 'uuid';
+
+// --- TYPE AUGMENTATION FOR TIPTAP ---
+// This tells TypeScript that our new command `ensureNodeIds`
+// is a valid command that can be chained.
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    ensureNodeIds: {
+      /**
+       * Scans the document and adds a unique nodeId to any heading that is missing one.
+       */
+      ensureNodeIds: () => ReturnType;
+    };
+  }
+}
 
 export const NodeIdExtension = Extension.create({
   name: 'nodeId',
@@ -42,12 +58,9 @@ export const NodeIdExtension = Extension.create({
           let modified = false;
           const seenNodeIds = new Set<string>();
 
-          newState.doc.descendants((node, pos) => {
+          newState.doc.descendants((node: ProseMirrorNode, pos: number) => {
             if (node.type.name === 'heading') {
-              // Exclude the main H1 document title from this logic.
-              if (node.attrs.level === 1) {
-                return;
-              }
+              if (node.attrs.level === 1) return;
 
               const nodeId = node.attrs.nodeId;
               if (!nodeId || seenNodeIds.has(nodeId)) {
@@ -68,5 +81,31 @@ export const NodeIdExtension = Extension.create({
         },
       }),
     ];
+  },
+
+  // --- FINAL, CORRECTED AND FULLY TYPED COMMAND ---
+  addCommands() {
+    return {
+      ensureNodeIds:
+        () =>
+        ({ tr, dispatch }: CommandProps) => {
+          let modified = false;
+          tr.doc.descendants((node: ProseMirrorNode, pos: number) => {
+            if (node.type.name === 'heading' && !node.attrs.nodeId) {
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                nodeId: uuidv4(),
+              });
+              modified = true;
+            }
+          });
+
+          if (modified && dispatch) {
+            return dispatch(tr);
+          }
+
+          return modified;
+        },
+    };
   },
 });
