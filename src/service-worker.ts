@@ -5,8 +5,9 @@ import { build, files, version } from '$service-worker';
 // A unique name for your cache
 const CACHE_NAME = `schemas-work-cache-${version}`;
 
-// All the files SvelteKit generated for your app
-const ASSETS_TO_CACHE: string[] = [...build, ...files];
+// All the files SvelteKit generated for your app,
+// PLUS the essential root path '/' for the main page.
+const ASSETS_TO_CACHE: string[] = ['/', ...build, ...files];
 
 self.addEventListener('install', (event) => {
   // @ts-expect-error - event.waitUntil is valid
@@ -50,7 +51,6 @@ self.addEventListener('fetch', (event) => {
       }
 
       // If not in cache, fetch from network.
-      // This is a "cache-first" strategy.
       return fetch(request);
     })
   );
