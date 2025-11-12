@@ -1,13 +1,12 @@
-<!-- src/routes/+layout.svelte -->
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
+  import { onMount } from 'svelte'; // <-- ENSURE THIS IS IMPORTED
   import { Toaster } from 'svelte-sonner';
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import CommandBar from '$lib/components/ui/CommandBar.svelte';
   import type { Snippet } from 'svelte';
 
-  // Import all the stores and their initializers, ensuring correct .svelte.ts paths
+  // Import all the stores and their initializers
   import { themeStore, _applyThemeToDOM } from '$lib/stores/themeStore.svelte';
   import { initialize as initializeTts } from '$lib/stores/ttsStore.svelte';
   import { settingsState } from '$lib/stores/settingsStore.svelte';
@@ -17,10 +16,11 @@
 
   // --- STYLES ---
   import '$lib/styles/app.css';
-  import 'katex/dist/katex.min.css'; // Bundles KaTeX CSS locally
+  import 'katex/dist/katex.min.css'; // <-- ADD THIS LOCAL IMPORT
 
   let { children } = $props<{ children: Snippet }>();
 
+  // Service Worker Registration
   onMount(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -34,13 +34,11 @@
 
   // This one-time effect is the designated place for all global, client-side initializations.
   $effect(() => {
-    // Call all initializers here. Svelte 5's automatic effect cleanup handles most of them.
     const cleanupDirectoryListener = initializeDirectoryListener();
     initializeReviewStoreListeners();
     initializeDocumentStoreListeners();
     initializeTts();
 
-    // Unlock Audio Context for Mobile Browsers
     const unlockAudioContext = () => {
       const context = new (window.AudioContext ||
         (window as any).webkitAudioContext)();
@@ -54,8 +52,6 @@
     window.addEventListener('click', unlockAudioContext, { once: true });
     window.addEventListener('touchstart', unlockAudioContext, { once: true });
 
-    // The directory listener is the only one that needs a manual cleanup function returned,
-    // as it uses a direct window.addEventListener.
     return () => {
       cleanupDirectoryListener();
     };
@@ -63,24 +59,17 @@
 
   // Effect for managing theme side effects
   $effect(() => {
-    // FIX: Access the public .theme rune directly to establish reactivity.
     const currentTheme = themeStore.theme;
-
     if (browser) {
       localStorage.setItem('schemas-work-theme', currentTheme);
       _applyThemeToDOM(currentTheme);
-
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
       const handleSystemChange = () => {
-        // FIX: Re-read the public .theme rune inside the handler.
         if (themeStore.theme === 'system') {
           _applyThemeToDOM('system');
         }
       };
-
       mediaQuery.addEventListener('change', handleSystemChange);
-
       return () => {
         mediaQuery.removeEventListener('change', handleSystemChange);
       };
@@ -100,6 +89,7 @@
 
 <svelte:head>
   <title>Schemas.Work</title>
+  <!-- The external KaTeX link has been REMOVED from here -->
 </svelte:head>
 
 <!-- Global UI Components -->
