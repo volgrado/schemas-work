@@ -1,8 +1,8 @@
 <!-- src/lib/components/ui/Icon.svelte -->
 <script lang="ts">
-  // Step 1: Import the single Icon component from the new library
   import Icon from '@iconify/svelte';
   import type { IconName } from '$lib/types/iconName';
+  import { online } from '$lib/stores/onlineStore.svelte'; // <-- IMPORT THE STORE
 
   let {
     name,
@@ -13,25 +13,25 @@
     name: IconName;
     size?: number | string;
     class?: string;
-    // Allows any other props to be passed through
     [key: string]: any;
   }>();
 
-  // Step 2: Dynamically create the icon string for Iconify.
-  // We assume all icons come from the 'lucide' set, which matches Feather.
+  // Dynamically create the icon string for Iconify.
   const iconString = $derived(`lucide:${name}`);
 </script>
 
-<!-- 
-  Step 3: Render the Iconify component.
-  It's simpler and more robust. We don't need the giant switch statement anymore.
--->
 <span
   class="icon-wrapper {additionalClasses}"
   aria-hidden="true"
   style="--icon-size: {size}px;"
 >
-  <Icon icon={iconString} width={size} height={size} {...rest} />
+  {#if $online}
+    <!-- If online, render the real icon from the network -->
+    <Icon icon={iconString} width={size} height={size} {...rest} />
+  {:else}
+    <!-- If offline, render a simple fallback circle -->
+    <div class="offline-fallback-circle" />
+  {/if}
 </span>
 
 <style>
@@ -42,7 +42,17 @@
     align-items: center;
     justify-content: center;
     line-height: 1;
-    /* This ensures the icon inherits the color of its parent, like a font */
     color: inherit;
+  }
+
+  /* Style for our offline fallback */
+  .offline-fallback-circle {
+    width: calc(
+      var(--icon-size) * 0.5
+    ); /* Make the circle 50% of the icon size */
+    height: calc(var(--icon-size) * 0.5);
+    border-radius: 50%;
+    background-color: currentColor; /* Use the parent's text color */
+    opacity: 0.5;
   }
 </style>
