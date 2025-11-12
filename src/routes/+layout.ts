@@ -10,3 +10,6 @@
 
 // This line is the most important fix. It disables SSR.
 export const ssr = false;
+
+// This tells SvelteKit to build all pages as static .html files during the build process.
+export const prerender = true;

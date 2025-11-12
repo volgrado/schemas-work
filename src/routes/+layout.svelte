@@ -1,6 +1,7 @@
 <!-- src/routes/+layout.svelte -->
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
   import { Toaster } from 'svelte-sonner';
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import CommandBar from '$lib/components/ui/CommandBar.svelte';
@@ -16,8 +17,20 @@
 
   // --- STYLES ---
   import '$lib/styles/app.css';
+  import 'katex/dist/katex.min.css'; // Bundles KaTeX CSS locally
 
   let { children } = $props<{ children: Snippet }>();
+
+  onMount(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/service-worker.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch((err) =>
+          console.error('Service Worker registration failed:', err)
+        );
+    }
+  });
 
   // This one-time effect is the designated place for all global, client-side initializations.
   $effect(() => {
@@ -87,12 +100,6 @@
 
 <svelte:head>
   <title>Schemas.Work</title>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-    integrity="sha384-n8MVd4RsNIU0KOVEMeaMurdcICHZodavIMpg9DGcbEFcV3FoDb4eAZcARndCjKZX"
-    crossorigin="anonymous"
-  />
 </svelte:head>
 
 <!-- Global UI Components -->
