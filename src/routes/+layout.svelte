@@ -19,6 +19,7 @@
   import { initializeReviewStoreListeners } from '$lib/stores/reviewStore.svelte';
   import * as errorService from '$lib/services/core/errorService';
   import * as integrityService from '$lib/services/core/integrityService'; // NEW
+  import { initializeIcons } from '$lib/services/iconService'; // NEW
 
   import '$lib/styles/app.css';
   import 'katex/dist/katex.min.css';
@@ -50,6 +51,7 @@
     // NEW: Run Integrity Check
     if (browser) {
       await integrityService.initialize();
+      initializeIcons(); // Register offline icons
     }
   });
 
