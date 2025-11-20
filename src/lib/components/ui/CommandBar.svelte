@@ -115,6 +115,17 @@
     };
   };
 
+  const responsiveTransition = (
+    node: Element,
+    params: FlyAndScaleParams
+  ): TransitionConfig => {
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (isMobile) {
+      return fly(node, { y: 100, duration: 250, easing: quintOut });
+    }
+    return flyAndScale(node, params);
+  };
+
   // --- Modal Control Functions ---
   function openApiKeyModal() {
     isApiKeyModalOpen = true;
@@ -170,7 +181,7 @@
   <div
     class="panel"
     bind:this={panelElement}
-    in:flyAndScale={{ y: -20, duration: 250 }}
+    in:responsiveTransition={{ y: -20, duration: 250 }}
     out:fade={{ duration: 150 }}
     role="dialog"
     aria-modal="true"
