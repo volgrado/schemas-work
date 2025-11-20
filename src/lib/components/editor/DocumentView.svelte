@@ -21,11 +21,13 @@
   import Placeholder from '@tiptap/extension-placeholder';
   import Paragraph from '@tiptap/extension-paragraph';
   import HorizontalRule from '@tiptap/extension-horizontal-rule';
-  import YouTube from '@tiptap/extension-youtube';
+  // Lazy loaded extensions:
+  // import YouTube from '@tiptap/extension-youtube';
+  // import { ResizableImage } from '$lib/editor/extensions/ResizableImage';
+  // import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
+  
   import Gapcursor from '@tiptap/extension-gapcursor';
-  import { ResizableImage } from '$lib/editor/extensions/ResizableImage';
   import { NodeIdExtension } from '$lib/editor/extensions/NodeIdExtension';
-  import { MathInline, MathBlock } from '$lib/editor/extensions/Math';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
   import {
     DynamicHighlighter,
@@ -133,79 +135,97 @@
       return;
     }
 
-    const editor = new Editor({
-      element: element,
-      extensions: [
-        Document,
-        Paragraph,
-        HorizontalRule,
-        Text,
-        Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-        Bold,
-        Italic,
-        YouTube.configure({}),
-        MathInline,
-        MathBlock,
-        NodeIdExtension,
-        DynamicHighlighter,
-        SlashCommandExtension,
-        Collaboration.configure({ document: ydoc }),
-        // Gapcursor, // Disabled to prevent block cursor issues
-        Placeholder.configure({
-          placeholder: ({ editor, node, pos }) => {
-            const tValue = get(t);
-            if (node.type.name === 'heading' && node.attrs.level === 1) {
-              return tValue('doc_view.placeholder.title');
-            }
-            if (node.type.name === 'paragraph' && !node.textContent) {
-              const before = editor.state.doc.resolve(pos).nodeBefore;
-              if (pos === 1 || before?.type.name === 'heading') {
-                return tValue('doc_view.placeholder.description');
+    let cleanupProvider: (() => void) | undefined;
+
+    const initEditor = async () => {
+      // Dynamically import heavy extensions
+      const [
+        { default: YouTube },
+        { ResizableImage },
+        { MathInline, MathBlock }
+      ] = await Promise.all([
+        import('@tiptap/extension-youtube'),
+        import('$lib/editor/extensions/ResizableImage'),
+        import('$lib/editor/extensions/Math')
+      ]);
+
+      const editor = new Editor({
+        element: element!,
+        extensions: [
+          Document,
+          Paragraph,
+          HorizontalRule,
+          Text,
+          Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+          Bold,
+          Italic,
+          YouTube.configure({}),
+          MathInline,
+          MathBlock,
+          NodeIdExtension,
+          DynamicHighlighter,
+          SlashCommandExtension,
+          Collaboration.configure({ document: ydoc }),
+          // Gapcursor, // Disabled to prevent block cursor issues
+          Placeholder.configure({
+            placeholder: ({ editor, node, pos }) => {
+              const tValue = get(t);
+              if (node.type.name === 'heading' && node.attrs.level === 1) {
+                return tValue('doc_view.placeholder.title');
               }
-              return tValue('doc_view.placeholder.term');
-            }
-            return '';
-          },
-        }),
-        ResizableImage.configure({}),
-      ],
-      editorProps: { attributes: { class: 'prose' } },
-      onUpdate: handleUpdate,
-      onSelectionUpdate: handleSelectionUpdate,
-    });
+              if (node.type.name === 'paragraph' && !node.textContent) {
+                const before = editor.state.doc.resolve(pos).nodeBefore;
+                if (pos === 1 || before?.type.name === 'heading') {
+                  return tValue('doc_view.placeholder.description');
+                }
+                return tValue('doc_view.placeholder.term');
+              }
+              return '';
+            },
+          }),
+          ResizableImage.configure({}),
+        ],
+        editorProps: { attributes: { class: 'prose' } },
+        onUpdate: handleUpdate,
+        onSelectionUpdate: handleSelectionUpdate,
+      });
 
-    localEditorInstance = editor;
-    setInstance(editor);
+      localEditorInstance = editor;
+      setInstance(editor);
 
-    if (initialContent) {
-      editor.commands.setContent(initialContent, { emitUpdate: false });
-      const currentDocId = documentState.docId;
-      if (currentDocId) {
-        neuralIndexService.indexDocument(currentDocId, editor.state.doc);
+      if (initialContent) {
+        editor.commands.setContent(initialContent, { emitUpdate: false });
+        const currentDocId = documentState.docId;
+        if (currentDocId) {
+          neuralIndexService.indexDocument(currentDocId, editor.state.doc);
+        }
+        clearInitialContent();
       }
-      clearInitialContent();
-    }
 
-    syncTitleWithStore(editor);
+      syncTitleWithStore(editor);
 
-    const onSync = (event: { synced: boolean }) => {
-      if (editor && !editor.isDestroyed) {
-        editor.setEditable(event.synced);
+      const onSync = (event: { synced: boolean }) => {
+        if (editor && !editor.isDestroyed) {
+          editor.setEditable(event.synced);
+        }
+      };
+
+      if (provider) {
+        editor.setEditable(provider.synced);
+        provider.on('synced', onSync);
+        cleanupProvider = () => provider.off('synced', onSync);
+      } else {
+        editor.setEditable(true);
       }
     };
 
-    if (provider) {
-      editor.setEditable(provider.synced);
-      provider.on('synced', onSync);
-    } else {
-      editor.setEditable(true);
-    }
+    initEditor();
 
     return () => {
       destroyEditor();
       localEditorInstance = null;
-      if (provider) {
-        provider.off('synced', onSync);
+      if (cleanupProvider) {
+        cleanupProvider();
       }
     };
   });

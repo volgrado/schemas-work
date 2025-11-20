@@ -79,7 +79,7 @@
     }
   }
 
-  const isSubmitDisabled = !inputText.trim() || loading;
+  const isSubmitDisabled = $derived(!inputText.trim() || loading);
 </script>
 
 <Modal {title} {show} onClose={closeAndReset}>

@@ -8,7 +8,7 @@
  * used to create embeddings (e.g., a cloud API vs. a local model).
  */
 
-import * as aiService from '$lib/services/ai/aiService';
+// import * as aiService from '$lib/services/ai/aiService'; // Removed in favor of dynamic import
 import {
   settingsState,
   getNextAvailableKey,
@@ -42,6 +42,8 @@ class GeminiCloudStrategy implements IEmbeddingStrategy {
     }
 
     try {
+      // Dynamic import to avoid bundling aiService in the main chunk
+      const aiService = await import('$lib/services/ai/aiService');
       const embedding = await aiService.generateEmbedding(
         text,
         apiKeyObject.key
@@ -54,7 +56,6 @@ class GeminiCloudStrategy implements IEmbeddingStrategy {
       );
       throw error;
     }
-    // CORRECTION: Removed the stray 'a' character.
   }
 }
 

@@ -20,7 +20,12 @@
 
 <script lang="ts">
   import { createEventDispatcher, tick } from 'svelte';
-  import * as d3 from 'd3';
+  // Tree-shaken D3 imports - only import what we need
+  import { select } from 'd3-selection';
+  import { hierarchy, tree } from 'd3-hierarchy';
+  import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
+  import { linkHorizontal } from 'd3-shape';
+  import 'd3-transition'; // Side-effect import for transition support
   import { ttsState } from '$lib/stores/ttsStore.svelte';
   import { editorState } from '$lib/stores/editorStore.svelte';
   import {
@@ -44,9 +49,9 @@
 
   let svgEl = $state<SVGSVGElement | undefined>();
   let gEl = $state<SVGGElement | undefined>();
-  let rootNode = $state<d3.HierarchyNode<TreeNodeData> | null>(null);
+  let rootNode = $state<ReturnType<typeof hierarchy<TreeNodeData>> | null>(null);
   let expandedNodeIds = $state<Set<string>>(new Set(['root-title']));
-  let zoomBehavior = $state<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(
+  let zoomBehavior = $state<ZoomBehavior<SVGSVGElement, unknown> | null>(
     null
   );
   let previousTreeNodeId = $state<string | null>(null);
@@ -61,10 +66,11 @@
   const nodeHeight = 40;
   const transitionDuration = 350;
   const doubleClickDelay = 250; // The window in ms to wait for a double click.
-  type PointNode = d3.HierarchyPointNode<TreeNodeData> & {
+  type TreeLayoutResult = ReturnType<ReturnType<typeof tree<TreeNodeData>>>;
+  type PointNode = TreeLayoutResult & {
     x0?: number;
     y0?: number;
-    _children?: d3.HierarchyNode<TreeNodeData>[];
+    _children?: ReturnType<typeof hierarchy<TreeNodeData>>[];
   };
 
   // =================================================================
@@ -74,15 +80,14 @@
   /** Effect for one-time SVG setup, zoom behavior, and initial centering. */
   $effect(() => {
     if (!svgEl) return;
-    const svg = d3.select(svgEl);
+    const svg = select(svgEl);
     svg.selectAll('*').remove();
     const g = svg.append('g').attr('class', 'content-group');
     gEl = g.node()!;
 
-    const newZoomBehavior = d3
-      .zoom<SVGSVGElement, unknown>()
+    const newZoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 2])
-      .on('zoom', (event) => g.attr('transform', event.transform.toString()));
+      .on('zoom', (event: any) => g.attr('transform', event.transform.toString()));
     zoomBehavior = newZoomBehavior;
 
     svg.call(newZoomBehavior).on('dblclick.zoom', null);
@@ -90,7 +95,7 @@
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries?.[0] || !gEl) return;
       const { height } = entries[0].contentRect;
-      const initialTransform = d3.zoomIdentity.translate(80, height / 2);
+      const initialTransform = zoomIdentity.translate(80, height / 2);
       svg.call(newZoomBehavior.transform, initialTransform);
     });
     resizeObserver.observe(svgEl);
@@ -103,7 +108,7 @@
       rootNode = null;
       return;
     }
-    const root = d3.hierarchy(treeData);
+    const root = hierarchy(treeData);
     (root as PointNode).x0 = 0;
     (root as PointNode).y0 = 0;
     root.each((d) => {
@@ -119,7 +124,7 @@
   /** Effect to trigger the main D3 drawing function when the data or expanded state changes. */
   $effect(() => {
     if (!rootNode || !gEl) {
-      if (gEl) d3.select(gEl).selectAll('*').remove();
+      if (gEl) select(gEl).selectAll('*').remove();
       return;
     }
     tick().then(() => update(rootNode as PointNode));
@@ -128,7 +133,7 @@
   /** Effect to apply the 'is-selected' class from component props. */
   $effect(() => {
     if (!gEl) return;
-    d3.select(gEl)
+    select(gEl)
       .selectAll<SVGGElement, PointNode>('g.node')
       .classed('is-selected', (d) => d.data.id === selectedNodeId);
   });
@@ -137,7 +142,7 @@
   $effect(() => {
     if (!gEl) return;
     const { activeNodeId } = nodeDetailState;
-    d3.select(gEl)
+    select(gEl)
       .selectAll<SVGGElement, PointNode>('g.node')
       .classed('is-reading', (d) => d.data.id === activeNodeId);
   });
@@ -192,15 +197,16 @@
     return foundNode;
   }
 
-  /** Programmatically pans the SVG camera to center on a given node. */
   function panToNode(targetNode: PointNode) {
     if (!svgEl || !zoomBehavior) return;
-    const svg = d3.select(svgEl);
+    const svg = select(svgEl);
     const { width, height } = svg.node()!.getBoundingClientRect();
-    const currentTransform = d3.zoomTransform(svg.node()!);
+    // Get current scale from the transform
+    const svgNode = svg.node()!;
+    const currentTransform = (svgNode as any).__zoom || zoomIdentity;
     const { k: currentScale } = currentTransform;
 
-    const newTransform = d3.zoomIdentity
+    const newTransform = zoomIdentity
       .translate(
         width / 2 - targetNode.y * currentScale,
         height / 2 - targetNode.x * currentScale
@@ -228,7 +234,7 @@
   /** Applies hover highlight classes to a node and its path. */
   function highlightNodePath(targetNode: PointNode | null) {
     if (!gEl) return;
-    const g = d3.select(gEl);
+    const g = select(gEl);
     g.selectAll('g.node').classed('is-dimmed is-ancestor is-descendant', false);
     g.selectAll('path.link').classed(
       'is-dimmed is-ancestor is-descendant',
@@ -287,16 +293,14 @@
    */
   function update(source: PointNode) {
     if (!gEl || !rootNode) return;
-    const g = d3.select(gEl);
+    const g = select(gEl);
     const dx = nodeHeight + 20;
     const dy = nodeWidth + 60;
-    const treeLayout = (
-      d3.tree<TreeNodeData>() as d3.TreeLayout<TreeNodeData>
-    ).nodeSize([dx, dy]);
-    const layoutRoot = treeLayout(rootNode);
+    const treeLayout = tree<TreeNodeData>().nodeSize([dx, dy]);
+    const layoutRoot = treeLayout(rootNode) as TreeLayoutResult;
     const nodes = layoutRoot.descendants().reverse() as PointNode[];
-    const links = layoutRoot.links();
-    const transition = d3.transition().duration(transitionDuration);
+    const links = layoutRoot.links() as any[];
+    const transition = select(gEl).transition().duration(transitionDuration) as any;
 
     // --- NODES ---
     const node = g
@@ -408,13 +412,10 @@
 
     // --- LINKS ---
     const link = g
-      .selectAll<
-        SVGPathElement,
-        d3.HierarchyPointLink<TreeNodeData>
-      >('path.link')
+      .selectAll<SVGPathElement, any>('path.link')
       .data(links, (d) => d.target.data.id);
 
-    function customLinkGenerator(d: d3.HierarchyPointLink<TreeNodeData>) {
+    function customLinkGenerator(d: any) {
       const startX = (d.source.y ?? 0) + nodeWidth;
       const startY = d.source.x ?? 0;
       const endX = d.target.y ?? 0;

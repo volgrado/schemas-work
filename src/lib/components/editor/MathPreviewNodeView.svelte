@@ -2,7 +2,8 @@
 <script lang="ts">
   import type { Editor } from '@tiptap/core';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
-  import katex from 'katex';
+  // Lazy load KaTeX - import type only
+  import type katex from 'katex';
   import { openModal } from '$lib/stores/modalStore.svelte';
   import type { Modal } from '$lib/types';
   import { t } from '$lib/utils/i18n';
@@ -16,12 +17,22 @@
   }>();
 
   let previewEl: HTMLElement | null = $state(null);
+  let katexModule: typeof katex | null = $state(null);
+
+  // Load KaTeX on first use
+  $effect(() => {
+    if (!katexModule) {
+      import('katex').then((module) => {
+        katexModule = module.default;
+      });
+    }
+  });
 
   // This effect reactively renders the KaTeX formula whenever the node's attributes change.
   $effect(() => {
-    if (!previewEl) return;
+    if (!previewEl || !katexModule) return;
     try {
-      katex.render(node.attrs.formula || '', previewEl, {
+      katexModule.render(node.attrs.formula || '', previewEl, {
         throwOnError: false,
         displayMode: node.type.name === 'math_block',
         colorIsTextColor: true,

@@ -116,6 +116,11 @@
   --sheet-padding-x: 80px;
   --sheet-padding-y: 60px;
 
+  @media (max-width: 640px) {
+    --sheet-padding-x: 24px;
+    --sheet-padding-y: 32px;
+  }
+
   /* --- Breakpoints --- */
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;

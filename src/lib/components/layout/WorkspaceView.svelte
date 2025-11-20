@@ -1,17 +1,19 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
+  import { fade } from 'svelte/transition';
 
   // --- Components ---
   import DocumentView from '$lib/components/editor/DocumentView.svelte';
-  import SchemaTree from '$lib/components/tree/SchemaTree.svelte';
+  // SchemaTree is now lazy loaded
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
   // --- Stores ---
-  import { open as openCommandBar, openSchemaModal } from '$lib/stores/commandBarStore.svelte';
+  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
+  import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
   import {
     documentState,
     create as createDocument,
@@ -22,11 +24,6 @@
 
   // --- Services ---
   import * as schemaService from '$lib/services/features/schemaService';
-
-  // --- Props ---
-  let { currentView = $bindable('editor') } = $props<{
-    currentView: 'editor' | 'tree';
-  }>();
 
   // --- Logic ---
   let treeData = $state<ReturnType<
@@ -61,7 +58,7 @@
         const node = editor.state.doc.nodeAt(foundPos);
         if (node) updateSelection(node, foundPos);
         setFocusCommand(e.detail.id);
-        currentView = 'editor';
+        setActiveView('editor');
       }
     }
   }
@@ -69,16 +66,16 @@
 
 <main
   class="main-content"
-  class:is-editor-view={currentView === 'editor'}
-  class:is-tree-view={currentView === 'tree'}
+  class:is-editor-view={uiState.activeView === 'editor'}
+  class:is-tree-view={uiState.activeView === 'tree'}
 >
   {#if documentState.status === 'loading'}
-    <div class="status-message loading-state">
+    <div class="status-message loading-state" in:fade>
       <Spinner size="lg" />
       <p>{$t('page.status.loading_schema')}</p>
     </div>
   {:else if documentState.status === 'error'}
-    <div class="status-container">
+    <div class="status-container" in:fade>
       <div class="error-content">
         <Icon name="alert-triangle" size={48} color="var(--color-danger)" />
         <h2>{$t('page.status.load_error_title')}</h2>
@@ -104,7 +101,8 @@
     <!-- Editor View Wrapper -->
     <div
       class="view-wrapper"
-      style:display={currentView === 'editor' ? 'flex' : 'none'}
+      style:display={uiState.activeView === 'editor' ? 'flex' : 'none'}
+      in:fade={{ duration: 200 }}
     >
       <div class="sheet-container glass-panel">
         <DocumentView
@@ -118,18 +116,26 @@
     <!-- Tree View Wrapper -->
     <div
       class="view-wrapper"
-      style:display={currentView === 'tree' ? 'block' : 'none'}
+      style:display={uiState.activeView === 'tree' ? 'block' : 'none'}
+      in:fade={{ duration: 200 }}
     >
       <div class="tree-container">
         {#if currentTreeData}
-          <SchemaTree
-            treeData={currentTreeData}
-            selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-            on:nodeClick={handleNodeClick}
-          />
+          {#await import('$lib/components/tree/SchemaTree.svelte') then { default: SchemaTree }}
+            <SchemaTree
+              treeData={currentTreeData}
+              selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
+              on:nodeClick={handleNodeClick}
+            />
+          {:catch error}
+             <div class="status-message error">
+                <p>Error loading tree visualization: {error.message}</p>
+             </div>
+          {/await}
         {:else}
           <div class="status-message">
-            {$t('page.status.generating_tree')}
+            <Spinner size="md" />
+            <span style="margin-left: 10px;">{$t('page.status.generating_tree')}</span>
           </div>
         {/if}
       </div>

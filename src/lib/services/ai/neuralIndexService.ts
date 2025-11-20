@@ -47,49 +47,48 @@ class NeuralIndexDB extends Dexie {
 }
 const db = new NeuralIndexDB();
 
+// --- Worker Initialization ---
+let worker: Worker | null = null;
+
+if (typeof Worker !== 'undefined') {
+  // Initialize the worker
+  // Note: Vite handles the import with ?worker suffix automatically if configured,
+  // but standard new Worker(new URL(...)) is the modern standard.
+  worker = new Worker(new URL('../../workers/neuralIndex.worker.ts', import.meta.url), {
+    type: 'module',
+  });
+}
+
 // --- Private Helper Functions ---
 
 /**
- * Atomizes a Tiptap document into "Term/Description" chunks based on heading levels.
- * This is the core logic for preparing content for semantic indexing.
+ * Wraps the worker communication in a promise.
  */
-function atomizeDocument(
-  doc: ProseMirrorNode
-): { id: string; content: string }[] {
-  const chunks: { id: string; content: string }[] = [];
-  const nodes = doc.content.toJSON();
-
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    if (
-      node.type === 'heading' &&
-      node.attrs &&
-      (node.attrs.level === 2 || node.attrs.level === 3) &&
-      i + 1 < nodes.length
-    ) {
-      const nextNode = nodes[i + 1];
-      if (
-        nextNode.type === 'paragraph' &&
-        (nextNode.content || []).length > 0
-      ) {
-        const term = (node.content || [])
-          .map((c: any) => c.text || '')
-          .join('');
-        const description = (nextNode.content || [])
-          .map((c: any) => c.text || '')
-          .join('');
-        const nodeId = node.attrs.nodeId;
-
-        if (term.trim() && description.trim() && nodeId) {
-          chunks.push({
-            id: nodeId,
-            content: `Term: ${term.trim()}\nDescription: ${description.trim()}`,
-          });
-        }
-      }
+function atomizeDocumentInWorker(
+  docId: string,
+  docJson: any
+): Promise<{ id: string; content: string }[]> {
+  return new Promise((resolve, reject) => {
+    if (!worker) {
+      // Fallback if worker is not available (e.g., SSR or error)
+      // We could keep the sync version as fallback, but for now let's just return empty
+      // or log an error.
+      console.warn('Neural Index Worker not available.');
+      resolve([]);
+      return;
     }
-  }
-  return chunks;
+
+    const handleMessage = (e: MessageEvent) => {
+      const { type, docId: responseDocId, chunks } = e.data;
+      if (type === 'atomized' && responseDocId === docId) {
+        worker?.removeEventListener('message', handleMessage);
+        resolve(chunks);
+      }
+    };
+
+    worker.addEventListener('message', handleMessage);
+    worker.postMessage({ type: 'atomize', docId, docJson });
+  });
 }
 
 /**
@@ -110,8 +109,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 
 /**
  * Debounced function to index a document's content.
- * This function handles atomization, embedding, and storage, while ensuring
- * that rapid changes do not overload the embedding API.
+ * This function handles atomization (via worker), embedding, and storage.
  */
 const debouncedIndexDocument = debounce(
   async (docId: string, doc: ProseMirrorNode) => {
@@ -120,7 +118,9 @@ const debouncedIndexDocument = debounce(
       const { embeddingMethod } = settingsState;
       const activeTable =
         embeddingMethod === 'local' ? db.local_chunks : db.cloud_chunks;
-      const contentChunks = atomizeDocument(doc);
+      
+      // Offload atomization to worker
+      const contentChunks = await atomizeDocumentInWorker(docId, doc.toJSON());
 
       // Efficiently find chunks to update or delete.
       const existingChunks = await activeTable
