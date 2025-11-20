@@ -37,7 +37,7 @@
 </script>
 
 <Button
-  on:click={() => themeStore.cycle()}
+  onclick={() => themeStore.cycle()}
   variant="icon"
   size="md"
   aria-label={currentConfig.label}

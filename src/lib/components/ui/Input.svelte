@@ -100,11 +100,11 @@
 
   /* When an icon is present, add padding to the input so text doesn't overlap it */
   :global(input.has-leading-icon) {
-    padding-left: 36px !important;
+    padding-left: calc(var(--space-sm) + 24px + var(--space-xs)) !important; /* 8 + 24 + 4 = 36px */
   }
 
   :global(input.has-trailing-icon) {
-    padding-right: 36px !important;
+    padding-right: calc(var(--space-sm) + 24px + var(--space-xs)) !important;
   }
 
   /* ENHANCEMENT: When the user focuses the input, the icon becomes more prominent */

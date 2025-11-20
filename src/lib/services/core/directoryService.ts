@@ -8,7 +8,7 @@
 import { writable } from 'svelte/store';
 import { v4 as uuidv4 } from 'uuid';
 import type { SchemaMetadata } from '$lib/types';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from './errorService';
 import { DIRECTORY_STORAGE_KEY, LAST_ACTIVE_DOC_KEY } from '$lib/constants';
 
 // --- REACTIVE EVENT EMITTER ---
@@ -60,6 +60,41 @@ export function initializeDirectoryListener(): () => void {
 }
 
 // =================================================================
+// --- HELPER FUNCTIONS ---
+// =================================================================
+
+/**
+ * Generates a unique name by appending (1), (2), etc. if duplicates exist.
+ * @param baseTitle - The desired title
+ * @param parentId - The parent folder ID
+ * @param allItems - All existing items
+ * @returns A unique title with numbering if needed
+ */
+function generateUniqueName(
+  baseTitle: string,
+  parentId: string | null,
+  allItems: SchemaMetadata[]
+): string {
+  const trimmedBase = baseTitle.trim();
+  const siblings = allItems.filter(item => item.parentId === parentId);
+  
+  // Check if base title is available
+  if (!siblings.some(s => s.title.toLowerCase() === trimmedBase.toLowerCase())) {
+    return trimmedBase;
+  }
+  
+  // Find next available number
+  let counter = 1;
+  while (true) {
+    const candidate = `${trimmedBase} (${counter})`;
+    if (!siblings.some(s => s.title.toLowerCase() === candidate.toLowerCase())) {
+      return candidate;
+    }
+    counter++;
+  }
+}
+
+// =================================================================
 // --- PUBLIC API (CRUD & UTILITIES) ---
 // =================================================================
 
@@ -104,7 +139,8 @@ export async function getItemById(
 
 /**
  * Creates a new schema metadata object and saves it to the directory.
- * @param title - The title for the new schema.
+ * Auto-generates unique names by appending (1), (2), etc. if duplicates exist.
+ * @param title - The desired title for the new schema.
  * @param parentId - The ID of the parent folder, or null for the root.
  * @returns A promise resolving to the newly created schema metadata.
  */
@@ -113,21 +149,12 @@ export async function createSchema(
   parentId: string | null = null
 ): Promise<SchemaMetadata> {
   const allItems = await getAllItems();
-  const siblingExists = allItems.some(
-    (item) =>
-      item.parentId === parentId &&
-      item.title.toLowerCase() === title.trim().toLowerCase()
-  );
-  if (siblingExists) {
-    throw new Error(
-      `An item named "${title}" already exists in this location.`
-    );
-  }
+  const uniqueTitle = generateUniqueName(title, parentId, allItems);
 
   const now = Date.now();
   const newSchema: SchemaMetadata = {
     id: uuidv4(),
-    title: title.trim(),
+    title: uniqueTitle,
     createdAt: now,
     updatedAt: now,
     type: 'schema',
@@ -141,7 +168,8 @@ export async function createSchema(
 
 /**
  * Creates a new folder metadata object and saves it to the directory.
- * @param title - The title for the new folder.
+ * Auto-generates unique names by appending (1), (2), etc. if duplicates exist.
+ * @param title - The desired title for the new folder.
  * @param parentId - The ID of the parent folder, or null for the root.
  * @returns A promise resolving to the newly created folder metadata.
  */
@@ -150,21 +178,12 @@ export async function createFolder(
   parentId: string | null = null
 ): Promise<SchemaMetadata> {
   const allItems = await getAllItems();
-  const siblingExists = allItems.some(
-    (item) =>
-      item.parentId === parentId &&
-      item.title.toLowerCase() === title.trim().toLowerCase()
-  );
-  if (siblingExists) {
-    throw new Error(
-      `A folder named "${title}" already exists in this location.`
-    );
-  }
+  const uniqueTitle = generateUniqueName(title, parentId, allItems);
 
   const now = Date.now();
   const newFolder: SchemaMetadata = {
     id: uuidv4(),
-    title: title.trim(),
+    title: uniqueTitle,
     createdAt: now,
     updatedAt: now,
     type: 'folder',
@@ -178,6 +197,7 @@ export async function createFolder(
 
 /**
  * Updates an existing item's metadata.
+ * Auto-generates unique names by appending (1), (2), etc. if rename conflicts exist.
  * @param id - The ID of the item to update.
  * @param updates - An object with the properties to update.
  * @returns A promise resolving to the updated item metadata.
@@ -197,20 +217,10 @@ export async function updateItemMetadata(
 
   const originalItem = allItems[itemIndex];
 
-  // Check for title conflicts if the title is being changed
+  // Auto-generate unique name if title is being changed
   if (updates.title) {
-    const newTitle = updates.title.trim();
-    const siblingExists = allItems.some(
-      (item) =>
-        item.parentId === originalItem.parentId &&
-        item.id !== id &&
-        item.title.toLowerCase() === newTitle.toLowerCase()
-    );
-    if (siblingExists) {
-      throw new Error(
-        `An item named "${newTitle}" already exists in this location.`
-      );
-    }
+    const itemsExcludingSelf = allItems.filter(item => item.id !== id);
+    updates.title = generateUniqueName(updates.title, originalItem.parentId, itemsExcludingSelf);
   }
 
   const updatedItem = { ...originalItem, ...updates, updatedAt: Date.now() };

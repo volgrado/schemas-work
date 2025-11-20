@@ -297,12 +297,12 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--space-sm);
-    margin-top: var(--space-sm);
+    margin-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
   }
   :global(.dark-theme) .image-preview {
     background-color: var(--color-gray-800);
   }
-  :global(.dark-theme) label {
-    color: var(--color-text-dark-secondary);
-  }
+  /* Removed redundant dark theme overrides */
 </style>

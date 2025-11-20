@@ -114,7 +114,7 @@ export async function create(
         {
           type: 'heading',
           attrs: { level: 1 },
-          content: [{ type: 'text', text: title }],
+          content: [{ type: 'text', text: newMetadata.title }],
         },
         { type: 'paragraph' },
       ],

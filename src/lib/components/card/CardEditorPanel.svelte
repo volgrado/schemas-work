@@ -14,6 +14,9 @@
   import { flip } from 'svelte/animate';
   import { toast } from 'svelte-sonner';
 
+  // --- UI Components ---
+  import { Button, Icon, Popup, HelpTooltip, TagInput, Spinner } from '$lib/components/ui';
+
   // --- Stores, Actions, and Utilities ---
   import { t } from '$lib/utils/i18n';
   import {
@@ -29,19 +32,7 @@
   import { autosize } from '$lib/actions/autosize';
   import type { SRS } from '$lib/types';
   type Card = SRS.Card;
-  type CardType = SRS.CardType;
-
-  // --- UI Components ---
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
-  import TagInput from '$lib/components/ui/TagInput.svelte';
-  import Popup from '$lib/components/ui/Popup.svelte';
-
-  // --- Component State (Svelte 5 Runes) ---
-  let cardElements = new Map<string, HTMLElement>();
-
-  // Drag & Drop state for sequence items
+  type CardType = Card['type'];
   let draggedItemIndex = $state<number | null>(null);
   let dropTargetIndex = $state<number | null>(null);
 
@@ -130,6 +121,8 @@
     dropTargetIndex = null;
   }
 
+  let cardElements = new Map<string, HTMLElement>();
+
   $effect(() => {
     const newCardId = cardEditorState.lastAddedCardId;
     if (newCardId) {
@@ -139,8 +132,9 @@
         const firstInput = element.querySelector<
           HTMLInputElement | HTMLTextAreaElement
         >('input, textarea');
-        firstInput?.focus();
-        clearLastAdded();
+        if (firstInput) {
+          firstInput.focus();
+        }
       }
     }
   });
@@ -169,7 +163,7 @@
         {#if cardEditorState.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
             {#if cardEditorState.status === 'saving'}
-              <Icon name="loader" size={14} />
+              <Spinner size="sm" />
               <span>{$t('card_editor_panel.saving')}</span>
             {:else if cardEditorState.status === 'saved'}
               <Icon name="check-circle" size={14} />
@@ -399,24 +393,28 @@
 
 <style>
   /* All styles are unchanged and correct */
+  /* All styles are unchanged and correct */
   .overlay {
     all: unset;
     display: block;
     position: fixed;
     inset: 0;
-    background: var(--overlay-bg);
-    z-index: var(--z-card-editor);
+    background: var(--overlay-bg, rgba(0, 0, 0, 0.4));
+    z-index: var(--z-overlay);
     cursor: default;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity var(--duration-base) var(--ease-out);
   }
   .panel {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: calc(var(--z-card-editor) + 1);
+    z-index: var(--z-modal);
     background-color: var(--color-background);
     border-top: 1px solid var(--color-border);
-    border-radius: var(--space-md) var(--space-md) 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
@@ -439,7 +437,7 @@
   }
   .header-title h3 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--color-text);
   }
@@ -447,7 +445,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
   }
   .save-status :global(.icon-wrapper) {
@@ -470,6 +468,10 @@
     list-style: none;
     margin: 0;
     min-width: 180px;
+    background-color: var(--color-background-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
   }
   .add-menu button {
     width: 100%;
@@ -477,13 +479,13 @@
     padding: var(--space-sm) var(--space-md);
     background: none;
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: var(--space-sm);
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text);
     transition: background-color 0.15s ease;
   }
@@ -505,7 +507,7 @@
   .card-wrapper {
     background-color: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--radius-md);
     padding: var(--space-md);
     display: flex;
     gap: var(--space-md);
@@ -526,17 +528,17 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.7px;
-    border-radius: var(--border-radius-md) 0 var(--border-radius-sm) 0;
+    border-radius: var(--radius-md) 0 var(--radius-sm) 0;
     color: white;
   }
   .card-type-indicator.basic {
-    background-color: var(--color-blue-500);
+    background-color: var(--color-accent);
   }
   .card-type-indicator.input {
-    background-color: var(--color-green-500);
+    background-color: var(--chart-color-2);
   }
   .card-type-indicator.sequencing {
-    background-color: var(--color-orange-500);
+    background-color: var(--chart-color-3);
   }
   .card-inputs {
     flex-grow: 1;
@@ -551,7 +553,7 @@
     gap: 4px;
   }
   .field label {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
     font-weight: 500;
     color: var(--color-text-secondary);
     padding-left: var(--space-xs);
@@ -570,7 +572,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease,
@@ -596,7 +598,7 @@
     box-shadow: inset 0 0 0 2px var(--color-accent);
   }
   .add-item-button {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--color-accent);
     background: none;
@@ -607,7 +609,7 @@
     align-items: center;
     gap: var(--space-xs);
     align-self: flex-start;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     transition: background-color 0.2s;
   }
   .add-item-button:hover {
@@ -631,7 +633,7 @@
   .remove-card-button:hover,
   .remove-item-button:hover {
     color: var(--color-danger);
-    background-color: var(--color-gray-100);
+    background-color: var(--color-danger-bg);
   }
   .empty-state {
     text-align: center;
@@ -639,7 +641,7 @@
     padding: var(--space-xl) 0;
   }
   .empty-state h4 {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--color-text);
     margin: var(--space-md) 0 0 0;
@@ -647,39 +649,13 @@
   .empty-state p {
     margin: var(--space-xs) 0 0 0;
   }
-  :global(.dark-theme) .overlay {
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-  }
-  :global(.dark-theme) .panel,
-  :global(.dark-theme) .header,
-  :global(.dark-theme) .add-menu,
-  :global(.dark-theme) .card-wrapper {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .panel {
-    background-color: var(--color-background-dark);
-  }
-  :global(.dark-theme) .add-menu {
-    background-color: var(--color-background-dark-raised);
-  }
-  :global(.dark-theme) .add-menu button:hover {
-    background: var(--btn-hover-bg-dark);
-  }
-  :global(.dark-theme) .card-wrapper {
-    background-color: var(--color-background-dark-raised);
-  }
-  :global(.dark-theme) .remove-card-button:hover,
-  :global(.dark-theme) .remove-item-button:hover {
-    background-color: var(--color-gray-800);
-  }
   @media (min-width: 640px) {
     .panel {
       left: 50%;
       transform: translateX(-50%);
       width: 100%;
-      max-width: 720px;
-      border-radius: var(--border-radius-lg);
+      max-width: var(--width-panel-lg);
+      border-radius: var(--radius-lg);
       bottom: var(--space-lg);
       max-height: 80vh;
     }

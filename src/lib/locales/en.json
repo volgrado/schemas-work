@@ -202,7 +202,11 @@
   "document": {
     "invalid_document_error": "Item is not a valid document: {docId}",
     "new_schema_title": "New Schema",
-    "first_schema_title": "My First Schema"
+    "first_schema_title": "My First Schema",
+    "empty_state": {
+      "title": "Create Your First Schema",
+      "description": "Let's create a knowledge base. Click here to start."
+    }
   },
   "tts": {
     "initializing": "Initializing audio...",
@@ -301,15 +305,6 @@
     "processing": "Processing...",
     "try_again": "Try Again",
     "generate": "Generate",
-    "regenerate": "Regenerate",
-    "accept_close": "Accept & Close",
-    "save": "Save",
-    "//": "--- ADDED SECTION ---",
-    "change_file": "Change PDF",
-    "upload_file": "Upload PDF",
-    "get_prompt": "Get Prompt"
-  },
-  "doc_view": {
     "untitled_schema": "Untitled Schema",
     "placeholder": {
       "title": "What is your schema about?",

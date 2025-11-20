@@ -145,7 +145,7 @@
     width: var(--thumb-size);
     left: var(--thumb-padding);
     bottom: var(--thumb-padding);
-    background-color: white;
+    background-color: var(--color-toggle-thumb);
     border-radius: 50%;
     transition: var(--transition-fast);
     box-shadow: var(--shadow-md);

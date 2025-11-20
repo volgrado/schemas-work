@@ -2,14 +2,8 @@
  * src/lib/styles/app.css
  *
  * ========================================================================
- * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V5.0 - Serene Sky & Twilight)
+ * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V6.0 - Serene Sky & Twilight)
  * ========================================================================
- *
- * METHODOLOGY:
- * This stylesheet acts as the single source of truth for the application's
- * design tokens. It follows ITCSS principles, organizing rules from generic
- * to specific to improve predictability, scalability, and maintainability.
- *
  */
 
 /* 1. SETTINGS
@@ -21,15 +15,15 @@
 @font-face {
   font-family: 'Inter';
   font-style: normal;
-  font-weight: 100 900; /* Variable font weight range */
-  font-display: swap; /* Improves perceived loading performance */
+  font-weight: 100 900;
+  font-display: swap;
   src: url('/fonts/Inter-VariableFont_slnt,wght.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Inter';
   font-style: italic;
-  font-weight: 100 900; /* The italic font is also variable */
+  font-weight: 100 900;
   font-display: swap;
   src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.woff2') format('woff2');
 }
@@ -38,51 +32,67 @@
  * 1.2. Design Tokens (CSS Variables) - SERENE SKY LIGHT THEME
  * -------------------------------------------------------------------------- */
 :root {
-  /* --- CHANGE: A cool, crisp, and focused "Serene Sky" palette --- */
-  --color-background: hsl(210 20% 98%); /* Soft, cool off-white */
-  --color-page-background: hsl(210 20% 96%); /* Slightly deeper for depth */
-  --color-text: hsl(215 25% 27%); /* Dark Slate Blue for high contrast */
+  /* --- Palette: Serene Sky (Light) --- */
+  --color-background: hsl(210 20% 98%);
+  --color-page-background: hsl(210 20% 96%);
+  --color-text: hsl(215 25% 27%);
   --color-text-secondary: hsl(215 15% 55%);
   --color-text-tertiary: hsl(215 15% 75%);
-  --color-accent: hsl(220 85% 60%); /* A clear, confident Blue */
-  --color-accent-hover: hsl(220 85% 55%); /* Slightly darker for hover */
+  --color-accent: hsl(220 85% 60%);
+  --color-accent-hover: hsl(220 85% 55%);
   --color-accent-hsl: 220 85% 60%;
-  --color-accent-rgb: 60, 110, 239;
   --color-border: hsl(210 20% 88%);
 
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
-  --color-background-elevated: #ffffff;
-  --color-background-translucent: var(--color-background-raised);
+  --color-background-translucent: hsla(0, 0%, 100%, 0.8);
   --color-border-input: hsl(210 20% 82%);
-  --btn-hover-bg: hsl(210 20% 94%); /* A subtle, cool hover background */
+  --btn-hover-bg: hsl(210 20% 94%);
+  --color-toggle-thumb: #ffffff;
 
   /* --- Feedback Colors --- */
   --color-danger: #e53e3e;
   --color-danger-bg: #fed7d7;
   --color-danger-text: #9b2c2c;
-  --color-danger-border: #feb2b2;
   --color-success-bg: #c6f6d5;
   --color-success-text: #2f855a;
-  --color-success-border: #9ae6b4;
-  --color-green-500: #48bb78;
-  --color-orange-500: #ed8936;
+  --color-warning-bg: #fefcbf;
+  --color-warning-text: #744210;
+  --color-info-bg: #bee3f8;
+  --color-info-text: #2c5282;
 
-  /* --- Grayscale Palette (Cool Slate Gray) --- */
-  --color-gray-50: hsl(210 20% 96%);
+  /* --- Chart Colors --- */
+  --chart-color-1: var(--color-accent);
+  --chart-color-2: #48bb78;
+  --chart-color-3: #ed8936;
+  --chart-color-4: #f56565;
+  --chart-color-5: #a0aec0;
+
+  /* --- Grayscale --- */
+  --color-gray-50: hsl(210 20% 98%);
   --color-gray-100: hsl(210 20% 94%);
   --color-gray-200: hsl(210 20% 88%);
+  --color-gray-300: hsl(210 20% 82%);
   --color-gray-400: hsl(215 15% 75%);
   --color-gray-500: hsl(215 15% 55%);
-  --color-gray-600: hsl(215 25% 27%);
+  --color-gray-600: hsl(215 25% 45%);
+  --color-gray-700: hsl(215 25% 35%);
+  --color-gray-800: hsl(215 25% 27%);
+  --color-gray-900: hsl(215 25% 20%);
 
   /* --- Typography --- */
-  --font-main:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* --- Type Scale --- */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem;  /* 36px */
 
   /* --- Spacing --- */
   --space-xxs: 2px;
@@ -93,137 +103,161 @@
   --space-xl: 32px;
   --space-xxl: 64px;
 
-  /* --- CHANGE: Softer, tinted shadows using the blue accent color --- */
-  --shadow-md:
-    0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.08),
-    0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.08);
-  --shadow-lg:
-    0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.08),
-    0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.08);
-  --shadow-xl:
-    0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.08),
-    0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.08);
+  /* --- Layout --- */
+  --height-header: 56px;
+  --height-subheader: 48px;
+  --width-panel-sm: 320px;
+  --width-panel-md: 480px;
+  --width-panel-lg: 720px;
+  --width-menu-min: 200px;
 
-  /* --- Border Radius --- */
-  --border-radius-sm: 5px;
-  --border-radius-md: 10px;
-  --border-radius-lg: 20px;
+  /* --- Sheet (Document) Layout --- */
+  --sheet-max-width: 800px;
+  --sheet-padding-x: 80px;
+  --sheet-padding-y: 60px;
 
-  /* --- Transitions --- */
-  --transition-fast: all 0.25s cubic-bezier(0.45, 0, 0.25, 1);
+  /* --- Breakpoints --- */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 
-  /* --- Misc & Overlays --- */
-  --overlay-bg: hsla(215, 30%, 15%, 0.5);
-  --color-background-main: var(--color-page-background);
-  --color-primary-accent-light: hsl(var(--color-accent-hsl) / 0.2);
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.08), 0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.08);
+  --shadow-lg: 0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.08), 0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.08);
+  --shadow-xl: 0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.08), 0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.08);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.06);
 
-  /* --- Toasts & Notifications --- */
-  --toast-background: var(--color-background-raised);
-  --toast-color: var(--color-text);
-  --toast-border: var(--color-border);
-  --toast-button-hover-background: var(--color-gray-100);
+  /* --- Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
 
-  /* --- Command Bar & Panels --- */
-  --panel-bg-light: var(--color-background-translucent);
-  --panel-border-light: var(--color-border);
-  --scrollbar-thumb: hsla(215, 25%, 27%, 0.2);
+  /* --- Legacy Radius Mapping (for backward compatibility) --- */
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
 
-  /* --- Z-Index Stack (Unchanged) --- */
-  --z-base: 1;
-  --z-fab: 40;
+  /* --- Motion Registry --- */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 500ms;
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-base: all var(--duration-base) var(--ease-in-out);
+  --transition-fast: all var(--duration-fast) var(--ease-out);
+
+  /* --- Z-Index Registry --- */
+  --z-negative: -1;
+  --z-base: 0;
+  --z-elevated: 10;
   --z-header: 50;
-  --z-slash-menu: 70;
-  --z-first-time-hint: 90;
-  --z-command-bar: 100;
-  --z-card-editor: 101;
-  --z-context-menu: 110;
-  --z-modal-overlay: 199;
-  --z-modal-panel: 200;
-  --z-welcome-animator: 200;
+  --z-dropdown: 100;
+  --z-sticky: 110;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-popover: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  --z-max: 9999;
+
+  /* --- Legacy Z-Index Mapping --- */
+  --z-context-menu: var(--z-dropdown);
+  --z-command-bar: var(--z-modal);
+  --z-modal-overlay: var(--z-overlay);
+  --z-modal-panel: var(--z-modal);
+
+  /* --- Icon Sizes --- */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 48px;
+
+  /* --- Glassmorphism --- */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 12px;
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+
+  /* --- Scrollbars --- */
+  --scrollbar-width: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--color-gray-300);
+  --scrollbar-thumb-hover: var(--color-gray-400);
 }
 
 /**
- * 1.3. Dark Theme Overrides - REFINED TWILIGHT THEME
+ * 1.3. Dark Theme (Twilight)
  * -------------------------------------------------------------------------- */
 html.dark-theme,
 .dark-theme {
-  /* --- CHANGE: A refined "Twilight" (Dracula-style) palette --- */
-  --color-background: #1a1823; /* Deep, dark purple-slate */
-  --color-background-dark: #1a1823;
-  --color-page-background: #12101a; /* Even darker for depth */
-  --color-text: #e6e0f5; /* Soft lavender-white for comfortable reading */
-  --color-text-dark: #e6e0f5;
+  /* --- Palette: Twilight (Dark) --- */
+  --color-background: #1a1823;
+  --color-page-background: #12101a;
+  --color-text: #e6e0f5;
   --color-text-secondary: #a097c2;
-  --color-text-dark-secondary: #a097c2;
   --color-text-tertiary: #756c91;
-  --color-text-dark-tertiary: #756c91;
-  --color-accent: #8b5cf6; /* A vibrant, modern Violet */
+  --color-accent: #8b5cf6;
   --color-accent-hover: #7c3aed;
   --color-accent-hsl: 258 90% 66%;
   --color-border: #3c3654;
-  --color-border-dark: #3c3654;
-
-  /* --- Animation Colors --- */
-  --color-background-main-dark: var(--color-page-background);
-  --color-primary-accent-dark: hsl(var(--color-accent-hsl) / 0.3);
 
   /* --- Component Colors --- */
   --color-background-raised: #2a263c;
-  --color-background-dark-raised: #2a263c;
-  --color-background-elevated: #3c3654;
-  --color-background-translucent: hsla(255, 20%, 15%, 0.8);
+  --color-background-translucent: hsla(260, 25%, 10%, 0.7);
   --color-border-input: #4a4369;
-  --color-border-input-dark: #4a4369;
   --btn-hover-bg: #3c3654;
-  --btn-hover-bg-dark: #3c3654;
+  --color-toggle-thumb: #e6e0f5;
 
-  /* --- Grayscale Palette (Adjusted for new dark theme) --- */
+  /* --- Chart Colors --- */
+  --chart-color-1: var(--color-accent);
+  --chart-color-2: #68d391;
+  --chart-color-3: #f6ad55;
+  --chart-color-4: #fc8181;
+  --chart-color-5: #cbd5e0;
+
+  /* --- Grayscale --- */
   --color-gray-50: #12101a;
   --color-gray-100: #1a1823;
   --color-gray-200: #2a263c;
-  --color-gray-400: #a097c2;
-  --color-gray-500: #d1d5db; /* A neutral gray for contrast */
-  --color-gray-600: #e6e0f5;
-  --color-gray-700: #3c3654;
-  --color-gray-800: #2a263c;
-  --color-gray-900: #1a1823;
-  --color-gray-950: #12101a;
+  --color-gray-300: #3c3654;
+  --color-gray-400: #4a4369;
+  --color-gray-500: #756c91;
+  --color-gray-600: #a097c2;
+  --color-gray-700: #e6e0f5;
+  --color-gray-800: #f3f4f6;
+  --color-gray-900: #ffffff;
 
-  /* --- Shadows (Darker, more subtle for dark mode) --- */
+  /* --- Shadows --- */
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-dark-md: var(--shadow-md);
-  --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-  --shadow-xl:
-    0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.5);
 
-  /* --- Command Bar & Panels --- */
-  --panel-bg-dark: hsla(260, 25%, 10%, 0.85);
-  --panel-border-dark: hsla(250, 30%, 85%, 0.1);
-  --scrollbar-thumb-dark: hsla(250, 30%, 85%, 0.2);
+  /* --- Glassmorphism --- */
+  --glass-bg: rgba(26, 24, 35, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 
-  /* --- Misc & Overlays --- */
-  --overlay-bg: rgba(0, 0, 0, 0.7);
+  /* --- Scrollbars --- */
+  --scrollbar-thumb: var(--color-gray-600);
+  --scrollbar-thumb-hover: var(--color-gray-500);
+
+  /* --- Legacy Mappings --- */
+  --panel-bg-dark: var(--color-background-translucent);
+  --panel-border-dark: var(--color-border);
 }
 
-/* 3. GENERIC
+/* 2. GENERIC & BASE
    ========================================================================== */
-
-/**
- * 3.1. Universal Box-Sizing
- * -------------------------------------------------------------------------- */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-/* 4. BASE
-   ========================================================================== */
-
-/**
- * 4.1. Body Defaults
- * -------------------------------------------------------------------------- */
 body {
   margin: 0;
   padding: 0;
@@ -232,332 +266,63 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-synthesis: none;
-  /** CHANGE: Smooth transitions for theme switching */
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
-/**
- * 4.2. Selection Styles
- * -------------------------------------------------------------------------- */
+/* --- Selection --- */
 ::selection {
   background-color: var(--color-accent);
   color: #ffffff;
 }
-::-moz-selection {
-  background-color: var(--color-accent);
-  color: #ffffff;
+
+/* --- Scrollbars --- */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
-/**
- * 4.3. Keyboard Key Styles
- * -------------------------------------------------------------------------- */
-kbd {
-  font-family: var(--font-main);
-  font-size: 0.75rem;
-  font-weight: 600;
-  background-color: var(--color-gray-100);
-  color: var(--color-text);
-  padding: 3px 6px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--color-gray-200);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-}
-
-.dark-theme kbd {
-  background-color: var(--color-gray-700);
-  border-color: var(--color-gray-800);
-  color: var(--color-text-dark);
-}
-
-/* 6. COMPONENTS
+/* 3. UTILITIES
    ========================================================================== */
 
-/**
- * 6.1. Form Elements
- * -------------------------------------------------------------------------- */
-input[type='text'],
-input[type='url'],
-input[type='password'],
-textarea,
-select {
-  box-sizing: border-box;
-  width: 100%;
-  padding: var(--space-sm) 12px;
-  font-family: var(--font-main);
-  font-size: 1rem;
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--border-radius-md);
-  color: var(--color-text);
-  transition: var(--transition-fast);
+/* --- Glassmorphism --- */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
-/* CHANGE: Modern focus state. Uses a more prominent, branded shadow. */
-input[type='text']:focus-visible,
-input[type='url']:focus-visible,
-input[type='password']:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.3);
+.glass-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
+/* --- Typography --- */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
 
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  background: var(--color-gray-200);
-  border-radius: 3px;
-  outline: none;
-}
-input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--color-accent);
-  cursor: pointer;
-  border-radius: 50%;
-  transition: transform 0.2s ease;
-}
-input[type='range']::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-}
+.font-mono { font-family: var(--font-mono); }
+.font-bold { font-weight: 700; }
+.text-muted { color: var(--color-text-secondary); }
 
-.prose:focus {
-  outline: none;
-}
-
-.dark-theme input[type='text'],
-.dark-theme input[type='url'],
-.dark-theme input[type='password'],
-.dark-theme textarea,
-.dark-theme select {
-  background-color: var(--color-background-dark);
-  border-color: var(--color-border-input-dark);
-  color: var(--color-text-dark);
-}
-.dark-theme input[type='range'] {
-  background: var(--color-border-dark);
-}
-
-/**
- * 6.2. ProseMirror Editor (`.prose`)
- * -------------------------------------------------------------------------- */
-.prose {
-  caret-color: var(--color-accent);
-}
-
-.prose ::selection {
-  background-color: var(--color-accent);
-  color: #ffffff !important;
-}
-.prose ::-moz-selection {
-  background-color: var(--color-accent);
-  color: #ffffff !important;
-}
-
-.prose .selection {
-  background-color: hsl(var(--color-accent-hsl) / 0.3);
-  border-radius: var(--border-radius-sm);
-}
-
-.prose h3 {
-  margin-left: 2em;
-}
-.prose h4 {
-  margin-left: 4em;
-}
-
-.prose .is-empty::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: var(--color-gray-500);
-  pointer-events: none;
-  height: 0;
-}
-
-.prose ul {
-  position: relative;
-}
-.prose ul > li > ul::before {
-  content: '';
-  position: absolute;
-  top: 1.5em;
-  bottom: 0.5em;
-  left: -1em;
-  width: 1px;
-  background-color: var(--color-gray-200);
-  transition: background-color 0.3s;
-}
-
-.prose img {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-}
-
-.prose img.ProseMirror-selectednode {
-  outline: 3px solid var(--color-accent);
-}
-
-.prose .youtube-wrapper {
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 */
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-  background: #000;
-  border-radius: var(--border-radius-md);
-}
-
-.prose .youtube-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-.dark-theme .prose ul > li > ul::before {
-  background-color: var(--color-gray-800);
-}
-
-/**
- * 6.3. Svelte-Sonner Notifications
- * -------------------------------------------------------------------------- */
-:global([data-sonner-toaster]) {
-  --normal-bg: var(--toast-background);
-  --normal-border: var(--toast-border);
-  --normal-text: var(--color-text);
-  --success-bg: var(--toast-background);
-  --success-border: var(--toast-border);
-  --success-text: var(--color-text);
-  --error-bg: var(--toast-background);
-  --error-border: var(--toast-border);
-  --error-text: var(--color-danger);
-  --warning-bg: var(--toast-background);
-  --warning-border: var(--toast-border);
-  --warning-text: var(--color-text);
-  --info-bg: var(--toast-background);
-  --info-border: var(--toast-border);
-  --info-text: var(--color-text);
-}
-:global([data-sonner-toaster] .toast) {
-  font-family: var(--font-main);
-  box-shadow: var(--shadow-lg);
-}
-:global([data-sonner-toaster] [data-button]) {
-  background: var(--toast-background);
-  border: 1px solid var(--toast-border);
-  color: var(--color-text);
-  transition: background-color 0.2s;
-}
-:global([data-sonner-toaster] [data-button]:hover) {
-  background: var(--btn-hover-bg);
-}
-:global([data-sonner-toaster] [data-close-button]) {
-  background: transparent;
-}
-:global([data-sonner-toaster] [data-close-button]:hover) {
-  background: var(--btn-hover-bg);
-}
-
-/**
- * 6.4. Tippy.js Tooltips
- * -------------------------------------------------------------------------- */
-.tippy-box {
-  background-color: var(--color-text) !important;
-  color: var(--color-background) !important;
-  border: none !important;
-  border-radius: var(--border-radius-sm) !important;
-  box-shadow: var(--shadow-lg) !important;
-  font-size: 0.875rem;
-}
-.dark-theme .tippy-box {
-  background-color: var(--color-background-raised) !important;
-  color: var(--color-text-dark) !important;
-  border: 1px solid var(--color-border-dark) !important;
-}
-.tippy-content {
-  padding: var(--space-xs) var(--space-sm) !important;
-}
-.tippy-arrow {
-  display: none !important;
-}
-
-/**
- * 6.5. Organic Canvas Background
- * -------------------------------------------------------------------------- */
-:global(.organic-canvas) {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.2; /* Adjusted for the new palette */
-  transition: opacity 0.5s ease-in-out;
-}
-
-.dark-theme :global(.organic-canvas) {
-  opacity: 0.1; /* Adjusted for the new palette */
-}
-
-/* 7. STATES
-   ========================================================================== */
-
-/**
- * 7.1. Global State Classes
- * -------------------------------------------------------------------------- */
-
-.is-reviewing .prose > * {
-  transition: opacity 0.3s ease;
-  opacity: 0.2;
-}
-.is-reviewing .prose .is-current-review-node {
-  opacity: 1;
-  background-color: hsl(var(--color-accent-hsl) / 0.1);
-  border-radius: var(--border-radius-md);
-}
-
-.is-reading-aloud .prose h1 {
-  opacity: 1; /* Keep the title always visible */
-}
-
-.is-current-tts-node {
-  background-color: hsl(
-    var(--color-accent-hsl) / 0.2
-  ); /* Increased from 0.1 to 0.2 */
-  border-radius: var(--border-radius-md);
-  transition: background-color 0.3s ease; /* Add a smooth transition */
-}
-.is-current-tts-word {
-  background-color: hsl(var(--color-accent-hsl) / 0.25); /* 25% opacity */
-  border-radius: var(--border-radius-sm);
-}
-
-.prose .ProseMirror-selectednode {
-  background-color: hsl(var(--color-accent-hsl) / 0.1);
-  border-radius: var(--border-radius-md);
-  outline: 2px solid var(--color-accent);
-}
-
-/* 8. UTILITIES
-   ========================================================================== */
-
+/* --- Layout --- */
 .visually-hidden {
   border: 0;
   clip: rect(0 0 0 0);
@@ -568,4 +333,109 @@ input[type='range']::-webkit-slider-thumb:hover {
   position: absolute;
   width: 1px;
   white-space: nowrap;
+}
+
+/* 4. ELEMENTS
+   ========================================================================== */
+input, textarea, select {
+  width: 100%;
+  padding: var(--space-sm) 12px;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  transition: var(--transition-fast);
+}
+
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.3);
+}
+
+/* 5. THIRD PARTY OVERRIDES
+   ========================================================================== */
+
+/* --- Tippy.js --- */
+.tippy-box {
+  background-color: var(--color-text) !important;
+  color: var(--color-background) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: var(--font-size-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.dark-theme .tippy-box {
+  background-color: var(--color-background-raised) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+/* --- ProseMirror --- */
+.prose { caret-color: var(--color-accent); }
+.prose h1 { margin-top: 0; }
+.prose img { max-width: 100%; border-radius: var(--radius-md); }
+.prose .ProseMirror {
+  outline: none !important; /* Remove default focus outline rectangle */
+}
+.prose .ProseMirror * {
+  outline: none !important; /* Remove outline from all child elements */
+}
+.prose .ProseMirror h1,
+.prose .ProseMirror h2,
+.prose .ProseMirror h3,
+.prose .ProseMirror h4,
+.prose .ProseMirror h5,
+.prose .ProseMirror h6,
+.prose .ProseMirror p {
+  outline: none !important;
+  border: none !important;
+}
+/* Remove ProseMirror gapcursor outline */
+.ProseMirror-gapcursor {
+  display: none !important;
+}
+/* Remove ProseMirror node selection outline (the black rectangle) */
+.ProseMirror-selectednode,
+[class*="ProseMirror-selected"],
+[class*="selectednode"] {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+/* Note: Image selection outline is handled specifically in DocumentView.svelte */
+
+/* --- TTS Highlight --- */
+.prose .is-current-tts-node {
+  outline: none !important;
+  border-radius: var(--radius-sm) !important;
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent) !important;
+  transition: all var(--transition-fast);
+}
+.prose .is-current-tts-word {
+  background-color: color-mix(in srgb, var(--color-accent) 30%, transparent) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+}
+
+/* --- Organic Canvas --- */
+:global(.organic-canvas) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-negative);
+  pointer-events: none;
+  opacity: 0.2;
+  transition: opacity 0.5s ease-in-out;
+}
+.dark-theme :global(.organic-canvas) {
+  opacity: 0.1;
+}
+
+/* --- Sonner Toast --- */
+:global([data-sonner-toaster]) {
+  --normal-bg: var(--toast-background, var(--color-background-raised));
+  --normal-border: var(--color-border);
+  --normal-text: var(--color-text);
 }

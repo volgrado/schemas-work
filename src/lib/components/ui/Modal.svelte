@@ -13,6 +13,7 @@
     show = $bindable(false),
     title = null,
     onClose,
+    onBack = null,
     showOverlay = true,
     width = 'default',
     children,
@@ -20,23 +21,14 @@
     show?: boolean;
     title: string | null;
     onClose: () => void;
+    onBack?: (() => void) | null;
     showOverlay?: boolean;
     width?: ModalWidth;
     children?: any;
   }>();
 
-  const sizeClasses: Record<ModalWidth, string> = {
-    sm: 'max-w-md',
-    default: 'max-w-xl',
-    lg: 'max-w-3xl',
-    xl: 'max-w-5xl',
-  };
-
-  const getPanelClass = (w: ModalWidth): string => {
-    return `modal-panel ${sizeClasses[w]}`;
-  };
-
-  let panelClass = $derived(getPanelClass(width));
+  // All modals are now 640px to match CommandBar
+  let panelClass = 'modal-panel';
   let modalPanel = $state<HTMLDivElement | null>(null);
   let modalOverlay = $state<HTMLDivElement | null>(null);
 
@@ -135,7 +127,18 @@
   >
     {#if title}
       <header class="modal-header">
-        <h2 class="modal-title" id="modal-title">{title}</h2>
+        <div class="modal-header-left">
+          {#if onBack}
+            <button
+              class="modal-back-button"
+              onclick={onBack}
+              aria-label={$t('modal.back_aria_label')}
+            >
+              <Icon name="arrow-left" size={20} />
+            </button>
+          {/if}
+          <h2 class="modal-title" id="modal-title">{title}</h2>
+        </div>
         <button
           class="modal-close-button"
           onclick={onClose}
@@ -154,11 +157,15 @@
 
 <style>
   /* Styles remain the same */
+  /* Styles remain the same */
   .modal-overlay {
     position: fixed;
     inset: 0;
     background-color: var(--overlay-bg);
     z-index: var(--z-modal-overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity var(--duration-base) var(--ease-out);
   }
   .modal-overlay:focus-visible {
     outline: 2px solid var(--color-accent);
@@ -169,27 +176,72 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: var(--z-modal-panel);
-    width: 90vw;
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
-    border-radius: var(--space-md);
-    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 640px;
+    
+    /* Glassmorphism */
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+
+    border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     max-height: 85vh;
+    outline: none;
+  }
+
+  /* Mobile: slide from bottom like phone apps */
+  @media (max-width: 640px) {
+    .modal-panel {
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      transform: none;
+      width: 100%;
+      max-width: 100%;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      max-height: 90vh;
+    }
   }
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
   }
+  .modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 1;
+  }
+  .modal-back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: var(--transition-fast);
+  }
+  .modal-back-button:hover {
+    background-color: var(--btn-hover-bg);
+    color: var(--color-text);
+  }
   .modal-title {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
+    color: var(--color-text);
   }
   .modal-close-button {
     background: none;
@@ -200,32 +252,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-gray-500);
-    transition:
-      background-color 0.2s,
-      color 0.2s;
+    color: var(--color-text-secondary);
+    transition: var(--transition-fast);
   }
   .modal-close-button:hover {
-    background-color: var(--color-gray-100);
+    background-color: var(--btn-hover-bg);
     color: var(--color-text);
   }
   .modal-content {
     padding: var(--space-lg);
     overflow-y: auto;
   }
-  :global(.dark-theme) .modal-overlay {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-  :global(.dark-theme) .modal-panel {
-    background-color: var(--color-background-dark-raised);
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .modal-header {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .modal-close-button:hover {
-    background-color: var(--color-gray-800);
-    color: var(--color-text-dark);
-  }
+  /* Removed redundant dark theme overrides as glass variables handle it */
 </style>

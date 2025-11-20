@@ -1,20 +1,19 @@
 <!--
+<!--
   @component
   WelcomeScreen
 
   @description
   An exceptional welcome and feature overview screen for the application. It creates a
   strong first impression with a clean layout and a delightful, staggered entrance
-  animation for all its content.
-
-  This component is purely presentational and communicates with its parent via an
-  `onstart` callback prop, following modern Svelte 5 patterns.
+  animation for all its content. Now integrates the cinematic intro sequence.
 
   @props
   - `onstart`: {() => void} - Callback fired when the user clicks the "Start Creating" button.
+  - `onShowTour`: {() => void} - Callback fired when the user wants to see the tour (after intro).
 -->
 <script lang="ts">
-  import { fly } from 'svelte/transition';
+  import { fly, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
   // --- UI Components & Utilities ---
@@ -22,10 +21,11 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
 
-  // REFACTOR: Use a callback prop for events, the idiomatic Svelte 5 pattern.
-  let { onstart } = $props<{ onstart: () => void }>();
+  let { onstart } = $props<{ 
+    onstart: () => void;
+  }>();
 
-  // ENHANCEMENT: Animate the feature list for a more engaging presentation.
+  // --- Landing Page Data ---
   const features = [
     {
       icon: 'sparkles',
@@ -52,7 +52,6 @@
 
 <div class="welcome-container">
   <div class="content-panel">
-    <!-- ENHANCEMENT: Added a subtle fly-in transition for a polished entrance. -->
     <header
       class="header"
       in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 100 }}
@@ -64,7 +63,6 @@
     </header>
 
     <main class="features-grid">
-      <!-- ENHANCEMENT: Stagger the animation of each feature for a cascading effect. -->
       {#each features as feature, i (feature.icon)}
         <div
           class="feature"
@@ -84,14 +82,18 @@
       {/each}
     </main>
 
-    <!-- ENHANCEMENT: The final call-to-action flies in last, drawing user focus. -->
     <footer
       class="footer"
       in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 700 }}
     >
-      <Button onclick={onstart} size="lg" variant="primary">
-        {$t('welcome.cta')}
-      </Button>
+      <div class="button-group">
+        <Button onclick={() => {
+          console.log('[WelcomeScreen] Get Started clicked');
+          if (typeof onstart === 'function') onstart();
+        }} size="lg" variant="primary">
+          {$t('welcome.cta')}
+        </Button>
+      </div>
       <p class="cta-support-text">{$t('welcome.cta_support')}</p>
     </footer>
   </div>
@@ -106,7 +108,10 @@
     padding: var(--space-lg);
     box-sizing: border-box;
     overflow-y: auto;
+    position: relative; /* For absolute positioning of intro if needed */
   }
+
+  /* --- Landing Styles --- */
   .content-panel {
     position: relative;
     z-index: 2;
@@ -183,6 +188,21 @@
     color: var(--color-text-secondary);
     margin-top: var(--space-sm);
   }
+  
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: stretch;
+  }
+  
+  @media (min-width: 480px) {
+    .button-group {
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+    }
+  }
 
   @media (max-width: 640px) {
     .title {
@@ -198,5 +218,71 @@
       align-items: center;
       text-align: center;
     }
+  }
+
+  /* --- Intro Styles --- */
+  .intro-panel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .intro-content {
+    max-width: 600px;
+    width: 100%;
+  }
+  
+  .typewriter-text {
+    font-family: var(--font-main);
+    font-size: var(--font-size-lg);
+    line-height: 1.8;
+    color: var(--color-text);
+    /* Fallback color if var is missing or too dark */
+    color: color-mix(in srgb, var(--color-text), white 20%);
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    min-height: 400px;
+  }
+  
+  .cursor {
+    color: var(--color-accent);
+    font-weight: bold;
+    animation: none;
+  }
+  
+  .cursor.blink {
+    animation: blink-animation 1s steps(2) infinite;
+  }
+  
+  @keyframes blink-animation {
+    50% { opacity: 0; }
+  }
+  
+  .fade-hint {
+    margin-top: var(--space-xl);
+    text-align: center;
+  }
+  
+  .fade-hint p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+  
+  .skip-container {
+    position: absolute;
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .skip-container:hover {
+    opacity: 1;
   }
 </style>

@@ -268,9 +268,7 @@
     flex-direction: column;
     gap: var(--space-xs);
   }
-  :global(.dark-theme) .card-actions-footer {
-    border-color: var(--color-border-dark);
-  }
+  /* Removed redundant dark theme overrides */
   :global(.dark-theme) .suspend-toggle {
     background-color: var(--color-gray-800);
   }

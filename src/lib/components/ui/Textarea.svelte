@@ -41,12 +41,19 @@
      */
     textareaElement = $bindable<HTMLTextAreaElement | null>(),
 
+    /**
+     * @prop {boolean} [invalid=false]
+     * If true, applies error styling to the textarea.
+     */
+    invalid = false,
+
     ...rest
   } = $props<
     {
       value?: string;
       maxlength?: number;
       textareaElement?: HTMLTextAreaElement | null;
+      invalid?: boolean;
     } & HTMLTextareaAttributes
   >();
 
@@ -64,6 +71,7 @@
   <textarea
     {...rest}
     class={`textarea ${rest.class ?? ''}`}
+    class:is-invalid={invalid}
     bind:value
     {maxlength}
     use:autosize
@@ -93,6 +101,14 @@
   .textarea {
     /* All core styles are inherited from the global `textarea` styles in `app.css`. */
     min-height: 80px;
+  }
+
+  .textarea.is-invalid {
+    border-color: var(--color-danger);
+  }
+  .textarea.is-invalid:focus {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); /* Red ring */
   }
 
   .counter {

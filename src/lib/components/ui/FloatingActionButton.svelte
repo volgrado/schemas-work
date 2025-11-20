@@ -16,7 +16,7 @@
     icon: IconName;
     label: string;
     position?: 'center' | 'right' | 'left';
-  }>();
+  } & import('svelte/elements').HTMLButtonAttributes>();
 
   const flyAndScale = (
     node: Element,
@@ -47,7 +47,7 @@
     directly to the inner Button component. This will resolve the 
     TypeScript error ts(2345).
   -->
-  <Button {...rest} on:click variant="primary" size="lg" aria-label={label}>
+  <Button {...rest} variant="primary" size="lg" aria-label={label}>
     <Icon name={icon} size={20} />
     <span>{label}</span>
   </Button>

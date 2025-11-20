@@ -5,6 +5,7 @@
   import {
     commandBarState,
     closeStrategySession,
+    open as openCommandBar,
   } from '$lib/stores/commandBarStore.svelte';
   import {
     settingsState,
@@ -25,6 +26,7 @@
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import TiptapPreview from '$lib/components/ai/TiptapPreview.svelte';
   import CardPreview from '$lib/components/ai/CardPreview.svelte';
   import { t } from '$lib/utils/i18n';
@@ -34,7 +36,7 @@
 
   const FILE_API_SIZE_LIMIT_MB = 50;
 
-  let { show } = $props<{ show: boolean }>();
+  let { show = $bindable() } = $props<{ show: boolean }>();
 
   // --- STATE ---
   type View =
@@ -273,18 +275,24 @@
       hasSelection = !!selection;
     }
   }
+
+  function handleBack() {
+    closeStrategySession();
+    openCommandBar();
+  }
 </script>
 
 <Modal
   {show}
   onClose={closeStrategySession}
+  onBack={handleBack}
   title={command?.title || $t('ai_workbench.default_title')}
   width="xl"
 >
   <div class="session-container">
     {#if view === 'loading'}
       <div class="status-overlay" transition:fade>
-        <Icon name="loader" size={32} />
+        <Spinner size="lg" />
         <p>{$t('ai_workbench.loading_text')}</p>
       </div>
     {:else if view === 'error'}

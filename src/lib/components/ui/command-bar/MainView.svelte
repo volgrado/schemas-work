@@ -40,6 +40,7 @@
   <div class="action-list">
     {#each mainCommands as command (command.id)}
       <CommandButton
+        id={command.id}
         onclick={(event) => command.action(event)}
         disabled={command.isEnabled ? !command.isEnabled() : false}
       >

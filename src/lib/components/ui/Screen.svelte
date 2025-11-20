@@ -32,7 +32,11 @@
      * @prop {boolean} [show=false] - Controls the visibility of the screen.
      */
     show = false,
-  } = $props();
+    children,
+  } = $props<{
+    show?: boolean;
+    children?: import('svelte').Snippet<[boolean]>;
+  }>();
 
   let isExiting = $state(false);
 
@@ -71,7 +75,7 @@
     onoutrostart={() => (isExiting = true)}
     onintroend={() => (isExiting = false)}
   >
-    <slot {isExiting} />
+    {@render children?.(isExiting)}
   </div>
 {/if}
 

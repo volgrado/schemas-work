@@ -17,9 +17,11 @@
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { toast } from 'svelte-sonner';
   import { fetchAvailableGeminiModels } from '$lib/services/ai/modelDiscoveryService';
   import { t } from '$lib/utils/i18n';
+  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
 
   let { show = false, onClose } = $props<{
     show?: boolean;
@@ -139,9 +141,13 @@
       level,
     };
   }
+  function handleBack() {
+    onClose();
+    openCommandBar();
+  }
 </script>
 
-<Modal title={$t('apiKeyModal.title')} {show} {onClose}>
+<Modal title={$t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
   <div class="ai-settings-content">
     <div class="tabs">
       <button
@@ -202,7 +208,7 @@
               {/if}
             </select>
             {#if isDiscoveringModels}
-              <div class="spinner"><Icon name="loader" size={18} /></div>
+              <Spinner size="sm" />
             {/if}
           </div>
         </div>
@@ -388,18 +394,6 @@
   .select-wrapper {
     position: relative;
   }
-  .spinner {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: translateY(-50%) rotate(360deg);
-    }
-  }
   .key-list {
     list-style: none;
     padding: 0;
@@ -483,7 +477,7 @@
   .usage-bar-track {
     flex-grow: 1;
     height: 6px;
-    background-color: var(--color-gray-200);
+    background-color: var(--color-border);
     border-radius: 3px;
     overflow: hidden;
   }
@@ -496,21 +490,9 @@
       background-color 0.3s ease;
   }
   .usage-bar-fill[data-usage-level='high'] {
-    background-color: var(--color-orange-500);
+    background-color: var(--chart-color-3); /* Orange/Warning */
   }
   .usage-bar-fill[data-usage-level='critical'] {
     background-color: var(--color-danger);
-  }
-  :global(.dark-theme) .usage-bar-track {
-    background-color: var(--color-gray-700);
-  }
-  :global(.dark-theme) .tabs,
-  :global(.dark-theme) .form-section h3,
-  :global(.dark-theme) .modal-actions,
-  :global(.dark-theme) .key-item {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .key-item {
-    background-color: var(--color-background-dark);
   }
 </style>

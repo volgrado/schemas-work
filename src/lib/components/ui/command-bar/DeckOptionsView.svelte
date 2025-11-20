@@ -10,6 +10,7 @@
 
   // --- UI Component Imports ---
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import ViewHeader from './ViewHeader.svelte';
@@ -56,22 +57,15 @@
 <!-- The entire template and style sections are correct. No changes are needed there. -->
 
 <div class="view-container">
-  <ViewHeader title={deckName || $t('deckOptions.title')}>
+  <ViewHeader title={deckName || $t('deckOptions.title')} onBack={goBack}>
     <Button size="sm" onclick={handleSave} disabled={isSaving || !options}>
       {#if isSaving}
-        <Icon name="loader" size={14} />
+        <Spinner size="sm" />
       {:else}
         <Icon name="check" size={14} />
       {/if}
       {$t('deckOptions.save')}
     </Button>
-    <CommandButton
-      class="back-button"
-      onclick={goBack}
-      aria-label={$t('vault_view.back_button_aria_label')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
   </ViewHeader>
 
   <div class="content-area">

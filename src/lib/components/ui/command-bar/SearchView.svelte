@@ -202,7 +202,7 @@
             : $t('search_view.group.knowledge')}
         </h3>
         {#each group.items as item, itemIndexInGroup}
-          {@const flatIndex = groupStartIndices[groupIndex] + itemIndexInGroup}
+          {@const flatIndex = groupStartIndices()[groupIndex] + itemIndexInGroup}
           {#if group.type === 'Commands'}
             {@const command = item as Command}
             {@const enabled = command.isEnabled ? command.isEnabled() : true}

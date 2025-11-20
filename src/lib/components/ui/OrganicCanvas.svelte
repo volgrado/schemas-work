@@ -88,7 +88,14 @@
       staticBgCanvas.height = canvasEl.height;
       const staticCtx = staticBgCanvas.getContext('2d');
       if (!staticCtx) return;
-      staticCtx.fillStyle = currentTheme === 'dark' ? '#000000' : '#f0f4f8';
+      
+      // ENHANCEMENT: Use CSS variables for theme colors
+      const computedStyle = getComputedStyle(document.documentElement);
+      const bgColor = currentTheme === 'dark' 
+        ? computedStyle.getPropertyValue('--color-background').trim() || '#000000'
+        : computedStyle.getPropertyValue('--color-background').trim() || '#f0f4f8';
+        
+      staticCtx.fillStyle = bgColor;
       staticCtx.fillRect(0, 0, staticBgCanvas.width, staticBgCanvas.height);
 
       // 4. Pass the seeded 'random' function to the drawing utilities.
@@ -101,7 +108,7 @@
       );
 
       setTimeout(() => {
-        if (!staticBgCanvas) return;
+        if (!staticBgCanvas || !canvasEl) return; // FIX: Check canvasEl existence
         const staticCtx = staticBgCanvas.getContext('2d');
         if (!staticCtx) return;
         // Also pass it to the artistic details function.
@@ -167,8 +174,10 @@
       ctx.drawImage(staticBgCanvas, 0, 0);
     }
     ctx.globalAlpha = artisticDetailsAlpha;
-    const starColor =
-      currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130';
+    
+    // ENHANCEMENT: Dynamic star color based on theme
+    const starColor = currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130';
+    
     for (let i = shootingStars.length - 1; i >= 0; i--) {
       const s = shootingStars[i];
       s.x += s.speed * Math.cos(s.angle);
@@ -220,7 +229,8 @@
     const effectiveTheme = resolveTheme(themeStore.theme);
     if (effectiveTheme !== currentTheme) {
       currentTheme = effectiveTheme;
-      init(true);
+      // FIX: Wait for the DOM class to be updated by the parent layout before reading styles
+      setTimeout(() => init(true), 0);
     }
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
@@ -255,7 +265,7 @@
 </script>
 
 <div class="canvas-container" class:is-exiting={isExiting}>
-  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true" />
+  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true"></canvas>
 </div>
 
 <style>
@@ -274,6 +284,6 @@
     width: 100%;
     height: 100%;
     /* A fallback background color in case the canvas takes time to render */
-    background-color: #000000;
+    background-color: var(--color-background);
   }
 </style>

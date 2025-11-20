@@ -88,16 +88,4 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
-
-  /* REFACTOR: Dark mode styles are now grouped for better readability and maintainability. */
-  :global(.dark-theme) {
-    .action-button {
-      color: var(--color-text-dark);
-    }
-
-    .action-button:hover:not(:disabled),
-    .action-button:focus-visible {
-      background-color: var(--btn-hover-bg-dark);
-    }
-  }
 </style>

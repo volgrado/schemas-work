@@ -177,8 +177,8 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--space-sm);
-    margin-top: var(--space-lg);
-    padding-top: var(--space-lg);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
   }
   .skeleton {
@@ -198,14 +198,7 @@
     height: 40px;
     width: 100%;
   }
-  :global(.dark-theme) .schema-list,
-  :global(.dark-theme) .schema-list li:not(:last-child),
-  :global(.dark-theme) .modal-footer {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .schema-item:hover {
-    background-color: var(--btn-hover-bg-dark);
-  }
+  /* Removed redundant dark theme overrides */
   :global(.dark-theme) .current-tag {
     background-color: var(--color-gray-700);
     color: var(--color-text-dark-tertiary);

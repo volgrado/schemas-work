@@ -9,6 +9,7 @@
 
   // --- UI Components ---
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
   import ViewHeader from './ViewHeader.svelte';
@@ -361,7 +362,7 @@
 {/if}
 
 <div class="view-container">
-  <ViewHeader title={$t('file_explorer.title')}>
+  <ViewHeader title={$t('file_explorer.title')} onBack={goBack}>
     <Button
       onclick={() => startCreatingItem('schema')}
       size="sm"
@@ -380,13 +381,7 @@
       <Icon name="folder" size={14} />
       <span>{$t('file_explorer.header.new_folder_button')}</span>
     </Button>
-    <CommandButton
-      class="back-button"
-      onclick={goBack}
-      aria-label={$t('file_explorer.footer.back_to_main_menu')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
+
   </ViewHeader>
 
   <div class="content-area">
@@ -425,7 +420,7 @@
     <div class="list-view" role="list" ondragleave={handleDragLeave}>
       {#if isLoading}
         <div class="state-message is-loading" transition:fade>
-          <Icon name="loader" size={24} /><span
+          <Spinner size="md" /><span
             >{$t('file_explorer.state.loading')}</span
           >
         </div>

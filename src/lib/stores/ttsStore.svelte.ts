@@ -26,6 +26,7 @@ export interface TTSState {
   currentSpeechId: string | null;
   currentWordRange: { from: number; to: number } | null;
   activeTreeNodeId: string | null; // Tracks the ID of the tree node being narrated
+  lastCharIndex: number; // Tracks the last spoken character index for resuming
 }
 
 const initialState: TTSState = {
@@ -43,6 +44,7 @@ const initialState: TTSState = {
   currentSpeechId: null,
   currentWordRange: null,
   activeTreeNodeId: null, // Initialize as null
+  lastCharIndex: 0,
 };
 
 export const ttsState = $state<TTSState>({ ...initialState });
@@ -68,6 +70,7 @@ function transitionToIdle(): void {
   ttsState.currentWordRange = null;
   ttsState.activeTreeNodeId = null; // Reset the active tree node ID
   ttsState.isConfigDirty = false;
+  ttsState.lastCharIndex = 0;
 }
 
 async function loadVoices(): Promise<void> {
@@ -112,7 +115,7 @@ async function loadVoices(): Promise<void> {
   });
 }
 
-function speakNodeAtIndex(index: number): void {
+function speakNodeAtIndex(index: number, startOffset: number = 0): void {
   const { nodesToRead, selectedVoiceId, rate, volume } = ttsState;
   if (index >= nodesToRead.length) {
     toast.success(getStoreValue(t)('tts.finished_reading_toast'));
@@ -124,7 +127,10 @@ function speakNodeAtIndex(index: number): void {
   ttsState.currentWordRange = null;
 
   const node = nodesToRead[index];
-  const text = (node.text || '').trim();
+  const fullText = (node.text || '').trim();
+  
+  // If we have an offset, slice the text. Otherwise use full text.
+  const textToSpeak = startOffset > 0 ? fullText.substring(startOffset) : fullText;
 
   // --- FINAL, SIMPLIFIED LOGIC FOR PERSISTENT HIGHLIGHT ---
   // The active tree node is ALWAYS the parent heading ID of the current node
@@ -132,7 +138,7 @@ function speakNodeAtIndex(index: number): void {
   // by our intelligent `getReadableNodes` function.
   ttsState.activeTreeNodeId = node.parentHeadingId ?? null;
 
-  if (!text) {
+  if (!textToSpeak) {
     nextNode();
     return;
   }
@@ -141,7 +147,7 @@ function speakNodeAtIndex(index: number): void {
   const browserVoice = window.speechSynthesis
     .getVoices()
     .find((v) => v.voiceURI === selectedVoiceId);
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
   if (browserVoice) utterance.voice = browserVoice;
   utterance.rate = rate;
@@ -155,16 +161,24 @@ function speakNodeAtIndex(index: number): void {
     ) {
       return;
     }
-    const charIndex = event.charIndex;
-    let charEnd = text.substring(charIndex).search(/[\s.,;!?\n\r]/);
+    
+    // The charIndex from the event is relative to the textToSpeak (sliced).
+    // We need to add startOffset to get the index in the full text.
+    const relativeCharIndex = event.charIndex;
+    const absoluteCharIndex = startOffset + relativeCharIndex;
+    
+    // Update the lastCharIndex so we can resume from here if needed
+    ttsState.lastCharIndex = absoluteCharIndex;
+
+    let charEnd = fullText.substring(absoluteCharIndex).search(/[\s.,;!?\n\r]/);
     if (charEnd === -1) {
-      charEnd = text.length;
+      charEnd = fullText.length;
     } else {
-      charEnd += charIndex;
+      charEnd += absoluteCharIndex;
     }
     if (node.pos >= 0) {
       // Only calculate for valid ProseMirror nodes
-      const from = node.pos + 1 + charIndex;
+      const from = node.pos + 1 + absoluteCharIndex;
       const to = node.pos + 1 + charEnd;
       ttsState.currentWordRange = { from, to };
     }
@@ -176,6 +190,8 @@ function speakNodeAtIndex(index: number): void {
       ttsState.status === 'playing' &&
       ttsState.currentSpeechId === speechId
     ) {
+      // Reset offset when moving to next node naturally
+      ttsState.lastCharIndex = 0;
       nextNode();
     }
   };
@@ -250,13 +266,17 @@ export function resumeReading(): void {
   }
 }
 
-function handleSettingChange(updateFn: () => void, toastMessage: string) {
+function handleSettingChange(updateFn: () => void, toastMessage?: string) {
   updateFn();
-  if (['playing', 'paused'].includes(ttsState.status)) {
+  if (ttsState.status === 'playing') {
+    // Web Speech API requires restarting the utterance to apply changes.
+    // We restart from the last spoken character index to make it feel seamless.
+    window.speechSynthesis.cancel();
+    speakNodeAtIndex(ttsState.currentNodeIndex, ttsState.lastCharIndex);
+  } else if (ttsState.status === 'paused') {
     ttsState.isConfigDirty = true;
-    if (ttsState.status === 'playing') pauseReading();
-    toast.info(toastMessage);
   }
+  if (toastMessage) toast.info(toastMessage);
 }
 
 export function setVoice(voiceId: string): void {
@@ -266,16 +286,10 @@ export function setVoice(voiceId: string): void {
   );
 }
 export function setRate(newRate: number): void {
-  handleSettingChange(
-    () => (ttsState.rate = newRate),
-    getStoreValue(t)('tts.speed_changed_toast')
-  );
+  handleSettingChange(() => (ttsState.rate = newRate));
 }
 export function setVolume(newVolume: number): void {
-  handleSettingChange(
-    () => (ttsState.volume = newVolume),
-    getStoreValue(t)('tts.volume_changed_toast')
-  );
+  handleSettingChange(() => (ttsState.volume = newVolume));
 }
 
 export function nextNode(): void {

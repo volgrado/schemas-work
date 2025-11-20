@@ -18,6 +18,7 @@
   } from '$lib/stores/ttsStore.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { t } from '$lib/utils/i18n';
 
   // --- Local UI State ---
@@ -131,7 +132,7 @@
     <div class="content-wrapper">
       {#if ttsState.status === 'initializing'}
         <div class="status-view">
-          <Icon name="loader" size={20} class="spinner" />
+          <Spinner size="sm" />
           <span class="status-text">{$t('tts.initializing')}</span>
         </div>
       {:else if ttsState.status === 'error'}

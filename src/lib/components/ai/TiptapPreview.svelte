@@ -1,11 +1,8 @@
 <!-- src/lib/components/ai/TiptapPreview.svelte (FINAL ARCHITECTURE) -->
 <script lang="ts">
   import { Editor } from '@tiptap/core';
-  import Document from '@tiptap/extension-document';
-  import Paragraph from '@tiptap/extension-paragraph';
-  import Text from '@tiptap/extension-text';
+  import StarterKit from '@tiptap/starter-kit';
   import Heading from '@tiptap/extension-heading';
-  import Blockquote from '@tiptap/extension-blockquote';
   // The custom Selection extension is no longer needed as we aren't firing a callback.
   // import { Selection } from '$lib/editor/extensions/Selection';
 
@@ -48,7 +45,12 @@
     const editorInstance = new Editor({
       element: element,
       editable: false,
-      extensions: [Document, Paragraph, Text, CustomHeading, Blockquote],
+      extensions: [
+        StarterKit.configure({
+          heading: false, // We use CustomHeading
+        }),
+        CustomHeading,
+      ],
       content: content || {},
     });
     editor = editorInstance;
@@ -61,7 +63,7 @@
   $effect(() => {
     if (editor && content) {
       if (JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) {
-        editor.commands.setContent(content, false);
+        editor.commands.setContent(content, { emitUpdate: false });
       }
     }
   });

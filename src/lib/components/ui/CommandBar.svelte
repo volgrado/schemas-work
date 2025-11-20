@@ -13,6 +13,7 @@
   // FIX: This path was likely intended to be relative to the `command-bar` folder.
   import PasswordModal from './command-bar/PasswordModal.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
 
   // --- Command Bar Views ---
   import MainView from './command-bar/MainView.svelte';
@@ -32,7 +33,10 @@
     goBack,
     // FIX: Import the missing action function.
     closeDiagnosticModal,
+    closeSchemaModal,
   } from '$lib/stores/commandBarStore.svelte';
+  
+  import TextInputModal from '$lib/components/ui/TextInputModal.svelte';
 
   // --- Local State ---
   let query = $state('');
@@ -130,9 +134,28 @@
   onClose={closeDiagnosticModal}
 />
 
-<StrategySessionModal show={commandBarState.isStrategySessionOpen} />
+<StrategySessionModal bind:show={commandBarState.isStrategySessionOpen} />
 
 <PasswordModal bind:show={commandBarState.isPasswordModalOpen} />
+
+<!-- Schema Creation Modal (for Onboarding Demo & General Use) -->
+{#if commandBarState.isSchemaModalOpen}
+  <TextInputModal
+    show={commandBarState.isSchemaModalOpen}
+    title={$t('command.new_schema')}
+    placeholder={$t('file_explorer.default_schema_name')}
+    submitLabel={$t('common.create')}
+    onClose={closeSchemaModal}
+    onsubmit={async (name) => {
+      // Import dynamically to avoid circular deps if needed, or just use the store
+      const { create } = await import('$lib/stores/documentStore.svelte');
+      const { closeSchemaModal } = await import('$lib/stores/commandBarStore.svelte');
+      
+      await create(name);
+      closeSchemaModal();
+    }}
+  />
+{/if}
 
 <!-- Main CommandBar UI -->
 {#if commandBarState.isOpen}
@@ -167,7 +190,7 @@
         bind:this={searchInputElement}
       />
       {#if searchViewInstance?.status === 'loading'}
-        <div class="spinner" aria-label="Loading search results"></div>
+        <Spinner size="sm" />
       {/if}
     </div>
 
@@ -222,15 +245,17 @@
 
 <style>
   /* FIX: Reset button styles for the overlay to make it behave like a div. */
+  /* FIX: Reset button styles for the overlay to make it behave like a div. */
   .overlay {
     all: unset; /* Remove all default button styling */
     display: block; /* Ensure it covers the screen */
     position: fixed;
     inset: 0;
-    background-color: var(--overlay-bg, rgba(0, 0, 0, 0.6));
-    z-index: calc(var(--z-command-bar, 100) - 1);
-    -webkit-backdrop-filter: blur(4px);
+    background-color: var(--overlay-bg);
+    z-index: calc(var(--z-command-bar) - 1);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity var(--duration-base) var(--ease-out);
   }
   .panel {
     position: fixed;
@@ -240,75 +265,74 @@
     width: 100%;
     max-width: 640px;
     max-height: 70vh;
-    background-color: var(
-      --color-background-translucent,
-      rgba(255, 255, 255, 0.8)
-    );
-    border: 1px solid var(--color-border, #e0e0e0);
-    border-radius: 16px;
-    box-shadow: var(
-      --shadow-xl,
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04)
-    );
-    z-index: var(--z-command-bar, 100);
+    
+    /* Glassmorphism */
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    
+    border-radius: var(--radius-xl);
+    z-index: var(--z-command-bar);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     outline: none;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Mobile: slide from bottom like phone apps */
+  @media (max-width: 640px) {
+    .panel {
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      transform: none;
+      width: 100%;
+      max-width: 100%;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      max-height: 85vh;
+    }
   }
   .input-wrapper {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--color-border, #e0e0e0);
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
   }
   .search-input {
     flex-grow: 1;
     border: none;
     background: none;
-    font-size: 1rem;
-    color: var(--color-text, #111);
+    font-size: var(--font-size-lg);
+    color: var(--color-text);
     outline: none;
+    padding: 0;
   }
   .search-input::placeholder {
-    color: var(--color-text-muted, #999);
+    color: var(--color-text-secondary);
   }
   .view-content {
     flex-grow: 1;
     overflow: auto;
     position: relative;
-    padding: var(--space-xs, 8px);
+    padding: var(--space-sm);
   }
   .view-transition-wrapper {
     width: 100%;
     height: 100%;
   }
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--color-accent, blue);
-    border-bottom-color: transparent;
-    border-radius: 50%;
-    animation: rotation 1s linear infinite;
-  }
-  @keyframes rotation {
-    to {
-      transform: rotate(360deg);
-    }
-  }
   :global(.dark-theme) .panel {
-    background-color: var(--panel-bg-dark, rgba(30, 30, 30, 0.8));
-    border-color: var(--panel-border-dark, #444);
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
   }
   :global(.dark-theme) .input-wrapper {
-    border-color: var(--panel-border-dark, #444);
+    border-color: var(--color-border);
   }
   :global(.dark-theme) .search-input {
-    color: var(--color-text-dark, #eee);
+    color: var(--color-text);
   }
 </style>

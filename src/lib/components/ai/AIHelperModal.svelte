@@ -105,9 +105,7 @@
         bind:value={jsonInput}
         rows={8}
         placeholder={$t('aiHelper.step2.placeholder')}
-        class={!parseResult().success && jsonInput.trim() !== ''
-          ? 'is-invalid'
-          : ''}
+        invalid={!parseResult().success && jsonInput.trim() !== ''}
       />
       {#if !parseResult().success && jsonInput.trim() !== ''}
         <p class="error-message">{parseResult().error}</p>
@@ -152,9 +150,6 @@
     font-size: 0.9rem;
     cursor: default;
   }
-  :global(.is-invalid) {
-    border-color: var(--color-danger) !important;
-  }
   .error-message {
     color: var(--color-danger);
     font-size: 0.85rem;
@@ -165,8 +160,10 @@
     justify-content: flex-end;
     gap: var(--space-sm);
     margin-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
   }
   :global(.dark-theme) :global(textarea[readonly]) {
-    background-color: var(--color-gray-800);
+    background-color: var(--color-background-raised);
   }
 </style>

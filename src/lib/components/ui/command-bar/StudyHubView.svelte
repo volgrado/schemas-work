@@ -34,7 +34,7 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('studyHub.title')}>
+  <ViewHeader title={$t('studyHub.title')} onBack={() => setView('main')}>
     <Button
       variant="secondary"
       size="sm"
@@ -44,13 +44,6 @@
       <Icon name="activity" size={14} />
       {$t('studyHub.viewStatistics')}
     </Button>
-    <CommandButton
-      class="back-button"
-      onclick={() => setView('main')}
-      aria-label={$t('vault_view.back_button_aria_label')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
   </ViewHeader>
 
   <div class="content-area">

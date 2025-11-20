@@ -116,7 +116,6 @@
   <form
     class="formula-editor-modal-wrapper"
     onsubmit={handleSave}
-    onkeydown={handleKeydown}
   >
     <div class="editor-pane">
       <div class="symbol-toolbar">
@@ -125,42 +124,42 @@
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('\\frac{}{}', 6)}>x/y</Button
+          onclick={() => insertSymbol('\\frac{}{}', 6)}>x/y</Button
         >
         <Button
           title="Superscript"
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('^{}', 1)}>x²</Button
+          onclick={() => insertSymbol('^{}', 1)}>x²</Button
         >
         <Button
           title="Subscript"
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('_{}', 1)}>x₂</Button
+          onclick={() => insertSymbol('_{}', 1)}>x₂</Button
         >
         <Button
           title="Square Root (\\sqrt)"
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('\\sqrt{}', 6)}>√</Button
+          onclick={() => insertSymbol('\\sqrt{}', 6)}>√</Button
         >
         <Button
           title="Summation (\\sum)"
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('\\sum_{}^{}', 5)}>∑</Button
+          onclick={() => insertSymbol('\\sum_{}^{}', 5)}>∑</Button
         >
         <Button
           title="Greek Letter Alpha (\\alpha)"
           variant="ghost"
           size="sm"
           type="button"
-          on:click={() => insertSymbol('\\alpha ', 7)}>α</Button
+          onclick={() => insertSymbol('\\alpha ', 7)}>α</Button
         >
       </div>
       <textarea
@@ -170,7 +169,8 @@
         placeholder="E = mc^2"
         rows="4"
         aria-label={$t('math_editor.editor_aria_label')}
-      />
+        onkeydown={handleKeydown}
+      ></textarea>
     </div>
 
     <div class="preview-pane">
@@ -181,7 +181,7 @@
     </div>
 
     <div class="modal-actions">
-      <Button variant="secondary" type="button" on:click={requestClose}
+      <Button variant="secondary" type="button" onclick={requestClose}
         >{$t('common.cancel')}</Button
       >
       <Button variant="primary" type="submit">{$t('common.save')}</Button>
@@ -244,8 +244,10 @@
     justify-content: flex-end;
     gap: var(--space-sm);
     padding-top: var(--space-md);
+    margin-top: var(--space-md);
     border-top: 1px solid var(--color-border);
   }
+  /* Removed redundant dark theme overrides */
   :global(.dark-theme) .preview-pane,
   :global(.dark-theme) .symbol-toolbar {
     background-color: var(--color-gray-800);

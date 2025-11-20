@@ -54,7 +54,7 @@
           onclick={showWelcome}
           aria-label={$t('appHeader.aria.returnToWelcome')}
         >
-          <div class="logo-wrapper"><Logo size={28} /></div>
+          <div class="logo-wrapper"><Logo size={24} /></div>
           <h1 class="brand-name">
             Schemas<span class="accent-word">.Work</span>
           </h1>
@@ -80,23 +80,27 @@
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 50;
+    z-index: var(--z-header);
     background-color: var(--color-background-translucent);
     border-bottom: 1px solid var(--color-border);
-    padding: var(--space-sm) 0;
+    padding: 0;
     transition: all 0.3s ease;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    height: var(--height-header);
+    display: flex;
+    align-items: center;
   }
 
   .header-content {
+    width: 100%;
     max-width: 960px;
     margin: 0 auto;
     padding: 0 var(--space-md);
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 36px;
+    height: 100%;
   }
 
   .header-section {
@@ -123,7 +127,7 @@
     border: none;
     cursor: pointer;
     padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--space-sm);
+    border-radius: var(--radius-sm);
     transition: background-color 0.2s ease;
     color: var(--color-text);
   }
@@ -139,7 +143,7 @@
     transform: rotate(-15deg) scale(1.1);
   }
   .brand-name {
-    font-size: 1.3rem;
+    font-size: var(--font-size-xl);
     font-weight: 700;
     margin: 0;
     color: var(--color-text);
@@ -149,7 +153,7 @@
     color: var(--color-accent);
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     .brand-name,
     :global(.header-section .btn > svg + span) {
       display: none;
@@ -167,12 +171,5 @@
     :global(.header-section .btn) {
       padding: 0 var(--space-sm);
     }
-  }
-
-  :global(.dark-theme) .app-header {
-    border-bottom-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .brand-button:hover {
-    background-color: var(--color-gray-800);
   }
 </style>

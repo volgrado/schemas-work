@@ -2,7 +2,8 @@
 <script lang="ts">
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte'; // Assuming a spinner icon is available
+  import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
 
   type Props = {
     show: boolean;
@@ -98,7 +99,7 @@
       >
       <Button type="submit" disabled={isSubmitDisabled}>
         {#if loading}
-          <Icon name="loader" size={18} />
+          <Spinner size="sm" />
           <span>Saving...</span>
         {:else}
           {submitLabel}

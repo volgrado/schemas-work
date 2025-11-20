@@ -11,6 +11,7 @@
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   // FIX: Import the reactive state rune directly from the store.
   import { commandBarState } from '$lib/stores/commandBarStore.svelte';
   import * as backupService from '$lib/services/features/backupService';
@@ -96,7 +97,7 @@
       </Button>
       <Button type="submit" disabled={!passwordInput || isProcessing}>
         {#if isProcessing}
-          <Icon name="loader" size={16} />
+          <Spinner size="sm" />
           {$t('common.processing')}
         {:else}
           <Icon name={isExport ? 'download-cloud' : 'upload-cloud'} size={16} />

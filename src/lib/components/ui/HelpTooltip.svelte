@@ -113,14 +113,14 @@
   }
   .tooltip-content {
     position: fixed;
-    z-index: var(--z-context-menu);
+    z-index: var(--z-tooltip);
     background-color: var(--color-background-raised);
     color: var(--color-text);
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-lg);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
     line-height: 1.5;
     width: max-content;
     max-width: 280px;
@@ -157,17 +157,5 @@
     border-top-color: transparent;
     border-right-color: transparent;
     transform: rotate(45deg);
-  }
-  :global(.dark-theme) .tooltip-trigger:hover,
-  :global(.dark-theme) .tooltip-trigger:focus-visible {
-    background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) .tooltip-content {
-    background-color: var(--color-gray-900);
-    border-color: var(--color-gray-700);
-  }
-  :global(.dark-theme) .tooltip-arrow {
-    background: var(--color-gray-900);
-    border-color: var(--color-gray-700);
   }
 </style>

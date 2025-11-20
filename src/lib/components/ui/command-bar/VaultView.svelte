@@ -14,14 +14,7 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('vault_view.title')}>
-    <CommandButton
-      class="back-button"
-      onclick={goBack}
-      aria-label={$t('vault_view.back_button_aria_label')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
+  <ViewHeader title={$t('vault_view.title')} onBack={goBack}>
   </ViewHeader>
 
   <div class="action-list">

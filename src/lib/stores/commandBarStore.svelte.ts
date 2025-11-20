@@ -48,6 +48,7 @@ export interface CommandBarState {
   strategySessionContext: StrategySessionContext | null;
   // FIX: Add state to track the current folder in the file explorer.
   currentParentId: string | null;
+  isSchemaModalOpen: boolean;
 }
 
 // --- Initial State and Reactive State Declaration ---
@@ -64,6 +65,7 @@ const initialState: CommandBarState = {
   strategySessionContext: null,
   // FIX: Add property to initial state.
   currentParentId: null,
+  isSchemaModalOpen: false,
 };
 
 export const commandBarState = $state<CommandBarState>({ ...initialState });
@@ -154,4 +156,15 @@ export function openDiagnosticModal(): void {
 /** Closes the diagnostic modal. */
 export function closeDiagnosticModal(): void {
   commandBarState.isDiagnosticModalOpen = false;
+}
+
+/** Opens the schema creation modal (used for onboarding demo). */
+export function openSchemaModal(): void {
+  commandBarState.isOpen = false;
+  commandBarState.isSchemaModalOpen = true;
+}
+
+/** Closes the schema creation modal. */
+export function closeSchemaModal(): void {
+  commandBarState.isSchemaModalOpen = false;
 }

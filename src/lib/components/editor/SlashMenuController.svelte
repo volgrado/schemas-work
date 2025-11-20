@@ -93,18 +93,19 @@
 
 <style>
   /* All styles remain the same and are correct. */
+  /* All styles remain the same and are correct. */
   .slash-menu-container {
     outline: none;
     background-color: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
-    min-width: 320px;
+    min-width: var(--width-panel-sm);
     max-width: 360px;
     max-height: 40vh;
-    z-index: var(--z-slash-menu);
+    z-index: var(--z-dropdown);
     overflow: hidden;
   }
   .group-tabs {
@@ -117,14 +118,14 @@
   .group-tab {
     flex: 1;
     padding: var(--space-sm) 0;
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--color-text-secondary);
     background: none;
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-fast);
   }
   .group-tab.is-active,
   .group-tab:hover {
@@ -147,9 +148,10 @@
     background: none;
     border: none;
     padding: var(--space-sm);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--color-text);
+    transition: var(--transition-fast);
   }
   .menu-item.is-selected {
     background-color: var(--btn-hover-bg);
@@ -160,7 +162,7 @@
     display: grid;
     place-items: center;
     background-color: var(--color-gray-100);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     transition:
       background-color 0.2s,
       color 0.2s;
@@ -173,9 +175,10 @@
   }
   .title {
     font-weight: 500;
+    font-size: var(--font-size-sm);
   }
   .description {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
   }
   .menu-item.is-selected .icon-wrapper {
@@ -187,34 +190,6 @@
     text-align: center;
     color: var(--color-text-secondary);
     font-style: italic;
-    font-size: 0.9rem;
-  }
-  :global(.dark-theme) .slash-menu-container,
-  :global(.dark-theme) .group-tabs {
-    border-color: var(--color-border-dark);
-    background-color: var(--color-background-dark);
-  }
-  :global(.dark-theme) .group-tab {
-    color: var(--color-text-dark-secondary);
-  }
-  :global(.dark-theme) .group-tab.is-active,
-  :global(.dark-theme) .group-tab:hover {
-    color: var(--color-text-dark);
-  }
-  :global(.dark-theme) .group-tab.is-active {
-    background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) .items-list {
-    color: var(--color-text-dark);
-  }
-  :global(.dark-theme) .menu-item.is-selected {
-    background-color: var(--btn-hover-bg-dark);
-  }
-  :global(.dark-theme) .icon-wrapper {
-    background-color: var(--color-gray-800);
-    color: var(--color-text-dark-secondary);
-  }
-  :global(.dark-theme) .menu-item.is-selected .icon-wrapper {
-    color: white;
+    font-size: var(--font-size-sm);
   }
 </style>

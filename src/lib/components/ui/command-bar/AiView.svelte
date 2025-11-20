@@ -35,15 +35,7 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('ai_view.title')}>
-    <CommandButton
-      class="back-button"
-      onclick={goBack}
-      aria-label={$t('ai_view.back_button_aria_label')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
-  </ViewHeader>
+  <ViewHeader title={$t('ai_view.title')} onBack={goBack} />
 
   <div class="action-list">
     {#each aiCommands as command (command.id)}

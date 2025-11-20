@@ -67,14 +67,6 @@
 </aside>
 
 <style>
-  :root {
-    /* Define a default just in case it's not set globally */
-    --header-height: 56px;
-    /* Define animation properties for consistency and easy modification */
-    --panel-transition-duration: 0.35s;
-    --panel-transition-easing: ease-in-out;
-  }
-
   .side-panel {
     /* Layout & Sizing */
     display: flex;
@@ -89,18 +81,15 @@
     color: var(--color-text);
 
     /* --- ANIMATION SETUP --- */
-    /* By default, the panel is moved 100% of its width to the right (off-screen). */
     transform: translateX(100%);
-    /* It is also hidden from view and screen readers. */
     visibility: hidden;
-    /* A transition is applied to animate the transform and visibility properties. */
     transition:
-      transform var(--panel-transition-duration) var(--panel-transition-easing),
-      visibility var(--panel-transition-duration);
+      transform var(--duration-base) var(--ease-in-out),
+      visibility var(--duration-base);
+    z-index: var(--z-elevated); /* Ensure it sits above standard content if needed */
   }
 
   /* --- VISIBLE STATE FOR ANIMATION --- */
-  /* When the `is-visible` class is applied, the panel animates back to its original position. */
   .side-panel.is-visible {
     transform: translateX(0);
     visibility: visible;
@@ -113,13 +102,13 @@
     flex-shrink: 0;
     padding: var(--space-md);
     /* This aligns the panel's title with the main content area */
-    padding-top: calc(var(--header-height) + var(--space-sm));
+    padding-top: calc(var(--height-header) + var(--space-sm));
     padding-bottom: var(--space-sm);
     border-bottom: 1px solid var(--color-border);
   }
 
   .panel-title {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     line-height: 1.4;
     color: var(--color-text);
@@ -140,14 +129,5 @@
 
   .panel-content p {
     margin: 0;
-  }
-
-  /* --- DARK THEME ADJUSTMENTS --- */
-  :global(.dark-theme) .side-panel {
-    background-color: var(--color-background-dark);
-    border-left-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .panel-header {
-    border-bottom-color: var(--color-border-dark);
   }
 </style>

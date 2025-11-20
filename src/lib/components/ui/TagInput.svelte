@@ -146,7 +146,7 @@
     width: 100%;
     padding: var(--space-xs) var(--space-sm);
     border: 1px solid var(--color-border-input);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--radius-md);
     background-color: var(--color-background);
     transition: var(--transition-fast);
     cursor: text;
@@ -163,11 +163,11 @@
     gap: var(--space-xs);
     background-color: var(--color-gray-100);
     color: var(--color-text);
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
     font-weight: 500;
     padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--border-radius-md);
-    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
   }
   .remove-tag-btn {
     display: inline-flex;
@@ -199,26 +199,8 @@
     background: none;
     outline: none;
     padding: var(--space-xs);
-    font-size: 0.95rem;
+    font-size: var(--font-size-base);
     min-width: 120px;
     color: var(--color-text);
-  }
-  :global(.dark-theme) .tag-input-wrapper {
-    background-color: var(--color-background-dark);
-    border-color: var(--color-border-input-dark);
-  }
-  :global(.dark-theme) .tag-pill {
-    background-color: var(--color-gray-700);
-    color: var(--color-text-dark);
-  }
-  :global(.dark-theme) .remove-tag-btn {
-    background-color: var(--color-gray-500);
-    color: var(--color-background-dark);
-  }
-  :global(.dark-theme) .remove-tag-btn:hover {
-    background-color: var(--color-gray-400);
-  }
-  :global(.dark-theme) .tag-input-native {
-    color: var(--color-text-dark);
   }
 </style>

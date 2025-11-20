@@ -122,11 +122,11 @@
 <style>
   .context-menu-panel {
     position: fixed;
-    z-index: var(--z-context-menu);
-    min-width: 200px;
+    z-index: var(--z-dropdown);
+    min-width: var(--width-menu-min);
     background-color: var(--color-background-raised);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-xl);
     padding: var(--space-xs);
     transform-origin: top left; /* For the scale animation */
@@ -140,9 +140,9 @@
     border: none;
     background: none;
     font-family: var(--font-main);
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     text-align: left;
     gap: var(--space-sm);
     cursor: pointer;
@@ -163,23 +163,5 @@
     height: 1px;
     background-color: var(--color-border);
     margin: var(--space-xs) 0;
-  }
-
-  /* Dark mode with "glassmorphism" effect */
-  :global(.dark-theme) .context-menu-panel {
-    background-color: var(--panel-bg-dark);
-    border-color: var(--panel-border-dark);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-  }
-  :global(.dark-theme .context-menu-panel button:focus-visible) {
-    background-color: var(--btn-hover-bg-dark);
-    color: var(--color-accent);
-  }
-  :global(.dark-theme .context-menu-panel button:hover) {
-    background-color: var(--btn-hover-bg-dark);
-  }
-  :global(.dark-theme .context-menu-panel hr) {
-    background-color: var(--panel-border-dark);
   }
 </style>

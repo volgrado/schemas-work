@@ -31,7 +31,7 @@
   } = $props<{ data: PieSliceData[]; innerRadius?: number; children?: any }>();
 
   // --- State ---
-  const animatedData = tweened(data, { duration: 700, easing: cubicOut });
+  const animatedData = tweened(data, { duration: 500, easing: cubicOut });
   let highlightedLabel = $state<string | null>(null);
   let tooltip = $state<TooltipData | null>(null);
 
@@ -135,6 +135,7 @@
           onmouseleave={handleMouseLeave}
           role="option"
           aria-label={`${slice.label}: ${slice.value}`}
+          aria-selected={highlightedLabel === slice.label}
           tabindex="0"
         />
       {/each}

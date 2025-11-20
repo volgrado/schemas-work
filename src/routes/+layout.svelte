@@ -5,6 +5,7 @@
   import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
   import CommandBar from '$lib/components/ui/CommandBar.svelte';
   import NodeDetailPanel from '$lib/components/ui/NodeDetailPanel.svelte';
+  import GlobalErrorBoundary from '$lib/components/ui/GlobalErrorBoundary.svelte';
   import type { Snippet } from 'svelte';
 
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
@@ -16,23 +17,61 @@
   import { initializeDirectoryListener } from '$lib/services/core/directoryService';
   import { initializeDocumentStoreListeners } from '$lib/stores/documentStore.svelte';
   import { initializeReviewStoreListeners } from '$lib/stores/reviewStore.svelte';
+  import * as errorService from '$lib/services/core/errorService';
+  import * as integrityService from '$lib/services/core/integrityService'; // NEW
 
   import '$lib/styles/app.css';
   import 'katex/dist/katex.min.css';
 
   let { children } = $props<{ children: Snippet }>();
 
+  // --- APPLY THEME IMMEDIATELY TO PREVENT FOUC ---
+  if (browser) {
+    _applyThemeToDOM(themeStore.theme);
+  }
+
+  // --- GLOBAL ERROR STATE ---
+  let hasError = $state(false);
+  let capturedError = $state<unknown>(null);
+  let isSafeMode = $state(false); // NEW
+
   // --- RESTORED LOGIC ---
   // Without this, your theme and stores will never load!
-  onMount(() => {
+  onMount(async () => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/service-worker.js')
         .catch(console.error);
     }
+    
+    // NEW: Check Safe Mode
+    isSafeMode = errorService.isSafeMode();
+
+    // NEW: Run Integrity Check
+    if (browser) {
+      await integrityService.initialize();
+    }
   });
 
   $effect(() => {
+    // --- GLOBAL ERROR HANDLERS ---
+    const handleGlobalError = (event: ErrorEvent) => {
+      console.error('[Global Error Caught]:', event.error);
+      errorService.reportError(event.error, { source: 'window.onerror' });
+      capturedError = event.error;
+      hasError = true;
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('[Unhandled Rejection Caught]:', event.reason);
+      errorService.reportError(event.reason, { source: 'unhandledrejection' });
+      capturedError = event.reason;
+      hasError = true;
+    };
+
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
     const cleanupDirectoryListener = initializeDirectoryListener();
     initializeReviewStoreListeners();
     initializeDocumentStoreListeners();
@@ -48,7 +87,11 @@
     window.addEventListener('click', unlockAudioContext, { once: true });
     window.addEventListener('touchstart', unlockAudioContext, { once: true });
 
-    return () => cleanupDirectoryListener();
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      cleanupDirectoryListener();
+    };
   });
 
   // RESTORED: THEME LOGIC
@@ -75,29 +118,45 @@
       );
     }
   });
+
+  function exitSafeMode() {
+    errorService.setSafeMode(false);
+    window.location.reload();
+  }
 </script>
 
-<!-- 
-  FIX: Added 'bg-background' and 'text-foreground' 
-  This ensures the shell actually uses the theme colors defined in CSS variables.
--->
-<div class="app-shell bg-background text-foreground">
-  <Toaster position="bottom-center" />
-
+{#if hasError}
+  <GlobalErrorBoundary error={capturedError} />
+{:else}
   <!-- 
-    Ensure OrganicCanvas is positioned ABSOLUTE/FIXED in its own file, 
-    or it will push the grid down.
+    FIX: Added 'bg-background' and 'text-foreground' 
+    This ensures the shell actually uses the theme colors defined in CSS variables.
   -->
-  <OrganicCanvas />
-  <CommandBar />
+  <div class="app-shell bg-background text-foreground">
+    <Toaster position="bottom-center" />
 
-  <main class="app-grid" class:panel-open={nodeDetailState.isOpen}>
-    <div class="content-area">
-      {@render children?.()}
-    </div>
-    <NodeDetailPanel />
-  </main>
-</div>
+    {#if isSafeMode}
+      <div class="safe-mode-banner">
+        <span>Running in Safe Mode. Some features are disabled.</span>
+        <button onclick={exitSafeMode}>Exit Safe Mode</button>
+      </div>
+    {/if}
+
+    <!-- 
+      Ensure OrganicCanvas is positioned ABSOLUTE/FIXED in its own file, 
+      or it will push the grid down.
+    -->
+    <OrganicCanvas />
+    <CommandBar />
+
+    <main class="app-grid" class:panel-open={nodeDetailState.isOpen}>
+      <div class="content-area">
+        {@render children?.()}
+      </div>
+      <NodeDetailPanel />
+    </main>
+  </div>
+{/if}
 
 <style>
   .app-shell {
@@ -107,6 +166,29 @@
     width: 100vw;
     overflow: hidden;
     position: relative; /* Creates a positioning context for children if needed */
+  }
+
+  .safe-mode-banner {
+    background-color: var(--color-warning);
+    color: var(--color-text-on-warning, black);
+    padding: var(--space-xs) var(--space-md);
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    z-index: 9999;
+  }
+
+  .safe-mode-banner button {
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 700;
   }
 
   .app-grid {

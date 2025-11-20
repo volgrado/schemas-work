@@ -7,6 +7,8 @@
   import * as errorService from '$lib/services/core/errorService';
   import type { ErrorLog } from '$lib/services/core/errorService';
   import { toast } from 'svelte-sonner';
+  import EmptyState from '$lib/components/ui/EmptyState.svelte';
+  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
 
   let {
     show = false,
@@ -56,9 +58,20 @@
     const logTime = new Date(timestamp).getTime();
     return Date.now() - logTime > oneDay;
   };
+
+  function handleBack() {
+    onClose();
+    openCommandBar();
+  }
 </script>
 
-<Modal title={$t('error_diagnostic.title')} {show} {onClose}>
+<Modal
+  title={$t('error_diagnostic.title')}
+  {show}
+  {onClose}
+  onBack={handleBack}
+  width="lg"
+>
   <div class="diagnostic-container">
     <p class="explanation">
       {@html $t('error_diagnostic.explanation')}
@@ -83,15 +96,11 @@
           </details>
         {/each}
       {:else}
-        <div class="empty-state">
-          <div class="empty-icon">
-            <Icon name="check-circle" size={32} />
-          </div>
-          <h3 class="empty-title">
-            {$t('error_diagnostic.empty_state.title')}
-          </h3>
-          <p class="empty-text">{$t('error_diagnostic.empty_state.text')}</p>
-        </div>
+        <EmptyState
+          title={$t('error_diagnostic.empty_state.title')}
+          description={$t('error_diagnostic.empty_state.text')}
+          icon="check-circle"
+        />
       {/if}
     </div>
 
@@ -126,8 +135,8 @@
     line-height: 1.6;
   }
   .log-area {
-    background-color: var(--color-gray-50);
-    border-radius: var(--border-radius-md);
+    background-color: var(--color-background-raised); /* Use raised background for contrast */
+    border-radius: var(--radius-md);
     padding: var(--space-sm);
     max-height: 45vh;
     overflow-y: auto;
@@ -149,12 +158,13 @@
     gap: var(--space-md);
     padding: var(--space-sm);
     list-style: none;
+    transition: background-color 0.2s ease;
   }
   .log-summary::-webkit-details-marker {
     display: none;
   }
   .log-summary:hover {
-    background-color: var(--color-gray-100);
+    background-color: var(--color-background); /* Slight contrast on hover */
   }
   .summary-content {
     display: flex;
@@ -191,38 +201,7 @@
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--color-text);
-  }
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-xl) 0;
-    gap: var(--space-sm);
-    color: var(--color-text-secondary);
-    text-align: center;
-  }
-  .empty-icon {
-    color: var(--color-success-text);
-    background-color: var(--color-success-bg);
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--space-md);
-  }
-  .empty-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-text);
-    margin: 0;
-  }
-  .empty-text {
-    margin: 0;
-    max-width: 300px;
-    line-height: 1.6;
+    border-top: 1px solid var(--color-border);
   }
   .modal-actions {
     display: flex;
@@ -231,27 +210,5 @@
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
   }
-  :global(.dark-theme) .log-area {
-    background-color: var(--color-gray-950);
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .log-entry {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .log-summary:hover {
-    background-color: var(--color-gray-800);
-  }
-  :global(.dark-theme) pre {
-    background-color: var(--color-gray-900);
-  }
-  :global(.dark-theme) .empty-title {
-    color: var(--color-text-dark);
-  }
-  :global(.dark-theme) .empty-icon {
-    color: var(--color-success-text);
-    background-color: rgba(72, 187, 120, 0.1);
-  }
-  :global(.dark-theme) .modal-actions {
-    border-color: var(--color-border-dark);
-  }
+  /* Removed manual dark theme overrides as tokens handle it */
 </style>

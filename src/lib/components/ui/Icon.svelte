@@ -30,7 +30,7 @@
     <Icon icon={iconString} width={size} height={size} {...rest} />
   {:else}
     <!-- If offline, render a simple fallback circle -->
-    <div class="offline-fallback-circle" />
+    <div class="offline-fallback-circle"></div>
   {/if}
 </span>
 

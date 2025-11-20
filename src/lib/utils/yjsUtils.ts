@@ -6,6 +6,8 @@
 import * as Y from 'yjs';
 import { yDocToProsemirrorJSON, prosemirrorJSONToYDoc } from 'y-prosemirror';
 
+import { schema } from '$lib/editor/schema';
+
 // --- SHARED TYPES ---
 // Define a comprehensive type for a ProseMirror node in JSON format.
 export interface ProseMirrorJSONNode {
@@ -34,10 +36,8 @@ export interface ProseMirrorJSONDocument {
 export function prosemirrorJsonToYDoc(
   prosemirrorJson: ProseMirrorJSONDocument
 ): Y.Doc {
-  const ydoc = new Y.Doc();
   // The second argument is the name of the shared type, which is 'prosemirror' by default in Tiptap.
-  prosemirrorJSONToYDoc(prosemirrorJson, ydoc.getXmlFragment('prosemirror'));
-  return ydoc;
+  return prosemirrorJSONToYDoc(schema, prosemirrorJson);
 }
 
 /**
@@ -53,5 +53,5 @@ export function yDocToProsemirrorJson(ydoc: Y.Doc): ProseMirrorJSONDocument {
   // Use the official utility from y-prosemirror for a reliable conversion.
   // The second argument, 'prosemirror', is the name of the top-level shared type
   // that Tiptap's collaboration extension uses by default.
-  return yDocToProsemirrorJSON(ydoc, 'prosemirror');
+  return yDocToProsemirrorJSON(ydoc, 'prosemirror') as unknown as ProseMirrorJSONDocument;
 }

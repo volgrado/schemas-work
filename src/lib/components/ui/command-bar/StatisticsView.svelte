@@ -87,15 +87,7 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('statistics.title')}>
-    <CommandButton
-      class="back-button"
-      onclick={goBack}
-      aria-label={$t('statistics.backToDecks')}
-    >
-      <Icon name="arrow-left" size={20} />
-    </CommandButton>
-  </ViewHeader>
+  <ViewHeader title={$t('statistics.title')} onBack={goBack} />
 
   <div class="content-area">
     {#if isLoading}

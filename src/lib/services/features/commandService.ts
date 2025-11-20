@@ -5,22 +5,19 @@
  */
 
 import type { Search, TTS } from '$lib/types';
+import { get } from 'svelte/store';
+import { t } from '$lib/utils/i18n';
+import { toast } from 'svelte-sonner';
 import {
   commandBarState,
-  openDiagnosticModal,
-  openStrategySession,
   setView,
   close,
+  openDiagnosticModal,
+  openStrategySession,
 } from '$lib/stores/commandBarStore.svelte';
-import {
-  documentState,
-  create as createDocument,
-} from '$lib/stores/documentStore.svelte';
+import { documentState, create as createDocument } from '$lib/stores/documentStore.svelte';
 import { editorState } from '$lib/stores/editorStore.svelte';
 import { ttsState, startReading } from '$lib/stores/ttsStore.svelte';
-import { t } from '$lib/utils/i18n';
-import { get } from 'svelte/store';
-import { toast } from 'svelte-sonner';
 import { getReadableNodes } from '$lib/utils/ttsUtils';
 
 export interface SearchOptions {

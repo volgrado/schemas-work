@@ -1,5 +1,6 @@
 /**
  * @file Centralized service for capturing, storing, and managing application-wide errors.
+ * Includes Safe Mode, Crash Loop Detection, and Telemetry (Flight Recorder).
  * @module errorService
  */
 
@@ -10,28 +11,104 @@ export interface ErrorLog {
   message: string;
   stack?: string;
   context?: Record<string, any>;
+  telemetry?: string[]; // Flight Recorder trace
 }
 
-// --- NITPICK IMPLEMENTED: Type guard for generic error-like objects ---
+// --- CONSTANTS ---
+const SAFE_MODE_KEY = 'schemas-work-safe-mode';
+const CRASH_TIMESTAMPS_KEY = 'schemas-work-crash-timestamps';
+const FLIGHT_RECORDER_SIZE = 50;
+const CRASH_LOOP_THRESHOLD = 3;
+const CRASH_LOOP_WINDOW_MS = 60000; // 1 minute
+
+// --- STATE ---
+let flightRecorderBuffer: string[] = [];
+let recentErrorCounts: Record<string, { count: number; timestamp: number }> = {};
+
+// --- TELEMETRY (FLIGHT RECORDER) ---
+
 /**
- * A helper interface to describe the shape of an object that might be an error,
- * but isn't an instance of the `Error` class.
+ * Records a user action or system event to the in-memory flight recorder.
+ * These actions are attached to error reports to help reproduce issues.
  */
+export function recordAction(action: string, data?: any): void {
+  const timestamp = new Date().toISOString().split('T')[1].slice(0, -1); // HH:mm:ss.sss
+  let entry = `[${timestamp}] ${action}`;
+  
+  if (data) {
+    try {
+      // Simple sanitization for privacy (very basic)
+      const safeData = JSON.stringify(data, (key, value) => {
+        if (key.toLowerCase().includes('password') || key.toLowerCase().includes('key')) {
+          return '***MASKED***';
+        }
+        return value;
+      });
+      // Truncate long data
+      entry += ` ${safeData.slice(0, 100)}${safeData.length > 100 ? '...' : ''}`;
+    } catch {
+      entry += ' [Data Serialization Error]';
+    }
+  }
+
+  flightRecorderBuffer.push(entry);
+  if (flightRecorderBuffer.length > FLIGHT_RECORDER_SIZE) {
+    flightRecorderBuffer.shift();
+  }
+}
+
+// --- SAFE MODE & CRASH LOOP ---
+
+export function isSafeMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(SAFE_MODE_KEY) === 'true';
+}
+
+export function setSafeMode(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (enabled) {
+    localStorage.setItem(SAFE_MODE_KEY, 'true');
+    console.warn('[Error Service] Safe Mode ENABLED');
+  } else {
+    localStorage.removeItem(SAFE_MODE_KEY);
+    localStorage.removeItem(CRASH_TIMESTAMPS_KEY); // Reset crash history on exit
+    console.log('[Error Service] Safe Mode DISABLED');
+  }
+}
+
+function checkCrashLoop(): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const now = Date.now();
+    const rawTimestamps = localStorage.getItem(CRASH_TIMESTAMPS_KEY);
+    let timestamps: number[] = rawTimestamps ? JSON.parse(rawTimestamps) : [];
+    
+    // Filter out old crashes
+    timestamps = timestamps.filter(t => now - t < CRASH_LOOP_WINDOW_MS);
+    timestamps.push(now);
+    
+    localStorage.setItem(CRASH_TIMESTAMPS_KEY, JSON.stringify(timestamps));
+    
+    if (timestamps.length >= CRASH_LOOP_THRESHOLD) {
+      console.error('[Error Service] Crash loop detected! Enabling Safe Mode.');
+      setSafeMode(true);
+    }
+  } catch (e) {
+    console.error('Error checking crash loop:', e);
+  }
+}
+
+// --- ERROR REPORTING ---
+
 interface PotentialError {
   message: unknown;
   stack?: unknown;
 }
 
-/**
- * Type guard function to check if an object has a 'message' property,
- * narrowing its type to `PotentialError` for safer property access.
- * @param value The value to check.
- * @returns True if the value is an object with a 'message' property.
- */
 function isPotentialError(value: object): value is PotentialError {
   return 'message' in value;
 }
-// --- End of Implementation ---
 
 export function getLogs(): ErrorLog[] {
   try {
@@ -45,39 +122,43 @@ export function getLogs(): ErrorLog[] {
   }
 }
 
-/**
- * Captures, formats, and logs a new error.
- *
- * @param {unknown} error The captured error object. Using `unknown` is safer than `any`.
- * @param {Record<string, any>} [context] Optional context about the error.
- */
 export function reportError(
   error: unknown,
   context?: Record<string, any>
 ): void {
   if (typeof window === 'undefined') return;
 
+  // --- RATE LIMITING ---
+  // Prevent log flooding (e.g. infinite render loops)
+  const errorKey = String(error);
+  const now = Date.now();
+  const recent = recentErrorCounts[errorKey];
+  
+  if (recent && now - recent.timestamp < 1000) {
+    recent.count++;
+    if (recent.count > 10) {
+      if (recent.count === 11) {
+        console.warn('[Error Service] Rate limiting active for error:', errorKey);
+      }
+      return; // Drop error
+    }
+  } else {
+    recentErrorCounts[errorKey] = { count: 1, timestamp: now };
+  }
+
+  // --- CRASH LOOP CHECK ---
+  checkCrashLoop();
+
   let message = 'An unknown error occurred.';
   let stack: string | undefined;
 
-  // 1. Handle actual Error instances (most common and reliable case)
   if (error instanceof Error) {
     message = error.message;
     stack = error.stack;
-  }
-  // 2. Handle primitive strings being thrown
-  else if (typeof error === 'string') {
+  } else if (typeof error === 'string') {
     message = error;
-  }
-  // 3. NITPICK IMPLEMENTED: Handle generic objects using the type guard
-  else if (
-    typeof error === 'object' &&
-    error !== null &&
-    isPotentialError(error)
-  ) {
-    // The type guard narrows `error` to `PotentialError`, allowing safe access to `message` and `stack`.
-    message =
-      typeof error.message === 'string' ? error.message : JSON.stringify(error);
+  } else if (typeof error === 'object' && error !== null && isPotentialError(error)) {
+    message = typeof error.message === 'string' ? error.message : JSON.stringify(error);
     stack = typeof error.stack === 'string' ? error.stack : undefined;
   }
 
@@ -86,6 +167,7 @@ export function reportError(
     message,
     stack,
     context,
+    telemetry: [...flightRecorderBuffer] // Snapshot current telemetry
   };
 
   const existingLogs = getLogs();
@@ -95,33 +177,13 @@ export function reportError(
   try {
     localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
   } catch (e) {
-    // Proactive quota management. If storage is full, it removes
-    // the oldest log and retries the operation once.
-    if (
-      e instanceof DOMException &&
-      (e.name === 'QuotaExceededError' || e.code === 22)
-    ) {
-      console.warn(
-        'LocalStorage quota exceeded. Removing oldest log and retrying...'
-      );
-      if (trimmedLogs.length > 1) {
-        // Create a new array without the oldest entry
-        const logsWithOldestRemoved = trimmedLogs.slice(0, -1);
+    // Quota management logic (same as before)
+    if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
+       if (trimmedLogs.length > 1) {
         try {
-          // Retry the save operation
-          localStorage.setItem(
-            ERROR_LOGS_STORAGE_KEY,
-            JSON.stringify(logsWithOldestRemoved)
-          );
-        } catch (retryError) {
-          console.error(
-            'Could not save error log even after trimming:',
-            retryError
-          );
-        }
+          localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs.slice(0, -1)));
+        } catch {}
       }
-    } else {
-      console.error('Could not save new error log to localStorage:', e);
     }
   }
 

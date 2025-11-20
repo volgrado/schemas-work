@@ -150,7 +150,7 @@
         DynamicHighlighter,
         SlashCommandExtension,
         Collaboration.configure({ document: ydoc }),
-        Gapcursor,
+        // Gapcursor, // Disabled to prevent block cursor issues
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             const tValue = get(t);
@@ -350,5 +350,23 @@
     bottom: -8px;
     right: -8px;
     cursor: nwse-resize;
+  }
+
+  /* AGGRESSIVE OVERRIDES FOR SELECTION RECTANGLE */
+  :global(.ProseMirror-selectednode),
+  :global([class*="ProseMirror-selected"]),
+  :global([class*="selectednode"]) {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  :global(.ProseMirror-gapcursor) {
+    display: none !important;
+  }
+  :global(.ProseMirror) {
+    outline: none !important;
+  }
+  :global(.ProseMirror-focused) {
+    outline: none !important;
   }
 </style>

@@ -95,7 +95,7 @@
   aria-label={$t('math_editor.edit_aria_label')}
   onkeydown={handleWrapperKeydown}
 >
-  <div bind:this={previewEl} />
+  <div bind:this={previewEl}></div>
 </span>
 
 <style>
