@@ -2,7 +2,6 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
   import type { IconName } from '$lib/types/iconName';
-  import { online } from '$lib/stores/onlineStore.svelte'; // <-- IMPORT THE STORE
 
   let {
     name,
@@ -25,13 +24,7 @@
   aria-hidden="true"
   style="--icon-size: {size}px;"
 >
-  {#if $online}
-    <!-- If online, render the real icon from the network -->
-    <Icon icon={iconString} width={size} height={size} {...rest} />
-  {:else}
-    <!-- If offline, render a simple fallback circle -->
-    <div class="offline-fallback-circle"></div>
-  {/if}
+  <Icon icon={iconString} width={size} height={size} {...rest} />
 </span>
 
 <style>
@@ -43,16 +36,5 @@
     justify-content: center;
     line-height: 1;
     color: inherit;
-  }
-
-  /* Style for our offline fallback */
-  .offline-fallback-circle {
-    width: calc(
-      var(--icon-size) * 0.5
-    ); /* Make the circle 50% of the icon size */
-    height: calc(var(--icon-size) * 0.5);
-    border-radius: 50%;
-    background-color: currentColor; /* Use the parent's text color */
-    opacity: 0.5;
   }
 </style>
