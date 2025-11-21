@@ -22,6 +22,7 @@ export type IconName =
   | 'copy'
   | 'edit-3'
   | 'eye'
+  | 'eye-off'
   | 'file-plus'
   | 'file-text'
   | 'folder'

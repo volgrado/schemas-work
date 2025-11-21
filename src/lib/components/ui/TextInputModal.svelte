@@ -113,19 +113,25 @@
   .text-input-form {
     display: flex;
     flex-direction: column;
-    gap: var(
-      --space-lg
-    ); /* ENHANCEMENT: Increased gap for better breathing room */
+    gap: var(--space-lg);
   }
 
-  /*
-	  ENHANCEMENT: All textarea styling is now inherited from the global app.css.
-	  This makes the component simpler and ensures perfect design consistency.
-	  The only style we need is to override the default font.
-	*/
   textarea {
     font-family: var(--font-mono);
     min-height: 120px;
+    background-color: var(--color-background); /* Ensure contrast */
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  textarea:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px hsl(var(--color-accent-hsl) / 0.2);
+    outline: none;
   }
 
   .modal-actions {

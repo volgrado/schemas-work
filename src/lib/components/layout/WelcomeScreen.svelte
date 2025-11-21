@@ -109,6 +109,11 @@
     box-sizing: border-box;
     overflow-y: auto;
     position: relative; /* For absolute positioning of intro if needed */
+    background: radial-gradient(
+      circle at 50% 30%,
+      hsl(var(--color-accent-hsl) / 0.08) 0%,
+      transparent 60%
+    ); /* Subtle background glow */
   }
 
   /* --- Landing Styles --- */
@@ -127,13 +132,21 @@
   }
   .title {
     font-family: var(--font-main);
-    font-size: 2.8rem;
+    font-size: 3.5rem; /* Larger */
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 0;
+    background: linear-gradient(135deg, var(--color-text) 30%, var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
   }
   .accent-word {
+    /* Inherits gradient now, or we can make it distinct */
     color: var(--color-accent);
+    -webkit-text-fill-color: var(--color-accent);
   }
   .subtitle {
     font-size: 1.25rem;
@@ -143,6 +156,7 @@
     max-width: 450px;
     margin-left: auto;
     margin-right: auto;
+    line-height: 1.5;
   }
   .features-grid {
     display: grid;
@@ -169,6 +183,7 @@
     color: var(--color-accent);
     flex-shrink: 0;
     margin-top: 2px; /* Slight alignment tweak */
+    filter: drop-shadow(0 2px 4px hsl(var(--color-accent-hsl) / 0.3)); /* Icon glow */
   }
   .feature-title {
     font-size: 1.1rem;
@@ -206,7 +221,7 @@
 
   @media (max-width: 640px) {
     .title {
-      font-size: 2.2rem;
+      font-size: 2.5rem;
     }
     .subtitle {
       font-size: 1.1rem;

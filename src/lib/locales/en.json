@@ -68,6 +68,22 @@
       "title": "Heading 6",
       "description": "The smallest section heading."
     },
+    "h7": {
+      "title": "Heading 7",
+      "description": "Level 7 heading."
+    },
+    "h8": {
+      "title": "Heading 8",
+      "description": "Level 8 heading."
+    },
+    "h9": {
+      "title": "Heading 9",
+      "description": "Level 9 heading."
+    },
+    "h10": {
+      "title": "Heading 10",
+      "description": "Level 10 heading."
+    },
     "separator": {
       "title": "Separator",
       "description": "Add a horizontal line."

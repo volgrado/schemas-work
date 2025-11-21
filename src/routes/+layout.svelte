@@ -134,7 +134,7 @@
     FIX: Added 'bg-background' and 'text-foreground' 
     This ensures the shell actually uses the theme colors defined in CSS variables.
   -->
-  <div class="app-shell bg-background text-foreground">
+  <div class="app-shell text-foreground">
     <Toaster position="bottom-center" />
 
     {#if isSafeMode}
@@ -151,7 +151,12 @@
     <OrganicCanvas />
     <CommandBar />
 
-    <main class="app-grid" class:panel-open={nodeDetailState.isOpen}>
+    <main 
+      class="app-grid" 
+      class:panel-open={nodeDetailState.isOpen}
+      class:is-resizing={nodeDetailState.isResizing}
+      style="grid-template-columns: 1fr {nodeDetailState.isOpen ? `min(${nodeDetailState.width}px, 90vw)` : '0px'}"
+    >
       <div class="content-area">
         {@render children?.()}
       </div>
@@ -204,8 +209,10 @@
     z-index: 1; /* Ensures content sits above the canvas */
   }
 
-  .app-grid.panel-open {
-    grid-template-columns: 1fr 480px;
+
+
+  .app-grid.is-resizing {
+    transition: none !important;
   }
 
   .content-area {

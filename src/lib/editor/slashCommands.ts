@@ -135,6 +135,70 @@ export const getCommands = (): CommandItem[] => {
           .run();
       },
     },
+    {
+      title: t('slashCommands.h7.title', { fallback: 'Heading 7' }),
+      description: t('slashCommands.h7.description', {
+        fallback: 'Level 7 heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 7 })
+          .run();
+      },
+    },
+    {
+      title: t('slashCommands.h8.title', { fallback: 'Heading 8' }),
+      description: t('slashCommands.h8.description', {
+        fallback: 'Level 8 heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 8 })
+          .run();
+      },
+    },
+    {
+      title: t('slashCommands.h9.title', { fallback: 'Heading 9' }),
+      description: t('slashCommands.h9.description', {
+        fallback: 'Level 9 heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 9 })
+          .run();
+      },
+    },
+    {
+      title: t('slashCommands.h10.title', { fallback: 'Heading 10' }),
+      description: t('slashCommands.h10.description', {
+        fallback: 'Level 10 heading.',
+      }),
+      group: t('slashCommands.groups.content'),
+      icon: 'type',
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setNode('heading', { level: 10 })
+          .run();
+      },
+    },
 
     // --- Group: Formatting ---
     {

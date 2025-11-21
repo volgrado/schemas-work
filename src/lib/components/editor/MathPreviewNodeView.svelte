@@ -114,16 +114,19 @@
     cursor: pointer;
     transition:
       background-color 0.2s ease,
-      border-color 0.2s ease;
-    border-radius: var(--border-radius-sm);
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+    border-radius: var(--radius-md);
     position: relative;
   }
   .is-block {
     display: block;
-    background-color: var(--color-gray-50);
-    border: 1px dashed var(--color-gray-200);
+    background-color: var(--color-background-raised);
+    border: 1px solid var(--color-border);
     padding: var(--space-md);
     margin: var(--space-md) 0;
+    box-shadow: var(--shadow-sm);
   }
   .is-block > div {
     display: flex;
@@ -131,23 +134,27 @@
     align-items: center;
     width: 100%;
     min-height: 1.5em;
+    overflow-x: auto; /* Handle long equations */
   }
   .is-block:hover {
-    background-color: var(--color-gray-100);
-    border-color: var(--color-gray-400);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
   }
   .is-inline {
     display: inline-block;
     padding: 0 var(--space-xs);
-    background-color: hsl(var(--color-accent-hsl) / 0.1);
-    border-bottom: 2px solid hsl(var(--color-accent-hsl) / 0.2);
+    background-color: hsl(var(--color-accent-hsl) / 0.08);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
   }
   .is-inline:hover {
-    background-color: hsl(var(--color-accent-hsl) / 0.2);
+    background-color: hsl(var(--color-accent-hsl) / 0.15);
+    border-color: hsl(var(--color-accent-hsl) / 0.2);
   }
   .is-selected {
     outline: 2px solid var(--color-accent);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
   .is-block.is-empty::before,
   .is-inline.is-empty::before {
@@ -157,21 +164,21 @@
     user-select: none;
   }
   .is-block.is-empty::before {
-    content: 'Click to edit block formula';
+    content: 'Click to edit equation';
   }
   .is-inline.is-empty::before {
-    content: 'Click to edit';
+    content: 'Equation';
   }
   :global(.dark-theme) .is-block {
-    background-color: var(--color-gray-900);
-    border-color: var(--color-gray-700);
+    background-color: var(--color-background-raised);
+    border-color: var(--color-border);
   }
   :global(.dark-theme) .is-block:hover {
-    background-color: var(--color-gray-800);
-    border-color: var(--color-gray-600);
+    border-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-background-raised), var(--color-accent) 5%);
   }
   :global(.dark-theme) .is-block.is-empty::before,
   :global(.dark-theme) .is-inline.is-empty::before {
-    color: var(--color-text-dark-tertiary);
+    color: var(--color-text-tertiary);
   }
 </style>

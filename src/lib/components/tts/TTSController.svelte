@@ -16,10 +16,14 @@
     nextNode,
     stopReading,
   } from '$lib/stores/ttsStore.svelte';
+  import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/ui/Icon.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { t } from '$lib/utils/i18n';
+
+  // --- Props ---
+  let { embedded = false } = $props<{ embedded?: boolean }>();
 
   // --- Local UI State ---
   /** Tracks whether the settings panel is visible or collapsed. */
@@ -29,7 +33,6 @@
   const progress = $derived(() => {
     const nodes = ttsState.nodesToRead;
     if (!nodes || nodes.length === 0) return 0;
-    // This correctly calculates overall progress for the bar.
     return ((ttsState.currentNodeIndex + 1) / nodes.length) * 100;
   });
 
@@ -70,7 +73,6 @@
   // --- KEYBOARD SHORTCUTS ---
   $effect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      // Ignore shortcuts if the user is focused on a form element
       const activeElement = document.activeElement;
       if (
         activeElement &&
@@ -81,12 +83,11 @@
 
       switch (event.key) {
         case ' ':
-          event.preventDefault(); // Prevent page from scrolling
+          event.preventDefault();
           handleTogglePause();
           break;
         case 'ArrowRight':
           event.preventDefault();
-          // Check if next is not disabled before calling
           if (
             ttsState.nodesToRead &&
             ttsState.currentNodeIndex < ttsState.nodesToRead.length - 1
@@ -96,7 +97,6 @@
           break;
         case 'ArrowLeft':
           event.preventDefault();
-          // Check if previous is not disabled before calling
           if (ttsState.currentNodeIndex > 0) {
             previousNode();
           }
@@ -104,11 +104,8 @@
       }
     }
 
-    // Only add the listener when the controller is active
     if (ttsState.status !== 'idle') {
       window.addEventListener('keydown', handleKeyDown);
-
-      // Svelte 5's $effect automatically returns a cleanup function
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
       };
@@ -116,182 +113,200 @@
   });
 </script>
 
-<!-- The controller only renders when TTS is not 'idle'. -->
-{#if ttsState.status !== 'idle'}
-  <div
-    class="panel"
-    transition:fly={{ y: 20, duration: 300, easing: quintOut }}
-    role="region"
-    aria-label={$t('tts.controller_region_aria_label')}
-    aria-live="polite"
-  >
-    <div class="progress-container">
-      <div class="progress-bar" style="width: {progress}%"></div>
+<!-- The controller renders when TTS is active. 
+     If global (not embedded), it hides when the detail panel is open. 
+     If embedded, it always shows (controlled by parent). -->
+{#if ttsState.status !== 'idle' && (embedded || !nodeDetailState.isOpen)}
+  {#if embedded}
+    <div
+      class="panel embedded"
+      role="region"
+      aria-label={$t('tts.controller_region_aria_label')}
+      aria-live="polite"
+    >
+      <!-- Content duplicated for embedded mode to avoid transition issues -->
+      <div class="progress-container">
+        <div class="progress-bar" style="width: {progress}%"></div>
+      </div>
+      <div class="content-wrapper">
+        {@render content()}
+      </div>
     </div>
+  {:else}
+    <div
+      class="panel"
+      transition:fly={{ y: 20, duration: 300, easing: quintOut }}
+      role="region"
+      aria-label={$t('tts.controller_region_aria_label')}
+      aria-live="polite"
+    >
+      <div class="progress-container">
+        <div class="progress-bar" style="width: {progress}%"></div>
+      </div>
+      <div class="content-wrapper">
+        {@render content()}
+      </div>
+    </div>
+  {/if}
+{/if}
 
-    <div class="content-wrapper">
-      {#if ttsState.status === 'initializing'}
-        <div class="status-view">
-          <Spinner size="sm" />
-          <span class="status-text">{$t('tts.initializing')}</span>
-        </div>
-      {:else if ttsState.status === 'error'}
-        <div class="status-view error">
-          <Icon name="alert-triangle" size={20} />
-          <span class="status-text">{ttsState.error || $t('tts.error')}</span>
-          <Button onclick={stopReading} variant="ghost" size="sm">
-            {$t('common.close')}
+{#snippet content()}
+  {#if ttsState.status === 'initializing'}
+    <div class="status-view">
+      <Spinner size="sm" />
+      <span class="status-text">{$t('tts.initializing')}</span>
+    </div>
+  {:else if ttsState.status === 'error'}
+    <div class="status-view error">
+      <Icon name="alert-triangle" size={20} />
+      <span class="status-text">{ttsState.error || $t('tts.error')}</span>
+      <Button onclick={stopReading} variant="ghost" size="sm">
+        {$t('common.close')}
+      </Button>
+    </div>
+  {:else}
+    <div class="controls-view">
+      <div class="main-controls">
+        <p class="current-text" title={currentTitle()}>
+          {#if ttsState.nodesToRead.length > 0}
+            <span class="progress-indicator">
+              {$t('tts.section_indicator', {
+                index:
+                  ttsState.nodesToRead[ttsState.currentNodeIndex]
+                    ?.hierarchicalIndex ?? '…',
+              })}
+            </span>
+          {/if}
+          {currentTitle()}
+        </p>
+
+        <div class="actions">
+          <Button
+            onclick={replay}
+            variant="ghost"
+            size="md"
+            aria-label={$t('tts.replay')}
+          >
+            <Icon name="rotate-ccw" size={18} />
+          </Button>
+          <Button
+            onclick={previousNode}
+            variant="ghost"
+            size="md"
+            disabled={ttsState.currentNodeIndex === 0}
+            aria-label={$t('tts.previous_node')}
+          >
+            <Icon name="skip-back" size={18} />
+          </Button>
+          <Button
+            onclick={handleTogglePause}
+            variant="secondary"
+            size="md"
+            aria-label={ttsState.status === 'paused'
+              ? $t('tts.play')
+              : $t('tts.pause')}
+          >
+            <Icon
+              name={ttsState.status === 'paused' ? 'play' : 'pause'}
+              size={20}
+            />
+          </Button>
+          <Button
+            onclick={nextNode}
+            variant="ghost"
+            size="md"
+            disabled={ttsState.nodesToRead &&
+              ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
+            aria-label={$t('tts.next_node')}
+          >
+            <Icon name="skip-forward" size={18} />
+          </Button>
+          <Button
+            onclick={stopReading}
+            variant="ghost"
+            size="md"
+            aria-label={$t('tts.stop')}
+          >
+            <Icon name="x-circle" size={18} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onclick={() => (isExpanded = !isExpanded)}
+            aria-label={isExpanded ? $t('tts.collapse') : $t('tts.expand')}
+            aria-expanded={isExpanded}
+            aria-controls="tts-settings-panel"
+          >
+            <Icon
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+            />
           </Button>
         </div>
-      {:else}
-        <!-- Main Controls View for Playing/Paused States -->
-        <div class="controls-view">
-          <div class="main-controls">
-            <p class="current-text" title={currentTitle()}>
-              {#if ttsState.nodesToRead.length > 0}
-                <span class="progress-indicator">
-                  {$t('tts.section_indicator', {
-                    index:
-                      ttsState.nodesToRead[ttsState.currentNodeIndex]
-                        ?.hierarchicalIndex ?? '…',
-                  })}
-                </span>
-              {/if}
-              {currentTitle()}
-            </p>
+      </div>
 
-            <div class="actions">
-              <!-- Media Controls -->
-              <Button
-                onclick={replay}
-                variant="ghost"
-                size="md"
-                aria-label={$t('tts.replay')}
-              >
-                <Icon name="rotate-ccw" size={18} />
-              </Button>
-              <Button
-                onclick={previousNode}
-                variant="ghost"
-                size="md"
-                disabled={ttsState.currentNodeIndex === 0}
-                aria-label={$t('tts.previous_node')}
-              >
-                <Icon name="skip-back" size={18} />
-              </Button>
-              <Button
-                onclick={handleTogglePause}
-                variant="secondary"
-                size="md"
-                aria-label={ttsState.status === 'paused'
-                  ? $t('tts.play')
-                  : $t('tts.pause')}
-              >
-                <Icon
-                  name={ttsState.status === 'paused' ? 'play' : 'pause'}
-                  size={20}
-                />
-              </Button>
-              <Button
-                onclick={nextNode}
-                variant="ghost"
-                size="md"
-                disabled={ttsState.nodesToRead &&
-                  ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
-                aria-label={$t('tts.next_node')}
-              >
-                <Icon name="skip-forward" size={18} />
-              </Button>
-              <Button
-                onclick={stopReading}
-                variant="ghost"
-                size="md"
-                aria-label={$t('tts.stop')}
-              >
-                <Icon name="x-circle" size={18} />
-              </Button>
-              <!-- Collapse Button -->
-              <Button
-                variant="ghost"
-                size="md"
-                onclick={() => (isExpanded = !isExpanded)}
-                aria-label={isExpanded ? $t('tts.collapse') : $t('tts.expand')}
-                aria-expanded={isExpanded}
-                aria-controls="tts-settings-panel"
-              >
-                <Icon
-                  name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                />
-              </Button>
-            </div>
-          </div>
-
-          {#if isExpanded}
-            <div
-              class="settings"
-              id="tts-settings-panel"
-              transition:slide={{ duration: 250, easing: quintOut }}
+      {#if isExpanded}
+        <div
+          class="settings"
+          id="tts-settings-panel"
+          transition:slide={{ duration: 250, easing: quintOut }}
+        >
+          <div class="setting-item">
+            <label for="voice-select"
+              ><Icon name="mic" size={14} /> {$t('tts.voice')}</label
             >
-              <div class="setting-item">
-                <label for="voice-select"
-                  ><Icon name="mic" size={14} /> {$t('tts.voice')}</label
-                >
-                <select
-                  id="voice-select"
-                  class="ui-select"
-                  value={ttsState.selectedVoiceId}
-                  onchange={onVoiceChange}
-                  disabled={ttsState.availableVoices.length === 0}
-                >
-                  {#if ttsState.availableVoices.length === 0}
-                    <option value="">{$t('tts.no_voices')}</option>
-                  {/if}
-                  {#each ttsState.availableVoices as voice (voice.id)}
-                    <option value={voice.id}>{voice.name}</option>
-                  {/each}
-                </select>
-              </div>
-              <div class="setting-item">
-                <label for="rate-slider"
-                  ><Icon name="fast-forward" size={14} />
-                  {$t('tts.speed', { rate: ttsState.rate.toFixed(1) })}</label
-                >
-                <input
-                  id="rate-slider"
-                  type="range"
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  value={ttsState.rate}
-                  oninput={onRateChange}
-                />
-              </div>
-              <div class="setting-item">
-                <label for="volume-slider"
-                  ><Icon name="volume-2" size={14} />
-                  {$t('common.volume')}</label
-                >
-                <input
-                  id="volume-slider"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={ttsState.volume}
-                  oninput={onVolumeChange}
-                />
-              </div>
-            </div>
-          {/if}
+            <select
+              id="voice-select"
+              class="ui-select"
+              value={ttsState.selectedVoiceId}
+              onchange={onVoiceChange}
+              disabled={ttsState.availableVoices.length === 0}
+            >
+              {#if ttsState.availableVoices.length === 0}
+                <option value="">{$t('tts.no_voices')}</option>
+              {/if}
+              {#each ttsState.availableVoices as voice (voice.id)}
+                <option value={voice.id}>{voice.name}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="setting-item">
+            <label for="rate-slider"
+              ><Icon name="fast-forward" size={14} />
+              {$t('tts.speed', { rate: ttsState.rate.toFixed(1) })}</label
+            >
+            <input
+              id="rate-slider"
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={ttsState.rate}
+              oninput={onRateChange}
+            />
+          </div>
+          <div class="setting-item">
+            <label for="volume-slider"
+              ><Icon name="volume-2" size={14} />
+              {$t('common.volume')}</label
+            >
+            <input
+              id="volume-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={ttsState.volume}
+              oninput={onVolumeChange}
+            />
+          </div>
         </div>
       {/if}
     </div>
-  </div>
-{/if}
+  {/if}
+{/snippet}
 
 <style>
-  /* All your styles are correct and do not need to be changed. */
   .panel {
     position: fixed;
     bottom: var(--space-lg);
@@ -440,5 +455,27 @@
     border-color: var(--color-border-dark);
     background-color: var(--color-background-dark);
     color: var(--color-text-dark);
+  }
+
+  /* Embedded Mode Overrides */
+  .panel.embedded {
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  
+  .panel.embedded .content-wrapper {
+    padding: var(--space-sm) var(--space-md) !important;
   }
 </style>

@@ -100,24 +100,31 @@
 
   /* Primary: The main call to action */
   .btn-primary {
-    background-color: var(--color-accent);
+    background: linear-gradient(180deg, var(--color-accent) 0%, hsl(var(--color-accent-hsl) / 0.9) 100%);
     color: white;
     border-color: var(--color-accent);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   }
   .btn-primary:hover:not(:disabled) {
-    background-color: var(--color-accent-hover);
+    background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 100%);
     border-color: var(--color-accent-hover);
     /** ENHANCEMENT: A more premium "lift" effect */
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px hsl(var(--color-accent-hsl) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: var(--color-accent);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
   }
   .btn-primary:disabled {
-    background-color: var(--color-gray-100);
+    background: var(--color-gray-100);
     color: var(--color-gray-400);
     border-color: var(--color-gray-200);
     cursor: not-allowed;
     box-shadow: none;
+    text-shadow: none;
   }
 
   /* Secondary: The default action */

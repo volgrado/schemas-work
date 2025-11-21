@@ -18,7 +18,8 @@ const extensions = [
   Document,
   Paragraph,
   Text,
-  Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+  // @ts-ignore - Allow custom heading levels up to 10
+  Heading.configure({ levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }),
   Bold,
   Italic,
   HorizontalRule,

@@ -18,6 +18,7 @@
   import Icon from '$lib/components/ui/Icon.svelte';
   import { t } from '$lib/utils/i18n';
   import { fade } from 'svelte/transition';
+  import { tick } from 'svelte';
 
   // --- UI Primitives ---
   import Popup from '$lib/components/ui/Popup.svelte';
@@ -31,10 +32,16 @@
     // the effect will re-run automatically when they change.
     if (!slashMenuState.isOpen || !itemsListEl) return;
 
-    const selectedItem = itemsListEl.querySelector<HTMLElement>('.is-selected');
-    if (selectedItem) {
-      selectedItem.scrollIntoView({ block: 'nearest' });
-    }
+    // Explicitly access selectedIndex to trigger reactivity
+    const index = slashMenuState.selectedIndex;
+    
+    // Use a microtask to wait for the DOM to update after the state change
+    tick().then(() => {
+       const selectedItem = itemsListEl?.querySelector<HTMLElement>('.is-selected');
+       if (selectedItem) {
+         selectedItem.scrollIntoView({ block: 'nearest' });
+       }
+    });
   });
 </script>
 

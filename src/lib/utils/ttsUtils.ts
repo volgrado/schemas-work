@@ -58,8 +58,8 @@ export function getReadableNodes(editor: Editor): TTS.ReadableNode[] {
   const nodes: TTS.ReadableNode[] = [];
   if (!editor) return nodes;
 
-  // This array tracks the current count for each heading level (h1, h2, h3, etc.)
-  const headingCounters = [0, 0, 0, 0, 0, 0];
+  // This array tracks the current count for each heading level (h1...h10)
+  const headingCounters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   // This object holds the context of the current section.
   let currentHeadingInfo: { id: string | undefined; index: string } = {
     id: undefined,

@@ -136,7 +136,9 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
   // The active tree node is ALWAYS the parent heading ID of the current node
   // being read (whether it's a heading or a paragraph). This is provided
   // by our intelligent `getReadableNodes` function.
-  ttsState.activeTreeNodeId = node.parentHeadingId ?? null;
+  // CRITICAL FIX: Ensure we use the node's treeNodeId if it exists (for headings),
+  // otherwise fall back to parentHeadingId. This ensures the tree highlights correctly.
+  ttsState.activeTreeNodeId = node.treeNodeId ?? node.parentHeadingId ?? null;
 
   if (!textToSpeak) {
     nextNode();

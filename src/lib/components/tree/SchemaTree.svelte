@@ -31,8 +31,10 @@
   import {
     nodeDetailState,
     openPanel,
+    setFlattenedTree,
   } from '$lib/stores/nodeDetailStore.svelte';
-  import type { Node as ProseMirrorNode } from 'prosemirror-model';
+  import { DOMSerializer, type Node as ProseMirrorNode } from 'prosemirror-model';
+  import { extractContentWithPositions } from '$lib/utils/contentExtraction';
 
   // =================================================================
   // COMPONENT PROPERTIES & STATE
@@ -127,7 +129,11 @@
       if (gEl) select(gEl).selectAll('*').remove();
       return;
     }
-    tick().then(() => update(rootNode as PointNode));
+    tick().then(() => {
+      update(rootNode as PointNode);
+      // Flatten tree for navigation
+      flattenTreeForNavigation();
+    });
   });
 
   /** Effect to apply the 'is-selected' class from component props. */
@@ -229,6 +235,81 @@
       }
     });
     if (changed) expandedNodeIds = new Set(expandedNodeIds);
+  }
+
+  /**
+   * Flattens the tree into an array for navigation.
+   * Extracts all visible nodes with their ID, title, and content.
+   */
+  function flattenTreeForNavigation(): void {
+    if (!rootNode) {
+      setFlattenedTree([]);
+      return;
+    }
+    
+    const flattenedNodes: Array<{ id: string; title: string; content: string }> = [];
+    const editor = editorState.instance;
+    
+    if (!editor) {
+      setFlattenedTree([]);
+      return;
+    }
+    
+    // Traverse all nodes in the tree (depth-first)
+    rootNode.each((d) => {
+      const node = d as PointNode;
+      const nodeId = node.data.id;
+      
+      // Find the heading node in the ProseMirror document
+      let headingNode: ProseMirrorNode | null = null;
+      let headingPos = -1;
+      
+      editor.state.doc.descendants((pmNode, pos) => {
+        if (pmNode.attrs.nodeId === nodeId && pmNode.type.name.startsWith('heading')) {
+          headingNode = pmNode;
+          headingPos = pos;
+          return false;
+        }
+      });
+      
+      if (!headingNode) return;
+      
+      // Type assertion after null check
+      const typedHeadingNode = headingNode as ProseMirrorNode;
+      const title = typedHeadingNode.textContent;
+      
+      // Extract content (same logic as double-click)
+      let endPos = editor.state.doc.content.size;
+      const currentLevel = typedHeadingNode.attrs.level;
+      let foundNextHeading = false;
+
+      editor.state.doc.nodesBetween(
+        headingPos + typedHeadingNode.nodeSize,
+        editor.state.doc.content.size,
+        (pmNode: ProseMirrorNode, pos: number) => {
+          if (foundNextHeading) return false;
+
+          if (pmNode.type.name === 'heading') {
+            if (pmNode.attrs.level <= currentLevel) {
+              endPos = pos;
+              foundNextHeading = true;
+              return false;
+            }
+          }
+        }
+      );
+      
+      const content = extractContentWithPositions(
+        editor.state.doc,
+        headingPos + typedHeadingNode.nodeSize,
+        endPos,
+        editor.state.schema
+      );
+      
+      flattenedNodes.push({ id: nodeId, title, content });
+    });
+    
+    setFlattenedTree(flattenedNodes);
   }
 
   /** Applies hover highlight classes to a node and its path. */
@@ -349,15 +430,35 @@
 
         if (headingNode && headingPos !== -1) {
           const typedHeadingNode = headingNode as ProseMirrorNode;
-          const nextNode = editor.state.doc.nodeAt(
-            headingPos + typedHeadingNode.nodeSize
+          
+          // Find end of section
+          let endPos = editor.state.doc.content.size;
+          const currentLevel = typedHeadingNode.attrs.level;
+          let foundNextHeading = false;
+
+          editor.state.doc.nodesBetween(
+            headingPos + typedHeadingNode.nodeSize,
+            editor.state.doc.content.size,
+            (pmNode: ProseMirrorNode, pos: number) => {
+              if (foundNextHeading) return false;
+
+              if (pmNode.type.name === 'heading') {
+                if (pmNode.attrs.level <= currentLevel) {
+                  endPos = pos;
+                  foundNextHeading = true;
+                  return false;
+                }
+              }
+            }
           );
-          const content =
-            nextNode &&
-            nextNode.type.name === 'paragraph' &&
-            nextNode.textContent.trim()
-              ? nextNode.textContent
-              : 'No description available for this topic.';
+
+          const content = extractContentWithPositions(
+            editor.state.doc,
+            headingPos + typedHeadingNode.nodeSize,
+            endPos,
+            editor.state.schema
+          );
+
           openPanel(d.data.id, typedHeadingNode.textContent, content);
         }
       })

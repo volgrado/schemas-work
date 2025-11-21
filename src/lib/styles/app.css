@@ -33,21 +33,21 @@
  * -------------------------------------------------------------------------- */
 :root {
   /* --- Palette: Serene Sky (Light) --- */
-  --color-background: hsl(210 20% 98%);
-  --color-page-background: hsl(210 20% 96%);
-  --color-text: hsl(215 25% 27%);
-  --color-text-secondary: hsl(215 15% 55%);
-  --color-text-tertiary: hsl(215 15% 75%);
-  --color-accent: hsl(220 85% 60%);
-  --color-accent-hover: hsl(220 85% 55%);
-  --color-accent-hsl: 220 85% 60%;
-  --color-border: hsl(210 20% 88%);
+  --color-background: hsl(210 20% 99%); /* Slightly brighter */
+  --color-page-background: hsl(210 20% 97%);
+  --color-text: hsl(215 25% 22%); /* Darker for better contrast */
+  --color-text-secondary: hsl(215 15% 50%);
+  --color-text-tertiary: hsl(215 15% 70%);
+  --color-accent: hsl(220 90% 58%); /* More vibrant */
+  --color-accent-hover: hsl(220 90% 53%);
+  --color-accent-hsl: 220 90% 58%;
+  --color-border: hsl(210 20% 90%);
 
   /* --- Component Colors --- */
   --color-background-raised: #ffffff;
-  --color-background-translucent: hsla(0, 0%, 100%, 0.8);
-  --color-border-input: hsl(210 20% 82%);
-  --btn-hover-bg: hsl(210 20% 94%);
+  --color-background-translucent: hsla(0, 0%, 100%, 0.85);
+  --color-border-input: hsl(210 20% 85%);
+  --btn-hover-bg: hsl(210 20% 96%);
   --color-toggle-thumb: #ffffff;
 
   /* --- Feedback Colors --- */
@@ -69,16 +69,16 @@
   --chart-color-5: #a0aec0;
 
   /* --- Grayscale --- */
-  --color-gray-50: hsl(210 20% 98%);
-  --color-gray-100: hsl(210 20% 94%);
-  --color-gray-200: hsl(210 20% 88%);
-  --color-gray-300: hsl(210 20% 82%);
-  --color-gray-400: hsl(215 15% 75%);
-  --color-gray-500: hsl(215 15% 55%);
-  --color-gray-600: hsl(215 25% 45%);
-  --color-gray-700: hsl(215 25% 35%);
-  --color-gray-800: hsl(215 25% 27%);
-  --color-gray-900: hsl(215 25% 20%);
+  --color-gray-50: hsl(210 20% 99%);
+  --color-gray-100: hsl(210 20% 96%);
+  --color-gray-200: hsl(210 20% 90%);
+  --color-gray-300: hsl(210 20% 85%);
+  --color-gray-400: hsl(215 15% 70%);
+  --color-gray-500: hsl(215 15% 50%);
+  --color-gray-600: hsl(215 25% 40%);
+  --color-gray-700: hsl(215 25% 30%);
+  --color-gray-800: hsl(215 25% 22%);
+  --color-gray-900: hsl(215 25% 15%);
 
   /* --- Typography --- */
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
@@ -129,9 +129,10 @@
 
   /* --- Shadows --- */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.08), 0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.08);
-  --shadow-lg: 0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.08), 0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.08);
-  --shadow-xl: 0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.08), 0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.08);
+  --shadow-md: 0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.1), 0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-lg: 0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.1), 0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-xl: 0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.1), 0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-glow: 0 0 15px hsl(var(--color-accent-hsl) / 0.3);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.06);
 
   /* --- Radius --- */
@@ -153,6 +154,7 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --transition-base: all var(--duration-base) var(--ease-in-out);
   --transition-fast: all var(--duration-fast) var(--ease-out);
 
@@ -183,9 +185,9 @@
   --icon-xl: 48px;
 
   /* --- Glassmorphism --- */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 16px;
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
   /* --- Scrollbars --- */
@@ -201,22 +203,22 @@
 html.dark-theme,
 .dark-theme {
   /* --- Palette: Twilight (Dark) --- */
-  --color-background: #1a1823;
-  --color-page-background: #12101a;
-  --color-text: #e6e0f5;
-  --color-text-secondary: #a097c2;
-  --color-text-tertiary: #756c91;
-  --color-accent: #8b5cf6;
-  --color-accent-hover: #7c3aed;
-  --color-accent-hsl: 258 90% 66%;
-  --color-border: #3c3654;
+  --color-background: #16141d; /* Deeper, richer dark */
+  --color-page-background: #0e0c13;
+  --color-text: #ece9f5;
+  --color-text-secondary: #a59cc9;
+  --color-text-tertiary: #7a7199;
+  --color-accent: #9f7aea; /* Slightly lighter purple for pop */
+  --color-accent-hover: #8b5cf6;
+  --color-accent-hsl: 260 75% 70%;
+  --color-border: #353045;
 
   /* --- Component Colors --- */
-  --color-background-raised: #2a263c;
-  --color-background-translucent: hsla(260, 25%, 10%, 0.7);
-  --color-border-input: #4a4369;
-  --btn-hover-bg: #3c3654;
-  --color-toggle-thumb: #e6e0f5;
+  --color-background-raised: #23202e;
+  --color-background-translucent: hsla(260, 25%, 10%, 0.75);
+  --color-border-input: #423b59;
+  --btn-hover-bg: #353045;
+  --color-toggle-thumb: #ece9f5;
 
   /* --- Chart Colors --- */
   --chart-color-1: var(--color-accent);
@@ -226,27 +228,28 @@ html.dark-theme,
   --chart-color-5: #cbd5e0;
 
   /* --- Grayscale --- */
-  --color-gray-50: #12101a;
-  --color-gray-100: #1a1823;
-  --color-gray-200: #2a263c;
-  --color-gray-300: #3c3654;
-  --color-gray-400: #4a4369;
-  --color-gray-500: #756c91;
-  --color-gray-600: #a097c2;
-  --color-gray-700: #e6e0f5;
+  --color-gray-50: #0e0c13;
+  --color-gray-100: #16141d;
+  --color-gray-200: #23202e;
+  --color-gray-300: #353045;
+  --color-gray-400: #423b59;
+  --color-gray-500: #7a7199;
+  --color-gray-600: #a59cc9;
+  --color-gray-700: #ece9f5;
   --color-gray-800: #f3f4f6;
   --color-gray-900: #ffffff;
 
   /* --- Shadows --- */
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+  --shadow-glow: 0 0 20px hsl(var(--color-accent-hsl) / 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.5);
 
   /* --- Glassmorphism --- */
-  --glass-bg: rgba(26, 24, 35, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --glass-bg: rgba(22, 20, 29, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 
   /* --- Scrollbars --- */
   --scrollbar-thumb: var(--color-gray-600);
@@ -257,10 +260,42 @@ html.dark-theme,
   --panel-border-dark: var(--color-border);
 }
 
+/* --- Global Scrollbars --- */
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid transparent; /* Creates padding around thumb */
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 /* 2. GENERIC & BASE
    ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em; /* Tighter, more modern headings */
 }
 
 body {
@@ -411,6 +446,127 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 }
 /* Note: Image selection outline is handled specifically in DocumentView.svelte */
 
+/* --- Hierarchical Heading Numbering --- */
+.prose .ProseMirror {
+  counter-reset: h1;
+}
+
+.prose .ProseMirror h1 {
+  counter-reset: h2;
+}
+
+.prose .ProseMirror h2 {
+  counter-reset: h3;
+}
+
+.prose .ProseMirror h3 {
+  counter-reset: h4;
+}
+
+.prose .ProseMirror h4 {
+  counter-reset: h5;
+}
+
+.prose .ProseMirror h5 {
+  counter-reset: h6;
+}
+
+.prose .ProseMirror h6 {
+  counter-reset: h7;
+}
+
+.prose .ProseMirror h7 {
+  counter-reset: h8;
+}
+
+.prose .ProseMirror h8 {
+  counter-reset: h9;
+}
+
+.prose .ProseMirror h9 {
+  counter-reset: h10;
+}
+
+.prose .ProseMirror h1:before {
+  counter-increment: h1;
+  content: counter(h1) ". ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h2:before {
+  counter-increment: h2;
+  content: counter(h1) "." counter(h2) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h3:before {
+  counter-increment: h3;
+  content: counter(h1) "." counter(h2) "." counter(h3) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h4:before {
+  counter-increment: h4;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h5:before {
+  counter-increment: h5;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h6:before {
+  counter-increment: h6;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h7:before {
+  counter-increment: h7;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) "." counter(h7) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h8:before {
+  counter-increment: h8;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) "." counter(h7) "." counter(h8) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h9:before {
+  counter-increment: h9;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) "." counter(h7) "." counter(h8) "." counter(h9) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
+.prose .ProseMirror h10:before {
+  counter-increment: h10;
+  content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) "." counter(h7) "." counter(h8) "." counter(h9) "." counter(h10) " ";
+  color: var(--color-text-tertiary);
+  margin-right: 0.5em;
+  font-weight: 400;
+}
+
 /* --- TTS Highlight --- */
 .prose .is-current-tts-node {
   outline: none !important;
@@ -422,6 +578,34 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   background-color: color-mix(in srgb, var(--color-accent) 30%, transparent) !important;
   border-radius: var(--radius-sm) !important;
   box-shadow: none !important;
+}
+
+/* --- Focus Highlight (from NodeDetailPanel) --- */
+.prose .focus-highlight {
+  animation: focus-pulse 2s ease-out;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-accent) 12%, transparent) 0%,
+    transparent 100%
+  ) !important;
+  border-left: 3px solid var(--color-accent) !important;
+  padding-left: 1rem !important;
+  border-radius: var(--radius-md) !important;
+}
+
+@keyframes focus-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 20%, transparent) !important;
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-accent) 0%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent) !important;
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+    background: transparent !important;
+  }
 }
 
 /* --- Organic Canvas --- */

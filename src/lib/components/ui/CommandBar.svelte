@@ -2,7 +2,7 @@
 <script lang="ts">
   // --- Svelte & Third-Party ---
   import { fade, fly } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
+  import { quintOut, cubicOut } from 'svelte/easing';
   import type { TransitionConfig } from 'svelte/transition';
   import { t } from '$lib/utils/i18n';
 
@@ -107,9 +107,9 @@
     const transform = style.transform === 'none' ? '' : style.transform;
     return {
       ...params,
-      easing: quintOut,
+      easing: cubicOut, // Snappier
       css: (t: number, u: number) => `
-        transform: ${transform} scale(${1 - u * 0.05}) translateY(${u * params.y}px);
+        transform: ${transform} scale(${0.95 + t * 0.05}) translateY(${u * params.y}px);
         opacity: ${t};
       `,
     };
@@ -257,12 +257,13 @@
 <style>
   /* FIX: Reset button styles for the overlay to make it behave like a div. */
   /* FIX: Reset button styles for the overlay to make it behave like a div. */
+  /* FIX: Reset button styles for the overlay to make it behave like a div. */
   .overlay {
     all: unset; /* Remove all default button styling */
     display: block; /* Ensure it covers the screen */
     position: fixed;
     inset: 0;
-    background-color: var(--overlay-bg);
+    background-color: rgba(0, 0, 0, 0.2); /* Lighter overlay for glass effect */
     z-index: calc(var(--z-command-bar) - 1);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -277,12 +278,12 @@
     max-width: 640px;
     max-height: 70vh;
     
-    /* Glassmorphism */
+    /* Premium Glassmorphism */
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(20px); /* Stronger blur */
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--shadow-xl), var(--shadow-glow); /* Add glow */
     
     border-radius: var(--radius-xl);
     z-index: var(--z-command-bar);
@@ -290,6 +291,7 @@
     flex-direction: column;
     overflow: hidden;
     outline: none;
+    transition: box-shadow 0.3s ease;
   }
 
   /* Mobile: slide from bottom like phone apps */
@@ -313,6 +315,7 @@
     padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05); /* Subtle tint */
   }
   .search-input {
     flex-grow: 1;
@@ -322,9 +325,11 @@
     color: var(--color-text);
     outline: none;
     padding: 0;
+    font-weight: 500;
   }
   .search-input::placeholder {
     color: var(--color-text-secondary);
+    font-weight: 400;
   }
   .view-content {
     flex-grow: 1;
@@ -337,11 +342,11 @@
     height: 100%;
   }
   :global(.dark-theme) .panel {
-    background: var(--glass-bg);
-    border-color: var(--glass-border);
+    background: rgba(22, 20, 29, 0.8); /* Slightly more opaque in dark mode */
+    border-color: rgba(255, 255, 255, 0.1);
   }
   :global(.dark-theme) .input-wrapper {
-    border-color: var(--color-border);
+    border-color: rgba(255, 255, 255, 0.05);
   }
   :global(.dark-theme) .search-input {
     color: var(--color-text);
