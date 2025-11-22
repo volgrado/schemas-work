@@ -1,6 +1,5 @@
 <!-- src/lib/components/ui/ApiKeyModal.svelte -->
 <script lang="ts">
-  // FIX: Import the state rune and action functions directly from the store.
   import {
     settingsState,
     addApiKey,
@@ -22,6 +21,8 @@
   import { fetchAvailableGeminiModels } from '$lib/services/ai/modelDiscoveryService';
   import { t } from '$lib/utils/i18n';
   import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
+  import { fade, slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   let { show = false, onClose } = $props<{
     show?: boolean;
@@ -56,7 +57,6 @@
 
   $effect(() => {
     if (show) {
-      // FIX: Access rune state directly and add explicit type to callback parameter.
       const geminiKey = settingsState.apiKeys.find(
         (k: ApiKey) => k.provider === 'gemini'
       );
@@ -79,7 +79,6 @@
     }
     const isValid = await discoverModels(keyToAdd);
     if (isValid) {
-      // FIX: Call imported action function directly.
       addApiKey(keyToAdd, 'gemini', newApiNickname.trim());
       toast.success($t('apiKeyModal.toast.key_added_success'));
       newApiKey = '';
@@ -93,10 +92,8 @@
         $t('apiKeyModal.confirm.remove_key', { name: key.nickname || key.id })
       )
     ) {
-      // FIX: Call imported action function directly.
       removeApiKey(key.id);
       toast.info($t('apiKeyModal.toast.key_removed_info'));
-      // FIX: Access rune state directly and add explicit type to callback parameter.
       if (!settingsState.apiKeys.some((k: ApiKey) => k.provider === 'gemini')) {
         discoveredModelIds = null;
       }
@@ -113,7 +110,6 @@
     rpd: number;
     level: 'normal' | 'high' | 'critical';
   } {
-    // FIX: Access rune state directly.
     const model = getModelById(settingsState.selectedModelId);
     if (!model || key.provider !== model.provider) {
       return { rpm: 0, rpd: 0, level: 'normal' };
@@ -149,35 +145,49 @@
 
 <Modal title={$t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
   <div class="ai-settings-content">
-    <div class="tabs">
-      <button
-        class="tab-button"
-        class:active={activeTab === 'models'}
-        onclick={() => (activeTab = 'models')}
-      >
-        <Icon name="sparkles" size={16} />
-        {$t('apiKeyModal.tabs.models')}
-      </button>
-      <button
-        class="tab-button"
-        class:active={activeTab === 'keys'}
-        onclick={() => (activeTab = 'keys')}
-      >
-        <Icon name="key" size={16} />
-        {$t('apiKeyModal.tabs.keys')}
-      </button>
+    <!-- Premium Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button
+          class="tab-button"
+          class:active={activeTab === 'models'}
+          onclick={() => (activeTab = 'models')}
+        >
+          <Icon name="sparkles" size={16} />
+          <span>{$t('apiKeyModal.tabs.models')}</span>
+          {#if activeTab === 'models'}
+            <div class="active-indicator" transition:fade={{ duration: 200 }}></div>
+          {/if}
+        </button>
+        <button
+          class="tab-button"
+          class:active={activeTab === 'keys'}
+          onclick={() => (activeTab = 'keys')}
+        >
+          <Icon name="key" size={16} />
+          <span>{$t('apiKeyModal.tabs.keys')}</span>
+          {#if activeTab === 'keys'}
+            <div class="active-indicator" transition:fade={{ duration: 200 }}></div>
+          {/if}
+        </button>
+      </div>
     </div>
 
     {#if activeTab === 'models'}
-      <div class="tab-panel">
-        <p class="explanation">{$t('apiKeyModal.explanation_models')}</p>
+      <div class="tab-panel" in:fade={{ duration: 200 }}>
+        <div class="info-box">
+          <Icon name="info" size={18} class="text-accent" />
+          <p class="explanation">{$t('apiKeyModal.explanation_models')}</p>
+        </div>
+        
         <div class="form-section">
-          <label for="model-selector"
-            >{$t('apiKeyModal.model_selector_label')}</label
-          >
+          <label for="model-selector" class="section-label">
+            {$t('apiKeyModal.model_selector_label')}
+          </label>
           <div class="select-wrapper">
             <select
               id="model-selector"
+              class="premium-select"
               value={settingsState.selectedModelId}
               onchange={(e) =>
                 selectModel((e.target as HTMLSelectElement).value)}
@@ -207,8 +217,11 @@
                 </optgroup>
               {/if}
             </select>
+            <Icon name="chevron-down" size={16} class="select-arrow" />
             {#if isDiscoveringModels}
-              <Spinner size="sm" />
+              <div class="spinner-wrapper">
+                <Spinner size="sm" />
+              </div>
             {/if}
           </div>
         </div>
@@ -216,32 +229,42 @@
     {/if}
 
     {#if activeTab === 'keys'}
-      <div class="tab-panel">
-        <p class="explanation">{$t('apiKeyModal.explanation_keys')}</p>
+      <div class="tab-panel" in:fade={{ duration: 200 }}>
+        <div class="info-box">
+           <Icon name="shield" size={18} class="text-accent" />
+           <p class="explanation">{$t('apiKeyModal.explanation_keys')}</p>
+        </div>
+
         <div class="form-section">
-          <h3>{$t('apiKeyModal.your_keys_header')}</h3>
+          <h3 class="section-title">{$t('apiKeyModal.your_keys_header')}</h3>
           <ul class="key-list">
             {#if settingsState.apiKeys.length === 0}
-              <p class="empty-state-keys">{$t('apiKeyModal.empty_state')}</p>
+              <div class="empty-state-keys">
+                <Icon name="key" size={24} class="text-muted mb-2" />
+                <p>{$t('apiKeyModal.empty_state')}</p>
+              </div>
             {:else}
               {#each settingsState.apiKeys as key (key.id)}
                 {@const usage = getUsagePercentage(key)}
-                <li class="key-item">
+                <li class="key-item" transition:slide={{ duration: 200, axis: 'y' }}>
+                  <div class="key-icon">
+                    <Icon name="key" size={18} />
+                  </div>
                   <div class="key-info">
-                    <span class="key-nickname"
-                      >{key.nickname || $t('apiKeyModal.untitled_key')}</span
-                    >
-                    <span class="key-details"
-                      >{key.provider} &bull; {truncateKey(key.key)}</span
-                    >
+                    <div class="key-header">
+                      <span class="key-nickname"
+                        >{key.nickname || $t('apiKeyModal.untitled_key')}</span
+                      >
+                      <span class="key-provider-badge">{key.provider}</span>
+                    </div>
+                    <span class="key-details">{truncateKey(key.key)}</span>
+                    
                     <div
                       class="usage-bars"
                       title={$t('apiKeyModal.usage_tooltip')}
                     >
                       <div class="usage-bar-container">
-                        <span class="usage-label"
-                          >{$t('apiKeyModal.rpm_label')}</span
-                        >
+                        <span class="usage-label">RPM</span>
                         <div class="usage-bar-track">
                           <div
                             class="usage-bar-fill"
@@ -251,9 +274,7 @@
                         </div>
                       </div>
                       <div class="usage-bar-container">
-                        <span class="usage-label"
-                          >{$t('apiKeyModal.rpd_label')}</span
-                        >
+                        <span class="usage-label">RPD</span>
                         <div class="usage-bar-track">
                           <div
                             class="usage-bar-fill"
@@ -265,54 +286,65 @@
                     </div>
                   </div>
                   <Button
-                    variant="icon"
+                    variant="ghost"
+                    size="sm"
                     onclick={() => handleRemoveKey(key)}
                     aria-label={$t('apiKeyModal.remove_key_aria')}
-                    ><Icon name="trash-2" size={16} /></Button
+                    class="remove-btn"
                   >
+                    <Icon name="trash-2" size={16} />
+                  </Button>
                 </li>
               {/each}
             {/if}
           </ul>
         </div>
-        <div class="form-section">
-          <h3>{$t('apiKeyModal.add_key_header')}</h3>
+
+        <div class="form-section add-key-section">
+          <h3 class="section-title">{$t('apiKeyModal.add_key_header')}</h3>
           <form class="add-key-form" onsubmit={handleAddKey}>
             <div class="input-group">
-              <label for="new-key-nickname"
-                >{$t('apiKeyModal.nickname_label')}</label
-              >
+              <label for="new-key-nickname">{$t('apiKeyModal.nickname_label')}</label>
               <input
                 id="new-key-nickname"
                 type="text"
+                class="premium-input"
                 placeholder={$t('apiKeyModal.nickname_placeholder')}
                 bind:value={newApiNickname}
               />
             </div>
             <div class="input-group">
-              <label for="new-key-input"
-                >{$t('apiKeyModal.api_key_label')}</label
-              >
+              <div class="label-row">
+                <label for="new-key-input">{$t('apiKeyModal.api_key_label')}</label>
+                <a
+                  class="get-key-link"
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  {$t('apiKeyModal.get_key_link')} <Icon name="external-link" size={12} />
+                </a>
+              </div>
               <input
                 id="new-key-input"
                 type="password"
+                class="premium-input"
                 placeholder={$t('apiKeyModal.api_key_placeholder')}
                 bind:value={newApiKey}
                 required
               />
-              <a
-                class="get-key-link"
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener">{$t('apiKeyModal.get_key_link')}</a
-              >
             </div>
             <Button
               type="submit"
-              variant="secondary"
+              variant="primary"
               disabled={isDiscoveringModels}
+              class="w-full"
             >
-              <Icon name={isDiscoveringModels ? 'loader' : 'plus'} size={16} />
+              {#if isDiscoveringModels}
+                <Spinner size="sm" />
+              {:else}
+                <Icon name="plus" size={16} />
+              {/if}
               {$t('apiKeyModal.add_key_button')}
             </Button>
           </form>
@@ -321,178 +353,362 @@
     {/if}
 
     <div class="modal-actions">
-      <Button onclick={onClose}>{$t('common.close')}</Button>
+      <Button onclick={onClose} variant="ghost">{$t('common.close')}</Button>
     </div>
   </div>
 </Modal>
 
 <style>
-  /* Styles are unchanged and correct */
   .ai-settings-content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
   }
+
+  /* --- Info Box --- */
+  .info-box {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background-color: hsla(var(--color-accent-hsl) / 0.05);
+    border: 1px solid hsla(var(--color-accent-hsl) / 0.1);
+    border-radius: var(--radius-md);
+    align-items: flex-start;
+  }
+
   .explanation {
     font-size: 0.9rem;
     color: var(--color-text-secondary);
-    line-height: 1.6;
+    line-height: 1.5;
     margin: 0;
   }
+
+  /* --- Tabs --- */
+  .tabs-container {
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-xs);
+  }
+
   .tabs {
     display: flex;
-    gap: var(--space-xs);
-    border-bottom: 1px solid var(--color-border);
+    gap: var(--space-lg);
   }
+
   .tab-button {
-    padding: var(--space-sm) var(--space-md);
+    position: relative;
+    padding: var(--space-sm) 0;
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
     color: var(--color-text-secondary);
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     gap: var(--space-sm);
+    transition: color 0.2s ease;
   }
+
   .tab-button:hover {
     color: var(--color-text);
   }
+
   .tab-button.active {
     color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
   }
+
+  .active-indicator {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-accent);
+    border-radius: 2px 2px 0 0;
+  }
+
   .tab-panel {
     display: flex;
     flex-direction: column;
     gap: var(--space-xl);
-    animation: fadeIn 0.3s ease;
   }
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+
+  /* --- Forms --- */
   .form-section {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
   }
-  .form-section h3 {
+
+  .section-title {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 500;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
   }
+
+  .section-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: var(--space-xs);
+  }
+
+  /* --- Premium Inputs --- */
+  .premium-input {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+  }
+
+  .premium-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px hsla(var(--color-accent-hsl) / 0.15);
+  }
+
+  /* --- Custom Select --- */
   .select-wrapper {
     position: relative;
   }
+
+  .premium-select {
+    width: 100%;
+    appearance: none;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    padding-right: 40px;
+    font-size: 1rem;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .premium-select:hover {
+    border-color: var(--color-gray-400);
+  }
+
+  .premium-select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px hsla(var(--color-accent-hsl) / 0.15);
+  }
+
+  :global(.select-arrow) {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-text-secondary);
+  }
+
+  .spinner-wrapper {
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* --- Key List --- */
   .key-list {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
   }
+
   .key-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-sm) var(--space-md);
-    background-color: var(--color-page-background);
-    border-radius: var(--space-sm);
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--color-background-raised);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
   }
+  
+  .key-item:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .key-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    background-color: hsla(var(--color-accent-hsl) / 0.1);
+    color: var(--color-accent);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
   .key-info {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    padding-right: var(--space-sm);
+    gap: 4px;
   }
+
+  .key-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
   .key-nickname {
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
   }
+
+  .key-provider-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    background-color: var(--color-gray-100);
+    color: var(--color-text-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+  }
+
   .key-details {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--color-text-secondary);
-    text-transform: capitalize;
+    font-family: var(--font-mono);
   }
+
   .empty-state-keys {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-xl);
     color: var(--color-text-secondary);
-    font-style: italic;
-    padding: var(--space-md);
-    text-align: center;
+    background: var(--color-background-raised);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--color-border);
   }
+
+  .add-key-section {
+    background-color: var(--color-background-raised);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+  }
+
   .add-key-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
   }
+
   .input-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
+
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .label-row label {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
   .get-key-link {
     font-size: 0.8rem;
-    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     color: var(--color-accent);
     text-decoration: none;
+    font-weight: 500;
   }
+
   .get-key-link:hover {
     text-decoration: underline;
   }
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: var(--space-md);
-    border-top: 1px solid var(--color-border);
     padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
   }
+
+  /* --- Usage Bars --- */
   .usage-bars {
     display: flex;
-    gap: var(--space-md);
+    gap: var(--space-lg);
     margin-top: var(--space-sm);
   }
+
   .usage-bar-container {
     display: flex;
     align-items: center;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
     flex-grow: 1;
-    max-width: 200px;
+    max-width: 180px;
   }
+
   .usage-label {
     font-size: 0.7rem;
+    font-weight: 600;
     color: var(--color-text-secondary);
-    font-family: var(--font-mono);
+    width: 24px;
   }
+
   .usage-bar-track {
     flex-grow: 1;
-    height: 6px;
+    height: 4px;
     background-color: var(--color-border);
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
   }
+
   .usage-bar-fill {
     height: 100%;
-    background-color: var(--color-accent);
-    border-radius: 3px;
-    transition:
-      width 0.3s ease,
-      background-color 0.3s ease;
+    background-color: var(--color-success-text);
+    border-radius: 2px;
+    transition: width 0.5s ease;
   }
+
   .usage-bar-fill[data-usage-level='high'] {
-    background-color: var(--chart-color-3); /* Orange/Warning */
+    background-color: var(--chart-color-3);
   }
+
   .usage-bar-fill[data-usage-level='critical'] {
     background-color: var(--color-danger);
+  }
+  
+  .mb-2 {
+    margin-bottom: var(--space-sm);
+  }
+  
+  :global(.w-full) {
+    width: 100%;
+  }
+  
+  :global(.text-accent) {
+    color: var(--color-accent);
   }
 </style>

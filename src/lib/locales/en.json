@@ -234,7 +234,7 @@
     "next_node": "Next",
     "stop": "Stop",
     "voice": "Voice",
-    "speed": "Speed ({rate}x)",
+    "speed": "Speed",
     "finished_reading_toast": "Finished reading the document.",
     "playback_error": "An error occurred during playback.",
     "stopped_due_to_changes_toast": "Playback stopped due to document changes.",

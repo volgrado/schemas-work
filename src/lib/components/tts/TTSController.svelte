@@ -27,7 +27,7 @@
 
   // --- Local UI State ---
   /** Tracks whether the settings panel is visible or collapsed. */
-  let isExpanded = $state(true);
+  let isExpanded = $state(false);
 
   // --- SVELTE 5 DERIVED STATE ---
   const progress = $derived(() => {
@@ -124,25 +124,23 @@
       aria-label={$t('tts.controller_region_aria_label')}
       aria-live="polite"
     >
-      <!-- Content duplicated for embedded mode to avoid transition issues -->
-      <div class="progress-container">
-        <div class="progress-bar" style="width: {progress}%"></div>
-      </div>
       <div class="content-wrapper">
         {@render content()}
       </div>
     </div>
   {:else}
     <div
-      class="panel"
-      transition:fly={{ y: 20, duration: 300, easing: quintOut }}
+      class="panel floating"
+      transition:fly={{ y: 50, duration: 400, easing: quintOut }}
       role="region"
       aria-label={$t('tts.controller_region_aria_label')}
       aria-live="polite"
     >
-      <div class="progress-container">
-        <div class="progress-bar" style="width: {progress}%"></div>
+      <!-- Progress Bar Background -->
+      <div class="progress-track">
+        <div class="progress-fill" style="width: {progress}%"></div>
       </div>
+      
       <div class="content-wrapper">
         {@render content()}
       </div>
@@ -158,147 +156,171 @@
     </div>
   {:else if ttsState.status === 'error'}
     <div class="status-view error">
-      <Icon name="alert-triangle" size={20} />
-      <span class="status-text">{ttsState.error || $t('tts.error')}</span>
-      <Button onclick={stopReading} variant="ghost" size="sm">
-        {$t('common.close')}
+      <div class="error-message">
+        <Icon name="alert-triangle" size={18} class="text-danger" />
+        <span class="status-text">{ttsState.error || $t('tts.error')}</span>
+      </div>
+      <Button onclick={stopReading} variant="ghost" size="sm" class="close-btn">
+        <Icon name="x" size={18} />
       </Button>
     </div>
   {:else}
     <div class="controls-view">
       <div class="main-controls">
-        <p class="current-text" title={currentTitle()}>
-          {#if ttsState.nodesToRead.length > 0}
-            <span class="progress-indicator">
-              {$t('tts.section_indicator', {
-                index:
-                  ttsState.nodesToRead[ttsState.currentNodeIndex]
-                    ?.hierarchicalIndex ?? '…',
-              })}
-            </span>
-          {/if}
-          {currentTitle()}
-        </p>
+        <!-- Text Info -->
+        <div class="info-section">
+          <p class="current-text" title={currentTitle()}>
+            {#if ttsState.nodesToRead.length > 0}
+              <span class="section-badge">
+                {ttsState.nodesToRead[ttsState.currentNodeIndex]?.hierarchicalIndex ?? '#'}
+              </span>
+            {/if}
+            <span class="title-text">{currentTitle()}</span>
+          </p>
+        </div>
 
-        <div class="actions">
-          <Button
-            onclick={replay}
-            variant="ghost"
-            size="md"
-            aria-label={$t('tts.replay')}
-          >
-            <Icon name="rotate-ccw" size={18} />
-          </Button>
-          <Button
+        <!-- Playback Controls -->
+        <div class="playback-actions">
+           <Button
             onclick={previousNode}
             variant="ghost"
-            size="md"
+            size="sm"
             disabled={ttsState.currentNodeIndex === 0}
             aria-label={$t('tts.previous_node')}
+            class="control-btn secondary"
           >
-            <Icon name="skip-back" size={18} />
+            <Icon name="skip-back" size={20} />
           </Button>
+
           <Button
             onclick={handleTogglePause}
-            variant="secondary"
-            size="md"
-            aria-label={ttsState.status === 'paused'
-              ? $t('tts.play')
-              : $t('tts.pause')}
+            variant="primary"
+            size="lg"
+            aria-label={ttsState.status === 'paused' ? $t('tts.play') : $t('tts.pause')}
+            class="play-pause-btn"
           >
             <Icon
               name={ttsState.status === 'paused' ? 'play' : 'pause'}
-              size={20}
+              size={24}
+              fill="currentColor"
             />
           </Button>
+
           <Button
             onclick={nextNode}
             variant="ghost"
-            size="md"
-            disabled={ttsState.nodesToRead &&
-              ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
+            size="sm"
+            disabled={ttsState.nodesToRead && ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
             aria-label={$t('tts.next_node')}
+            class="control-btn secondary"
           >
-            <Icon name="skip-forward" size={18} />
+            <Icon name="skip-forward" size={20} />
           </Button>
-          <Button
-            onclick={stopReading}
+        </div>
+
+        <!-- Secondary Actions -->
+        <div class="secondary-actions">
+           <Button
+            onclick={replay}
             variant="ghost"
-            size="md"
-            aria-label={$t('tts.stop')}
+            size="sm"
+            aria-label={$t('tts.replay')}
+            class="control-btn tertiary"
+            title={$t('tts.replay')}
           >
-            <Icon name="x-circle" size={18} />
+            <Icon name="rotate-ccw" size={18} />
           </Button>
+          
           <Button
             variant="ghost"
-            size="md"
+            size="sm"
             onclick={() => (isExpanded = !isExpanded)}
             aria-label={isExpanded ? $t('tts.collapse') : $t('tts.expand')}
             aria-expanded={isExpanded}
             aria-controls="tts-settings-panel"
+            class="control-btn tertiary {isExpanded ? 'active' : ''}"
+            title="Settings"
           >
-            <Icon
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-            />
+            <Icon name="sliders" size={18} />
+          </Button>
+
+          <Button
+            onclick={stopReading}
+            variant="ghost"
+            size="sm"
+            aria-label={$t('tts.stop')}
+            class="control-btn tertiary danger-hover"
+            title={$t('tts.stop')}
+          >
+            <Icon name="x" size={18} />
           </Button>
         </div>
       </div>
 
       {#if isExpanded}
         <div
-          class="settings"
+          class="settings-panel"
           id="tts-settings-panel"
-          transition:slide={{ duration: 250, easing: quintOut }}
+          transition:slide={{ duration: 300, easing: quintOut }}
         >
-          <div class="setting-item">
-            <label for="voice-select"
-              ><Icon name="mic" size={14} /> {$t('tts.voice')}</label
-            >
-            <select
-              id="voice-select"
-              class="ui-select"
-              value={ttsState.selectedVoiceId}
-              onchange={onVoiceChange}
-              disabled={ttsState.availableVoices.length === 0}
-            >
-              {#if ttsState.availableVoices.length === 0}
-                <option value="">{$t('tts.no_voices')}</option>
-              {/if}
-              {#each ttsState.availableVoices as voice (voice.id)}
-                <option value={voice.id}>{voice.name}</option>
-              {/each}
-            </select>
+          <div class="setting-group">
+            <div class="setting-header">
+              <Icon name="mic" size={14} class="text-muted" />
+              <label for="voice-select">{$t('tts.voice')}</label>
+            </div>
+            <div class="select-wrapper">
+              <select
+                id="voice-select"
+                class="premium-select"
+                value={ttsState.selectedVoiceId}
+                onchange={onVoiceChange}
+                disabled={ttsState.availableVoices.length === 0}
+              >
+                {#if ttsState.availableVoices.length === 0}
+                  <option value="">{$t('tts.no_voices')}</option>
+                {/if}
+                {#each ttsState.availableVoices as voice (voice.id)}
+                  <option value={voice.id}>{voice.name}</option>
+                {/each}
+              </select>
+              <Icon name="chevron-down" size={14} class="select-arrow" />
+            </div>
           </div>
-          <div class="setting-item">
-            <label for="rate-slider"
-              ><Icon name="fast-forward" size={14} />
-              {$t('tts.speed', { rate: ttsState.rate.toFixed(1) })}</label
-            >
-            <input
-              id="rate-slider"
-              type="range"
-              min="0.5"
-              max="2"
-              step="0.1"
-              value={ttsState.rate}
-              oninput={onRateChange}
-            />
-          </div>
-          <div class="setting-item">
-            <label for="volume-slider"
-              ><Icon name="volume-2" size={14} />
-              {$t('common.volume')}</label
-            >
-            <input
-              id="volume-slider"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={ttsState.volume}
-              oninput={onVolumeChange}
-            />
+
+          <div class="sliders-row">
+            <div class="setting-group slider-group">
+              <div class="setting-header">
+                <Icon name="zap" size={14} class="text-muted" />
+                <label for="rate-slider">{$t('tts.speed')} <span class="value-badge">{ttsState.rate.toFixed(1)}x</span></label>
+              </div>
+              <input
+                id="rate-slider"
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value={ttsState.rate}
+                oninput={onRateChange}
+                class="premium-slider"
+              />
+            </div>
+
+            <div class="setting-group slider-group">
+              <div class="setting-header">
+                <Icon name="volume-2" size={14} class="text-muted" />
+                <label for="volume-slider">{$t('common.volume')}</label>
+              </div>
+              <input
+                id="volume-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={ttsState.volume}
+                oninput={onVolumeChange}
+                class="premium-slider"
+              />
+            </div>
           </div>
         </div>
       {/if}
@@ -307,175 +329,338 @@
 {/snippet}
 
 <style>
+  /* --- Panel Container --- */
   .panel {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-background-translucent);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .panel.floating {
     position: fixed;
     bottom: var(--space-lg);
     left: 50%;
     transform: translateX(-50%);
     z-index: var(--z-command-bar);
     width: 90%;
-    max-width: 700px;
-    border-radius: var(--space-md);
-    background-color: var(--color-background-translucent);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
+    max-width: 600px;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
+
+  .panel.embedded {
+    width: 100%;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    padding: 0;
+  }
+
   .content-wrapper {
     padding: var(--space-md) var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
   }
-  .progress-container {
+
+  /* --- Progress Bar --- */
+  .progress-track {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 4px;
-    background-color: var(--color-background-faint);
+    right: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.05);
   }
-  .progress-bar {
+
+  .progress-fill {
     height: 100%;
-    background: var(--color-accent);
-    border-radius: 0 2px 2px 0;
-    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+    box-shadow: 0 0 10px var(--color-accent);
+    transition: width 0.3s linear;
   }
+
+  /* --- Status View --- */
   .status-view {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
-    padding: var(--space-sm) 0;
+    padding: var(--space-sm);
     color: var(--color-text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
   }
+
   .status-view.error {
-    color: var(--color-danger);
     justify-content: space-between;
+    color: var(--color-danger);
   }
-  .controls-view {
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  /* --- Controls Layout --- */
+  .main-controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* Center playback controls */
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  /* Info Section */
+  .info-section {
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .current-text {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .section-badge {
+    background: var(--color-background-raised);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  /* Playback Actions */
+  .playback-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  :global(.play-pause-btn) {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: var(--color-accent) !important;
+    color: white !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(var(--color-accent-hsl), 0.4) !important;
+    transition: transform 0.1s ease, box-shadow 0.2s ease !important;
+  }
+
+  :global(.play-pause-btn:hover) {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(var(--color-accent-hsl), 0.5) !important;
+  }
+
+  :global(.play-pause-btn:active) {
+    transform: scale(0.95);
+  }
+
+  :global(.control-btn) {
+    color: var(--color-text-secondary) !important;
+    transition: color 0.2s, background-color 0.2s !important;
+    border-radius: var(--radius-full) !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :global(.control-btn:hover) {
+    color: var(--color-text) !important;
+    background-color: var(--color-background-raised) !important;
+  }
+
+  :global(.control-btn.active) {
+    color: var(--color-accent) !important;
+    background-color: var(--color-background-raised) !important;
+  }
+
+  :global(.control-btn.danger-hover:hover) {
+    color: var(--color-danger) !important;
+    background-color: var(--color-danger-bg) !important;
+  }
+
+  /* Secondary Actions */
+  .secondary-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+  }
+
+  /* --- Settings Panel --- */
+  .settings-panel {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
   }
-  .main-controls {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: var(--space-lg);
-  }
-  .current-text {
-    flex-grow: 1;
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: left;
-  }
-  .progress-indicator {
-    display: inline-block;
-    background-color: var(--color-gray-100);
-    color: var(--color-text-secondary);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-right: var(--space-sm);
-  }
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    flex-shrink: 0;
-  }
-  .settings {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-lg);
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--space-md);
-  }
-  .setting-item {
+
+  .setting-group {
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
   }
-  .setting-item label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
+
+  .setting-header {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-xs);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
-  .ui-select {
-    width: 100%;
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--space-sm);
-    border: 1px solid var(--color-border-input);
-    background-color: var(--color-background);
+
+  .value-badge {
+    margin-left: auto;
+    background: var(--color-background-raised);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
     color: var(--color-text);
+    border: 1px solid var(--color-border);
   }
-  :global(.spinner) {
-    animation: spin 1s linear infinite;
+
+  /* Custom Select */
+  .select-wrapper {
+    position: relative;
   }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+
+  .premium-select {
+    width: 100%;
+    appearance: none;
+    background-color: var(--color-background-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    padding-right: 32px;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s;
   }
+
+  .premium-select:hover {
+    border-color: var(--color-gray-400);
+  }
+
+  .premium-select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(var(--color-accent-hsl), 0.2);
+  }
+
+  :global(.select-arrow) {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-text-secondary);
+  }
+
+  /* Sliders Row */
+  .sliders-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+  }
+
+  /* Custom Range Slider */
+  .premium-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    outline: none;
+    margin: 10px 0;
+  }
+
+  .premium-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--color-accent);
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .premium-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .premium-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--color-accent);
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  /* --- Responsive Adjustments --- */
   @media (max-width: 640px) {
     .main-controls {
       grid-template-columns: 1fr;
       gap: var(--space-md);
-    }
-    .current-text {
       text-align: center;
-      margin-bottom: 0;
     }
-    .actions {
+
+    .info-section {
+      text-align: center;
+    }
+    
+    .current-text {
       justify-content: center;
     }
-    .settings {
-      grid-template-columns: 1fr;
-    }
-  }
-  :global(.dark-theme) .panel {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .progress-indicator {
-    background-color: var(--color-gray-700);
-    color: var(--color-text-dark-secondary);
-  }
-  :global(.dark-theme) .settings {
-    border-color: var(--color-border-dark);
-  }
-  :global(.dark-theme) .ui-select {
-    border-color: var(--color-border-dark);
-    background-color: var(--color-background-dark);
-    color: var(--color-text-dark);
-  }
 
-  /* Embedded Mode Overrides */
-  .panel.embedded {
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    transform: none !important;
-    z-index: auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    border-radius: 0 !important;
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  
-  .panel.embedded .content-wrapper {
-    padding: var(--space-sm) var(--space-md) !important;
+    .playback-actions {
+      justify-content: center;
+    }
+
+    .secondary-actions {
+      justify-content: center;
+      border-top: 1px solid var(--color-border);
+      padding-top: var(--space-sm);
+    }
+    
+    .sliders-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
   }
 </style>
