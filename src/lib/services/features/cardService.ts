@@ -173,3 +173,13 @@ export async function deleteCard(cardId: string): Promise<void> {
     throw error;
   }
 }
+
+/** Deletes all cards associated with a specific deck ID. */
+export async function deleteCardsByDeckId(deckId: string): Promise<void> {
+  try {
+    await db.cards.where('deckId').equals(deckId).delete();
+  } catch (error) {
+    errorService.reportError(error, { operation: 'deleteCardsByDeckId', deckId });
+    throw error;
+  }
+}

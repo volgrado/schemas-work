@@ -257,12 +257,19 @@ export async function deleteItem(itemId: string): Promise<void> {
     findChildrenRecursive(itemId);
   }
 
-  // For any schemas being deleted, also delete their IndexedDB database
+  // For any schemas being deleted, also delete their IndexedDB database and associated cards
   const dbDeletionPromises: Promise<void>[] = [];
   if (typeof window !== 'undefined') {
+    // Dynamic import to avoid circular dependencies if any (though unlikely here)
+    // or just standard import if safe. Since directoryService is core, and cardService is feature,
+    // we should probably use dynamic import or ensure no circular deps.
+    // Let's use dynamic import to be safe and keep core decoupled.
+    const cardServicePromise = import('$lib/services/features/cardService');
+
     itemsToDeleteIds.forEach((id) => {
       const item = allItems.find((i) => i.id === id);
       if (item?.type === 'schema') {
+        // Delete IndexedDB
         dbDeletionPromises.push(
           new Promise<void>((resolve, reject) => {
             const request = window.indexedDB.deleteDatabase(id);
@@ -273,6 +280,11 @@ export async function deleteItem(itemId: string): Promise<void> {
             };
             request.onerror = (event) => reject(request.error || event);
           })
+        );
+
+        // Delete Cards
+        dbDeletionPromises.push(
+          cardServicePromise.then((service) => service.deleteCardsByDeckId(id))
         );
       }
     });

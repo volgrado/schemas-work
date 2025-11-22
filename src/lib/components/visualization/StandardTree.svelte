@@ -15,6 +15,7 @@
     id: string;
     content: string;
     children?: TreeNodeData[];
+    value?: number; // Word count or other metric
   }
 </script>
 
@@ -42,9 +43,11 @@
   let {
     treeData,
     selectedNodeId,
+    colorMode = 'none'
   }: {
     treeData: TreeNodeData | null;
     selectedNodeId: string | null;
+    colorMode?: 'none' | 'by-level' | 'by-path';
   } = $props();
 
   const dispatch = createEventDispatcher<{ nodeClick: { id: string } }>();
@@ -74,6 +77,56 @@
     y0?: number;
     _children?: ReturnType<typeof hierarchy<TreeNodeData>>[];
   };
+
+  // =================================================================
+  // COLOR HELPERS
+  // =================================================================
+  const gradientColors = [
+    'linear-gradient(135deg, hsl(220, 90%, 58%) 0%, hsl(240, 85%, 65%) 100%)', // Blue-Purple
+    'linear-gradient(135deg, hsl(160, 75%, 45%) 0%, hsl(180, 70%, 50%) 100%)', // Teal-Cyan
+    'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 75%, 65%) 100%)', // Purple-Magenta
+    'linear-gradient(135deg, hsl(30, 90%, 55%) 0%, hsl(45, 85%, 60%) 100%)',   // Orange-Gold
+    'linear-gradient(135deg, hsl(340, 80%, 60%) 0%, hsl(350, 75%, 65%) 100%)', // Pink-Rose
+    'linear-gradient(135deg, hsl(120, 65%, 50%) 0%, hsl(140, 70%, 55%) 100%)', // Green-Emerald
+    'linear-gradient(135deg, hsl(200, 85%, 55%) 0%, hsl(220, 80%, 60%) 100%)', // Sky-Blue
+    'linear-gradient(135deg, hsl(270, 70%, 58%) 0%, hsl(280, 75%, 62%) 100%)', // Violet-Purple
+    'linear-gradient(135deg, hsl(10, 80%, 60%) 0%, hsl(20, 75%, 65%) 100%)',   // Red-Coral
+    'linear-gradient(135deg, hsl(170, 70%, 50%) 0%, hsl(160, 75%, 55%) 100%)', // Mint-Teal
+    'linear-gradient(135deg, hsl(50, 85%, 55%) 0%, hsl(65, 80%, 60%) 100%)',   // Yellow-Lime
+    'linear-gradient(135deg, hsl(310, 75%, 60%) 0%, hsl(320, 70%, 65%) 100%)', // Magenta-Pink
+    'linear-gradient(135deg, hsl(190, 80%, 52%) 0%, hsl(200, 75%, 57%) 100%)', // Aqua-Sky
+    'linear-gradient(135deg, hsl(90, 70%, 50%) 0%, hsl(110, 75%, 55%) 100%)',  // Lime-Green
+    'linear-gradient(135deg, hsl(260, 75%, 58%) 0%, hsl(270, 80%, 63%) 100%)', // Indigo-Violet
+    'linear-gradient(135deg, hsl(350, 80%, 58%) 0%, hsl(360, 75%, 62%) 100%)', // Rose-Red
+  ];
+
+  function getColorForNode(node: PointNode): string | null {
+    if (colorMode === 'none') return null;
+    
+    if (colorMode === 'by-level') {
+      const level = node.depth; // depth 0 = root, depth 1 = level 2, etc.
+      if (level === 0) return null; // Root has no color
+      return gradientColors[(level - 1) % gradientColors.length];
+    }
+    
+    if (colorMode === 'by-path') {
+      // Get the first child of root (top-level section) for this node
+      const ancestors = node.ancestors();
+      const topLevelAncestor = ancestors[ancestors.length - 2]; // -1 is root, -2 is first child
+      if (!topLevelAncestor || topLevelAncestor === node.parent) return null;
+      
+      // Hash the top-level ancestor ID to get consistent color
+      const id = topLevelAncestor.data.id;
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = ((hash << 5) - hash) + id.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return gradientColors[Math.abs(hash) % gradientColors.length];
+    }
+    
+    return null;
+  }
 
   // =================================================================
   // CORE D3 EFFECTS
@@ -151,6 +204,15 @@
     select(gEl)
       .selectAll<SVGGElement, PointNode>('g.node')
       .classed('is-reading', (d) => d.data.id === activeNodeId);
+  });
+
+  /** Effect to re-render when colorMode changes. */
+  $effect(() => {
+    if (!rootNode || !gEl) return;
+    // Watch colorMode changes
+    colorMode;
+    // Force update to reapply colors
+    tick().then(() => update(rootNode as PointNode));
   });
 
   // =================================================================
@@ -490,6 +552,58 @@
 
     const nodeUpdate = node.merge(nodeEnter);
     nodeUpdate.select('div.node-label').html((d) => d.data.content);
+    
+    // Apply color mode with gradients
+    nodeUpdate.select('rect').each(function(d) {
+      const color = getColorForNode(d);
+      const rectEl = select(this);
+      
+      if (color && color.startsWith('linear-gradient')) {
+        if (!svgEl) return; // Guard against undefined
+        
+        // Create unique gradient ID
+        const gradientId = `gradient-${d.data.id}`;
+        
+        // Parse gradient string
+        const match = color.match(/linear-gradient\((\d+)deg,\s*(.+?)\s+(\d+%),\s*(.+?)\s+(\d+%)\)/);
+        if (match) {
+          const [, angle, color1, , color2] = match;
+          
+          // Find or create defs
+          const svg = select(svgEl);
+          let defs = svg.select<SVGDefsElement>('defs');
+          if (defs.empty()) {
+            defs = svg.insert<SVGDefsElement>('defs', ':first-child');
+          }
+          
+          // Remove old gradient if exists
+          defs.select(`#${gradientId}`).remove();
+          
+          // Create new gradient
+          const gradient = defs.append('linearGradient')
+            .attr('id', gradientId)
+            .attr('x1', '0%')
+            .attr('y1', '0%')
+            .attr('x2', '100%')
+            .attr('y2', '100%');
+          
+          gradient.append('stop')
+            .attr('offset', '0%')
+            .attr('stop-color', color1);
+          
+          gradient.append('stop')
+            .attr('offset', '100%')
+            .attr('stop-color', color2);
+          
+          rectEl.attr('fill', `url(#${gradientId})`);
+        }
+      } else if (color) {
+        rectEl.style('fill', color);
+      } else {
+        rectEl.style('fill', null);
+      }
+    });
+    
     nodeUpdate
       .select<SVGCircleElement>('.indicator')
       .attr('opacity', (d) => (d.children || d._children ? 1 : 0))
@@ -570,8 +684,8 @@
   }
   :global(.tree-svg .link) {
     fill: none;
-    stroke: var(--color-gray-200);
-    stroke-width: 1px;
+    stroke: var(--color-gray-600); /* Keep high contrast */
+    stroke-width: 1px; /* Thin lines */
     transition:
       stroke 300ms,
       stroke-width 300ms,
@@ -585,8 +699,8 @@
   }
   :global(.tree-svg .node rect) {
     fill: var(--color-background);
-    stroke: var(--color-gray-200);
-    stroke-width: 1px;
+    stroke: var(--color-gray-600); /* Keep high contrast */
+    stroke-width: 1px; /* Thin borders */
     transition:
       fill 0.2s,
       stroke 0.2s,
@@ -602,7 +716,7 @@
     align-items: center;
     text-align: center;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text);
     line-height: 1.3;
     word-break: break-word;
@@ -610,8 +724,8 @@
     pointer-events: none;
   }
   :global(.tree-svg .node .indicator) {
-    stroke: var(--color-gray-500);
-    stroke-width: 1.5px;
+    stroke: var(--color-gray-600);
+    stroke-width: 1px;
     fill: transparent;
     transition:
       fill 300ms,
@@ -619,7 +733,7 @@
       opacity 300ms;
   }
   :global(.tree-svg .node .indicator.is-collapsed) {
-    fill: var(--color-gray-500);
+    fill: var(--color-gray-600);
   }
   :global(.tree-svg .node:hover .indicator.is-collapsed) {
     fill: var(--color-accent);
@@ -630,7 +744,7 @@
   }
   :global(.tree-svg .node:hover rect) {
     stroke: var(--color-accent);
-    stroke-width: 1.5px;
+    stroke-width: 2px; /* Slight bump on hover */
   }
   :global(.tree-svg .node.is-selected rect) {
     stroke: var(--color-accent);
@@ -646,7 +760,7 @@
     fill: hsl(var(--color-accent-hsl, 16 84% 53%) / 0.15);
   }
   :global(.tree-svg .is-dimmed) {
-    opacity: 0.15 !important;
+    opacity: 0.1 !important;
   }
   :global(.tree-svg .link.is-ancestor) {
     stroke: var(--color-accent);
@@ -654,11 +768,14 @@
   }
   :global(.tree-svg .node.is-ancestor rect) {
     stroke: var(--color-accent);
+    stroke-width: 2px;
   }
   :global(.tree-svg .link.is-descendant) {
-    stroke: var(--color-gray-500);
+    stroke: var(--color-gray-600);
+    stroke-width: 1px;
   }
   :global(.tree-svg .node.is-descendant rect) {
-    stroke: var(--color-gray-500);
+    stroke: var(--color-gray-600);
+    stroke-width: 1px;
   }
 </style>

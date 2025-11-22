@@ -1,3 +1,5 @@
+import { DOMParser } from 'prosemirror-model';
+
 /**
  * @file Manages the state for the Node Detail side panel using Svelte 5 Runes.
  * @module nodeDetailStore
@@ -132,7 +134,7 @@ export function clearFocusRequest(): void {
 export function setPanelWidth(width: number): void {
   // Enforce min/max constraints
   const minWidth = 320;
-  const maxWidth = 800;
+  const maxWidth = 2400;
   nodeDetailState.width = Math.max(minWidth, Math.min(width, maxWidth));
 }
 
@@ -160,14 +162,10 @@ export function alignEditorWithNode(): void {
     });
 
     if (targetPos !== -1) {
-      // Scroll into view with offset for header
-      const coords = editor.view.coordsAtPos(targetPos);
-      const absoluteTop = window.scrollY + coords.top;
-      
-      window.scrollTo({
-        top: absoluteTop - 100, // Offset for app header
-        behavior: 'smooth'
-      });
+      const domNode = editor.view.nodeDOM(targetPos);
+      if (domNode && domNode instanceof HTMLElement) {
+        domNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       
       // Add temporary highlight effect
       setTimeout(() => {
@@ -216,15 +214,11 @@ export function scrollToNodeInEditor(): void {
       const headingEnd = targetPos + targetNode.nodeSize;
       editor.commands.setTextSelection({ from: targetPos, to: headingEnd });
       
-      // Scroll into view with offset for header
-      const { from } = editor.state.selection;
-      const coords = editor.view.coordsAtPos(from);
-      
-      // Use smooth scroll
-      window.scrollTo({
-        top: coords.top - 100, // Offset for app header
-        behavior: 'smooth'
-      });
+      // Scroll into view
+      const domNode = editor.view.nodeDOM(targetPos);
+      if (domNode && domNode instanceof HTMLElement) {
+        domNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       
       // Add temporary highlight effect (like TTS)
       // We'll use a CSS class that auto-removes after animation
@@ -276,4 +270,79 @@ export function navigateToSibling(direction: 'next' | 'prev'): void {
     // Request focus in tree to keep the tree view synced
     requestFocus();
   }
+}
+
+/**
+ * Updates the content of a specific node in the editor.
+ * Used for syncing edits from the detail panel back to the document.
+ * 
+ * @param pos The position of the node in the document
+ * @param domElement The DOM element containing the new content
+ */
+export function updateNodeAtPos(pos: number, domElement: HTMLElement): void {
+  import('$lib/stores/editorStore.svelte').then(({ editorState }) => {
+    const editor = editorState.instance;
+    if (!editor) return;
+
+    const { state, view } = editor;
+    const tr = state.tr;
+    const node = state.doc.nodeAt(pos);
+    
+    if (!node) {
+      console.warn(`[NodeDetail] No node found at pos ${pos}`);
+      return;
+    }
+
+    try {
+      // Parse the content from the DOM element using the schema
+      // We use DOMParser to convert the HTML back to a Slice
+      const parser = DOMParser.fromSchema(state.schema);
+      
+      // We need to be careful: domElement might be a wrapper div.
+      // If the node is a block (e.g. paragraph), we want the content inside.
+      // parser.parseSlice will parse the innerHTML of the element if we pass the element.
+      // But wait, parseSlice takes a DOM node.
+      
+      // If we are updating a Paragraph, we want the content of the paragraph.
+      // If we pass the paragraph element itself, it might try to parse it as a paragraph inside a paragraph?
+      // No, DOMParser rules define how to match.
+      
+      // Let's assume domElement is the <div> or <p> that corresponds to the node.
+      // We want to replace the node's content or the node itself.
+      // If we replace the node itself, we need to ensure the type matches.
+      
+      // Strategy: Parse the element into a Slice.
+      // If the slice contains a single node of the same type, replace the node.
+      // If it contains inline content and the target is a textblock, replace content.
+      
+      const slice = parser.parseSlice(domElement, { preserveWhitespace: true });
+      
+      // If the node is a textblock (like paragraph, heading), we usually just want to update its content.
+      if (node.isTextblock) {
+        // Replace the content of the node
+        // The range is [pos + 1, pos + node.nodeSize - 1]? No.
+        // pos is the start of the node.
+        // Content starts at pos + 1.
+        // Content ends at pos + node.nodeSize - 1.
+        
+        const start = pos + 1;
+        const end = pos + node.nodeSize - 1;
+        
+        // We need to check if the slice content is compatible.
+        // slice.content is a Fragment.
+        
+        tr.replace(start, end, slice);
+      } else {
+        // For non-textblocks (e.g. images, or containers), it's more complex.
+        // We'll try to replace the whole node if possible.
+        tr.replaceWith(pos, pos + node.nodeSize, slice.content);
+      }
+
+      if (tr.docChanged) {
+        view.dispatch(tr);
+      }
+    } catch (e) {
+      console.error('[NodeDetail] Failed to update node content:', e);
+    }
+  });
 }

@@ -4,7 +4,7 @@
  * into hierarchical data structures needed for UI components like the Tree View.
  */
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import type { TreeNodeData } from '$lib/components/tree/SchemaTree.svelte';
+import type { TreeNodeData } from '$lib/components/visualization/StandardTree.svelte';
 
 /**
  * Converts a ProseMirror document object into a hierarchical tree structure
@@ -32,53 +32,55 @@ export function documentToTreeData(
     title = firstNode.textContent.trim() || title;
   }
 
+  // Helper to count words in a string
+  const countWords = (text: string) => {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  };
+
   const root: TreeNodeData = {
     id: 'root-title',
     content: title,
     children: [],
+    value: 0
   };
-
-  // A stack to keep track of the current parent for different heading levels.
-  // stack[0] is the root, stack[1] is the last H2, stack[2] is the last H3.
-  const parentStack: TreeNodeData[] = [root];
-
-  doc.content.forEach((node) => {
+  
+  const stack: { data: TreeNodeData, level: number }[] = [{ data: root, level: 1 }];
+  
+  doc.descendants((node, pos) => {
     if (node.type.name === 'heading') {
       const level = node.attrs.level;
-      // We only build the tree from H2 and deeper. H1 is the root.
-      if (level <= 1) return;
+      // H1 is root, already in stack.
+      if (level === 1) return; 
 
-      // The nodeId is critical for linking tree nodes back to the editor.
       const nodeId = node.attrs.nodeId;
-      if (!nodeId) {
-        console.warn(
-          'SKIPPING: Heading node is missing nodeId attribute.',
-          node.toJSON()
-        );
-        return;
-      }
+      // If no ID, treat as content of current parent? Or skip? Let's skip for tree structure but count words?
+      // For now, strictly follow tree structure.
+      if (!nodeId) return;
 
       const newNode: TreeNodeData = {
         id: nodeId,
-        content: node.textContent.trim() || '(Untitled Node)',
+        content: node.textContent.trim() || '(Untitled)',
         children: [],
+        value: countWords(node.textContent) // Start with heading's own words
       };
 
-      // Adjust the stack to find the correct parent.
-      // e.g., If we see an H3 (level 3), we want the stack to have the root and the last H2.
-      // The desired stack length is `level - 1`.
-      while (parentStack.length > level - 1) {
-        parentStack.pop();
+      // Pop stack until we find the parent (level < current level)
+      while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+        stack.pop();
       }
-
-      // The parent is now at the top of the stack.
-      const parent = parentStack[parentStack.length - 1];
-      if (parent && parent.children) {
-        parent.children.push(newNode);
+      
+      const parent = stack[stack.length - 1];
+      if (parent) {
+        parent.data.children?.push(newNode);
       }
-
-      // Push the new node onto the stack, making it the parent for subsequent, deeper headings.
-      parentStack.push(newNode);
+      
+      stack.push({ data: newNode, level });
+    } else if (node.isText) {
+      // Add word count to the current node at the top of the stack
+      const current = stack[stack.length - 1];
+      if (current && node.text) {
+        current.data.value = (current.data.value || 0) + countWords(node.text);
+      }
     }
   });
 

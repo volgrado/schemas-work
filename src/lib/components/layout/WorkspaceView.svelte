@@ -30,6 +30,9 @@
     typeof schemaService.documentToTreeData
   > | null>(null);
 
+  let visualizationMode = $state<'tree' | 'radial' | 'treemap'>('tree');
+  let colorMode = $state<'none' | 'by-level' | 'by-path'>('none');
+
   $effect(() => {
     const revision = editorState.revision;
     const docStatus = documentState.status;
@@ -121,16 +124,56 @@
     >
       <div class="tree-container">
         {#if currentTreeData}
-          {#await import('$lib/components/tree/SchemaTree.svelte') then { default: SchemaTree }}
-            <SchemaTree
-              treeData={currentTreeData}
-              selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-              on:nodeClick={handleNodeClick}
-            />
-          {:catch error}
-             <div class="status-message error">
+          {@const visualizationView = $state.snapshot(visualizationMode)}
+          
+          {#if visualizationView === 'tree'}
+            {#await import('$lib/components/visualization/StandardTree.svelte') then { default: StandardTree }}
+              <StandardTree
+                treeData={currentTreeData}
+                selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
+                colorMode={colorMode}
+                on:nodeClick={handleNodeClick}
+              />
+            {:catch error}
+              <div class="status-message error">
                 <p>Error loading tree visualization: {error.message}</p>
-             </div>
+              </div>
+            {/await}
+          {:else if visualizationView === 'radial'}
+            {#await import('$lib/components/visualization/RadialTree.svelte') then { default: RadialTree }}
+              <RadialTree
+                treeData={currentTreeData}
+                selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
+                colorMode={colorMode}
+                on:nodeClick={handleNodeClick}
+              />
+            {:catch error}
+              <div class="status-message error">
+                <p>Error loading radial visualization: {error.message}</p>
+              </div>
+            {/await}
+          {:else if visualizationView === 'treemap'}
+            {#await import('$lib/components/visualization/Treemap.svelte') then { default: Treemap }}
+              <Treemap
+                treeData={currentTreeData}
+                selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
+                on:nodeClick={handleNodeClick}
+              />
+            {:catch error}
+              <div class="status-message error">
+                <p>Error loading treemap visualization: {error.message}</p>
+              </div>
+            {/await}
+          {/if}
+
+          <!-- View Switcher -->
+          {#await import('$lib/components/visualization/ViewSwitcher.svelte') then { default: ViewSwitcher }}
+            <ViewSwitcher 
+              currentView={visualizationMode}
+              colorMode={colorMode}
+              on:change={(e) => visualizationMode = e.detail}
+              on:colorChange={(e) => colorMode = e.detail}
+            />
           {/await}
         {:else}
           <div class="status-message">
@@ -179,7 +222,8 @@
     justify-content: center;
   }
   .main-content.is-tree-view .view-wrapper {
-    padding-top: var(--header-height);
+    top: var(--height-header);
+    height: calc(100% - var(--height-header));
     box-sizing: border-box;
   }
   .sheet-container {
