@@ -8,7 +8,8 @@
   the `commandService`, ensuring the UI is always in sync with the application's state.
 -->
 <script lang="ts">
-  import { getCommands } from '$lib/services/features/commandService';
+  // REMOVED: import { getCommands } from '$lib/services/features/commandService';
+  import { actionRegistry } from '$lib/actions/registry';
   // --- VVVV CORRECTED (1/2): Import the reactive state object directly. VVVV ---
   import { ttsState } from '$lib/stores/ttsStore.svelte';
   import { editorState } from '$lib/stores/editorStore.svelte'; // Changed from editorStore
@@ -28,9 +29,20 @@
   let ttsStatus = $derived(ttsState.status);
   let isEditorReady = $derived(!!editorState.instance); // Changed from editorStore.state
 
+  import type { IconName } from '$lib/types/iconName';
+
   // The command list is reactively updated whenever the dependent state changes.
+  // We fetch from registry.
+  // TODO: Make registry reactive or re-fetch on mount/changes?
+  // For now, static fetch is fine as actions are registered at startup.
   let mainCommands = $derived(
-    getCommands(openApiKeyModal, ttsStatus, isEditorReady)
+    actionRegistry.getActionsByContext('view:command-bar').map(action => ({
+      id: action.id,
+      label: action.title,
+      icon: (action.icon || 'help-circle') as IconName,
+      action: () => actionRegistry.execute(action.id),
+      isEnabled: action.isEnabled
+    }))
   );
 </script>
 
@@ -41,7 +53,7 @@
     {#each mainCommands as command (command.id)}
       <CommandButton
         id={command.id}
-        onclick={(event) => command.action(event)}
+        onclick={(event) => command.action()}
         disabled={command.isEnabled ? !command.isEnabled() : false}
       >
         <Icon name={command.icon} size={20} />

@@ -40,7 +40,7 @@
 
   // --- Local State ---
   let query = $state('');
-  let isApiKeyModalOpen = $state(false);
+  // REMOVED: let isApiKeyModalOpen = $state(false);
   let panelElement = $state<HTMLDivElement | null>(null);
   let searchInputElement = $state<HTMLInputElement | null>(null);
   let previouslyFocusedElement: HTMLElement | null = null;
@@ -51,7 +51,7 @@
   $effect(() => {
     const handleGlobalKeydown = (event: KeyboardEvent) => {
       const anyModalIsOpen =
-        isApiKeyModalOpen ||
+        commandBarState.isApiKeyModalOpen ||
         commandBarState.isDiagnosticModalOpen ||
         commandBarState.isStrategySessionOpen ||
         commandBarState.isPasswordModalOpen;
@@ -177,18 +177,15 @@
   };
 
   // --- Modal Control Functions ---
-  function openApiKeyModal() {
-    isApiKeyModalOpen = true;
-    closeCommandBar();
-  }
-  function closeApiKeyModal() {
-    isApiKeyModalOpen = false;
-  }
+  // REMOVED: function openApiKeyModal() ...
+  // REMOVED: function closeApiKeyModal() ...
+  import { closeApiKeyModal, openApiKeyModal } from '$lib/stores/commandBarStore.svelte';
+
 </script>
 
 <!-- All Modals are managed here for central control -->
 <!-- FIX: Pass `onClose` as a prop, not an event handler. -->
-<ApiKeyModal show={isApiKeyModalOpen} onClose={closeApiKeyModal} />
+<ApiKeyModal show={commandBarState.isApiKeyModalOpen} onClose={closeApiKeyModal} />
 
 <ErrorDiagnosticModal
   show={commandBarState.isDiagnosticModalOpen}
