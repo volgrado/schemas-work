@@ -90,6 +90,16 @@
     // BUT we might need to ensure the highlight effect runs.
     if (!activeTreeNodeId || activeTreeNodeId === nodeDetailState.activeNodeId) return;
 
+    // CRITICAL FIX: Do not auto-open the panel if we are in Editor View.
+    // This prevents a conflict where the panel opens (TTS) and immediately closes (View Sync),
+    // causing the floating TTSController to flicker and lose state (closing the voice list).
+    if (uiState.activeView === 'editor') return;
+
+    // CRITICAL FIX 2: Only update the panel if it's already open.
+    // This prevents the panel from reopening after the user explicitly closes it.
+    // Auto-follow should follow along, but not force the panel to appear.
+    if (!nodeDetailState.isOpen) return;
+
     // Auto-update the panel to follow TTS
     const { instance: editor } = editorState;
     if (!editor) return;
@@ -475,7 +485,7 @@
   </div>
 
   <footer class="panel-footer">
-    {#if ttsState.status === 'playing' || ttsState.status === 'paused'}
+    {#if ttsState.status !== 'idle'}
       <TTSController embedded={true} />
     {:else}
       <div class="footer-actions">

@@ -15,6 +15,7 @@
     previousNode,
     nextNode,
     stopReading,
+    toggleSettings,
   } from '$lib/stores/ttsStore.svelte';
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
   import Button from '$lib/components/ui/Button.svelte';
@@ -24,10 +25,6 @@
 
   // --- Props ---
   let { embedded = false } = $props<{ embedded?: boolean }>();
-
-  // --- Local UI State ---
-  /** Tracks whether the settings panel is visible or collapsed. */
-  let isExpanded = $state(false);
 
   // --- SVELTE 5 DERIVED STATE ---
   const progress = $derived(() => {
@@ -234,11 +231,11 @@
           <Button
             variant="ghost"
             size="sm"
-            onclick={() => (isExpanded = !isExpanded)}
-            aria-label={isExpanded ? $t('tts.collapse') : $t('tts.expand')}
-            aria-expanded={isExpanded}
+            onclick={toggleSettings}
+            aria-label={ttsState.isSettingsExpanded ? $t('tts.collapse') : $t('tts.expand')}
+            aria-expanded={ttsState.isSettingsExpanded}
             aria-controls="tts-settings-panel"
-            class="control-btn tertiary {isExpanded ? 'active' : ''}"
+            class="control-btn tertiary {ttsState.isSettingsExpanded ? 'active' : ''}"
             title="Settings"
           >
             <Icon name="sliders" size={18} />
@@ -257,7 +254,7 @@
         </div>
       </div>
 
-      {#if isExpanded}
+      {#if ttsState.isSettingsExpanded}
         <div
           class="settings-panel"
           id="tts-settings-panel"

@@ -27,6 +27,7 @@ export interface TTSState {
   currentWordRange: { from: number; to: number } | null;
   activeTreeNodeId: string | null; // Tracks the ID of the tree node being narrated
   lastCharIndex: number; // Tracks the last spoken character index for resuming
+  isSettingsExpanded: boolean;
 }
 
 const initialState: TTSState = {
@@ -45,6 +46,7 @@ const initialState: TTSState = {
   currentWordRange: null,
   activeTreeNodeId: null, // Initialize as null
   lastCharIndex: 0,
+  isSettingsExpanded: false,
 };
 
 export const ttsState = $state<TTSState>({ ...initialState });
@@ -81,6 +83,9 @@ async function loadVoices(): Promise<void> {
       return reject(new Error('Speech Synthesis not supported.'));
     }
 
+    let resolved = false;
+    let lastVoiceListJSON = '';
+
     const populateVoiceList = () => {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
@@ -89,29 +94,53 @@ async function loadVoices(): Promise<void> {
           name: `${v.name} (${v.lang})`,
           lang: v.lang,
         }));
-        ttsState.availableVoices = mappedVoices;
-        const voiceExists = mappedVoices.some(
-          (v) => v.id === ttsState.selectedVoiceId
-        );
-        if (!ttsState.selectedVoiceId || !voiceExists) {
-          const defaultVoice =
-            mappedVoices.find(
-              (v) => v.lang.includes('en') && v.id.includes('local')
-            ) ||
-            mappedVoices.find((v) => v.lang.includes('en')) ||
-            mappedVoices[0];
-          if (defaultVoice) {
-            ttsState.selectedVoiceId = defaultVoice.id;
+
+        // Optimization: Only update state if voices actually changed.
+        // This prevents the select dropdown from closing if the browser fires onvoiceschanged multiple times.
+        const currentVoiceListJSON = JSON.stringify(mappedVoices);
+        if (currentVoiceListJSON !== lastVoiceListJSON) {
+          lastVoiceListJSON = currentVoiceListJSON;
+          ttsState.availableVoices = mappedVoices;
+          
+          const voiceExists = mappedVoices.some(
+            (v) => v.id === ttsState.selectedVoiceId
+          );
+          if (!ttsState.selectedVoiceId || !voiceExists) {
+            const defaultVoice =
+              mappedVoices.find(
+                (v) => v.lang.includes('en') && v.id.includes('local')
+              ) ||
+              mappedVoices.find((v) => v.lang.includes('en')) ||
+              mappedVoices[0];
+            if (defaultVoice) {
+              ttsState.selectedVoiceId = defaultVoice.id;
+            }
           }
         }
-        resolve();
+        
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
       }
     };
 
     populateVoiceList();
+    
+    // Some browsers need this event to load voices
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = populateVoiceList;
     }
+
+    // Fallback: If voices don't load within 2 seconds, resolve anyway
+    // so the UI doesn't hang on "Initializing...".
+    setTimeout(() => {
+      if (!resolved) {
+        console.warn('TTS: Voices loading timed out or no voices found.');
+        resolved = true;
+        resolve();
+      }
+    }, 2000);
   });
 }
 
@@ -146,9 +175,20 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
   }
 
   const speechId = generateSimpleUUID();
+  
+  // Update state BEFORE cancelling to ensure onend handlers from previous utterances
+  // know they are stale.
+  ttsState.currentNodeIndex = index;
+  ttsState.status = 'playing';
+  ttsState.currentSpeechId = speechId;
+
+  // Cancel any ongoing speech immediately.
+  window.speechSynthesis.cancel();
+
   const browserVoice = window.speechSynthesis
     .getVoices()
     .find((v) => v.voiceURI === selectedVoiceId);
+  
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
   if (browserVoice) utterance.voice = browserVoice;
@@ -164,12 +204,9 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
       return;
     }
     
-    // The charIndex from the event is relative to the textToSpeak (sliced).
-    // We need to add startOffset to get the index in the full text.
     const relativeCharIndex = event.charIndex;
     const absoluteCharIndex = startOffset + relativeCharIndex;
     
-    // Update the lastCharIndex so we can resume from here if needed
     ttsState.lastCharIndex = absoluteCharIndex;
 
     let charEnd = fullText.substring(absoluteCharIndex).search(/[\s.,;!?\n\r]/);
@@ -179,7 +216,6 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
       charEnd += absoluteCharIndex;
     }
     if (node.pos >= 0) {
-      // Only calculate for valid ProseMirror nodes
       const from = node.pos + 1 + absoluteCharIndex;
       const to = node.pos + 1 + charEnd;
       ttsState.currentWordRange = { from, to };
@@ -187,31 +223,36 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
   };
 
   utterance.onend = () => {
-    ttsState.currentWordRange = null;
+    // Only proceed if this is the CURRENT speech ending naturally.
     if (
       ttsState.status === 'playing' &&
       ttsState.currentSpeechId === speechId
     ) {
-      // Reset offset when moving to next node naturally
+      ttsState.currentWordRange = null;
       ttsState.lastCharIndex = 0;
       nextNode();
     }
   };
 
-  utterance.onerror = () => {
+  utterance.onerror = (event) => {
+    // Ignore 'interrupted' or 'canceled' errors as they are expected during navigation
+    if (event.error === 'interrupted' || event.error === 'canceled') return;
+
     ttsState.currentWordRange = null;
     if (ttsState.currentSpeechId === speechId) {
+      console.error('TTS Playback Error:', event);
       ttsState.status = 'error';
       ttsState.error = getStoreValue(t)('tts.playback_error');
     }
   };
 
-  ttsState.currentNodeIndex = index;
-  ttsState.status = 'playing';
-  ttsState.currentSpeechId = speechId;
-
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  // Small timeout to allow the browser to process the cancel() command
+  // before starting the new one. This fixes "stuttering" or ignored commands on some browsers.
+  setTimeout(() => {
+    if (ttsState.currentSpeechId === speechId) {
+       window.speechSynthesis.speak(utterance);
+    }
+  }, 10);
 }
 
 // --- Public Action Functions ---
@@ -232,6 +273,8 @@ export function initialize(): void {
     })
     .catch((error) => {
       console.error('TTS Initialization failed:', error);
+      ttsState.status = 'error';
+      ttsState.error = error instanceof Error ? error.message : 'Initialization failed';
     });
 }
 
@@ -310,4 +353,8 @@ export function replay(): void {
     transitionToIdle();
     setTimeout(() => startReading(currentNodes), 50);
   }
+}
+
+export function toggleSettings(): void {
+  ttsState.isSettingsExpanded = !ttsState.isSettingsExpanded;
 }
