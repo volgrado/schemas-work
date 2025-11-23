@@ -593,6 +593,7 @@
   /* Custom Range Slider */
   .premium-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 4px;
     background: var(--color-border);
@@ -631,28 +632,56 @@
 
   /* --- Responsive Adjustments --- */
   @media (max-width: 640px) {
+    .panel.floating {
+      bottom: var(--space-sm);
+      width: calc(100% - var(--space-md));
+      border-radius: var(--radius-lg);
+    }
+
+    .content-wrapper {
+      padding: var(--space-md);
+    }
+
     .main-controls {
-      grid-template-columns: 1fr;
-      gap: var(--space-md);
-      text-align: center;
+      display: block;
+      position: relative;
+      gap: 0;
     }
 
     .info-section {
-      text-align: center;
+      text-align: left;
+      margin-bottom: var(--space-sm);
+      padding-right: 120px; /* Space for secondary actions (3 buttons) */
     }
     
     .current-text {
-      justify-content: center;
+      justify-content: flex-start;
+      font-size: 0.9rem;
     }
 
     .playback-actions {
       justify-content: center;
+      gap: var(--space-lg); /* More space between main controls */
+      width: 100%;
     }
 
     .secondary-actions {
-      justify-content: center;
-      border-top: 1px solid var(--color-border);
-      padding-top: var(--space-sm);
+      position: absolute;
+      top: -4px; /* Align with text */
+      right: 0;
+      border: none;
+      padding: 0;
+      justify-content: flex-end;
+    }
+    
+    :global(.play-pause-btn) {
+      width: 42px !important;
+      height: 42px !important;
+    }
+
+    :global(.play-pause-btn .icon) {
+      width: 20px !important;
+      height: 20px !important;
     }
     
     .sliders-row {

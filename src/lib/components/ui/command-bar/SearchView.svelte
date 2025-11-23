@@ -20,7 +20,7 @@
   import { highlightText } from '$lib/utils/highlight';
 
   // --- Props ---
-  let { query, openApiKeyModal } = $props<{
+  let { query = $bindable(), openApiKeyModal } = $props<{
     query: string;
     openApiKeyModal: () => void;
   }>();
@@ -29,15 +29,39 @@
   let status: 'idle' | 'loading' | 'done' | 'error' = $state('idle');
   export { status };
 
+  // --- Internal State ---
+  let resultGroups = $state<SearchResultGroup[]>([]);
+  let recentSearches = $state<string[]>([]);
+  let activeIndex = $state(0);
+  let resultsContainerElement = $state<HTMLDivElement | null>(null);
+
+  // --- Derived State ---
+  const flatList = $derived(
+    query.trim().length === 0
+      ? recentSearches
+      : resultGroups.flatMap((group) => group.items)
+  );
+
+  const groupStartIndices = $derived(() => {
+    const indices: number[] = [];
+    let currentIndex = 0;
+    for (const group of resultGroups) {
+      indices.push(currentIndex);
+      currentIndex += group.items.length;
+    }
+    return indices;
+  });
+
+  // --- Methods ---
   export function handleKeyDown(event: KeyboardEvent) {
-    if (flatList().length === 0 && !['Escape'].includes(event.key)) return;
+    if (flatList.length === 0 && !['Escape'].includes(event.key)) return;
     if (['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
       event.preventDefault();
     } else {
       return;
     }
     function findNextEnabled(startIndex: number, direction: 1 | -1): number {
-      const currentFlatList = flatList();
+      const currentFlatList = flatList;
       let nextIndex =
         (startIndex + direction + currentFlatList.length) %
         currentFlatList.length;
@@ -67,7 +91,7 @@
         activeIndex = findNextEnabled(activeIndex, -1);
         break;
       case 'Enter':
-        const selectedItem = flatList()[activeIndex];
+        const selectedItem = flatList[activeIndex];
         if (selectedItem) {
           if (typeof selectedItem === 'string') {
             query = selectedItem;
@@ -78,32 +102,6 @@
         break;
     }
   }
-
-  // --- Internal State ---
-  let resultGroups = $state<SearchResultGroup[]>([]);
-  let recentSearches = $state<string[]>([]);
-  let activeIndex = $state(0);
-  let resultsContainerElement = $state<HTMLDivElement | null>(null);
-
-  const flatList = $derived(() =>
-    query.trim().length === 0
-      ? recentSearches
-      : resultGroups.flatMap((group) => group.items)
-  );
-
-  const groupStartIndices = $derived(() => {
-    const indices: number[] = [];
-    let currentIndex = 0;
-    for (const group of resultGroups) {
-      indices.push(currentIndex);
-      currentIndex += group.items.length;
-    }
-    return indices;
-  });
-
-  $effect(() => {
-    recentSearches = getRecentSearches();
-  });
 
   const runSearch = debounce(async (searchText: string) => {
     status = 'loading';
@@ -122,6 +120,33 @@
       resultGroups = [];
     }
   }, 300);
+
+  function handleItemSelect(item: ResultItem) {
+    if ('action' in item) {
+      const isEnabled = !item.isEnabled || item.isEnabled();
+      if (isEnabled) {
+        item.action();
+      }
+    } else {
+      loadDocument(item.docId, item.nodeId || null);
+      closeCommandBar();
+    }
+  }
+
+  function parseSnippet(snippet: string): {
+    term: string;
+    description: string;
+  } {
+    const parts = snippet.split('\nDescription: ');
+    const term = parts[0].replace(/^Term: /, '').trim();
+    const description = parts[1] || '';
+    return { term, description };
+  }
+
+  // --- Effects ---
+  $effect(() => {
+    recentSearches = getRecentSearches();
+  });
 
   $effect(() => {
     const trimmedQuery = query.trim();
@@ -143,29 +168,6 @@
       activeElement.scrollIntoView({ block: 'nearest' });
     }
   });
-
-  function handleItemSelect(item: ResultItem) {
-    if ('action' in item) {
-      const isEnabled = !item.isEnabled || item.isEnabled();
-      if (isEnabled) {
-        item.action();
-      }
-    } else {
-      // VVVV CORRECTED METHOD CALL VVVV
-      loadDocument(item.docId, item.nodeId || null);
-      closeCommandBar();
-    }
-  }
-
-  function parseSnippet(snippet: string): {
-    term: string;
-    description: string;
-  } {
-    const parts = snippet.split('\nDescription: ');
-    const term = parts[0].replace(/^Term: /, '').trim();
-    const description = parts[1] || '';
-    return { term, description };
-  }
 </script>
 
 <div
@@ -267,11 +269,11 @@
     {/each}
   {/if}
 
-  {#if flatList().length === 0 && query.trim().length === 0 && recentSearches.length === 0}
+  {#if flatList.length === 0 && query.trim().length === 0 && recentSearches.length === 0}
     <div class="status-text">{$t('search_view.prompt')}</div>
   {:else if status === 'error'}
     <div class="status-text">{$t('search_view.error')}</div>
-  {:else if status === 'done' && flatList().length === 0 && query.trim().length > 0}
+  {:else if status === 'done' && flatList.length === 0 && query.trim().length > 0}
     <div class="status-text">{$t('search_view.no_results')}</div>
   {/if}
 </div>

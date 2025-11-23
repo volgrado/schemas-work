@@ -72,7 +72,12 @@
     if (commandBarState.isOpen) {
       previouslyFocusedElement = document.activeElement as HTMLElement;
       query = '';
-      setTimeout(() => searchInputElement?.focus(), 50);
+      
+      // Check if we are on mobile to prevent auto-focusing and opening the keyboard
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      if (!isMobile) {
+        setTimeout(() => searchInputElement?.focus(), 50);
+      }
     } else {
       previouslyFocusedElement?.focus();
     }
@@ -81,11 +86,56 @@
   // --- Event Handlers ---
 
   function handlePanelKeydown(event: KeyboardEvent) {
+    // 1. Delegate to SearchView if active (query exists)
     if (query.trim().length > 0 && searchViewInstance) {
       searchViewInstance.handleKeyDown(event);
       return;
     }
 
+    // 2. Handle Navigation for MainView / Other Views (when query is empty)
+    if (query.trim().length === 0) {
+      if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
+        event.preventDefault();
+        
+        const contentContainer = panelElement?.querySelector('.view-content');
+        if (!contentContainer) return;
+
+        const focusableSelector = 'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+        const focusableItems = Array.from(contentContainer.querySelectorAll(focusableSelector)) as HTMLElement[];
+        
+        if (focusableItems.length === 0) return;
+
+        const currentFocus = document.activeElement as HTMLElement;
+        const currentIndex = focusableItems.indexOf(currentFocus);
+
+        if (event.key === 'ArrowDown') {
+          if (currentFocus === searchInputElement) {
+            // From Input to First Item
+            focusableItems[0]?.focus();
+          } else if (currentIndex !== -1) {
+            // Next Item (Loop to first if at end, or stay at end? Let's loop)
+            const nextIndex = (currentIndex + 1) % focusableItems.length;
+            focusableItems[nextIndex]?.focus();
+          }
+        } else if (event.key === 'ArrowUp') {
+          if (currentIndex !== -1) {
+            if (currentIndex === 0) {
+              // From First Item back to Input
+              searchInputElement?.focus();
+            } else {
+              // Previous Item
+              focusableItems[currentIndex - 1]?.focus();
+            }
+          } else if (currentFocus === searchInputElement) {
+            // From Input to Last Item (Loop around)
+            focusableItems[focusableItems.length - 1]?.focus();
+          }
+        }
+        return;
+      }
+    }
+
+    // 3. Global Escape handling
     if (event.key === 'Escape') {
       if (commandBarState.currentView !== 'main') {
         event.preventDefault();
@@ -245,7 +295,7 @@
         >
           <SearchView
             bind:this={searchViewInstance}
-            {query}
+            bind:query={query}
             {openApiKeyModal}
           />
         </div>
@@ -305,7 +355,8 @@
       width: 100%;
       max-width: 100%;
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-      max-height: 85vh;
+      height: 75vh; /* Fixed height to prevent resizing jumps */
+      max-height: 75vh;
     }
   }
   .input-wrapper {
@@ -333,13 +384,17 @@
   }
   .view-content {
     flex-grow: 1;
-    overflow: auto;
+    display: grid;
+    grid-template-areas: "content";
     position: relative;
     padding: var(--space-sm);
+    overflow: hidden; /* Prevent scrollbar flickering during transition */
   }
   .view-transition-wrapper {
+    grid-area: content;
     width: 100%;
     height: 100%;
+    min-height: 0; /* Fix for grid child scrolling */
   }
   :global(.dark-theme) .panel {
     background: rgba(22, 20, 29, 0.8); /* Slightly more opaque in dark mode */
