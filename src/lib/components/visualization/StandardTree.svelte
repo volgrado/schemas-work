@@ -66,7 +66,10 @@
   // =================================================================
   // D3 CONSTANTS & TYPES
   // =================================================================
-  const nodeWidth = 140;
+  // =================================================================
+  // D3 CONSTANTS & TYPES
+  // =================================================================
+  let nodeWidth = $state(140); // Dynamic width based on content
   const nodeHeight = 40;
   const transitionDuration = 350;
   const doubleClickDelay = 250; // The window in ms to wait for a double click.
@@ -196,12 +199,43 @@
 
   let nodePositions = new Map<string, { x: number; y: number }>();
 
+  function getTextWidth(text: string, font: string): number {
+    // Helper to measure text width
+    if (typeof document === 'undefined') return 0;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return 0;
+    context.font = font;
+    return context.measureText(text).width;
+  }
+
   /** Effect to process incoming treeData into a D3 hierarchy. */
   $effect(() => {
     if (!treeData) {
       rootNode = null;
       return;
     }
+
+    // Dynamic Width Calculation
+    let maxTextWidth = 0;
+    const traverse = (node: TreeNodeData) => {
+      if (node.content) {
+        // Using approximate font settings from CSS: 600 0.75rem (12px)
+        const w = getTextWidth(node.content, '600 12px sans-serif');
+        if (w > maxTextWidth) maxTextWidth = w;
+      }
+      if (node.children) node.children.forEach(traverse);
+    };
+    traverse(treeData);
+
+    // Calculate new width:
+    // 1. Divide max width by ~1.8 to aim for 2 lines (not exactly 2 to avoid edge cases)
+    // 2. Add padding (26px)
+    // 3. Clamp between 140px (min) and 600px (max)
+    const targetWidth = (maxTextWidth / 1.8) + 26;
+    const calculatedWidth = Math.max(140, Math.min(600, targetWidth));
+    nodeWidth = calculatedWidth;
+
     const root = hierarchy(treeData);
     
     // Restore positions to ensure smooth transitions
@@ -654,6 +688,11 @@
     nodeEnter.append('circle').attr('class', 'indicator').attr('r', 4);
 
     const nodeUpdate = node.merge(nodeEnter);
+    
+    // Update widths for dynamic sizing
+    nodeUpdate.select('rect').attr('width', nodeWidth);
+    nodeUpdate.select('foreignObject').attr('width', nodeWidth);
+
     nodeUpdate.select('div.node-label').html((d) => d.data.content);
     
     // Apply color mode with gradients
@@ -804,12 +843,19 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--color-text);
-    line-height: 1.3;
+    line-height: 1.2;
     word-break: break-word;
     user-select: none;
     pointer-events: none;
     text-shadow: none;
     color: var(--color-text);
+    
+    /* Allow up to 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal; /* Ensure text wraps */
   }
   :global(.tree-svg .node.has-color .node-label) {
     color: white;
