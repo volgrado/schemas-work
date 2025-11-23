@@ -3,7 +3,7 @@
   import { t } from '$lib/utils/i18n';
   
   // --- Stores ---
-  import { uiState, openCommandBar, closeModal, setActiveView } from '$lib/stores/uiStore.svelte';
+  import { uiState, openCommandBar, closeModal, setActiveView, cycleColorMode } from '$lib/stores/uiStore.svelte';
   import { reviewState, startReview } from '$lib/stores/reviewStore.svelte';
   import { open as openCardEditor } from '$lib/stores/cardEditorStore.svelte';
   import { documentState } from '$lib/stores/documentStore.svelte';
@@ -44,6 +44,22 @@
       on:showWelcome={onShowWelcome}
     >
       <div class="header-actions">
+        <Button
+          id="color-mode-toggle"
+          variant="icon"
+          onclick={cycleColorMode}
+          aria-label={$t('visualization.color_mode.aria_label')}
+          title={$t(`visualization.color_mode.${uiState.colorMode.replace('-', '_')}`)}
+        >
+          {#if uiState.colorMode === 'by-level'}
+            <Icon name="layers" size={18} />
+          {:else if uiState.colorMode === 'by-path'}
+            <Icon name="git-branch" size={18} />
+          {:else}
+            <Icon name="pen-tool" size={18} />
+          {/if}
+        </Button>
+
         <Button
           id="view-toggle-graph"
           variant="icon"

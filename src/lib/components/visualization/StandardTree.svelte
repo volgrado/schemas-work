@@ -29,6 +29,7 @@
   import 'd3-transition'; // Side-effect import for transition support
   import { ttsState } from '$lib/stores/ttsStore.svelte';
   import { editorState } from '$lib/stores/editorStore.svelte';
+  import { uiState } from '$lib/stores/uiStore.svelte';
   import {
     nodeDetailState,
     openPanel,
@@ -43,11 +44,9 @@
   let {
     treeData,
     selectedNodeId,
-    colorMode = 'none'
   }: {
     treeData: TreeNodeData | null;
     selectedNodeId: string | null;
-    colorMode?: 'none' | 'by-level' | 'by-path';
   } = $props();
 
   const dispatch = createEventDispatcher<{ nodeClick: { id: string } }>();
@@ -79,83 +78,123 @@
   };
 
   // =================================================================
-  // COLOR HELPERS
+  // COLOR & VISUAL CONSTANTS
   // =================================================================
-  const gradientColors = [
-    'linear-gradient(135deg, hsl(220, 90%, 58%) 0%, hsl(240, 85%, 65%) 100%)', // Blue-Purple
-    'linear-gradient(135deg, hsl(160, 75%, 45%) 0%, hsl(180, 70%, 50%) 100%)', // Teal-Cyan
-    'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 75%, 65%) 100%)', // Purple-Magenta
-    'linear-gradient(135deg, hsl(30, 90%, 55%) 0%, hsl(45, 85%, 60%) 100%)',   // Orange-Gold
-    'linear-gradient(135deg, hsl(340, 80%, 60%) 0%, hsl(350, 75%, 65%) 100%)', // Pink-Rose
-    'linear-gradient(135deg, hsl(120, 65%, 50%) 0%, hsl(140, 70%, 55%) 100%)', // Green-Emerald
-    'linear-gradient(135deg, hsl(200, 85%, 55%) 0%, hsl(220, 80%, 60%) 100%)', // Sky-Blue
-    'linear-gradient(135deg, hsl(270, 70%, 58%) 0%, hsl(280, 75%, 62%) 100%)', // Violet-Purple
-    'linear-gradient(135deg, hsl(10, 80%, 60%) 0%, hsl(20, 75%, 65%) 100%)',   // Red-Coral
-    'linear-gradient(135deg, hsl(170, 70%, 50%) 0%, hsl(160, 75%, 55%) 100%)', // Mint-Teal
-    'linear-gradient(135deg, hsl(50, 85%, 55%) 0%, hsl(65, 80%, 60%) 100%)',   // Yellow-Lime
-    'linear-gradient(135deg, hsl(310, 75%, 60%) 0%, hsl(320, 70%, 65%) 100%)', // Magenta-Pink
-    'linear-gradient(135deg, hsl(190, 80%, 52%) 0%, hsl(200, 75%, 57%) 100%)', // Aqua-Sky
-    'linear-gradient(135deg, hsl(90, 70%, 50%) 0%, hsl(110, 75%, 55%) 100%)',  // Lime-Green
-    'linear-gradient(135deg, hsl(260, 75%, 58%) 0%, hsl(270, 80%, 63%) 100%)', // Indigo-Violet
-    'linear-gradient(135deg, hsl(350, 80%, 58%) 0%, hsl(360, 75%, 62%) 100%)', // Rose-Red
+  
+  const gradients = [
+    // Serene Sky / Twilight Theme Coherent Gradients (Boosted Vibrancy)
+    { id: 'grad-std-primary', stops: ['#3b82f6', '#1d4ed8'] },   // Brighter Blue -> Deep Blue
+    { id: 'grad-std-warm', stops: ['#f97316', '#db2777'] },      // Bright Orange -> Pink
+    { id: 'grad-std-success', stops: ['#10b981', '#0ea5e9'] },   // Emerald -> Sky Blue
+    { id: 'grad-std-accent', stops: ['#8b5cf6', '#d946ef'] },    // Violet -> Fuchsia
+    { id: 'grad-std-cool', stops: ['#06b6d4', '#3b82f6'] },      // Cyan -> Blue
+    { id: 'grad-std-deep', stops: ['#6366f1', '#a855f7'] },      // Indigo -> Purple
   ];
 
-  function getColorForNode(node: PointNode): string | null {
-    if (colorMode === 'none') return null;
+  function getColorUrlForNode(node: PointNode): string | null {
+    if (uiState.colorMode === 'none') return null;
     
-    if (colorMode === 'by-level') {
-      const level = node.depth; // depth 0 = root, depth 1 = level 2, etc.
-      if (level === 0) return null; // Root has no color
-      return gradientColors[(level - 1) % gradientColors.length];
-    }
-    
-    if (colorMode === 'by-path') {
-      // Get the first child of root (top-level section) for this node
+    let index = 0;
+    if (uiState.colorMode === 'by-level') {
+      const level = node.depth;
+      if (level === 0) return null;
+      index = (level - 1) % gradients.length;
+    } else if (uiState.colorMode === 'by-path') {
       const ancestors = node.ancestors();
-      const topLevelAncestor = ancestors[ancestors.length - 2]; // -1 is root, -2 is first child
-      if (!topLevelAncestor || topLevelAncestor === node.parent) return null;
+      // Use the ancestor at depth 1 (direct child of root) as the branch identifier
+      const topLevelAncestor = ancestors[ancestors.length - 2];
       
-      // Hash the top-level ancestor ID to get consistent color
+      // If no top level ancestor (e.g. root), return null
+      if (!topLevelAncestor) return null;
+      
       const id = topLevelAncestor.data.id;
       let hash = 0;
       for (let i = 0; i < id.length; i++) {
         hash = ((hash << 5) - hash) + id.charCodeAt(i);
         hash = hash & hash;
       }
-      return gradientColors[Math.abs(hash) % gradientColors.length];
+      index = Math.abs(hash) % gradients.length;
     }
     
-    return null;
+    return `url(#${gradients[index].id})`;
   }
 
   // =================================================================
   // CORE D3 EFFECTS
   // =================================================================
 
+  function ensureDefs() {
+    if (!svgEl) return;
+    const svg = select(svgEl);
+    
+    if (!svg.select('defs').empty()) return;
+
+    const defs = svg.append('defs');
+
+    // Drop Shadow Filter
+    const filter = defs.append('filter')
+      .attr('id', 'drop-shadow-std')
+      .attr('height', '130%');
+    
+    filter.append('feGaussianBlur')
+      .attr('in', 'SourceAlpha')
+      .attr('stdDeviation', 3)
+      .attr('result', 'blur');
+    
+    filter.append('feOffset')
+      .attr('in', 'blur')
+      .attr('dx', 2)
+      .attr('dy', 2)
+      .attr('result', 'offsetBlur');
+      
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in', 'offsetBlur');
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+    // Gradients - Create all gradients
+    gradients.forEach(g => {
+      const gradient = defs.append('linearGradient')
+        .attr('id', g.id)
+        .attr('x1', '0%')
+        .attr('y1', '0%')
+        .attr('x2', '100%')
+        .attr('y2', '100%');
+      
+      gradient.append('stop').attr('offset', '0%').attr('stop-color', g.stops[0]);
+      gradient.append('stop').attr('offset', '100%').attr('stop-color', g.stops[1]);
+    });
+  }
+
   /** Effect for one-time SVG setup, zoom behavior, and initial centering. */
   $effect(() => {
     if (!svgEl) return;
     const svg = select(svgEl);
-    svg.selectAll('*').remove();
-    const g = svg.append('g').attr('class', 'content-group');
-    gEl = g.node()!;
+    
+    // Only append content group if it doesn't exist
+    if (svg.select('.content-group').empty()) {
+      ensureDefs();
+      const g = svg.append('g').attr('class', 'content-group');
+      gEl = g.node()!;
 
-    const newZoomBehavior = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.2, 2])
-      .on('zoom', (event: any) => g.attr('transform', event.transform.toString()));
-    zoomBehavior = newZoomBehavior;
+      const newZoomBehavior = zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.2, 2])
+        .on('zoom', (event: any) => g.attr('transform', event.transform.toString()));
+      zoomBehavior = newZoomBehavior;
 
-    svg.call(newZoomBehavior).on('dblclick.zoom', null);
+      svg.call(newZoomBehavior).on('dblclick.zoom', null);
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!entries?.[0] || !gEl) return;
-      const { height } = entries[0].contentRect;
-      const initialTransform = zoomIdentity.translate(80, height / 2);
-      svg.call(newZoomBehavior.transform, initialTransform);
-    });
-    resizeObserver.observe(svgEl);
-    return () => resizeObserver.disconnect();
+      const resizeObserver = new ResizeObserver((entries) => {
+        if (!entries?.[0] || !gEl) return;
+        const { height } = entries[0].contentRect;
+        const initialTransform = zoomIdentity.translate(80, height / 2);
+        svg.call(newZoomBehavior.transform, initialTransform);
+      });
+      resizeObserver.observe(svgEl);
+      return () => resizeObserver.disconnect();
+    }
   });
+
+  let nodePositions = new Map<string, { x: number; y: number }>();
 
   /** Effect to process incoming treeData into a D3 hierarchy. */
   $effect(() => {
@@ -164,10 +203,25 @@
       return;
     }
     const root = hierarchy(treeData);
-    (root as PointNode).x0 = 0;
-    (root as PointNode).y0 = 0;
+    
+    // Restore positions to ensure smooth transitions
     root.each((d) => {
       const node = d as PointNode;
+      const saved = nodePositions.get(node.data.id);
+      
+      if (saved) {
+        node.x0 = saved.x;
+        node.y0 = saved.y;
+      } else if (node.parent && (node.parent as PointNode).x0 !== undefined) {
+        // Inherit from parent if new
+        node.x0 = (node.parent as PointNode).x0;
+        node.y0 = (node.parent as PointNode).y0;
+      } else {
+        // Default to root
+        node.x0 = 0;
+        node.y0 = 0;
+      }
+
       if (node.children && !expandedNodeIds.has(node.data.id)) {
         node._children = node.children;
         node.children = undefined;
@@ -176,6 +230,8 @@
     rootNode = root;
   });
 
+  let lastToggledNodeId = $state<string | null>(null);
+
   /** Effect to trigger the main D3 drawing function when the data or expanded state changes. */
   $effect(() => {
     if (!rootNode || !gEl) {
@@ -183,7 +239,12 @@
       return;
     }
     tick().then(() => {
-      update(rootNode as PointNode);
+      let source = rootNode as PointNode;
+      if (lastToggledNodeId) {
+        const found = findNodeById(lastToggledNodeId);
+        if (found) source = found;
+      }
+      update(source);
       // Flatten tree for navigation
       flattenTreeForNavigation();
     });
@@ -210,7 +271,7 @@
   $effect(() => {
     if (!rootNode || !gEl) return;
     // Watch colorMode changes
-    colorMode;
+    uiState.colorMode;
     // Force update to reapply colors
     tick().then(() => update(rootNode as PointNode));
   });
@@ -435,12 +496,52 @@
    * @param source The node that was clicked, used as the origin for animations.
    */
   function update(source: PointNode) {
+    ensureDefs();
     if (!gEl || !rootNode) return;
     const g = select(gEl);
     const dx = nodeHeight + 20;
     const dy = nodeWidth + 60;
     const treeLayout = tree<TreeNodeData>().nodeSize([dx, dy]);
     const layoutRoot = treeLayout(rootNode) as TreeLayoutResult;
+    
+    // Create a map for fast lookup of nodes in the new layout
+    const newLayoutMap = new Map<string, PointNode>();
+    layoutRoot.descendants().forEach(d => newLayoutMap.set(d.data.id, d as PointNode));
+    
+    // Find the source node in the new layout to get its correct coordinates
+    let layoutSource: PointNode | undefined;
+    
+    // 1. Try using the explicitly toggled node ID
+    if (lastToggledNodeId) {
+      layoutSource = newLayoutMap.get(lastToggledNodeId);
+      
+      // Fallback: If not in new layout, use last known position
+      if (!layoutSource) {
+         const lastPos = nodePositions.get(lastToggledNodeId);
+         if (lastPos) {
+            layoutSource = { x: lastPos.x, y: lastPos.y } as PointNode;
+         }
+      }
+    }
+    
+    // 2. Fallback to the source node's ID
+    if (!layoutSource) {
+      layoutSource = newLayoutMap.get(source.data.id);
+      
+      // Fallback: If not in new layout, use last known position
+      if (!layoutSource) {
+         const lastPos = nodePositions.get(source.data.id);
+         if (lastPos) {
+            layoutSource = { x: lastPos.x, y: lastPos.y } as PointNode;
+         }
+      }
+    }
+    
+    // 3. Ultimate fallback to root
+    if (!layoutSource) {
+      layoutSource = layoutRoot as PointNode;
+    }
+    
     const nodes = layoutRoot.descendants().reverse() as PointNode[];
     const links = layoutRoot.links() as any[];
     const transition = select(gEl).transition().duration(transitionDuration) as any;
@@ -454,6 +555,7 @@
       .enter()
       .append('g')
       .attr('class', 'node')
+      // Enter at the source's PREVIOUS position
       .attr('transform', `translate(${source.y0 ?? 0},${source.x0 ?? 0})`)
       .attr('opacity', 0)
       .on('click', (_, d) => {
@@ -466,6 +568,7 @@
             expandedNodeIds.has(d.data.id)
               ? expandedNodeIds.delete(d.data.id)
               : expandedNodeIds.add(d.data.id);
+            lastToggledNodeId = d.data.id;
             expandedNodeIds = new Set(expandedNodeIds);
           }
         }, doubleClickDelay);
@@ -555,52 +658,24 @@
     
     // Apply color mode with gradients
     nodeUpdate.select('rect').each(function(d) {
-      const color = getColorForNode(d);
+      const colorUrl = getColorUrlForNode(d);
       const rectEl = select(this);
+      const rectNode = this as SVGRectElement;
+      if (!rectNode.parentNode) return;
       
-      if (color && color.startsWith('linear-gradient')) {
-        if (!svgEl) return; // Guard against undefined
-        
-        // Create unique gradient ID
-        const gradientId = `gradient-${d.data.id}`;
-        
-        // Parse gradient string
-        const match = color.match(/linear-gradient\((\d+)deg,\s*(.+?)\s+(\d+%),\s*(.+?)\s+(\d+%)\)/);
-        if (match) {
-          const [, angle, color1, , color2] = match;
-          
-          // Find or create defs
-          const svg = select(svgEl);
-          let defs = svg.select<SVGDefsElement>('defs');
-          if (defs.empty()) {
-            defs = svg.insert<SVGDefsElement>('defs', ':first-child');
-          }
-          
-          // Remove old gradient if exists
-          defs.select(`#${gradientId}`).remove();
-          
-          // Create new gradient
-          const gradient = defs.append('linearGradient')
-            .attr('id', gradientId)
-            .attr('x1', '0%')
-            .attr('y1', '0%')
-            .attr('x2', '100%')
-            .attr('y2', '100%');
-          
-          gradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', color1);
-          
-          gradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', color2);
-          
-          rectEl.attr('fill', `url(#${gradientId})`);
-        }
-      } else if (color) {
-        rectEl.style('fill', color);
+      const nodeGroup = select(rectNode.parentNode as SVGGElement);
+      
+      if (colorUrl) {
+        rectNode.style.setProperty('--node-fill', colorUrl);
+        rectEl.style('filter', 'url(#drop-shadow-std)');
+        rectEl.style('stroke', 'none');
+        nodeGroup.classed('has-color', true);
       } else {
-        rectEl.style('fill', null);
+        // "No Color" Mode - High Contrast Visibility
+        rectNode.style.setProperty('--node-fill', 'var(--color-background-raised)');
+        rectEl.style('stroke', 'var(--color-gray-400)');
+        rectEl.style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))');
+        nodeGroup.classed('has-color', false);
       }
     });
     
@@ -622,7 +697,7 @@
       .exit()
       .transition(transition)
       .remove()
-      .attr('transform', `translate(${source.y ?? 0},${source.x ?? 0})`)
+      .attr('transform', () => `translate(${layoutSource.y ?? 0},${layoutSource.x ?? 0})`)
       .attr('opacity', 0);
 
     // --- LINKS ---
@@ -655,7 +730,7 @@
       .transition(transition)
       .remove()
       .attr('d', () => {
-        const o = { x: source.x ?? 0, y: source.y ?? 0 };
+        const o = { x: layoutSource.x ?? 0, y: layoutSource.y ?? 0 };
         return customLinkGenerator({ source: o, target: o } as any);
       });
 
@@ -663,6 +738,8 @@
       const node = d as PointNode;
       node.x0 = node.x;
       node.y0 = node.y;
+      // Save positions for next render
+      nodePositions.set(node.data.id, { x: node.x, y: node.y });
     });
   }
 </script>
@@ -698,13 +775,22 @@
     -webkit-tap-highlight-color: transparent;
   }
   :global(.tree-svg .node rect) {
-    fill: var(--color-background);
-    stroke: var(--color-gray-600); /* Keep high contrast */
-    stroke-width: 1px; /* Thin borders */
+    fill: var(--node-fill, var(--color-background-raised));
+    stroke: var(--color-gray-400); /* Darker default border */
+    stroke-width: 2px; /* Thicker border */
     transition:
       fill 0.2s,
       stroke 0.2s,
-      stroke-width 0.2s;
+      stroke-width 0.2s,
+      filter 0.2s;
+  }
+  :global(.tree-svg .node.has-color rect) {
+    stroke: none;
+    fill: var(--node-fill) !important;
+  }
+  :global(.dark .tree-svg .node:not(.has-color) rect) {
+    fill: var(--color-gray-200);
+    stroke: var(--color-gray-500);
   }
   :global(.tree-svg .node .node-label) {
     width: 100%;
@@ -722,6 +808,13 @@
     word-break: break-word;
     user-select: none;
     pointer-events: none;
+    text-shadow: none;
+    color: var(--color-text);
+  }
+  :global(.tree-svg .node.has-color .node-label) {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    font-weight: 500;
   }
   :global(.tree-svg .node .indicator) {
     stroke: var(--color-gray-600);
@@ -748,16 +841,20 @@
   }
   :global(.tree-svg .node.is-selected rect) {
     stroke: var(--color-accent);
-    stroke-width: 2px;
-    fill: hsl(var(--color-accent-hsl, 16 84% 53%) / 0.1);
+    stroke-width: 3px;
+  }
+  :global(.tree-svg .node.is-selected.has-color rect) {
+    stroke: white;
+    stroke-width: 3px;
+    paint-order: stroke;
   }
   :global(.tree-svg .node.is-selected .node-label) {
     font-weight: 700;
   }
   :global(.tree-svg .node.is-reading rect) {
     stroke: var(--color-accent);
-    stroke-width: 2px;
-    fill: hsl(var(--color-accent-hsl, 16 84% 53%) / 0.15);
+    stroke-width: 3px;
+    stroke-dasharray: 4 2;
   }
   :global(.tree-svg .is-dimmed) {
     opacity: 0.1 !important;

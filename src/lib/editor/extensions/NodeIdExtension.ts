@@ -5,7 +5,7 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import type { CommandProps, RawCommands } from '@tiptap/core';
+import type { CommandProps } from '@tiptap/core';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- TYPE AUGMENTATION FOR TIPTAP ---
@@ -60,7 +60,7 @@ export const NodeIdExtension = Extension.create({
 
           newState.doc.descendants((node: ProseMirrorNode, pos: number) => {
             if (node.type.name === 'heading') {
-              if (node.attrs.level === 1) return;
+              // if (node.attrs.level === 1) return; // Allow IDs on H1 too
 
               const nodeId = node.attrs.nodeId;
               if (!nodeId || seenNodeIds.has(nodeId)) {

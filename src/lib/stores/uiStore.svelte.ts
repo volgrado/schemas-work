@@ -16,12 +16,16 @@ export type { NodeDetailState } from './nodeDetailStore.svelte';
 
 // --- Local State ---
 let activeView = $state<'editor' | 'tree'>('editor');
+let colorMode = $state<'none' | 'by-level' | 'by-path'>('by-level'); // Default to by-level
 
 // --- Unified State Object ---
 // We use getters to expose the reactive state objects from the other stores.
 export const uiState = {
   get activeView() { return activeView; },
   set activeView(v) { activeView = v; },
+
+  get colorMode() { return colorMode; },
+  set colorMode(v) { colorMode = v; },
   
   get modal() { return modalState; },
   get commandBar() { return commandBarState; },
@@ -36,6 +40,13 @@ export function setActiveView(view: 'editor' | 'tree') {
 
 export function toggleActiveView() {
   activeView = activeView === 'editor' ? 'tree' : 'editor';
+}
+
+export function cycleColorMode() {
+  const modes: ('none' | 'by-level' | 'by-path')[] = ['none', 'by-level', 'by-path'];
+  const currentIndex = modes.indexOf(colorMode);
+  const nextIndex = (currentIndex + 1) % modes.length;
+  colorMode = modes[nextIndex];
 }
 
 // --- Modal Actions (Proxy) ---

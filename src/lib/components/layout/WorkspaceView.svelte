@@ -30,8 +30,7 @@
     typeof schemaService.documentToTreeData
   > | null>(null);
 
-  let visualizationMode = $state<'tree' | 'radial' | 'treemap'>('tree');
-  let colorMode = $state<'none' | 'by-level' | 'by-path'>('none');
+  let visualizationMode = $state<'tree'>('tree');
 
   $effect(() => {
     const revision = editorState.revision;
@@ -131,7 +130,6 @@
               <StandardTree
                 treeData={currentTreeData}
                 selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-                colorMode={colorMode}
                 on:nodeClick={handleNodeClick}
               />
             {:catch error}
@@ -139,42 +137,7 @@
                 <p>Error loading tree visualization: {error.message}</p>
               </div>
             {/await}
-          {:else if visualizationView === 'radial'}
-            {#await import('$lib/components/visualization/RadialTree.svelte') then { default: RadialTree }}
-              <RadialTree
-                treeData={currentTreeData}
-                selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-                colorMode={colorMode}
-                on:nodeClick={handleNodeClick}
-              />
-            {:catch error}
-              <div class="status-message error">
-                <p>Error loading radial visualization: {error.message}</p>
-              </div>
-            {/await}
-          {:else if visualizationView === 'treemap'}
-            {#await import('$lib/components/visualization/Treemap.svelte') then { default: Treemap }}
-              <Treemap
-                treeData={currentTreeData}
-                selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-                on:nodeClick={handleNodeClick}
-              />
-            {:catch error}
-              <div class="status-message error">
-                <p>Error loading treemap visualization: {error.message}</p>
-              </div>
-            {/await}
           {/if}
-
-          <!-- View Switcher -->
-          {#await import('$lib/components/visualization/ViewSwitcher.svelte') then { default: ViewSwitcher }}
-            <ViewSwitcher 
-              currentView={visualizationMode}
-              colorMode={colorMode}
-              on:change={(e) => visualizationMode = e.detail}
-              on:colorChange={(e) => colorMode = e.detail}
-            />
-          {/await}
         {:else}
           <div class="status-message">
             <Spinner size="md" />

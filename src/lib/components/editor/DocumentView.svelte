@@ -8,9 +8,10 @@
   import type { IndexeddbPersistence } from 'y-indexeddb';
   import * as Y from 'yjs';
   import { Decoration, DecorationSet } from 'prosemirror-view';
+  import { Plugin, PluginKey } from 'prosemirror-state';
 
   // --- TIPTAP CORE & EXTENSIONS ---
-  import { Editor } from '@tiptap/core';
+  import { Editor, Extension } from '@tiptap/core';
   import type { EditorEvents } from '@tiptap/core';
   import Collaboration from '@tiptap/extension-collaboration';
   import Document from '@tiptap/extension-document';
@@ -53,6 +54,7 @@
   import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
   import { reviewState } from '$lib/stores/reviewStore.svelte';
   import { ttsState } from '$lib/stores/ttsStore.svelte';
+  import { uiState } from '$lib/stores/uiStore.svelte';
 
   // --- COMPONENT PROPERTIES ---
   let {
@@ -65,11 +67,89 @@
     provider: IndexeddbPersistence | null;
   }>();
 
+  // --- EXTENSIONS ---
+  const ColorModeExtension = Extension.create({
+    name: 'colorMode',
+
+    addProseMirrorPlugins() {
+      const gradients = [
+        ['#3b82f6', '#1d4ed8'],   // Blue
+        ['#f97316', '#db2777'],   // Orange/Pink
+        ['#10b981', '#0ea5e9'],   // Emerald/Sky
+        ['#8b5cf6', '#d946ef'],   // Violet/Fuchsia
+        ['#06b6d4', '#3b82f6'],   // Cyan/Blue
+        ['#6366f1', '#a855f7'],   // Indigo/Purple
+      ];
+
+      return [
+        new Plugin({
+          key: new PluginKey('colorMode'),
+          state: {
+            init() {
+              return { mode: 'none', decorations: DecorationSet.empty };
+            },
+            apply(tr, prevState) {
+              const meta = tr.getMeta('COLOR_MODE_UPDATE');
+              const mode = meta !== undefined ? meta : prevState.mode;
+              
+              if (mode !== 'by-path') {
+                return { mode, decorations: DecorationSet.empty };
+              }
+
+              if (!tr.docChanged && meta === undefined) {
+                return prevState;
+              }
+
+              const decorations: Decoration[] = [];
+              const doc = tr.doc;
+              let currentBranchId: string | null = null;
+
+              doc.descendants((node, pos) => {
+                if (node.type.name === 'heading') {
+                  const level = node.attrs.level;
+                  const nodeId = node.attrs.nodeId;
+                  
+                  if (level === 1) {
+                    // H1 is the root, it starts a new context but has no "branch color" itself.
+                    // We reset the branch ID so H1 and any immediate non-H2 children (if any valid) don't get colored.
+                    currentBranchId = null; 
+                  } else if (level === 2) {
+                    // H2 starts a new branch.
+                    currentBranchId = nodeId;
+                  }
+
+                  if (currentBranchId) {
+                    let hash = 0;
+                    for (let i = 0; i < currentBranchId.length; i++) {
+                      hash = ((hash << 5) - hash) + currentBranchId.charCodeAt(i);
+                      hash = hash & hash;
+                    }
+                    const index = Math.abs(hash) % 6; // 6 gradients available
+                    
+                    const deco = Decoration.node(pos, pos + node.nodeSize, {
+                      class: `branch-color-${index}`
+                    });
+                    decorations.push(deco);
+                  }
+                }
+              });
+
+              return { mode, decorations: DecorationSet.create(doc, decorations) };
+            }
+          },
+          props: {
+            decorations(state) {
+              return this.getState(state)?.decorations || DecorationSet.empty;
+            }
+          }
+        })
+      ];
+    }
+  });
+
   // --- STATE ---
   let element = $state<HTMLDivElement | null>(null);
-  let localEditorInstance: Editor | null = null;
-
-  // --- EVENT HANDLERS ---
+  let localEditorInstance = $state<Editor | null>(null);
   const syncTitleWithStore = debounce((editorInstance: Editor) => {
     const titleNode = editorInstance.state.doc.firstChild;
     if (
@@ -184,6 +264,7 @@
             },
           }),
           ResizableImage.configure({}),
+          ColorModeExtension,
         ],
         editorProps: { attributes: { class: 'prose' } },
         onUpdate: handleUpdate,
@@ -201,6 +282,9 @@
         }
         clearInitialContent();
       }
+
+      // Ensure all headings have IDs (including H1/H2 for coloring)
+      editor.commands.ensureNodeIds();
 
       syncTitleWithStore(editor);
 
@@ -324,9 +408,24 @@
       setTimeout(autoscrollToHighlight, 0);
     }
   });
+
+  // --- REACTIVE EFFECT: COLOR MODE DECORATIONS ---
+    $effect(() => {
+      if (!localEditorInstance || localEditorInstance.isDestroyed) return;
+      
+      const { colorMode } = uiState;
+      
+      // Dispatch a transaction to update the plugin state
+      const tr = localEditorInstance.state.tr.setMeta('COLOR_MODE_UPDATE', colorMode);
+      localEditorInstance.view.dispatch(tr);
+    });
 </script>
 
-<div bind:this={element}></div>
+<div 
+  bind:this={element}
+  class:color-mode-by-level={uiState.colorMode === 'by-level'}
+  class:color-mode-by-path={uiState.colorMode === 'by-path'}
+></div>
 
 <style>
   /* All highlight styles are now handled by the global app.css,
@@ -388,5 +487,118 @@
   }
   :global(.ProseMirror-focused) {
     outline: none !important;
+  }
+
+  /* --- COLOR MODE: BY LEVEL --- */
+  /* Using the same gradients as StandardTree for consistency */
+  
+  /* Level 1: Blue */
+  /* Level 1: Blue - SKIPPED (Root) */
+  /* :global(.color-mode-by-level h1) {
+    color: #3b82f6; 
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  } */
+
+  /* Level 2: Blue (Shifted from L1) */
+  :global(.color-mode-by-level h2) {
+    color: #3b82f6; 
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  }
+
+  /* Level 3: Orange/Pink (Shifted from L2) */
+  :global(.color-mode-by-level h3) {
+    color: #f97316;
+    background: linear-gradient(90deg, #f97316, #db2777);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  }
+
+  /* Level 4: Emerald/Sky (Shifted from L3) */
+  :global(.color-mode-by-level h4) {
+    color: #10b981;
+    background: linear-gradient(90deg, #10b981, #0ea5e9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  }
+
+  /* Level 5: Violet/Fuchsia (Shifted from L4) */
+  :global(.color-mode-by-level h5) {
+    color: #8b5cf6;
+    background: linear-gradient(90deg, #8b5cf6, #d946ef);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  }
+
+  /* Level 6: Cyan/Blue (Shifted from L5) */
+  :global(.color-mode-by-level h6) {
+    color: #06b6d4;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    width: fit-content;
+  }
+  /* --- COLOR MODE: BY PATH (Branch Colors) --- */
+  :global(.branch-color-0) {
+    color: #3b82f6 !important;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
+  }
+  :global(.branch-color-1) {
+    color: #f97316 !important;
+    background: linear-gradient(90deg, #f97316, #db2777) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
+  }
+  :global(.branch-color-2) {
+    color: #10b981 !important;
+    background: linear-gradient(90deg, #10b981, #0ea5e9) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
+  }
+  :global(.branch-color-3) {
+    color: #8b5cf6 !important;
+    background: linear-gradient(90deg, #8b5cf6, #d946ef) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
+  }
+  :global(.branch-color-4) {
+    color: #06b6d4 !important;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
+  }
+  :global(.branch-color-5) {
+    color: #6366f1 !important;
+    background: linear-gradient(90deg, #6366f1, #a855f7) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    width: fit-content !important;
   }
 </style>
