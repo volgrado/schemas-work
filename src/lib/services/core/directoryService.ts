@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { SchemaMetadata } from '$lib/types';
 import * as errorService from './errorService';
 import { DIRECTORY_STORAGE_KEY, LAST_ACTIVE_DOC_KEY } from '$lib/constants';
+import { generateUniqueName } from '$lib/utils/nameUtils';
 
 // --- REACTIVE EVENT EMITTER ---
 
@@ -57,41 +58,6 @@ export function initializeDirectoryListener(): () => void {
   return () => {
     window.removeEventListener('storage', handleStorageChange);
   };
-}
-
-// =================================================================
-// --- HELPER FUNCTIONS ---
-// =================================================================
-
-/**
- * Generates a unique name by appending (1), (2), etc. if duplicates exist.
- * @param baseTitle - The desired title
- * @param parentId - The parent folder ID
- * @param allItems - All existing items
- * @returns A unique title with numbering if needed
- */
-function generateUniqueName(
-  baseTitle: string,
-  parentId: string | null,
-  allItems: SchemaMetadata[]
-): string {
-  const trimmedBase = baseTitle.trim();
-  const siblings = allItems.filter(item => item.parentId === parentId);
-  
-  // Check if base title is available
-  if (!siblings.some(s => s.title.toLowerCase() === trimmedBase.toLowerCase())) {
-    return trimmedBase;
-  }
-  
-  // Find next available number
-  let counter = 1;
-  while (true) {
-    const candidate = `${trimmedBase} (${counter})`;
-    if (!siblings.some(s => s.title.toLowerCase() === candidate.toLowerCase())) {
-      return candidate;
-    }
-    counter++;
-  }
 }
 
 // =================================================================

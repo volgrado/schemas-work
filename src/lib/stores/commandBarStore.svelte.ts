@@ -197,9 +197,12 @@ function registerCommandBarActions() {
       context: 'view:command-bar',
       handler: async () => {
         const { create } = await import('$lib/stores/documentStore.svelte');
-        // const parentId = commandBarState.viewPayload?.parentId || null;
-        // openSchemaModal(); // This handles creation via modal
-        openSchemaModal();
+        const { get } = await import('svelte/store');
+        const { t } = await import('$lib/utils/i18n');
+        
+        const defaultName = get(t)('file_explorer.default_schema_name');
+        await create(defaultName);
+        close();
       }
     },
     {

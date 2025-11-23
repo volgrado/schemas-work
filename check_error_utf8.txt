@@ -1,0 +1,24 @@
+﻿Loading svelte-check in workspace: c:\Users\asoly\OneDrive\Aplicaciones\schemas-work
+Getting Svelte diagnostics...
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\lib\components\ui\ApiKeyModal.svelte[39m:179:17
+[31mError[39m: Type '"info"' is not assignable to type 'IconName'. (ts)
+[36m        <div class="info-box">
+          <Icon [35mname[36m="info" size={18} class="text-accent" />
+          <p class="explanation">{$t('apiKeyModal.explanation_models')}</p>[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\lib\components\ui\ApiKeyModal.svelte[39m:234:18
+[31mError[39m: Type '"shield"' is not assignable to type 'IconName'. (ts)
+[36m        <div class="info-box">
+           <Icon [35mname[36m="shield" size={18} class="text-accent" />
+           <p class="explanation">{$t('apiKeyModal.explanation_keys')}</p>[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\lib\components\ui\ApiKeyModal.svelte[39m:325:58
+[31mError[39m: Type '"external-link"' is not assignable to type 'IconName'. (ts)
+[36m                >
+                  {$t('apiKeyModal.get_key_link')} <Icon [35mname[36m="external-link" size={12} />
+                </a>[39m
+
+====================================
+[31msvelte-check found 3 errors and 3 warnings in 3 files
+[39m
