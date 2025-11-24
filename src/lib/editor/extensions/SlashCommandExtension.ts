@@ -20,6 +20,7 @@ import {
   moveGroup,
   triggerCommand,
 } from '$lib/stores/slashMenuStore.svelte';
+import { uiState } from '$lib/stores/uiStore.svelte';
 
 /**
  * @description The `SlashCommandExtension` integrates Tiptap's `Suggestion` plugin to create
@@ -28,34 +29,48 @@ import {
  * It works by orchestrating communication between Tiptap's suggestion logic and the standalone
  * functions of the Rune-based `slashMenuStore`, which manages the UI's reactive state.
  */
-export const SlashCommandExtension = Extension.create<
-  SuggestionOptions<CommandItem>
->({
+export interface SlashCommandOptions extends SuggestionOptions<CommandItem> {
+  allowAnyView?: boolean;
+}
+
+export const SlashCommandExtension = Extension.create<SlashCommandOptions>({
   name: 'slashCommand',
 
+  addOptions() {
+    return {
+      allowAnyView: false,
+      char: '/',
+      allowSpaces: false,
+      startOfLine: false,
+      allowedPrefixes: null,
+      decorationTag: 'span',
+      decorationClass: 'suggestion',
+      command: ({ editor, range, props }) => {
+        props.command({ editor, range });
+      },
+      items: ({ query }) => {
+        return getCommands().filter(
+          (item) =>
+            item.title.toLowerCase().startsWith(query.toLowerCase()) ||
+            item.description.toLowerCase().includes(query.toLowerCase())
+        );
+      },
+    } as SlashCommandOptions;
+  },
+
   addProseMirrorPlugins() {
+    const { editor, render, ...options } = this.options;
+
     return [
       Suggestion({
         editor: this.editor,
-        char: '/',
-        allowedPrefixes: null,
-
-        items: ({ query }) => {
-          return getCommands().filter(
-            (item) =>
-              item.title.toLowerCase().startsWith(query.toLowerCase()) ||
-              item.description.toLowerCase().includes(query.toLowerCase())
-          );
-        },
-
-        command: ({ editor, range, props }) => {
-          props.command({ editor, range });
-        },
-
+        ...options,
         render: () => {
           return {
             onStart: (props: SuggestionProps<CommandItem>) => {
-              // CORRECTION: Call the imported `open` function directly.
+              // Prevent opening if not in editor view, unless allowed
+              if (!this.options.allowAnyView && uiState.activeView !== 'editor') return;
+
               open(
                 props.items,
                 props.clientRect ?? null,
@@ -65,13 +80,11 @@ export const SlashCommandExtension = Extension.create<
             },
 
             onUpdate: (props: SuggestionProps<CommandItem>) => {
-              // CORRECTION: Call the imported `updateItems` function directly.
               updateItems(props.items, props.query);
             },
 
             onKeyDown: (props: SuggestionKeyDownProps): boolean => {
               if (props.event.key === 'ArrowUp') {
-                // CORRECTION: Call the imported `moveSelection` function directly.
                 moveSelection(-1);
                 return true;
               }
@@ -80,7 +93,6 @@ export const SlashCommandExtension = Extension.create<
                 return true;
               }
               if (props.event.key === 'ArrowLeft') {
-                // CORRECTION: Call the imported `moveGroup` function directly.
                 moveGroup(-1);
                 return true;
               }
@@ -89,7 +101,6 @@ export const SlashCommandExtension = Extension.create<
                 return true;
               }
               if (props.event.key === 'Enter') {
-                // CORRECTION: Call the imported `triggerCommand` function directly.
                 triggerCommand();
                 return true;
               }
@@ -97,7 +108,6 @@ export const SlashCommandExtension = Extension.create<
             },
 
             onExit: () => {
-              // CORRECTION: Call the imported `close` function directly.
               close();
             },
           };

@@ -359,10 +359,10 @@
   }
 
   .content-wrapper {
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-sm) var(--space-lg);
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
   /* --- Progress Bar --- */
@@ -391,7 +391,7 @@
     padding: var(--space-sm);
     color: var(--color-text-secondary);
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .status-view.error {
@@ -408,9 +408,9 @@
   /* --- Controls Layout --- */
   .main-controls {
     display: grid;
-    grid-template-columns: 1fr auto 1fr; /* Center playback controls */
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
   /* Info Section */
@@ -424,21 +424,21 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--color-text);
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .section-badge {
     background: var(--color-background-raised);
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
-    padding: 2px 6px;
+    padding: 1px 4px;
     border-radius: var(--radius-sm);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-family: var(--font-mono);
     font-weight: 600;
   }
@@ -447,12 +447,12 @@
   .playback-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
   :global(.play-pause-btn) {
-    width: 48px !important;
-    height: 48px !important;
+    width: 40px !important;
+    height: 40px !important;
     border-radius: 50% !important;
     background: var(--color-accent) !important;
     color: white !important;
@@ -477,8 +477,8 @@
     color: var(--color-text-secondary) !important;
     transition: color 0.2s, background-color 0.2s !important;
     border-radius: var(--radius-full) !important;
-    width: 36px !important;
-    height: 36px !important;
+    width: 28px !important;
+    height: 28px !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -505,7 +505,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: var(--space-xs);
+    gap: 4px;
   }
 
   /* --- Settings Panel --- */
@@ -634,54 +634,54 @@
   @media (max-width: 640px) {
     .panel.floating {
       bottom: var(--space-sm);
-      width: calc(100% - var(--space-md));
+      left: 50%;
+      width: calc(100% - 32px); /* Full width minus margins */
+      max-width: none;
       border-radius: var(--radius-lg);
+      /* Ensure we don't overlap the FAB which is usually at bottom-right */
+      margin-bottom: 0; 
     }
 
     .content-wrapper {
-      padding: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
     }
 
+    /* Keep single row layout on mobile */
     .main-controls {
-      display: block;
-      position: relative;
-      gap: 0;
+      grid-template-columns: 1fr auto auto;
+      gap: var(--space-xs);
     }
 
     .info-section {
-      text-align: left;
-      margin-bottom: var(--space-sm);
-      padding-right: 120px; /* Space for secondary actions (3 buttons) */
+      min-width: 0;
+      overflow: hidden;
     }
     
     .current-text {
-      justify-content: flex-start;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
+    }
+
+    .section-badge {
+      font-size: 0.65rem;
+      padding: 1px 3px;
     }
 
     .playback-actions {
-      justify-content: center;
-      gap: var(--space-lg); /* More space between main controls */
-      width: 100%;
+      gap: var(--space-xs);
     }
 
     .secondary-actions {
-      position: absolute;
-      top: -4px; /* Align with text */
-      right: 0;
-      border: none;
-      padding: 0;
-      justify-content: flex-end;
+      gap: 2px;
     }
     
     :global(.play-pause-btn) {
-      width: 42px !important;
-      height: 42px !important;
+      width: 36px !important;
+      height: 36px !important;
     }
 
-    :global(.play-pause-btn .icon) {
-      width: 20px !important;
-      height: 20px !important;
+    :global(.control-btn) {
+      width: 26px !important;
+      height: 26px !important;
     }
     
     .sliders-row {

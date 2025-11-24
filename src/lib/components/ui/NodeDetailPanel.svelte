@@ -12,6 +12,8 @@
     setIsResizing,
     updateNodeAtPos,
     openPanel,
+    navigateToSibling, 
+    requestFocus
   } from '$lib/stores/nodeDetailStore.svelte';
   import { ttsState } from '$lib/stores/ttsStore.svelte';
   import { editorState } from '$lib/stores/editorStore.svelte';
@@ -22,6 +24,7 @@
   import NodeDetailHeader from './node-detail/NodeDetailHeader.svelte';
   import NodeDetailFooter from './node-detail/NodeDetailFooter.svelte';
   import ResizeHandle from './common/ResizeHandle.svelte';
+  import NodeDetailEditor from './node-detail/NodeDetailEditor.svelte';
 
   /**
    * Resize Logic
@@ -83,8 +86,10 @@
     const currentLevel = typedHeadingNode.attrs.level;
     let foundNextHeading = false;
 
+    const startPos = headingPos + typedHeadingNode.nodeSize;
+
     editor.state.doc.nodesBetween(
-      headingPos + typedHeadingNode.nodeSize,
+      startPos,
       editor.state.doc.content.size,
       (pmNode: ProseMirrorNode, pos: number) => {
         if (foundNextHeading) return false;
@@ -101,12 +106,12 @@
 
     const content = extractContentWithPositions(
       editor.state.doc,
-      headingPos + typedHeadingNode.nodeSize,
+      startPos,
       endPos,
       editor.state.schema
     );
 
-    openPanel(activeTreeNodeId, title, content);
+    openPanel(activeTreeNodeId, title, content, startPos, endPos);
   });
 
   /**
@@ -229,36 +234,20 @@
   $effect(() => {
     if (nodeDetailState.isOpen) {
       const handleKeydown = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
-          closePanel();
-          return;
-        }
-        // Navigation logic is now handled by buttons in Header, 
-        // but we keep global shortcuts here or move them?
-        // The original code had global shortcuts.
-        // Let's keep them here as they are global panel behavior.
-        // But we need to import navigateToSibling if we use it here.
-        // Wait, I didn't import navigateToSibling in this file.
-        // I should import it if I want to keep keyboard nav.
-      };
-      
-      window.addEventListener('keydown', handleKeydown);
-      return () => window.removeEventListener('keydown', handleKeydown);
-    }
-  });
-  
-  // Re-import navigateToSibling for keyboard shortcuts
-  import { navigateToSibling, requestFocus } from '$lib/stores/nodeDetailStore.svelte';
-  
-  // Update the effect to use the imported functions
-  $effect(() => {
-    if (nodeDetailState.isOpen) {
-      const handleKeydown = (event: KeyboardEvent) => {
+        // Only handle global shortcuts if we are NOT editing
+        const isEditing = document.activeElement?.closest('.node-detail-editor');
+
         if (event.key === 'Escape') {
           closePanel();
           return;
         }
         
+        if (isEditing) {
+          // If editing, let the editor handle it.
+          // Do NOT stop propagation here in capture phase, or the editor won't get it.
+          return; 
+        }
+
         if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
           event.preventDefault();
           navigateToSibling('prev');
@@ -272,8 +261,8 @@
         }
       };
       
-      window.addEventListener('keydown', handleKeydown);
-      return () => window.removeEventListener('keydown', handleKeydown);
+      window.addEventListener('keydown', handleKeydown, true);
+      return () => window.removeEventListener('keydown', handleKeydown, true);
     }
   });
 
@@ -287,18 +276,11 @@
     }
   });
 
-  function handleInput(event: Event) {
-    const selection = window.getSelection();
-    if (!selection || !selection.anchorNode) return;
-    
-    let el = selection.anchorNode.parentElement;
-    const block = el?.closest('[data-pos]');
-    
-    if (block && block instanceof HTMLElement) {
-      const pos = parseInt(block.getAttribute('data-pos') || '-1');
-      if (pos !== -1) {
-        updateNodeAtPos(pos, block);
-      }
+  function handlePanelKeydown(event: KeyboardEvent) {
+    // Stop propagation for events originating from the editor
+    // to prevent them from triggering global app shortcuts (bubbling phase).
+    if (event.target instanceof Element && event.target.closest('.node-detail-editor')) {
+      event.stopPropagation();
     }
   }
 </script>
@@ -309,6 +291,7 @@
   role="region"
   aria-labelledby="panel-title"
   aria-hidden={!nodeDetailState.isOpen}
+  onkeydown={handlePanelKeydown}
 >
   <ResizeHandle 
     onResize={handleResize}
@@ -322,16 +305,7 @@
   <NodeDetailHeader />
 
   <div class="panel-content">
-    <div 
-      class="content-body"
-      contenteditable="true"
-      role="textbox"
-      tabindex="0"
-      oninput={handleInput}
-    >
-      <!-- Render rich HTML content (images, paragraphs, lists) -->
-      {@html nodeDetailState.content}
-    </div>
+    <NodeDetailEditor />
   </div>
 
   <NodeDetailFooter />
@@ -388,32 +362,6 @@
     overflow-y: auto;
     padding: var(--space-lg) var(--space-lg) var(--space-xl);
     min-height: 0; /* Crucial for flex scrolling */
-  }
-
-  .content-body {
-    line-height: 1.7;
-    color: var(--color-text-secondary);
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-  }
-
-  /* Rich Content Styling */
-  :global(.content-body p) {
-    margin-bottom: 1em;
-  }
-  :global(.content-body img) {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--radius-md);
-    margin: 1em 0;
-    box-shadow: var(--shadow-md);
-  }
-  :global(.content-body ul, .content-body ol) {
-    padding-left: 1.5em;
-    margin-bottom: 1em;
-  }
-  :global(.content-body li) {
-    margin-bottom: 0.5em;
   }
 
   /* Highlight Active Block */

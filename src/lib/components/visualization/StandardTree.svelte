@@ -853,6 +853,7 @@
     /* Allow up to 2 lines */
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     white-space: normal; /* Ensure text wraps */

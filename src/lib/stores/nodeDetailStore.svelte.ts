@@ -20,6 +20,10 @@ export interface NodeDetailState {
   content: string;
   /** The unique identifier of the node currently displayed in the panel. */
   activeNodeId: string | null;
+  /** The starting position of the content in the main document. */
+  contentStartPos: number | null;
+  /** The ending position of the content in the main document. */
+  contentEndPos: number | null;
   /** Signal to request focus on a specific node (consumed by SchemaTree). */
   requestedFocusId: string | null;
   /** The current width of the panel in pixels. */
@@ -50,6 +54,8 @@ const initialState: NodeDetailState = {
   title: '',
   content: '',
   activeNodeId: null,
+  contentStartPos: null,
+  contentEndPos: null,
   requestedFocusId: null,
   width: 480,
   isResizing: false,
@@ -74,16 +80,22 @@ export const nodeDetailState = $state<NodeDetailState>({ ...initialState });
  * @param {string} nodeId - The unique ID of the node being displayed.
  * @param {string} title - The title to show in the panel's header.
  * @param {string} content - The descriptive content to show in the panel's body.
+ * @param {number} [startPos] - The starting position of the content in the main doc.
+ * @param {number} [endPos] - The ending position of the content in the main doc.
  */
 export function openPanel(
   nodeId: string,
   title: string,
-  content: string
+  content: string,
+  startPos?: number,
+  endPos?: number
 ): void {
   nodeDetailState.isOpen = true;
   nodeDetailState.title = title;
   nodeDetailState.content = content;
   nodeDetailState.activeNodeId = nodeId;
+  nodeDetailState.contentStartPos = startPos ?? null;
+  nodeDetailState.contentEndPos = endPos ?? null;
   
   // Automatically align the reader with the selected node
   alignEditorWithNode();
