@@ -5,10 +5,10 @@
   import type { Snippet } from 'svelte';
 
   // --- UI Components & Utilities ---
-  import Logo from '$lib/components/ui/Logo.svelte';
+  import Logo from '$lib/components/core/Logo.svelte';
   import { t } from '$lib/utils/i18n';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
-  import ThemeToggleButton from '$lib/components/ui/ThemeToggleButton.svelte';
+  import ThemeToggleButton from '$lib/components/core/ThemeToggleButton.svelte';
 
   // VVVV CORRECTED IMPORTS VVVV
   import {

@@ -1,0 +1,41 @@
+﻿
+> schemas-work@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: c:\Users\asoly\OneDrive\Aplicaciones\schemas-work
+Getting Svelte diagnostics...
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\lib\components\editor\SlashMenuController.svelte[39m:267:3
+[33mWarn[39m: Unused CSS selector ".mb-2"
+https://svelte.dev/e/css_unused_selector (svelte)
+[36m  
+  [35m.mb-2[36m {
+    margin-bottom: var(--space-sm);[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\routes\+layout.svelte[39m:5:29
+[31mError[39m: Cannot find module '$lib/components/ui/OrganicCanvas.svelte' or its corresponding type declarations. (ts)
+[36m  import { Toaster } from 'svelte-sonner';
+  import OrganicCanvas from [35m'$lib/components/ui/OrganicCanvas.svelte'[36m;
+  import CommandBar from '$lib/components/ui/CommandBar.svelte';[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\routes\+layout.svelte[39m:6:26
+[31mError[39m: Cannot find module '$lib/components/ui/CommandBar.svelte' or its corresponding type declarations. (ts)
+[36m  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
+  import CommandBar from [35m'$lib/components/ui/CommandBar.svelte'[36m;
+  import NodeDetailPanel from '$lib/components/ui/NodeDetailPanel.svelte';[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\routes\+layout.svelte[39m:7:31
+[31mError[39m: Cannot find module '$lib/components/ui/NodeDetailPanel.svelte' or its corresponding type declarations. (ts)
+[36m  import CommandBar from '$lib/components/ui/CommandBar.svelte';
+  import NodeDetailPanel from [35m'$lib/components/ui/NodeDetailPanel.svelte'[36m;
+  import GlobalErrorBoundary from '$lib/components/ui/GlobalErrorBoundary.svelte';[39m
+
+c:\Users\asoly\OneDrive\Aplicaciones\schemas-work\[32msrc\routes\+layout.svelte[39m:8:35
+[31mError[39m: Cannot find module '$lib/components/ui/GlobalErrorBoundary.svelte' or its corresponding type declarations. (ts)
+[36m  import NodeDetailPanel from '$lib/components/ui/NodeDetailPanel.svelte';
+  import GlobalErrorBoundary from [35m'$lib/components/ui/GlobalErrorBoundary.svelte'[36m;
+  import type { Snippet } from 'svelte';[39m
+
+====================================
+[31msvelte-check found 4 errors and 1 warning in 2 files
+[39m

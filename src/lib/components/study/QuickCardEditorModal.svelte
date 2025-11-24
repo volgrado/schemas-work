@@ -9,13 +9,13 @@
   import { t } from '$lib/utils/i18n';
 
   // UI Components
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Input from '$lib/components/ui/Input.svelte';
-  import Textarea from '$lib/components/ui/Textarea.svelte';
-  import Toggle from '$lib/components/ui/Toggle.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import TagInput from '$lib/components/ui/TagInput.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Input from '$lib/components/core/Input.svelte';
+  import Textarea from '$lib/components/core/Textarea.svelte';
+  import Toggle from '$lib/components/core/Toggle.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import TagInput from '$lib/components/core/TagInput.svelte';
 
   let { show = $bindable(false), card } = $props<{
     show?: boolean;

@@ -13,8 +13,11 @@
   import WorkspaceView from '$lib/components/layout/WorkspaceView.svelte';
   import TTSController from '$lib/components/tts/TTSController.svelte';
   import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
-  import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
-  import { Button, Icon, Modal, Spinner } from '$lib/components/ui';
+  import FloatingActionButton from '$lib/components/core/FloatingActionButton.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Spinner from '$lib/components/core/Spinner.svelte';
 
   // --- Props ---
   let { onShowWelcome } = $props<{ onShowWelcome: () => void }>();

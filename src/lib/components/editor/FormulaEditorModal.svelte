@@ -5,8 +5,8 @@
   import { tick } from 'svelte';
 
   // --- UI Components ---
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Button from '$lib/components/core/Button.svelte';
 
   // --- Svelte 5 Props ---
   // This component is designed to receive the `onsave` function as a prop.

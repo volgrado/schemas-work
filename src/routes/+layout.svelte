@@ -2,10 +2,10 @@
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
   import { Toaster } from 'svelte-sonner';
-  import OrganicCanvas from '$lib/components/ui/OrganicCanvas.svelte';
-  import CommandBar from '$lib/components/ui/CommandBar.svelte';
-  import NodeDetailPanel from '$lib/components/ui/NodeDetailPanel.svelte';
-  import GlobalErrorBoundary from '$lib/components/ui/GlobalErrorBoundary.svelte';
+  import OrganicCanvas from '$lib/components/core/OrganicCanvas.svelte';
+  import CommandBar from '$lib/components/features/command-bar/CommandBar.svelte';
+  import NodeDetailPanel from '$lib/components/features/node-detail/NodeDetailPanel.svelte';
+  import GlobalErrorBoundary from '$lib/components/core/GlobalErrorBoundary.svelte';
   import type { Snippet } from 'svelte';
 
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';

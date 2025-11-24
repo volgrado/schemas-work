@@ -12,8 +12,8 @@
   import type { Action } from 'svelte/action';
 
   // --- UI Components ---
-  import Popup from '$lib/components/ui/Popup.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+  import Popup from '$lib/components/core/Popup.svelte';
+  import Button from '$lib/components/core/Button.svelte';
 
   // --- Svelte 5 State ---
   let menuVisible = $state(false);

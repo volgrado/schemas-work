@@ -9,8 +9,8 @@
 -->
 <script lang="ts">
   // --- UI Components & Utilities ---
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Button from '$lib/components/core/Button.svelte';
   import { t } from '$lib/utils/i18n';
   import type { HTMLInputAttributes } from 'svelte/elements';
 

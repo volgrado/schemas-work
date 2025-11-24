@@ -18,9 +18,9 @@
   import * as cardService from '$lib/services/features/cardService';
 
   // --- UI Component Imports ---
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
 
   // --- Svelte 5 Props and Events ---
   let { show = $bindable(false), card } = $props<{

@@ -14,14 +14,14 @@
     setActiveGroup,
     triggerCommandByIndex,
   } from '$lib/stores/slashMenuStore.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
   import { t } from '$lib/utils/i18n';
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { tick } from 'svelte';
 
   // --- UI Primitives ---
-  import Popup from '$lib/components/ui/Popup.svelte';
+  import Popup from '$lib/components/core/Popup.svelte';
 
   // --- State ---
   let itemsListEl = $state<HTMLDivElement | undefined>();

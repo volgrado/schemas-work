@@ -18,9 +18,9 @@
     toggleSettings,
   } from '$lib/stores/ttsStore.svelte';
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import Spinner from '$lib/components/ui/Spinner.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import Spinner from '$lib/components/core/Spinner.svelte';
   import { t } from '$lib/utils/i18n';
 
   // --- Props ---

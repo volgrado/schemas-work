@@ -1,0 +1,39 @@
+/**
+ * src/lib/styles/typography.css
+ *
+ * Typography & Text Utilities
+ */
+
+/* --- Font Loading --- */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter-VariableFont_slnt,wght.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.woff2') format('woff2');
+}
+
+/* --- Base Headings --- */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em; /* Tighter, more modern headings */
+}
+
+/* --- Text Utilities --- */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-bold { font-weight: 700; }
+.text-muted { color: var(--color-text-secondary); }

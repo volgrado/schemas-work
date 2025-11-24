@@ -15,7 +15,12 @@
   import { toast } from 'svelte-sonner';
 
   // --- UI Components ---
-  import { Button, Icon, Popup, HelpTooltip, TagInput, Spinner } from '$lib/components/ui';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import Popup from '$lib/components/core/Popup.svelte';
+  import HelpTooltip from '$lib/components/core/HelpTooltip.svelte';
+  import TagInput from '$lib/components/core/TagInput.svelte';
+  import Spinner from '$lib/components/core/Spinner.svelte';
 
   // --- Stores, Actions, and Utilities ---
   import { t } from '$lib/utils/i18n';

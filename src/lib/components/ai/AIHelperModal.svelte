@@ -4,10 +4,10 @@
   import { toast } from 'svelte-sonner';
 
   // --- UI Components & Utilities ---
-  import Modal from '$lib/components/ui/Modal.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import Textarea from '$lib/components/ui/Textarea.svelte';
+  import Modal from '$lib/components/core/Modal.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import Textarea from '$lib/components/core/Textarea.svelte';
   import * as errorService from '$lib/services/core/errorService';
   import { t } from '$lib/utils/i18n';
 

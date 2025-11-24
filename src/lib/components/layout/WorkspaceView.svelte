@@ -6,10 +6,10 @@
   // --- Components ---
   import DocumentView from '$lib/components/editor/DocumentView.svelte';
   // SchemaTree is now lazy loaded
-  import Button from '$lib/components/ui/Button.svelte';
-  import Icon from '$lib/components/ui/Icon.svelte';
-  import Spinner from '$lib/components/ui/Spinner.svelte';
-  import EmptyState from '$lib/components/ui/EmptyState.svelte';
+  import Button from '$lib/components/core/Button.svelte';
+  import Icon from '$lib/components/core/Icon.svelte';
+  import Spinner from '$lib/components/core/Spinner.svelte';
+  import EmptyState from '$lib/components/core/EmptyState.svelte';
 
   // --- Stores ---
   import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';

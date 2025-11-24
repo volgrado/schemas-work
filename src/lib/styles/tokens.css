@@ -1,0 +1,226 @@
+/**
+ * src/lib/styles/tokens.css
+ *
+ * Design Tokens (CSS Variables)
+ * Defines the core visual language of the application.
+ */
+
+:root {
+  /* --- Palette: Serene Sky (Light) --- */
+  --color-background: hsl(210 20% 99%); /* Slightly brighter */
+  --color-page-background: hsl(210 20% 97%);
+  --color-text: hsl(215 25% 22%); /* Darker for better contrast */
+  --color-text-secondary: hsl(215 15% 50%);
+  --color-text-tertiary: hsl(215 15% 70%);
+  --color-accent: hsl(220 90% 58%); /* More vibrant */
+  --color-accent-hover: hsl(220 90% 53%);
+  --color-accent-hsl: 220 90% 58%;
+  --color-border: hsl(210 20% 90%);
+
+  /* --- Component Colors --- */
+  --color-background-raised: #ffffff;
+  --color-background-translucent: hsla(0, 0%, 100%, 0.85);
+  --color-border-input: hsl(210 20% 85%);
+  --btn-hover-bg: hsl(210 20% 96%);
+  --color-toggle-thumb: #ffffff;
+
+  /* --- Feedback Colors --- */
+  --color-danger: #e53e3e;
+  --color-danger-bg: #fed7d7;
+  --color-danger-text: #9b2c2c;
+  --color-success-bg: #c6f6d5;
+  --color-success-text: #2f855a;
+  --color-warning-bg: #fefcbf;
+  --color-warning-text: #744210;
+  --color-info-bg: #bee3f8;
+  --color-info-text: #2c5282;
+
+  /* --- Chart Colors --- */
+  --chart-color-1: var(--color-accent);
+  --chart-color-2: #48bb78;
+  --chart-color-3: #ed8936;
+  --chart-color-4: #f56565;
+  --chart-color-5: #a0aec0;
+
+  /* --- Grayscale --- */
+  --color-gray-50: hsl(210 20% 99%);
+  --color-gray-100: hsl(210 20% 96%);
+  --color-gray-200: hsl(210 20% 90%);
+  --color-gray-300: hsl(210 20% 85%);
+  --color-gray-400: hsl(215 15% 70%);
+  --color-gray-500: hsl(215 15% 50%);
+  --color-gray-600: hsl(215 25% 40%);
+  --color-gray-700: hsl(215 25% 30%);
+  --color-gray-800: hsl(215 25% 22%);
+  --color-gray-900: hsl(215 25% 15%);
+
+  /* --- Typography --- */
+  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* --- Type Scale --- */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem;  /* 36px */
+
+  /* --- Spacing --- */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 64px;
+
+  /* --- Layout --- */
+  --height-header: 56px;
+  --height-subheader: 48px;
+  --width-panel-sm: 320px;
+  --width-panel-md: 480px;
+  --width-panel-lg: 720px;
+  --width-menu-min: 200px;
+
+  /* --- Sheet (Document) Layout --- */
+  --sheet-max-width: 800px;
+  --sheet-padding-x: 80px;
+  --sheet-padding-y: 60px;
+
+  /* --- Breakpoints --- */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(var(--color-accent-hsl) / 0.1), 0 2px 4px -2px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-lg: 0 10px 15px -3px hsl(var(--color-accent-hsl) / 0.1), 0 4px 6px -4px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-xl: 0 20px 25px -5px hsl(var(--color-accent-hsl) / 0.1), 0 8px 10px -6px hsl(var(--color-accent-hsl) / 0.1);
+  --shadow-glow: 0 0 15px hsl(var(--color-accent-hsl) / 0.3);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.06);
+
+  /* --- Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* --- Legacy Radius Mapping --- */
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
+
+  /* --- Motion Registry --- */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 500ms;
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-base: all var(--duration-base) var(--ease-in-out);
+  --transition-fast: all var(--duration-fast) var(--ease-out);
+
+  /* --- Z-Index Registry --- */
+  --z-negative: -1;
+  --z-base: 0;
+  --z-elevated: 10;
+  --z-header: 50;
+  --z-dropdown: 100;
+  --z-sticky: 110;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-popover: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  --z-max: 9999;
+
+  /* --- Legacy Z-Index Mapping --- */
+  --z-context-menu: var(--z-dropdown);
+  --z-command-bar: var(--z-modal);
+  --z-modal-overlay: var(--z-overlay);
+  --z-modal-panel: var(--z-modal);
+
+  /* --- Icon Sizes --- */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 48px;
+
+  /* --- Scrollbars --- */
+  --scrollbar-width: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--color-gray-300);
+  --scrollbar-thumb-hover: var(--color-gray-400);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --sheet-padding-x: 24px;
+    --sheet-padding-y: 32px;
+  }
+}
+
+/**
+ * Dark Theme (Twilight)
+ */
+html.dark-theme,
+.dark-theme {
+  /* --- Palette: Twilight (Dark) --- */
+  --color-background: #16141d; /* Deeper, richer dark */
+  --color-page-background: #0e0c13;
+  --color-text: #ece9f5;
+  --color-text-secondary: #a59cc9;
+  --color-text-tertiary: #7a7199;
+  --color-accent: #9f7aea; /* Slightly lighter purple for pop */
+  --color-accent-hover: #8b5cf6;
+  --color-accent-hsl: 260 75% 70%;
+  --color-border: #353045;
+
+  /* --- Component Colors --- */
+  --color-background-raised: #23202e;
+  --color-background-translucent: hsla(260, 25%, 10%, 0.75);
+  --color-border-input: #423b59;
+  --btn-hover-bg: #353045;
+  --color-toggle-thumb: #ece9f5;
+
+  /* --- Chart Colors --- */
+  --chart-color-1: var(--color-accent);
+  --chart-color-2: #68d391;
+  --chart-color-3: #f6ad55;
+  --chart-color-4: #fc8181;
+  --chart-color-5: #cbd5e0;
+
+  /* --- Grayscale --- */
+  --color-gray-50: #0e0c13;
+  --color-gray-100: #16141d;
+  --color-gray-200: #23202e;
+  --color-gray-300: #353045;
+  --color-gray-400: #423b59;
+  --color-gray-500: #7a7199;
+  --color-gray-600: #a59cc9;
+  --color-gray-700: #ece9f5;
+  --color-gray-800: #f3f4f6;
+  --color-gray-900: #ffffff;
+
+  /* --- Shadows --- */
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+  --shadow-glow: 0 0 20px hsl(var(--color-accent-hsl) / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.5);
+
+  /* --- Scrollbars --- */
+  --scrollbar-thumb: var(--color-gray-600);
+  --scrollbar-thumb-hover: var(--color-gray-500);
+
+  /* --- Legacy Mappings --- */
+  --panel-bg-dark: var(--color-background-translucent);
+  --panel-border-dark: var(--color-border);
+}
