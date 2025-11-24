@@ -20,6 +20,7 @@
   import * as errorService from '$lib/services/core/errorService';
   import * as integrityService from '$lib/services/core/integrityService'; // NEW
   import { initializeIcons } from '$lib/services/iconService'; // NEW
+  import { registerCommandBarActions } from '$lib/init'; // NEW
 
   import '$lib/styles/app.css';
   import 'katex/dist/katex.min.css';
@@ -52,6 +53,7 @@
     if (browser) {
       await integrityService.initialize();
       initializeIcons(); // Register offline icons
+      registerCommandBarActions(); // Register command bar actions
     }
   });
 

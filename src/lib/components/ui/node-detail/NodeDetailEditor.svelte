@@ -3,8 +3,11 @@
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
+  import { DataPosExtension } from '$lib/editor/extensions/DataPosExtension';
+  import { TTSHighlightExtension } from '$lib/editor/extensions/TTSHighlightExtension'; // NEW
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
   import { editorState } from '$lib/stores/editorStore.svelte';
+  import { ttsState } from '$lib/stores/ttsStore.svelte'; // NEW
   import { DOMSerializer, DOMParser } from 'prosemirror-model';
 
   let element = $state<HTMLDivElement | null>(null);
@@ -27,12 +30,17 @@
         SlashCommandExtension.configure({
             allowAnyView: true,
         }),
+        DataPosExtension,
+        TTSHighlightExtension, // NEW
       ],
       content: nodeDetailState.content, // Initialize with HTML content
       editorProps: {
         attributes: {
           class: 'prose focus:outline-none max-w-none',
         },
+      },
+      onCreate: ({ editor }) => {
+        // Editor created
       },
       onUpdate: ({ editor, transaction }) => {
         if (!transaction.docChanged || isSyncing) return;
@@ -45,23 +53,31 @@
     };
   });
 
+  // Sync TTS State to Editor Highlights
+  $effect(() => {
+    if (!editor || editor.isDestroyed) return;
+
+    const { status, currentWordRange, currentNodeIndex, nodesToRead } = ttsState;
+
+    if (status !== 'playing' || !currentWordRange || !nodesToRead[currentNodeIndex]) {
+      editor.commands.clearTTSHighlight();
+      return;
+    }
+
+    const currentNode = nodesToRead[currentNodeIndex];
+    const relStart = currentWordRange.from - currentNode.pos - 1;
+    const relEnd = currentWordRange.to - currentNode.pos - 1;
+
+    editor.commands.setTTSHighlight(currentNode.pos, relStart, relEnd);
+  });
+
   // React to external content changes (e.g. from TTS or navigation)
   $effect(() => {
     const newContent = nodeDetailState.content;
     const newId = nodeDetailState.activeNodeId;
     
-    // If the editor exists and the ID changed, or we are not currently editing (force update)
-    // We need a way to distinguish "user typed in panel" vs "user navigated to new node"
-    // The simplest way is to check if the content matches current editor content? No.
-    // We rely on activeNodeId changing.
-    
     if (editor && !editor.isDestroyed) {
-        // If the ID changed, we definitely reload.
-        // Or if the content changed externally (how to know?)
-        // For now, let's just reload if activeNodeId changes.
-        // But wait, openPanel sets content and ID together.
-        
-        // We can store the last loaded ID.
+        // Logic handled below
     }
   });
   
@@ -84,33 +100,18 @@
 
     const { state, view } = mainEditor;
     
-    // We want to replace the range [localStartPos, localEndPos] in the main doc
-    // with the current content of the panel editor.
-    
-    // Serialize panel content to a Slice
-    // We can just use the panel's document content (Fragment)
     const panelDoc = panelEditor.state.doc;
-    
-    // But panelDoc is a full document (doc -> block+).
-    // The range in main doc expects block+.
-    // So we can use panelDoc.content.
-    
-    // However, we need to be careful about schema compatibility if they differ (they shouldn't).
     
     const tr = state.tr;
     
-    // Check if the range is valid
     if (localStartPos >= state.doc.content.size) return;
     
-    // We replace the range.
     try {
         tr.replaceWith(localStartPos, localEndPos, panelDoc.content);
         
         if (tr.docChanged) {
             view.dispatch(tr);
             
-            // Update the localEndPos to reflect the new size
-            // The new size is the size of the inserted content.
             const newSize = panelDoc.content.size;
             nodeDetailState.contentEndPos = localStartPos + newSize;
         }

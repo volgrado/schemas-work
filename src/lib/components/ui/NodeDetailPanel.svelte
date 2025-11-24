@@ -147,87 +147,6 @@
       }
     }, 50);
   });
-
-  /**
-   * Helper to wrap a text range in a highlight span for karaoke effect.
-   */
-  function highlightRange(element: HTMLElement, start: number, end: number) {
-    const existing = element.querySelectorAll('.is-current-tts-word');
-    existing.forEach(el => {
-      const parent = el.parentNode;
-      if (parent) {
-        parent.replaceChild(document.createTextNode(el.textContent || ''), el);
-        parent.normalize();
-      }
-    });
-
-    if (start >= end) return;
-
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
-    let current = 0;
-    let node: Node | null;
-    
-    while ((node = walker.nextNode())) {
-      const text = node.textContent || '';
-      const len = text.length;
-      
-      if (current + len > start && current < end) {
-        const range = document.createRange();
-        const nodeStart = Math.max(0, start - current);
-        const nodeEnd = Math.min(len, end - current);
-        
-        try {
-          range.setStart(node, nodeStart);
-          range.setEnd(node, nodeEnd);
-          
-          const wrapper = document.createElement('span');
-          wrapper.className = 'is-current-tts-word';
-          range.surroundContents(wrapper);
-          return;
-        } catch (e) {
-          console.warn('Karaoke highlight failed:', e);
-        }
-      }
-      current += len;
-    }
-  }
-
-  /**
-   * Effect for Word-Level Karaoke Highlighting
-   */
-  $effect(() => {
-    const { currentWordRange, currentNodeIndex, nodesToRead, status } = ttsState;
-    
-    if (status !== 'playing') {
-       const contentEl = document.querySelector('.panel-content');
-       if (contentEl) {
-          const existing = contentEl.querySelectorAll('.is-current-tts-word');
-          existing.forEach(el => {
-             const parent = el.parentNode;
-             if (parent) {
-                parent.replaceChild(document.createTextNode(el.textContent || ''), el);
-                parent.normalize();
-             }
-          });
-       }
-       return;
-    }
-
-    if (!currentWordRange || !nodesToRead[currentNodeIndex]) return;
-
-    const currentNode = nodesToRead[currentNodeIndex];
-    const contentEl = document.querySelector('.panel-content');
-    if (!contentEl) return;
-
-    const blockEl = contentEl.querySelector(`[data-pos="${currentNode.pos}"]`);
-    if (!blockEl) return;
-
-    const relStart = currentWordRange.from - currentNode.pos - 1;
-    const relEnd = currentWordRange.to - currentNode.pos - 1;
-
-    highlightRange(blockEl as HTMLElement, relStart, relEnd);
-  });
-
   /**
    * Effect to handle global keyboard events for accessibility and navigation.
    */
@@ -376,10 +295,12 @@
 
   /* Highlight Active Word (Karaoke) */
   :global(.is-current-tts-word) {
-    background-color: var(--color-accent) !important;
+    background-color: var(--color-accent, #3b82f6) !important;
     color: white !important;
     border-radius: 2px !important;
-    box-shadow: 0 0 0 1px var(--color-accent) !important;
+    box-shadow: 0 0 0 1px var(--color-accent, #3b82f6) !important;
+    position: relative;
+    z-index: 1;
   }
 
   /* Utility */
