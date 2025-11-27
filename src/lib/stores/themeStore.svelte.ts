@@ -33,11 +33,7 @@ class ThemeStore {
   // FIX: The $state rune is now a public property of the class.
   theme = $state<Theme>(getInitialState());
 
-  // This makes the store compatible with the '$' prefix for legacy reasons if needed.
-  subscribe(run: (value: Theme) => void) {
-    $effect(() => run(this.theme));
-    return () => {};
-  }
+
 
   cycle() {
     // FIX: Mutate the class property directly.

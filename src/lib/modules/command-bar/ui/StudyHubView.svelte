@@ -1,6 +1,6 @@
-<!-- src/lib/components/command-bar/StudyHubView.svelte -->
+﻿<!-- src/lib/components/command-bar/StudyHubView.svelte -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import CommandButton from './CommandButton.svelte';
@@ -10,7 +10,7 @@
     close as closeCommandBar,
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { startReview } from '$lib/stores/reviewStore.svelte';
-  import * as reviewService from '$lib/services/features/reviewService';
+  import * as reviewService from '$lib/modules/study/domain/reviewService';
 
   type DeckStat = { title: string; new: number; learning: number; due: number };
 
@@ -34,15 +34,15 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('studyHub.title')} onBack={() => setView('main')}>
+  <ViewHeader title={i18n.t('studyHub.title')} onBack={() => setView('main')}>
     <Button
       variant="secondary"
       size="sm"
       onclick={() => setView('statistics')}
-      aria-label={$t('studyHub.viewStatisticsAria')}
+      aria-label={i18n.t('studyHub.viewStatisticsAria')}
     >
       <Icon name="activity" size={14} />
-      {$t('studyHub.viewStatistics')}
+      {i18n.t('studyHub.viewStatistics')}
     </Button>
   </ViewHeader>
 
@@ -58,23 +58,23 @@
         {/each}
       </div>
     {:else if deckStats.size === 0}
-      <div class="state-message">{$t('studyHub.empty')}</div>
+      <div class="state-message">{i18n.t('studyHub.empty')}</div>
     {:else}
       <div class="deck-grid" role="grid">
         <div class="header-cell" role="columnheader">
-          {$t('studyHub.deckHeader')}
+          {i18n.t('studyHub.deckHeader')}
         </div>
         <div class="header-cell new" role="columnheader">
-          {$t('studyHub.newHeader')}
+          {i18n.t('studyHub.newHeader')}
         </div>
         <div class="header-cell learning" role="columnheader">
-          {$t('studyHub.learningHeader')}
+          {i18n.t('studyHub.learningHeader')}
         </div>
         <div class="header-cell due" role="columnheader">
-          {$t('studyHub.reviewHeader')}
+          {i18n.t('studyHub.reviewHeader')}
         </div>
         <div class="header-cell" role="columnheader">
-          <span class="visually-hidden">{$t('studyHub.actionsHeader')}</span>
+          <span class="visually-hidden">{i18n.t('studyHub.actionsHeader')}</span>
         </div>
 
         {#each [...deckStats.entries()] as [deckId, stats] (deckId)}
@@ -103,7 +103,7 @@
                   e.stopPropagation();
                   setView('deck-options', { deckId });
                 }}
-                aria-label={$t('studyHub.settingsAria')}
+                aria-label={i18n.t('studyHub.settingsAria')}
               >
                 <Icon name="settings" size={16} />
               </Button>

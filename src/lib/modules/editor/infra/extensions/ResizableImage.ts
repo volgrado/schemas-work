@@ -3,7 +3,7 @@ import { Plugin, PluginKey } from 'prosemirror-state';
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { EditorView } from 'prosemirror-view';
-import imageCompression from 'browser-image-compression';
+// import imageCompression from 'browser-image-compression';
 
 // =================================================================
 // --- HELPER FUNCTIONS ---
@@ -21,6 +21,7 @@ function fileToBase64(file: File): Promise<string> {
 async function compressImage(file: File): Promise<File> {
   const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
   try {
+    const imageCompression = (await import('browser-image-compression')).default;
     const compressedFile = await imageCompression(file, options);
     return compressedFile;
   } catch (error) {

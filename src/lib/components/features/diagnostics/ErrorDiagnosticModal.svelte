@@ -1,6 +1,6 @@
-<!-- src/lib/components/ui/ErrorDiagnosticModal.svelte -->
+﻿<!-- src/lib/components/ui/ErrorDiagnosticModal.svelte -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Modal from '$lib/core/ui/Modal.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
@@ -28,27 +28,27 @@
 
   async function copyLogs() {
     if (logs.length === 0) {
-      toast.info($t('toast.info.nothing_to_copy'));
+      toast.info(i18n.t('toast.info.nothing_to_copy'));
       return;
     }
-    const report = `--- ${$t('error_diagnostic.report_header')} ---\nTimestamp: ${new Date().toISOString()}\nUser Agent: ${navigator.userAgent}\n------------------------------------\n\n${JSON.stringify(
+    const report = `--- ${i18n.t('error_diagnostic.report_header')} ---\nTimestamp: ${new Date().toISOString()}\nUser Agent: ${navigator.userAgent}\n------------------------------------\n\n${JSON.stringify(
       logs,
       null,
       2
     )}`;
     try {
       await navigator.clipboard.writeText(report.trim());
-      toast.success($t('toast.success.diagnostic_report_copied'));
+      toast.success(i18n.t('toast.success.diagnostic_report_copied'));
     } catch (error) {
       errorService.reportError(error, { operation: 'copyDiagnosticLogs' });
-      toast.error($t('toast.error.could_not_copy_report'));
+      toast.error(i18n.t('toast.error.could_not_copy_report'));
     }
   }
 
   function clearLogs() {
     errorService.clearLogs();
     logs = [];
-    toast.info($t('toast.info.error_logs_cleared'));
+    toast.info(i18n.t('toast.info.error_logs_cleared'));
   }
 
   // FIX: Updated the function to correctly handle a string or number timestamp.
@@ -66,7 +66,7 @@
 </script>
 
 <Modal
-  title={$t('error_diagnostic.title')}
+  title={i18n.t('error_diagnostic.title')}
   {show}
   {onClose}
   onBack={handleBack}
@@ -74,7 +74,7 @@
 >
   <div class="diagnostic-container">
     <p class="explanation">
-      {@html $t('error_diagnostic.explanation')}
+      {@html i18n.t('error_diagnostic.explanation')}
     </p>
 
     <div class="log-area" bind:this={logAreaEl}>
@@ -97,8 +97,8 @@
         {/each}
       {:else}
         <EmptyState
-          title={$t('error_diagnostic.empty_state.title')}
-          description={$t('error_diagnostic.empty_state.text')}
+          title={i18n.t('error_diagnostic.empty_state.title')}
+          description={i18n.t('error_diagnostic.empty_state.text')}
           icon="check-circle"
         />
       {/if}
@@ -111,11 +111,11 @@
         disabled={logs.length === 0}
       >
         <Icon name="trash-2" size={16} />
-        {$t('error_diagnostic.clear_logs')}
+        {i18n.t('error_diagnostic.clear_logs')}
       </Button>
       <Button onclick={copyLogs} variant="primary" disabled={logs.length === 0}>
         <Icon name="copy" size={16} />
-        {$t('error_diagnostic.copy_report')}
+        {i18n.t('error_diagnostic.copy_report')}
       </Button>
     </footer>
   </div>

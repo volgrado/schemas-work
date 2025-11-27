@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file RefineDocumentCommand.ts
  * ... (description) ...
  */
@@ -10,13 +10,14 @@ import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { toast } from 'svelte-sonner';
 import type { z } from 'zod';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 import type { JSONContent } from '@tiptap/core';
+
+import * as errorService from '$lib/core/services/errorService';
 
 export class RefineDocumentCommand implements IAICommand {
   public get title(): string {
-    return get(t)('ai_commands.refine_document.title', {
+    return i18n.t('ai_commands.refine_document.title', {
       fallback: 'Refine Document',
     });
   }
@@ -48,25 +49,24 @@ export class RefineDocumentCommand implements IAICommand {
     result: z.infer<typeof this.validationSchema>,
     context: StrategySessionContext
   ): Promise<void> {
-    const _t = get(t);
-
     if (result) {
       setDocument(result);
       toast.success(
-        _t('ai_commands.refine_document.success', {
+        i18n.t('ai_commands.refine_document.success', {
           fallback: 'Document refined successfully.',
         })
       );
     } else {
       toast.error(
-        _t('ai_commands.refine_document.error_invalid', {
+        i18n.t('ai_commands.refine_document.error_invalid', {
           fallback: 'AI returned an invalid document structure.',
         })
       );
-      console.error(
-        'Invalid Tiptap JSON received for onAccept in RefineDocumentCommand:',
-        result
-      );
+      errorService.reportError(new Error('Invalid Tiptap JSON received'), {
+        context: 'RefineDocumentCommand',
+        action: 'onAccept',
+        metadata: { result },
+      });
     }
   }
 }

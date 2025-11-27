@@ -5,6 +5,7 @@
 
 const STORAGE_KEY = 'app_recent_searches';
 const MAX_RECENT_SEARCHES = 5; // Keep the list short and relevant
+import * as errorService from '$lib/core/services/errorService';
 
 /**
  * Retrieves the list of recent search queries.
@@ -17,7 +18,10 @@ export function getRecentSearches(): string[] {
       return JSON.parse(storedValue);
     }
   } catch (error) {
-    console.error('[RecentSearches] Failed to parse stored searches:', error);
+    errorService.reportError(error as Error, {
+      context: 'RecentSearches',
+      action: 'getRecentSearches',
+    });
     // If parsing fails, clear the invalid data
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -49,6 +53,9 @@ export function addRecentSearch(query: string): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedSearches));
   } catch (error) {
-    console.error('[RecentSearches] Failed to save recent searches:', error);
+    errorService.reportError(error as Error, {
+      context: 'RecentSearches',
+      action: 'addRecentSearch',
+    });
   }
 }

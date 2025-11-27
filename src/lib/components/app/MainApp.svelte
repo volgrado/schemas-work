@@ -1,6 +1,5 @@
-<script lang="ts">
-  import { get } from 'svelte/store';
-  import { t } from '$lib/utils/i18n';
+﻿<script lang="ts">
+  import { i18n } from '$lib/utils/i18n.svelte';
   
   // --- Stores ---
   import { uiState, openCommandBar, closeModal, setActiveView, cycleColorMode } from '$lib/stores/uiStore.svelte';
@@ -44,15 +43,15 @@
   <div class="main-app-container">
     <AppHeader
       show={true}
-      on:showWelcome={onShowWelcome}
+      onShowWelcome={onShowWelcome}
     >
       <div class="header-actions">
         <Button
           id="color-mode-toggle"
           variant="icon"
           onclick={cycleColorMode}
-          aria-label={$t('visualization.color_mode.aria_label')}
-          title={$t(`visualization.color_mode.${uiState.colorMode.replace('-', '_')}`)}
+          aria-label={i18n.t('visualization.color_mode.aria_label')}
+          title={i18n.t(`visualization.color_mode.${uiState.colorMode.replace('-', '_')}`)}
         >
           {#if uiState.colorMode === 'by-level'}
             <Icon name="layers" size={18} />
@@ -68,8 +67,8 @@
           variant="icon"
           onclick={toggleView}
           aria-label={uiState.activeView === 'editor'
-            ? $t('page.view_toggle.aria_label.to_tree')
-            : $t('page.view_toggle.aria_label.to_editor')}
+            ? i18n.t('page.view_toggle.aria_label.to_tree')
+            : i18n.t('page.view_toggle.aria_label.to_editor')}
         >
           {#if uiState.activeView === 'editor'}
             <Icon name="git-branch" size={18} />
@@ -81,7 +80,7 @@
           <Button
             id="study-button"
             variant="icon"
-            aria-label={$t('page.header_actions.study')}
+            aria-label={i18n.t('page.header_actions.study')}
             onclick={() => startReview([documentState.docId!])}
           >
             <Icon name="zap" size={18} />
@@ -89,7 +88,7 @@
           <Button
             id="cards-button"
             variant="icon"
-            aria-label={$t('page.header_actions.cards')}
+            aria-label={i18n.t('page.header_actions.cards')}
             onclick={() => openCardEditor(documentState.docId!)}
           >
             <Icon name="edit-3" size={18} />
@@ -112,7 +111,7 @@
     <FloatingActionButton
       id="ai-strategy-btn"
       icon="command"
-      label={$t('page.fab.menu')}
+      label={i18n.t('page.fab.menu')}
       position="right"
       onclick={openCommandBar}
     />
@@ -133,11 +132,11 @@
       {:else if config.type === 'media'}
         <Modal
           bind:show={uiState.modal.show}
-          title={$t('modals.media_editor_title')}
+          title={i18n.t('modals.media_editor_title')}
           onClose={closeModal}
         >
           <div style="padding: 1rem; text-align: center;">
-            {$t('modals.media_editor_placeholder')}: {config.nodeType}
+            {i18n.t('modals.media_editor_placeholder')}: {config.nodeType}
           </div>
         </Modal>
       {/if}

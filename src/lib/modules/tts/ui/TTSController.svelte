@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { fly, slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -20,7 +20,7 @@
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- Props ---
   let { embedded = false } = $props<{ embedded?: boolean }>();
@@ -117,7 +117,7 @@
     <div
       class="panel embedded"
       role="region"
-      aria-label={$t('tts.controller_region_aria_label')}
+      aria-label={i18n.t('tts.controller_region_aria_label')}
       aria-live="polite"
     >
       <div class="content-wrapper">
@@ -129,7 +129,7 @@
       class="panel floating"
       transition:fly={{ y: 50, duration: 400, easing: quintOut }}
       role="region"
-      aria-label={$t('tts.controller_region_aria_label')}
+      aria-label={i18n.t('tts.controller_region_aria_label')}
       aria-live="polite"
     >
       <!-- Progress Bar Background -->
@@ -148,13 +148,13 @@
   {#if ttsState.status === 'initializing'}
     <div class="status-view">
       <Spinner size="sm" />
-      <span class="status-text">{$t('tts.initializing')}</span>
+      <span class="status-text">{i18n.t('tts.initializing')}</span>
     </div>
   {:else if ttsState.status === 'error'}
     <div class="status-view error">
       <div class="error-message">
         <Icon name="alert-triangle" size={18} class="text-danger" />
-        <span class="status-text">{ttsState.error || $t('tts.error')}</span>
+        <span class="status-text">{ttsState.error || i18n.t('tts.error')}</span>
       </div>
       <Button onclick={stopReading} variant="ghost" size="sm" class="close-btn">
         <Icon name="x" size={18} />
@@ -182,7 +182,7 @@
             variant="ghost"
             size="sm"
             disabled={ttsState.currentNodeIndex === 0}
-            aria-label={$t('tts.previous_node')}
+            aria-label={i18n.t('tts.previous_node')}
             class="control-btn secondary"
           >
             <Icon name="skip-back" size={20} />
@@ -192,7 +192,7 @@
             onclick={handleTogglePause}
             variant="primary"
             size="lg"
-            aria-label={ttsState.status === 'paused' ? $t('tts.play') : $t('tts.pause')}
+            aria-label={ttsState.status === 'paused' ? i18n.t('tts.play') : i18n.t('tts.pause')}
             class="play-pause-btn"
           >
             <Icon
@@ -207,7 +207,7 @@
             variant="ghost"
             size="sm"
             disabled={ttsState.nodesToRead && ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
-            aria-label={$t('tts.next_node')}
+            aria-label={i18n.t('tts.next_node')}
             class="control-btn secondary"
           >
             <Icon name="skip-forward" size={20} />
@@ -220,9 +220,9 @@
             onclick={replay}
             variant="ghost"
             size="sm"
-            aria-label={$t('tts.replay')}
+            aria-label={i18n.t('tts.replay')}
             class="control-btn tertiary"
-            title={$t('tts.replay')}
+            title={i18n.t('tts.replay')}
           >
             <Icon name="rotate-ccw" size={18} />
           </Button>
@@ -231,7 +231,7 @@
             variant="ghost"
             size="sm"
             onclick={toggleSettings}
-            aria-label={ttsState.isSettingsExpanded ? $t('tts.collapse') : $t('tts.expand')}
+            aria-label={ttsState.isSettingsExpanded ? i18n.t('tts.collapse') : i18n.t('tts.expand')}
             aria-expanded={ttsState.isSettingsExpanded}
             aria-controls="tts-settings-panel"
             class="control-btn tertiary {ttsState.isSettingsExpanded ? 'active' : ''}"
@@ -244,9 +244,9 @@
             onclick={stopReading}
             variant="ghost"
             size="sm"
-            aria-label={$t('tts.stop')}
+            aria-label={i18n.t('tts.stop')}
             class="control-btn tertiary danger-hover"
-            title={$t('tts.stop')}
+            title={i18n.t('tts.stop')}
           >
             <Icon name="x" size={18} />
           </Button>
@@ -262,7 +262,7 @@
           <div class="setting-group">
             <div class="setting-header">
               <Icon name="mic" size={14} class="text-muted" />
-              <label for="voice-select">{$t('tts.voice')}</label>
+              <label for="voice-select">{i18n.t('tts.voice')}</label>
             </div>
             <div class="select-wrapper">
               <select
@@ -273,7 +273,7 @@
                 disabled={ttsState.availableVoices.length === 0}
               >
                 {#if ttsState.availableVoices.length === 0}
-                  <option value="">{$t('tts.no_voices')}</option>
+                  <option value="">{i18n.t('tts.no_voices')}</option>
                 {/if}
                 {#each ttsState.availableVoices as voice (voice.id)}
                   <option value={voice.id}>{voice.name}</option>
@@ -287,7 +287,7 @@
             <div class="setting-group slider-group">
               <div class="setting-header">
                 <Icon name="zap" size={14} class="text-muted" />
-                <label for="rate-slider">{$t('tts.speed')} <span class="value-badge">{ttsState.rate.toFixed(1)}x</span></label>
+                <label for="rate-slider">{i18n.t('tts.speed')} <span class="value-badge">{ttsState.rate.toFixed(1)}x</span></label>
               </div>
               <input
                 id="rate-slider"
@@ -304,7 +304,7 @@
             <div class="setting-group slider-group">
               <div class="setting-header">
                 <Icon name="volume-2" size={14} class="text-muted" />
-                <label for="volume-slider">{$t('common.volume')}</label>
+                <label for="volume-slider">{i18n.t('common.volume')}</label>
               </div>
               <input
                 id="volume-slider"

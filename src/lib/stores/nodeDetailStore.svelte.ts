@@ -69,7 +69,7 @@ const initialState: NodeDetailState = {
  * import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
  *
  * // In a component:
- * $: isOpen = nodeDetailState.isOpen;
+ * let isOpen = $derived(nodeDetailState.isOpen);
  */
 export const nodeDetailState = $state<NodeDetailState>({ ...initialState });
 

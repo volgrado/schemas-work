@@ -10,6 +10,7 @@ import type { SchemaMetadata } from '$lib/types';
 import { searchCommands, type SearchOptions } from '@modules/command-bar';
 // REFINEMENT: Import the Search namespace for all search-related types.
 import type { Search } from '$lib/types';
+import * as errorService from '$lib/core/services/errorService';
 
 // --- HELPER FUNCTIONS (INTERNAL) ---
 
@@ -102,7 +103,11 @@ async function findContent(
   );
 
   if (!chunksResult.ok) {
-    console.error('Search failed:', chunksResult.error);
+    errorService.reportError(chunksResult.error, {
+      context: 'SearchService',
+      action: 'findContent',
+      metadata: { query: queryText },
+    });
     return [];
   }
 

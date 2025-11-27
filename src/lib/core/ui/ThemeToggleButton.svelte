@@ -1,10 +1,10 @@
-<!-- src/lib/components/ui/ThemeToggleButton.svelte -->
+﻿<!-- src/lib/components/ui/ThemeToggleButton.svelte -->
 <script lang="ts">
   // --- Imports for core functionality ---
   import { themeStore, type Theme } from '$lib/stores/themeStore.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Button from '$lib/core/ui/Button.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { IconName } from '$lib/types/iconName';
 
   // --- Type definition for our configuration object ---
@@ -18,15 +18,15 @@
   const themeConfig: Record<Theme, Config> = {
     light: {
       icon: 'sun',
-      label: $t('theme.aria.switchToDark') || 'Switch to dark theme',
+      label: i18n.t('theme.aria.switchToDark') || 'Switch to dark theme',
     },
     dark: {
       icon: 'moon',
-      label: $t('theme.aria.switchToSystem') || 'Switch to system theme',
+      label: i18n.t('theme.aria.switchToSystem') || 'Switch to system theme',
     },
     system: {
       icon: 'monitor',
-      label: $t('theme.aria.switchToLight') || 'Switch to light theme',
+      label: i18n.t('theme.aria.switchToLight') || 'Switch to light theme',
     },
   };
 

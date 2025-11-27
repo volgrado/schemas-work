@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import {
     settingsState,
     addApiKey,
@@ -10,7 +10,7 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
   import { toast } from 'svelte-sonner';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { fade, slide } from 'svelte/transition';
 
   let { 
@@ -28,13 +28,13 @@
     event.preventDefault();
     const keyToAdd = newApiKey.trim();
     if (!keyToAdd) {
-      toast.error($t('apiKeyModal.toast.empty_key_error'));
+      toast.error(i18n.t('apiKeyModal.toast.empty_key_error'));
       return;
     }
     const isValid = await discoverModels(keyToAdd);
     if (isValid) {
       addApiKey(keyToAdd, 'gemini', newApiNickname.trim());
-      toast.success($t('apiKeyModal.toast.key_added_success'));
+      toast.success(i18n.t('apiKeyModal.toast.key_added_success'));
       newApiKey = '';
       newApiNickname = '';
     }
@@ -43,11 +43,11 @@
   function handleRemoveKey(key: ApiKey) {
     if (
       confirm(
-        $t('apiKeyModal.confirm.remove_key', { name: key.nickname || key.id })
+        i18n.t('apiKeyModal.confirm.remove_key', { name: key.nickname || key.id })
       )
     ) {
       removeApiKey(key.id);
-      toast.info($t('apiKeyModal.toast.key_removed_info'));
+      toast.info(i18n.t('apiKeyModal.toast.key_removed_info'));
     }
   }
 
@@ -93,16 +93,16 @@
 <div class="tab-panel" in:fade={{ duration: 200 }}>
   <div class="info-box">
      <Icon name="shield" size={18} class="text-accent" />
-     <p class="explanation">{$t('apiKeyModal.explanation_keys')}</p>
+     <p class="explanation">{i18n.t('apiKeyModal.explanation_keys')}</p>
   </div>
 
   <div class="form-section">
-    <h3 class="section-title">{$t('apiKeyModal.your_keys_header')}</h3>
+    <h3 class="section-title">{i18n.t('apiKeyModal.your_keys_header')}</h3>
     <ul class="key-list">
       {#if settingsState.apiKeys.length === 0}
         <div class="empty-state-keys">
           <Icon name="key" size={24} class="text-muted mb-2" />
-          <p>{$t('apiKeyModal.empty_state')}</p>
+          <p>{i18n.t('apiKeyModal.empty_state')}</p>
         </div>
       {:else}
         {#each settingsState.apiKeys as key (key.id)}
@@ -114,7 +114,7 @@
             <div class="key-info">
               <div class="key-header">
                 <span class="key-nickname"
-                  >{key.nickname || $t('apiKeyModal.untitled_key')}</span
+                  >{key.nickname || i18n.t('apiKeyModal.untitled_key')}</span
                 >
                 <span class="key-provider-badge">{key.provider}</span>
               </div>
@@ -122,7 +122,7 @@
               
               <div
                 class="usage-bars"
-                title={$t('apiKeyModal.usage_tooltip')}
+                title={i18n.t('apiKeyModal.usage_tooltip')}
               >
                 <div class="usage-bar-container">
                   <span class="usage-label">RPM</span>
@@ -150,7 +150,7 @@
               variant="ghost"
               size="sm"
               onclick={() => handleRemoveKey(key)}
-              aria-label={$t('apiKeyModal.remove_key_aria')}
+              aria-label={i18n.t('apiKeyModal.remove_key_aria')}
               class="remove-btn"
             >
               <Icon name="trash-2" size={16} />
@@ -162,35 +162,35 @@
   </div>
 
   <div class="form-section add-key-section">
-    <h3 class="section-title">{$t('apiKeyModal.add_key_header')}</h3>
+    <h3 class="section-title">{i18n.t('apiKeyModal.add_key_header')}</h3>
     <form class="add-key-form" onsubmit={handleAddKey}>
       <div class="input-group">
-        <label for="new-key-nickname">{$t('apiKeyModal.nickname_label')}</label>
+        <label for="new-key-nickname">{i18n.t('apiKeyModal.nickname_label')}</label>
         <input
           id="new-key-nickname"
           type="text"
           class="premium-input"
-          placeholder={$t('apiKeyModal.nickname_placeholder')}
+          placeholder={i18n.t('apiKeyModal.nickname_placeholder')}
           bind:value={newApiNickname}
         />
       </div>
       <div class="input-group">
         <div class="label-row">
-          <label for="new-key-input">{$t('apiKeyModal.api_key_label')}</label>
+          <label for="new-key-input">{i18n.t('apiKeyModal.api_key_label')}</label>
           <a
             class="get-key-link"
             href="https://aistudio.google.com/app/apikey"
             target="_blank"
             rel="noopener"
           >
-            {$t('apiKeyModal.get_key_link')} <Icon name="external-link" size={12} />
+            {i18n.t('apiKeyModal.get_key_link')} <Icon name="external-link" size={12} />
           </a>
         </div>
         <input
           id="new-key-input"
           type="password"
           class="premium-input"
-          placeholder={$t('apiKeyModal.api_key_placeholder')}
+          placeholder={i18n.t('apiKeyModal.api_key_placeholder')}
           bind:value={newApiKey}
           required
         />
@@ -206,7 +206,7 @@
         {:else}
           <Icon name="plus" size={16} />
         {/if}
-        {$t('apiKeyModal.add_key_button')}
+        {i18n.t('apiKeyModal.add_key_button')}
       </Button>
     </form>
   </div>

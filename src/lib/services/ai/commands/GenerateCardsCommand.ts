@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file GenerateCardsCommand.ts
  * @class
  * @description Implements the "Generate Study Cards" command for the AI Workbench.
@@ -10,19 +10,20 @@ import { type StrategySessionContext } from '$lib/modules/command-bar/ui/command
 import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { documentState } from '$lib/stores/documentStore.svelte';
-import * as cardService from '$lib/services/features/cardService';
+import * as cardService from '$lib/modules/study/domain/cardService';
 import { toast } from 'svelte-sonner';
 import type { SRS } from '$lib/types';
 import type { z } from 'zod';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
+
+import * as errorService from '$lib/core/services/errorService';
 
 // A type that accurately represents what the AI is asked to return.
 type AiGeneratedCard = Pick<SRS.NewCard, 'type' | 'content'>;
 
 export class GenerateCardsCommand implements IAICommand {
   public get title(): string {
-    return get(t)('ai_commands.generate_cards.title', {
+    return i18n.t('ai_commands.generate_cards.title', {
       fallback: 'Generate Study Cards',
     });
   }
@@ -40,14 +41,14 @@ export class GenerateCardsCommand implements IAICommand {
   ): string {
     const documentText = context.fullDocumentText || '';
 
-    // ▼▼▼ THIS IS THE CORRECTED LOGIC ▼▼▼
+    // â–¼â–¼â–¼ THIS IS THE CORRECTED LOGIC â–¼â–¼â–¼
     const settings = {
       // Use the quantity from the UI if it's provided, otherwise default to 5.
       quantity: context.quantity ?? 5,
       // You could also add a UI for this in the future.
-      types: ['basic', 'input'] as SRS.CardType[],
+      types: ['basic', 'input', 'true_false', 'multiple_choice'] as SRS.CardType[],
     };
-    // ▲▲▲ END OF CORRECTION ▲▲▲
+    // â–²â–²â–² END OF CORRECTION â–²â–²â–²
 
     return Prompts.getGenerateCardsPrompt(settings, documentText);
   }
@@ -59,12 +60,11 @@ export class GenerateCardsCommand implements IAICommand {
     result: z.infer<typeof this.validationSchema>,
     context: StrategySessionContext
   ): Promise<void> {
-    const _t = get(t);
     const docId = documentState.docId;
 
     if (!docId) {
       toast.error(
-        _t('ai_commands.generate_cards.error_no_doc', {
+        i18n.t('ai_commands.generate_cards.error_no_doc', {
           fallback:
             'Save Error: Could not find the active document ID to save cards to.',
         })
@@ -73,7 +73,7 @@ export class GenerateCardsCommand implements IAICommand {
     }
     if (!result || result.length === 0) {
       toast.info(
-        _t('ai_commands.generate_cards.info_no_cards', {
+        i18n.t('ai_commands.generate_cards.info_no_cards', {
           fallback: 'The AI did not generate any cards.',
         })
       );
@@ -82,7 +82,7 @@ export class GenerateCardsCommand implements IAICommand {
 
     try {
       await cardService.addCards(docId, result as SRS.NewCard[]);
-      const successMessage = _t('ai_commands.generate_cards.success', {
+      const successMessage = i18n.t('ai_commands.generate_cards.success', {
         count: result.length,
       });
       toast.success(
@@ -90,9 +90,12 @@ export class GenerateCardsCommand implements IAICommand {
           `${result.length} new study card(s) created successfully.`
       );
     } catch (error) {
-      console.error('Failed to save generated cards:', error);
+      errorService.reportError(error as Error, {
+        context: 'GenerateCardsCommand',
+        action: 'onAccept',
+      });
       toast.error(
-        _t('ai_commands.generate_cards.error_critical', {
+        i18n.t('ai_commands.generate_cards.error_critical', {
           fallback:
             'A critical error occurred while trying to save the new cards.',
         })

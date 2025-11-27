@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file CardEditorController.svelte.ts
  * @module editor
  * @description
@@ -11,8 +11,7 @@ import { cardEditorState, updateCard, addCard as addCardToStore, deleteCard, res
 import { debounce } from '$lib/core/utils/debounce';
 import type { SRS } from '$lib/types';
 import { toast } from 'svelte-sonner';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 
 type Card = SRS.Card;
 type CardType = Card['type'];
@@ -28,8 +27,8 @@ export class CardEditorController {
     // DOM References
     cardElements = new Map<string, HTMLElement>();
 
-    // Debounced update to prevent excessive writes
-    private debouncedUpdateCard = debounce((card: Card) => updateCard(card), 500);
+    // Debounced updaters map to prevent data loss between different cards
+    private updateHandlers = new Map<string, (card: Card) => void>();
 
     constructor() {
         // React to new cards being added to scroll them into view
@@ -63,7 +62,12 @@ export class CardEditorController {
     }
 
     handleUpdate(card: Card) {
-        this.debouncedUpdateCard(card);
+        let handler = this.updateHandlers.get(card.id);
+        if (!handler) {
+            handler = debounce((c: Card) => updateCard(c), 500);
+            this.updateHandlers.set(card.id, handler);
+        }
+        handler(card);
     }
 
     handleAddCard(type: CardType) {
@@ -74,9 +78,9 @@ export class CardEditorController {
     async handleRemoveCard(cardId: string) {
         const deletedCard = await deleteCard(cardId);
         if (deletedCard) {
-            toast.success(get(t)('card_editor_panel.card_deleted_toast'), {
+            toast.success(i18n.t('card_editor_panel.card_deleted_toast'), {
                 action: {
-                    label: get(t)('card_editor_panel.undo_button'),
+                    label: i18n.t('card_editor_panel.undo_button'),
                     onClick: () => restoreCard(deletedCard),
                 },
             });

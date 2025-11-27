@@ -1,9 +1,9 @@
-<!-- src/lib/components/ui/Modal.svelte (Final Corrected Version) -->
+﻿<!-- src/lib/components/ui/Modal.svelte (Final Corrected Version) -->
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import type { TransitionConfig } from 'svelte/transition';
   import Icon from '$lib/core/ui/Icon.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
   export type ModalWidth = 'sm' | 'default' | 'lg' | 'xl';
@@ -75,7 +75,7 @@
         if (e.key === 'Enter' || e.key === ' ') onClose();
       }}
       transition:fade={{ duration: 250 }}
-      aria-label={$t('modal.close_aria_label')}
+      aria-label={i18n.t('modal.close_aria_label')}
       role="button"
       tabindex="0"
     ></div>
@@ -98,17 +98,18 @@
             <button
               class="modal-back-button"
               onclick={onBack}
-              aria-label={$t('modal.back_aria_label')}
+              aria-label={i18n.t('modal.back_aria_label')}
             >
               <Icon name="arrow-left" size={20} />
             </button>
+
           {/if}
           <h2 class="modal-title" id="modal-title">{title}</h2>
         </div>
         <button
           class="modal-close-button"
           onclick={onClose}
-          aria-label={$t('modal.close_aria_label')}
+          aria-label={i18n.t('modal.close_aria_label')}
         >
           <Icon name="x" size={20} />
         </button>

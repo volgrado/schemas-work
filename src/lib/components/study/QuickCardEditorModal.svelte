@@ -1,12 +1,10 @@
-<!-- src/lib/components/study/QuickCardEditorModal.svelte -->
+﻿<!-- src/lib/components/study/QuickCardEditorModal.svelte -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  // FIX: Import the SRS namespace and create a local alias for the Card type.
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { SRS } from '$lib/types';
   type Card = SRS.Card;
-  import * as cardService from '$lib/services/features/cardService';
+  import * as cardService from '$lib/modules/study/domain/cardService';
   import { toast } from 'svelte-sonner';
-  import { t } from '$lib/utils/i18n';
 
   // UI Components
   import Modal from '$lib/core/ui/Modal.svelte';
@@ -17,16 +15,20 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import TagInput from '$lib/core/ui/TagInput.svelte';
 
-  let { show = $bindable(false), card } = $props<{
+  let { 
+    show = $bindable(false), 
+    card,
+    onClose,
+    onUpdate,
+    onDelete,
+    onChangeSource
+  } = $props<{
     show?: boolean;
     card: Card;
-  }>();
-
-  const dispatch = createEventDispatcher<{
-    close: void;
-    update: Card;
-    delete: string;
-    changeSource: Card;
+    onClose?: () => void;
+    onUpdate?: (card: Card) => void;
+    onDelete?: (id: string) => void;
+    onChangeSource?: (card: Card) => void;
   }>();
 
   let editableCard = $state<Card | null>(null);
@@ -45,11 +47,11 @@
   function requestClose() {
     // FIX: Access the derived value directly.
     if (hasUnsavedChanges) {
-      if (confirm($t('quickCardEditor.unsavedChangesConfirm'))) {
-        dispatch('close');
+      if (confirm(i18n.t('quickCardEditor.unsavedChangesConfirm'))) {
+        onClose?.();
       }
     } else {
-      dispatch('close');
+      onClose?.();
     }
   }
 
@@ -57,62 +59,62 @@
     if (!editableCard) return;
     try {
       await cardService.updateCard(editableCard);
-      toast.success($t('quickCardEditor.updateSuccess'));
-      dispatch('update', editableCard);
-      dispatch('close');
+      toast.success(i18n.t('quickCardEditor.updateSuccess'));
+      onUpdate?.(editableCard);
+      onClose?.();
     } catch (error) {
-      toast.error($t('quickCardEditor.updateFailed'));
+      toast.error(i18n.t('quickCardEditor.updateFailed'));
       console.error(error);
     }
   }
 
   async function handleDelete() {
-    if (confirm($t('quickCardEditor.deleteConfirm'))) {
+    if (confirm(i18n.t('quickCardEditor.deleteConfirm'))) {
       try {
         await cardService.deleteCard(card.id);
-        toast.success($t('quickCardEditor.deleteSuccess'));
-        dispatch('delete', card.id);
-        dispatch('close');
+        toast.success(i18n.t('quickCardEditor.deleteSuccess'));
+        onDelete?.(card.id);
+        onClose?.();
       } catch (error) {
-        toast.error($t('quickCardEditor.deleteFailed'));
+        toast.error(i18n.t('quickCardEditor.deleteFailed'));
         console.error(error);
       }
     }
   }
 </script>
 
-<Modal bind:show title={$t('quickCardEditor.title')} onClose={requestClose}>
+<Modal bind:show title={i18n.t('quickCardEditor.title')} onClose={requestClose}>
   {#if editableCard}
     <div class="card-editor-content">
       {#if editableCard.type === 'basic'}
         {@const c = editableCard.content}
         <div class="field">
-          <label for="question">{$t('quickCardEditor.questionLabel')}</label
+          <label for="question">{i18n.t('quickCardEditor.questionLabel')}</label
           ><Textarea id="question" bind:value={c.question} rows={3} />
         </div>
         <div class="field">
-          <label for="answer">{$t('quickCardEditor.answerLabel')}</label
+          <label for="answer">{i18n.t('quickCardEditor.answerLabel')}</label
           ><Textarea id="answer" bind:value={c.answer} rows={3} />
         </div>
       {:else if editableCard.type === 'input'}
         {@const c = editableCard.content}
         <div class="field">
-          <label for="prompt">{$t('quickCardEditor.promptLabel')}</label
+          <label for="prompt">{i18n.t('quickCardEditor.promptLabel')}</label
           ><Textarea id="prompt" bind:value={c.prompt} rows={3} />
         </div>
         <div class="field">
-          <label for="expected">{$t('quickCardEditor.expectedLabel')}</label
+          <label for="expected">{i18n.t('quickCardEditor.expectedLabel')}</label
           ><Input id="expected" bind:value={c.expected} />
         </div>
       {:else if editableCard.type === 'sequencing'}
         {@const c = editableCard.content}
         <div class="field">
           <label for="prompt-seq"
-            >{$t('quickCardEditor.instructionLabel')}</label
+            >{i18n.t('quickCardEditor.instructionLabel')}</label
           ><Textarea id="prompt-seq" bind:value={c.prompt} rows={2} />
         </div>
         <div class="group-label">
-          {$t('quickCardEditor.sequenceGroupLabel')}
+          {i18n.t('quickCardEditor.sequenceGroupLabel')}
         </div>
         <div class="sequence-items-list">
           {#each c.items as item, i (i)}
@@ -120,7 +122,7 @@
               <span class="item-number">{i + 1}.</span>
               <Input
                 bind:value={c.items[i]}
-                placeholder={$t('quickCardEditor.sequenceItemPlaceholder', {
+                placeholder={i18n.t('quickCardEditor.sequenceItemPlaceholder', {
                   i: i + 1,
                 })}
               />
@@ -132,7 +134,7 @@
                   ))}
                 variant="ghost"
                 size="sm"
-                aria-label={$t('quickCardEditor.removeItemAria')}
+                aria-label={i18n.t('quickCardEditor.removeItemAria')}
               >
                 <Icon name="x" size={16} />
               </Button>
@@ -146,44 +148,44 @@
           class="add-item-btn"
         >
           <Icon name="plus" size={14} />
-          {$t('quickCardEditor.addItem')}
+          {i18n.t('quickCardEditor.addItem')}
         </Button>
       {/if}
       <div class="field">
-        <label for="tags">{$t('quickCardEditor.tagsLabel')}</label>
+        <label for="tags">{i18n.t('quickCardEditor.tagsLabel')}</label>
         <TagInput id="tags" bind:tags={editableCard.tags} />
       </div>
     </div>
     <div class="card-actions-footer">
       <div class="suspend-toggle">
-        <label for="suspend">{$t('quickCardEditor.suspendLabel')}</label>
+        <label for="suspend">{i18n.t('quickCardEditor.suspendLabel')}</label>
         <Toggle id="suspend" bind:checked={editableCard.suspended} />
       </div>
       <div class="footer-buttons">
         <div class="left-actions">
           <Button
-            onclick={() => dispatch('changeSource', card)}
+            onclick={() => onChangeSource?.(card)}
             variant="secondary"
             size="sm"
           >
             <Icon name="git-branch" size={14} />
-            {$t('quickCardEditor.changeSource')}
+            {i18n.t('quickCardEditor.changeSource')}
           </Button>
           <Button
             onclick={handleDelete}
             variant="secondary"
             class="destructive-btn"
           >
-            {$t('quickCardEditor.delete')}
+            {i18n.t('quickCardEditor.delete')}
           </Button>
         </div>
         <div class="right-actions">
           <Button onclick={requestClose} variant="secondary"
-            >{$t('quickCardEditor.cancel')}</Button
+            >{i18n.t('quickCardEditor.cancel')}</Button
           >
           <!-- FIX: Access the derived value directly. -->
           <Button onclick={handleSaveAndClose} disabled={!hasUnsavedChanges}>
-            {$t('quickCardEditor.save')}
+            {i18n.t('quickCardEditor.save')}
           </Button>
         </div>
       </div>

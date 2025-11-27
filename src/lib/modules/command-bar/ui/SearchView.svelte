@@ -1,10 +1,10 @@
-<!-- src/lib/components/ui/command-bar/SearchView.svelte -->
+﻿<!-- src/lib/components/ui/command-bar/SearchView.svelte -->
 <script lang="ts">
   import { close as closeCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   // VVVV CORRECTED IMPORT VVVV
   import { load as loadDocument } from '$lib/stores/documentStore.svelte';
   import { debounce } from '$lib/core/utils/debounce';
-  import { performSearch } from '$lib/services/features/searchService';
+  import { performSearch } from '$lib/modules/search/domain/searchService';
   import type { SearchOptions } from '$lib/modules/command-bar/domain/commandService';
   import type { Search } from '$lib/types';
   type Command = Search.Command;
@@ -14,9 +14,9 @@
   import {
     getRecentSearches,
     addRecentSearch,
-  } from '$lib/services/features/recentSearchesService';
+  } from '$lib/modules/search/domain/recentSearchesService';
   import Icon from '$lib/core/ui/Icon.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { highlightText } from '$lib/utils/highlight';
 
   // --- Props ---
@@ -177,7 +177,7 @@
 >
   {#if query.trim().length === 0 && recentSearches.length > 0}
     <div class="results-group">
-      <h3 class="group-title">{$t('search_view.recent_searches')}</h3>
+      <h3 class="group-title">{i18n.t('search_view.recent_searches')}</h3>
       {#each recentSearches as searchTerm, index (searchTerm)}
         <button
           class="result-item recent-item"
@@ -200,8 +200,8 @@
       <div class="results-group">
         <h3 class="group-title">
           {group.type === 'Commands'
-            ? $t('search_view.group.commands')
-            : $t('search_view.group.knowledge')}
+            ? i18n.t('search_view.group.commands')
+            : i18n.t('search_view.group.knowledge')}
         </h3>
         {#each group.items as item, itemIndexInGroup}
           {@const flatIndex = groupStartIndices()[groupIndex] + itemIndexInGroup}
@@ -243,7 +243,7 @@
                   <span class="result-title">{content.title}</span>
                   <span
                     class="result-score"
-                    title={$t('search_view.relevancy_score_tooltip')}
+                    title={i18n.t('search_view.relevancy_score_tooltip')}
                   >
                     {Math.round(content.score * 100)}%
                   </span>
@@ -270,11 +270,11 @@
   {/if}
 
   {#if flatList.length === 0 && query.trim().length === 0 && recentSearches.length === 0}
-    <div class="status-text">{$t('search_view.prompt')}</div>
+    <div class="status-text">{i18n.t('search_view.prompt')}</div>
   {:else if status === 'error'}
-    <div class="status-text">{$t('search_view.error')}</div>
+    <div class="status-text">{i18n.t('search_view.error')}</div>
   {:else if status === 'done' && flatList.length === 0 && query.trim().length > 0}
-    <div class="status-text">{$t('search_view.no_results')}</div>
+    <div class="status-text">{i18n.t('search_view.no_results')}</div>
   {/if}
 </div>
 

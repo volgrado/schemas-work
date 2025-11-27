@@ -1,4 +1,4 @@
-<!-- src/lib/components/ui/HelpTooltip.svelte -->
+﻿<!-- src/lib/components/ui/HelpTooltip.svelte -->
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import type { Placement } from '@floating-ui/dom';
@@ -11,7 +11,7 @@
     autoUpdate,
   } from '@floating-ui/dom';
   import Icon from './Icon.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   let { placement = 'top' as Placement, children } = $props<{
     placement?: Placement;
@@ -65,7 +65,7 @@
 
 <button
   class="tooltip-trigger"
-  aria-label={$t('tooltip.show_help')}
+  aria-label={i18n.t('tooltip.show_help')}
   bind:this={referenceEl}
   onmouseenter={() => (isVisible = true)}
   onmouseleave={() => (isVisible = false)}

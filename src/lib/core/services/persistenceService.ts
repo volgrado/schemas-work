@@ -82,3 +82,23 @@ export async function getReadOnlyYDoc(docId: string): Promise<Y.Doc> {
   }
   return ydoc;
 }
+
+/**
+ * Deletes the persistence provider and the underlying IndexedDB database for a document.
+ */
+export async function deleteDocument(docId: string): Promise<void> {
+  // 1. Destroy active provider if it exists
+  if (providers.has(docId)) {
+    const provider = providers.get(docId)!;
+    provider.destroy();
+    providers.delete(docId);
+  }
+
+  // 2. Delete the Dexie database
+  try {
+    await Dexie.delete(docId);
+  } catch (error) {
+    console.error(`[persistenceService] Failed to delete database for ${docId}`, error);
+    throw error;
+  }
+}

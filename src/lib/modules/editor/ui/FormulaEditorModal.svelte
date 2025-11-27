@@ -1,6 +1,6 @@
-<!-- src/lib/components/editor/FormulaEditorModal.svelte -->
+﻿<!-- src/lib/components/editor/FormulaEditorModal.svelte -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import katex from 'katex';
   import { tick } from 'svelte';
 
@@ -67,7 +67,7 @@
    */
   function requestClose() {
     if (hasUnsavedChanges) {
-      if (confirm($t('quickCardEditor.unsavedChangesConfirm'))) {
+      if (confirm(i18n.t('quickCardEditor.unsavedChangesConfirm'))) {
         show = false;
       }
     } else {
@@ -112,7 +112,7 @@
   }
 </script>
 
-<Modal title={$t('math_editor.title')} bind:show onClose={requestClose}>
+<Modal title={i18n.t('math_editor.title')} bind:show onClose={requestClose}>
   <form
     class="formula-editor-modal-wrapper"
     onsubmit={handleSave}
@@ -131,35 +131,35 @@
           variant="ghost"
           size="sm"
           type="button"
-          onclick={() => insertSymbol('^{}', 1)}>x²</Button
+          onclick={() => insertSymbol('^{}', 1)}>xÂ²</Button
         >
         <Button
           title="Subscript"
           variant="ghost"
           size="sm"
           type="button"
-          onclick={() => insertSymbol('_{}', 1)}>x₂</Button
+          onclick={() => insertSymbol('_{}', 1)}>xâ‚‚</Button
         >
         <Button
           title="Square Root (\\sqrt)"
           variant="ghost"
           size="sm"
           type="button"
-          onclick={() => insertSymbol('\\sqrt{}', 6)}>√</Button
+          onclick={() => insertSymbol('\\sqrt{}', 6)}>âˆš</Button
         >
         <Button
           title="Summation (\\sum)"
           variant="ghost"
           size="sm"
           type="button"
-          onclick={() => insertSymbol('\\sum_{}^{}', 5)}>∑</Button
+          onclick={() => insertSymbol('\\sum_{}^{}', 5)}>âˆ‘</Button
         >
         <Button
           title="Greek Letter Alpha (\\alpha)"
           variant="ghost"
           size="sm"
           type="button"
-          onclick={() => insertSymbol('\\alpha ', 7)}>α</Button
+          onclick={() => insertSymbol('\\alpha ', 7)}>Î±</Button
         >
       </div>
       <textarea
@@ -168,13 +168,13 @@
         class="latex-editor-textarea"
         placeholder="E = mc^2"
         rows="4"
-        aria-label={$t('math_editor.editor_aria_label')}
+        aria-label={i18n.t('math_editor.editor_aria_label')}
         onkeydown={handleKeydown}
       ></textarea>
     </div>
 
     <div class="preview-pane">
-      <div class="preview-header">{$t('math_editor.live_preview')}</div>
+      <div class="preview-header">{i18n.t('math_editor.live_preview')}</div>
       <div class="katex-preview-container">
         <div bind:this={previewEl}></div>
       </div>
@@ -182,9 +182,9 @@
 
     <div class="modal-actions">
       <Button variant="secondary" type="button" onclick={requestClose}
-        >{$t('common.cancel')}</Button
+        >{i18n.t('common.cancel')}</Button
       >
-      <Button variant="primary" type="submit">{$t('common.save')}</Button>
+      <Button variant="primary" type="submit">{i18n.t('common.save')}</Button>
     </div>
   </form>
 </Modal>

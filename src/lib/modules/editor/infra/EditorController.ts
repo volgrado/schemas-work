@@ -1,4 +1,4 @@
-import { Editor } from '@tiptap/core';
+﻿import { Editor } from '@tiptap/core';
 import type { EditorEvents } from '@tiptap/core';
 import Collaboration from '@tiptap/extension-collaboration';
 import Document from '@tiptap/extension-document';
@@ -28,8 +28,7 @@ import {
   documentState,
 } from '$lib/stores/documentStore.svelte';
 import { debounce } from '$lib/core/utils/debounce';
-import { t } from '$lib/utils/i18n';
-import { get } from 'svelte/store';
+import { i18n } from '$lib/utils/i18n.svelte';
 import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
 import type { IndexeddbPersistence } from 'y-indexeddb';
 import * as Y from 'yjs';
@@ -85,7 +84,7 @@ export class EditorController {
         Collaboration.configure({ document: ydoc }),
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
-            const tValue = get(t);
+            const tValue = i18n.t;
             if (node.type.name === 'heading' && node.attrs.level === 1) {
               return tValue('doc_view.placeholder.title');
             }

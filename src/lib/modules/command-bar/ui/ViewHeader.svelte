@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   ViewHeader
 
@@ -14,7 +14,7 @@
   } = $props<{ title: string; onBack?: () => void; children?: any }>();
 
   import Icon from '$lib/core/ui/Icon.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 </script>
 
 <header class="view-header">
@@ -23,7 +23,7 @@
       <button
         class="back-button"
         onclick={onBack}
-        aria-label={$t('common.back')}
+        aria-label={i18n.t('common.back')}
       >
         <Icon name="arrow-left" size={18} />
       </button>

@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   SlashMenuController
 
@@ -15,7 +15,7 @@
     triggerCommandByIndex,
   } from '$lib/stores/slashMenuStore.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { tick } from 'svelte';
@@ -52,7 +52,7 @@
   <div
     class="slash-menu-container"
     role="dialog"
-    aria-label={$t('slash_menu.aria_label')}
+    aria-label={i18n.t('slash_menu.aria_label')}
     transition:fly={{ y: 10, duration: 200, easing: quintOut }}
   >
     {#if slashMenuState.allItems.length > 0}
@@ -101,7 +101,7 @@
     {:else}
       <div class="empty-state">
         <Icon name="search" size={24} class="text-muted mb-2" />
-        <p>{$t('slash_menu.empty_state')}</p>
+        <p>{i18n.t('slash_menu.empty_state')}</p>
       </div>
     {/if}
   </div>

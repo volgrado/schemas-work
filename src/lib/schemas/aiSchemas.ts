@@ -125,10 +125,43 @@ const sequencingCardSchema = z.object({
 });
 
 /**
+ * Content schema for a "True/False" flashcard.
+ */
+const trueFalseCardContentSchema = z.object({
+  statement: z.string().min(1),
+  isTrue: z.boolean(),
+});
+
+/**
+ * Schema for a complete True/False flashcard, identified by `type: 'true_false'`.
+ */
+const trueFalseCardSchema = z.object({
+  type: z.literal('true_false'),
+  content: trueFalseCardContentSchema,
+});
+
+/**
+ * Content schema for a "Multiple Choice" flashcard.
+ */
+const multipleChoiceCardContentSchema = z.object({
+  question: z.string().min(1),
+  options: z.array(z.string()).min(2, 'Multiple choice must have at least 2 options.'),
+  correctOptionIndex: z.number().int().min(0),
+});
+
+/**
+ * Schema for a complete Multiple Choice flashcard, identified by `type: 'multiple_choice'`.
+ */
+const multipleChoiceCardSchema = z.object({
+  type: z.literal('multiple_choice'),
+  content: multipleChoiceCardContentSchema,
+});
+
+/**
  * Zod schema for validating the AI response for the "Generate Flashcards" feature.
  *
  * This validator expects an array of flashcard objects. It uses a `discriminatedUnion`
- * based on the `type` property ('basic', 'input', 'sequencing') to dynamically apply
+ * based on the `type` property ('basic', 'input', 'sequencing', 'true_false', 'multiple_choice') to dynamically apply
  * the correct validation schema for each card in the array. This allows for handling
  * a polymorphic array of different card structures in a type-safe manner.
  */
@@ -137,5 +170,7 @@ export const FlashcardResponseSchema = z.array(
     basicCardSchema,
     inputCardSchema,
     sequencingCardSchema,
+    trueFalseCardSchema,
+    multipleChoiceCardSchema,
   ])
 );

@@ -15,6 +15,8 @@ import {
   recordApiKeyUsage,
 } from '$lib/stores/settingsStore.svelte';
 
+import * as errorService from '$lib/core/services/errorService';
+
 // --- 1. The "Strategy" Interface (The Contract) ---
 
 /**
@@ -51,9 +53,11 @@ class GeminiCloudStrategy implements IEmbeddingStrategy {
       recordApiKeyUsage(apiKeyObject.id);
       return embedding;
     } catch (error) {
-      console.error(
-        `Embedding generation failed with key: ${apiKeyObject.nickname || apiKeyObject.id}`
-      );
+      errorService.reportError(error as Error, {
+        context: 'EmbeddingStrategies',
+        strategy: 'GeminiCloudStrategy',
+        keyId: apiKeyObject.id,
+      });
       throw error;
     }
   }

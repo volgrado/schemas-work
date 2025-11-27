@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file CreateSchemaCommand.ts
  * @class
  * @description Implements the "Create Document from Text" command for the AI Workbench.
@@ -14,13 +14,12 @@ import { create as createDocument } from '$lib/stores/documentStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { toast } from 'svelte-sonner';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 import type { z } from 'zod';
 
 export class CreateSchemaCommand implements IAICommand {
   public get title(): string {
-    return get(t)('ai_commands.create_schema.title', {
+    return i18n.t('ai_commands.create_schema.title', {
       default: 'Create Document from Text',
     });
   }
@@ -46,8 +45,7 @@ export class CreateSchemaCommand implements IAICommand {
     result: z.infer<typeof this.validationSchema>,
     context: StrategySessionContext
   ): Promise<void> {
-    const _t = get(t);
-    const defaultTitle = _t('ai_commands.create_schema.default_title', {
+    const defaultTitle = i18n.t('ai_commands.create_schema.default_title', {
       default: 'New Schema',
     });
 
@@ -57,7 +55,7 @@ export class CreateSchemaCommand implements IAICommand {
     // VVVV CORRECTED METHOD CALL VVVV
     createDocument(title, result, parentId);
 
-    const messageTemplate = _t('ai_commands.create_schema.success', {
+    const messageTemplate = i18n.t('ai_commands.create_schema.success', {
       default: "Document '{title}' created successfully.",
     });
     const finalMessage = messageTemplate.replace('{title}', title);

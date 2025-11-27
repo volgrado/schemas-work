@@ -1,4 +1,4 @@
-<!-- src/lib/components/ai/AIHelperModal.svelte -->
+﻿<!-- src/lib/components/ai/AIHelperModal.svelte -->
 <script lang="ts">
   import { z } from 'zod';
   import { toast } from 'svelte-sonner';
@@ -9,7 +9,7 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import Textarea from '$lib/core/ui/Textarea.svelte';
   import * as errorService from '$lib/core/services/errorService';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- Svelte 5 Props ---
   let {
@@ -51,7 +51,7 @@
         return { success: true as const, data: validation.data };
       } else {
         const firstError = validation.error.issues[0];
-        const errorMessage = $t('aiHelper.errors.zodValidationError', {
+        const errorMessage = i18n.t('aiHelper.errors.zodValidationError', {
           path: firstError.path.join('.'),
           message: firstError.message,
         });
@@ -60,7 +60,7 @@
     } catch (e) {
       return {
         success: false as const,
-        error: $t('aiHelper.errors.notValidJson'),
+        error: i18n.t('aiHelper.errors.notValidJson'),
       };
     }
   });
@@ -75,10 +75,10 @@
   async function copyPrompt() {
     try {
       await navigator.clipboard.writeText(prompt);
-      toast.success($t('aiHelper.promptCopied'));
+      toast.success(i18n.t('aiHelper.promptCopied'));
     } catch (err) {
       errorService.reportError(err, { operation: 'copyPrompt' });
-      toast.error($t('aiHelper.copyError'));
+      toast.error(i18n.t('aiHelper.copyError'));
     }
   }
 </script>
@@ -87,24 +87,24 @@
   <div class="assistant-container">
     <div class="step">
       <div class="step-header">
-        <h4>{$t('aiHelper.step1.title')}</h4>
+        <h4>{i18n.t('aiHelper.step1.title')}</h4>
         <Button onclick={copyPrompt} size="sm" variant="secondary">
           <Icon name="copy" size={14} />
-          {$t('common.copy')}
+          {i18n.t('common.copy')}
         </Button>
       </div>
-      <p>{$t('aiHelper.step1.description')}</p>
+      <p>{i18n.t('aiHelper.step1.description')}</p>
       <Textarea readonly={true} rows={8} value={prompt} />
     </div>
 
     <div class="step">
-      <div class="step-header"><h4>{$t('aiHelper.step2.title')}</h4></div>
-      <p>{$t('aiHelper.step2.description')}</p>
+      <div class="step-header"><h4>{i18n.t('aiHelper.step2.title')}</h4></div>
+      <p>{i18n.t('aiHelper.step2.description')}</p>
       <Textarea
         bind:textareaElement={jsonTextarea}
         bind:value={jsonInput}
         rows={8}
-        placeholder={$t('aiHelper.step2.placeholder')}
+        placeholder={i18n.t('aiHelper.step2.placeholder')}
         invalid={!parseResult().success && jsonInput.trim() !== ''}
       />
       {#if !parseResult().success && jsonInput.trim() !== ''}
@@ -114,10 +114,10 @@
 
     <footer class="modal-actions">
       <Button onclick={onclose} variant="secondary"
-        >{$t('common.cancel')}</Button
+        >{i18n.t('common.cancel')}</Button
       >
       <Button onclick={handleApply} disabled={!parseResult().success}>
-        {$t('common.applyChanges')}
+        {i18n.t('common.applyChanges')}
       </Button>
     </footer>
   </div>

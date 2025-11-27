@@ -30,5 +30,10 @@ export const SHEET_MAX_WIDTH = 820;
 export const SHEET_PADDING_X = '4rem';
 export const SHEET_PADDING_Y = '3rem';
 
-// --- Other ---
-// Add any other application-wide constants here
+// --- SRS Defaults ---
+export const SRS_DEFAULTS = {
+  EASE_FACTOR: 2.5,
+  INTERVAL: 0,
+  REPETITIONS: 0,
+  LEARNING_STEP: 1,
+};

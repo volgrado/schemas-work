@@ -1,8 +1,8 @@
-<!--
+﻿<!--
   @component
   ReviewController
 
-  Core UI del sistema de repetición espaciada.
+  Core UI del sistema de repeticiÃ³n espaciada.
   Gestiona tarjetas tipo 'basic', 'input' y 'sequencing'.
 -->
 <script lang="ts">
@@ -10,7 +10,7 @@
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   // FIX: Importar el state rune y las acciones directamente desde el store.
   import {
     reviewState,
@@ -20,7 +20,7 @@
     jumpToSource,
     showAnswer,
   } from '$lib/stores/reviewStore.svelte';
-  import { evaluateAnswer } from '$lib/services/features/reviewService';
+  import { evaluateAnswer } from '$lib/modules/study/domain/reviewService';
 
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
@@ -43,14 +43,14 @@
   );
 
   const sessionProgress = $derived({
-    // FIX: Añadir tipo explícito al parámetro 'c'.
+    // FIX: AÃ±adir tipo explÃ­cito al parÃ¡metro 'c'.
     new: reviewState.cardsToReview.filter(
       (c: Card) => !c.srs || c.srs.repetitions === 0
     ).length,
     learning: [
       ...reviewState.cardsToReview,
       ...reviewState.failedQueue,
-      // FIX: Añadir tipo explícito al parámetro 'c'.
+      // FIX: AÃ±adir tipo explÃ­cito al parÃ¡metro 'c'.
     ].filter((c: Card) => c.srs?.learningStep > 0).length,
     due: reviewState.cardsToReview.filter(
       (c: Card) => c.srs?.repetitions > 0 && c.srs.learningStep === 0
@@ -79,7 +79,7 @@
       userInput,
       currentCard.content.expected
     );
-    // FIX: Llamar a la función importada directamente.
+    // FIX: Llamar a la funciÃ³n importada directamente.
     submitInteractiveAnswer(quality >= 3);
 
     setTimeout(() => submitReview(quality), 2000);
@@ -91,7 +91,7 @@
     submitInteractiveAnswer(isCorrect);
   }
 
-  // Lógica de arrastrar y soltar
+  // LÃ³gica de arrastrar y soltar
   function handleDragStart(index: number) {
     draggedItemIndex = index;
   }
@@ -117,26 +117,26 @@
 >
   {#if reviewState.isFinished}
     <div class="completion-screen">
-      <h2>{$t('review.congrats_title')}</h2>
+      <h2>{i18n.t('review.congrats_title')}</h2>
       <p>
-        {$t('review.session_finished_desc', {
+        {i18n.t('review.session_finished_desc', {
           count: reviewState.sessionCardCount,
         })}
       </p>
       <Button onclick={finishReview} size="lg"
-        >{$t('review.finish_button')}</Button
+        >{i18n.t('review.finish_button')}</Button
       >
     </div>
   {:else if currentCard}
     <div class="global-controls">
       <div class="session-progress">
-        <span class="new" title={$t('review.progress.new_tooltip')}
+        <span class="new" title={i18n.t('review.progress.new_tooltip')}
           >{sessionProgress.new}</span
         >
-        <span class="learning" title={$t('review.progress.learning_tooltip')}
+        <span class="learning" title={i18n.t('review.progress.learning_tooltip')}
           >{sessionProgress.learning}</span
         >
-        <span class="due" title={$t('review.progress.due_tooltip')}
+        <span class="due" title={i18n.t('review.progress.due_tooltip')}
           >{sessionProgress.due}</span
         >
       </div>
@@ -144,13 +144,13 @@
         onclick={jumpToSource}
         variant="ghost"
         size="sm"
-        aria-label={$t('review.goToSource')}
+        aria-label={i18n.t('review.goToSource')}
       >
         <Icon name="file-text" size={16} />
-        <span>{$t('review.goToSource')}</span>
+        <span>{i18n.t('review.goToSource')}</span>
       </Button>
       <Button onclick={finishReview} variant="ghost" size="sm">
-        {$t('review.finishReview')}
+        {i18n.t('review.finishReview')}
       </Button>
     </div>
 
@@ -168,7 +168,7 @@
           <input
             type="text"
             class="input-field"
-            placeholder={$t('review.inputPlaceholder')}
+            placeholder={i18n.t('review.inputPlaceholder')}
             bind:value={userInput}
             disabled={reviewState.isAnswerShown || isSubmitting}
             onkeydown={(e) => e.key === 'Enter' && handleCheckInput()}
@@ -180,7 +180,7 @@
               class:incorrect={!reviewState.lastAnswerCorrect}
               transition:fade
             >
-              {$t('review.correctAnswer')}
+              {i18n.t('review.correctAnswer')}
               <strong>{currentCard.content.expected}</strong>
             </div>
           {/if}
@@ -209,9 +209,9 @@
               transition:fade
             >
               {#if reviewState.lastAnswerCorrect}
-                {$t('review.correctSequence')}
+                {i18n.t('review.correctSequence')}
               {:else}
-                <p>{$t('review.correctSequenceIs')}</p>
+                <p>{i18n.t('review.correctSequenceIs')}</p>
                 <ol>
                   {#each currentCard.content.items as item}
                     <li>{item}</li>
@@ -227,7 +227,7 @@
         {#if !reviewState.isAnswerShown}
           {#if currentCard.type === 'basic'}
             <Button onclick={showAnswer} size="lg">
-              {$t('review.showAnswer')}
+              {i18n.t('review.showAnswer')}
             </Button>
           {:else if currentCard.type === 'input'}
             <Button
@@ -235,13 +235,13 @@
               size="lg"
               disabled={isSubmitting}
             >
-              {#if isSubmitting}{$t('review.evaluating')}{:else}{$t(
+              {#if isSubmitting}{i18n.t('review.evaluating')}{:else}{i18n.t(
                   'review.check'
                 )}{/if}
             </Button>
           {:else if currentCard.type === 'sequencing'}
             <Button onclick={handleCheckSequence} size="lg">
-              {$t('review.check')}
+              {i18n.t('review.check')}
             </Button>
           {/if}
         {:else if currentCard.type !== 'input'}
@@ -251,20 +251,20 @@
               size="md"
               variant="secondary"
             >
-              {$t('review.again')}
+              {i18n.t('review.again')}
             </Button>
             <Button
               onclick={() => submitReview(3)}
               size="md"
               variant="secondary"
             >
-              {$t('review.hard')}
+              {i18n.t('review.hard')}
             </Button>
             <Button onclick={() => submitReview(4)} size="md" variant="primary">
-              {$t('review.good')}
+              {i18n.t('review.good')}
             </Button>
             <Button onclick={() => submitReview(5)} size="md" variant="primary">
-              {$t('review.easy')}
+              {i18n.t('review.easy')}
             </Button>
           </div>
         {/if}

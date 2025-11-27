@@ -1,4 +1,4 @@
-<!-- 
+﻿<!-- 
   @file PasswordModal.svelte
   @component
 
@@ -7,7 +7,7 @@
   It prompts the user for a password and orchestrates the backup service.
 -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Modal from '$lib/core/ui/Modal.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
@@ -67,22 +67,22 @@
 
 <Modal
   title={isExport
-    ? $t('command_bar.password_modal.title.export')
-    : $t('command_bar.password_modal.title.import')}
+    ? i18n.t('command_bar.password_modal.title.export')
+    : i18n.t('command_bar.password_modal.title.import')}
   bind:show
   onClose={closeAndReset}
 >
   <form class="password-form" onsubmit={handlePasswordSubmit}>
     <p class="explanation">
       {isExport
-        ? $t('command_bar.password_modal.description.export')
-        : $t('command_bar.password_modal.description.import')}
+        ? i18n.t('command_bar.password_modal.description.export')
+        : i18n.t('command_bar.password_modal.description.import')}
     </p>
     <input
       type="password"
       bind:this={passwordInputElement}
       bind:value={passwordInput}
-      placeholder={$t('command_bar.password_modal.password_placeholder')}
+      placeholder={i18n.t('command_bar.password_modal.password_placeholder')}
       required
       autocomplete="new-password"
       disabled={isProcessing}
@@ -93,17 +93,17 @@
         variant="secondary"
         disabled={isProcessing}
       >
-        {$t('command_bar.password_modal.cancel_button')}
+        {i18n.t('command_bar.password_modal.cancel_button')}
       </Button>
       <Button type="submit" disabled={!passwordInput || isProcessing}>
         {#if isProcessing}
           <Spinner size="sm" />
-          {$t('common.processing')}
+          {i18n.t('common.processing')}
         {:else}
           <Icon name={isExport ? 'download-cloud' : 'upload-cloud'} size={16} />
           {isExport
-            ? $t('command_bar.password_modal.confirm_button.export')
-            : $t('command_bar.password_modal.confirm_button.import')}
+            ? i18n.t('command_bar.password_modal.confirm_button.export')
+            : i18n.t('command_bar.password_modal.confirm_button.import')}
         {/if}
       </Button>
     </footer>

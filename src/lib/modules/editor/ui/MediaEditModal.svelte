@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   MediaEditModal
 
@@ -11,7 +11,7 @@
   // --- UI Components & Utilities ---
   import Modal from '$lib/core/ui/Modal.svelte';
   import Button from '$lib/core/ui/Button.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { HTMLInputAttributes } from 'svelte/elements';
 
   // --- Type Definitions ---
@@ -57,8 +57,8 @@
   // --- Derived State ---
   const modalTitle = $derived(
     initialAttrs.mediaType === 'image'
-      ? $t('media_editor.title.image')
-      : $t('media_editor.title.youtube')
+      ? i18n.t('media_editor.title.image')
+      : i18n.t('media_editor.title.youtube')
   );
   const isFormValid = $derived(attrs.src.trim() !== '');
 
@@ -77,7 +77,7 @@
   function requestClose() {
     // FIX: `$derived` with a function creates a getter. We must CALL it to get the value.
     if (hasUnsavedChanges()) {
-      if (confirm($t('quickCardEditor.unsavedChangesConfirm'))) {
+      if (confirm(i18n.t('quickCardEditor.unsavedChangesConfirm'))) {
         show = false;
       }
     } else {
@@ -123,8 +123,8 @@
     <div class="form-group">
       <label for="media-url"
         >{initialAttrs.mediaType === 'image'
-          ? $t('media_editor.label.image')
-          : $t('media_editor.label.youtube')}</label
+          ? i18n.t('media_editor.label.image')
+          : i18n.t('media_editor.label.youtube')}</label
       >
       <input
         id="media-url"
@@ -140,41 +140,41 @@
 
     {#if initialAttrs.mediaType === 'image'}
       <div class="form-group">
-        <label for="media-alt">{$t('media_editor.label.alt_text')}</label>
+        <label for="media-alt">{i18n.t('media_editor.label.alt_text')}</label>
         <input
           id="media-alt"
           type="text"
           bind:value={attrs.alt}
-          placeholder={$t('media_editor.placeholder.alt_text')}
+          placeholder={i18n.t('media_editor.placeholder.alt_text')}
         />
       </div>
       <div class="form-group">
-        <label for="media-title">{$t('media_editor.label.title_text')}</label>
+        <label for="media-title">{i18n.t('media_editor.label.title_text')}</label>
         <input
           id="media-title"
           type="text"
           bind:value={attrs.title}
-          placeholder={$t('media_editor.placeholder.title_text')}
+          placeholder={i18n.t('media_editor.placeholder.title_text')}
         />
       </div>
     {/if}
 
     {#if initialAttrs.mediaType === 'youtube'}
       <div class="form-group">
-        <label for="media-start">{$t('media_editor.label.start_time')}</label>
+        <label for="media-start">{i18n.t('media_editor.label.start_time')}</label>
         <input
           id="media-start"
           type="number"
           min="0"
           bind:value={attrs.start}
-          placeholder={$t('media_editor.placeholder.start_time')}
+          placeholder={i18n.t('media_editor.placeholder.start_time')}
         />
       </div>
     {/if}
 
     <div class="dimension-fields">
       <div class="form-group">
-        <label for="media-width">{$t('media_editor.label.width')}</label>
+        <label for="media-width">{i18n.t('media_editor.label.width')}</label>
         <input
           id="media-width"
           type="number"
@@ -183,7 +183,7 @@
         />
       </div>
       <div class="form-group">
-        <label for="media-height">{$t('media_editor.label.height')}</label>
+        <label for="media-height">{i18n.t('media_editor.label.height')}</label>
         <input
           id="media-height"
           type="number"
@@ -197,14 +197,14 @@
       {#if initialAttrs.mediaType === 'image' && attrs.src}
         <img
           src={attrs.src}
-          alt={$t('media_editor.preview.alt')}
+          alt={i18n.t('media_editor.preview.alt')}
           class="image-preview"
         />
       {:else if initialAttrs.mediaType === 'youtube' && youtubeThumbnailUrl}
         <div class="youtube-preview">
           <img
             src={youtubeThumbnailUrl}
-            alt={$t('media_editor.preview.youtube_alt')}
+            alt={i18n.t('media_editor.preview.youtube_alt')}
           />
           <div class="play-icon">&#9658;</div>
         </div>
@@ -213,10 +213,10 @@
 
     <div class="modal-actions">
       <Button onclick={requestClose} variant="secondary"
-        >{$t('media_editor.cancel_button')}</Button
+        >{i18n.t('media_editor.cancel_button')}</Button
       >
       <Button onclick={handleSave} disabled={!isFormValid}
-        >{$t('media_editor.save_button')}</Button
+        >{i18n.t('media_editor.save_button')}</Button
       >
     </div>
   </div>

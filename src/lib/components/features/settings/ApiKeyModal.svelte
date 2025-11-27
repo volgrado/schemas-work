@@ -1,4 +1,4 @@
-<!-- src/lib/components/ui/ApiKeyModal.svelte -->
+﻿<!-- src/lib/components/ui/ApiKeyModal.svelte -->
 <script lang="ts">
   import {
     settingsState,
@@ -14,7 +14,7 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import { toast } from 'svelte-sonner';
   import { fetchAvailableGeminiModels } from '$lib/services/ai/modelDiscoveryService';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { fade } from 'svelte/transition';
 
@@ -43,7 +43,7 @@
         .map(createDiscoveredModel);
       return true;
     } catch (error) {
-      toast.error($t('apiKeyModal.toast.invalid_key_error'));
+      toast.error(i18n.t('apiKeyModal.toast.invalid_key_error'));
       discoveredModelIds = new Set();
       return false;
     } finally {
@@ -72,7 +72,7 @@
   }
 </script>
 
-<Modal title={$t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
+<Modal title={i18n.t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
   <div class="ai-settings-content">
     <!-- Premium Tabs -->
     <div class="tabs-container">
@@ -83,7 +83,7 @@
           onclick={() => (activeTab = 'models')}
         >
           <Icon name="sparkles" size={16} />
-          <span>{$t('apiKeyModal.tabs.models')}</span>
+          <span>{i18n.t('apiKeyModal.tabs.models')}</span>
           {#if activeTab === 'models'}
             <div class="active-indicator" transition:fade={{ duration: 200 }}></div>
           {/if}
@@ -94,7 +94,7 @@
           onclick={() => (activeTab = 'keys')}
         >
           <Icon name="key" size={16} />
-          <span>{$t('apiKeyModal.tabs.keys')}</span>
+          <span>{i18n.t('apiKeyModal.tabs.keys')}</span>
           {#if activeTab === 'keys'}
             <div class="active-indicator" transition:fade={{ duration: 200 }}></div>
           {/if}
@@ -118,7 +118,7 @@
     {/if}
 
     <div class="modal-actions">
-      <Button onclick={onClose} variant="ghost">{$t('common.close')}</Button>
+      <Button onclick={onClose} variant="ghost">{i18n.t('common.close')}</Button>
     </div>
   </div>
 </Modal>

@@ -3,15 +3,12 @@
  * @module i18n
  */
 
-import { derived, writable, get } from 'svelte/store';
 import en from '$lib/locales/en.json';
 import es from '$lib/locales/es.json';
 import el from '$lib/locales/el.json';
 
 /**
  * The translations object holds the translations for each language.
- * The keys are the language codes (e.g., 'en', 'es'), and the values
- * are the imported JSON files containing the translations.
  */
 export const translations: Record<string, any> = {
   en,
@@ -29,18 +26,40 @@ export const locales = Object.keys(translations);
  */
 export const defaultLocale = 'en';
 
-/**
- * A writable Svelte store that holds the current locale.
- * It is initialized with the default locale.
- */
-export const locale = writable<string>(defaultLocale);
+// --- Runes Implementation ---
+
+class I18nState {
+  locale = $state<string>(defaultLocale);
+
+  constructor() {
+    this.setLocale(defaultLocale);
+  }
+
+  setLocale(newLocale: string) {
+    if (locales.includes(newLocale)) {
+      this.locale = newLocale;
+    } else {
+      console.warn(`[i18n] Locale '${newLocale}' not supported. Falling back to '${defaultLocale}'.`);
+      this.locale = defaultLocale;
+    }
+  }
+
+  /**
+   * Translates a key into the current locale.
+   * This is a getter so it's reactive when used in $effect or derived runes.
+   */
+  get t() {
+    return (key: string, vars: Record<string, string | number> = {}) => {
+      return translate(this.locale, key, vars);
+    };
+  }
+}
+
+export const i18n = new I18nState();
 
 /**
  * A helper function to look up a translation key in a specific message object.
  * @internal
- * @param messages The translation object for a single locale.
- * @param key The dot-separated key to look up (e.g., 'welcome.tagline').
- * @returns The translation string or undefined if not found.
  */
 function lookup(
   messages: Record<string, any>,
@@ -62,21 +81,18 @@ function lookup(
 }
 
 /**
- * A helper function to translate a key into a given locale, with fallback logic
- * and support for interpolation and pluralization.
- *
+ * A helper function to translate a key into a given locale.
  * @internal
- * @param locale The locale to translate into.
- * @param key The key to translate.
- * @param vars An object of variables to interpolate into the translation.
- * @returns The translated and processed string.
  */
 function translate(
   locale: string,
   key: string,
   vars: Record<string, string | number>
 ): string {
-  if (!key) throw new Error('no key provided to get(t)()');
+  if (!key) {
+      // Return empty string or warning if no key, consistent with previous behavior or safety
+      return ''; 
+  }
 
   // 1. Attempt to find the translation string in the current locale.
   let text = lookup(translations[locale], key);
@@ -86,20 +102,23 @@ function translate(
     text = lookup(translations[defaultLocale], key);
   }
 
-  // 3. If still not found, return the key itself as the final fallback.
+  // 3. If still not found, check for a fallback in the variables.
+  if (text === undefined && vars && typeof vars.fallback === 'string') {
+    return vars.fallback as string;
+  }
+
+  // 4. If still not found, return the key itself as the final fallback.
   if (text === undefined) {
     return key;
   }
 
   // 4. If a string was found, process it for pluralization (ICU Message Format).
-  // Use a GREEDY match for the rules part to handle the nested braces.
-  const pluralRegex = /\{(\w+),\s*plural,\s*(.+)\}/g; // <-- THE FIX IS HERE (changed .+? to .+)
+  const pluralRegex = /\{(\w+),\s*plural,\s*(.+)\}/g;
   text = text.replace(pluralRegex, (match, varName, rules) => {
     const value = vars[varName];
-    if (typeof value !== 'number') return match; // Cannot pluralize without a number
+    if (typeof value !== 'number') return match;
 
     const ruleMap = new Map<string, string>();
-    // This inner regex can remain non-greedy as it parses one rule at a time.
     const ruleRegex = /(=\d+|zero|one|two|few|many|other)\s*\{(.*?)\}/g;
     let ruleMatch;
     while ((ruleMatch = ruleRegex.exec(rules)) !== null) {
@@ -107,23 +126,19 @@ function translate(
     }
 
     let replaceText = '';
-    // Check for exact match first (e.g., =0, =1)
     if (ruleMap.has(`=${value}`)) {
       replaceText = ruleMap.get(`=${value}`)!;
     } else {
-      // Use Intl.PluralRules for language-specific categories (one, other, etc.)
       const pluralRules = new Intl.PluralRules(locale);
       const category = pluralRules.select(value);
       if (ruleMap.has(category)) {
         replaceText = ruleMap.get(category)!;
       } else if (ruleMap.has('other')) {
-        // 'other' is the mandatory fallback category
         replaceText = ruleMap.get('other')!;
       } else {
-        return match; // No suitable rule found
+        return match;
       }
     }
-    // Replace the '#' placeholder with the actual value
     return replaceText.replace(/#/g, String(value));
   });
 
@@ -135,19 +150,3 @@ function translate(
 
   return text;
 }
-
-/**
- * A derived Svelte store that returns a translation function `t`
- * that is reactive to the current locale.
- */
-export const t = derived(
-  locale,
-  ($locale) =>
-    (key: string, vars: Record<string, string | number> = {}) =>
-      translate($locale, key, vars)
-);
-
-/**
- * A helper function to get the `t` function outside of a Svelte component.
- */
-export const gett = () => get(t);

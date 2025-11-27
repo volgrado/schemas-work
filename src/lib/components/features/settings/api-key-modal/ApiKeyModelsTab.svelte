@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import {
     settingsState,
     selectModel,
@@ -9,7 +9,7 @@
   } from '$lib/services/ai/aiModels';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { fade } from 'svelte/transition';
 
   let { 
@@ -26,12 +26,12 @@
 <div class="tab-panel" in:fade={{ duration: 200 }}>
   <div class="info-box">
     <Icon name="info" size={18} class="text-accent" />
-    <p class="explanation">{$t('apiKeyModal.explanation_models')}</p>
+    <p class="explanation">{i18n.t('apiKeyModal.explanation_models')}</p>
   </div>
   
   <div class="form-section">
     <label for="model-selector" class="section-label">
-      {$t('apiKeyModal.model_selector_label')}
+      {i18n.t('apiKeyModal.model_selector_label')}
     </label>
     <div class="select-wrapper">
       <select
@@ -42,7 +42,7 @@
           selectModel((e.target as HTMLSelectElement).value)}
         disabled={isDiscoveringModels || !discoveredModelIds}
       >
-        <optgroup label={$t('apiKeyModal.optgroup.supported')}>
+        <optgroup label={i18n.t('apiKeyModal.optgroup.supported')}>
           {#each SUPPORTED_MODELS as model}
             {@const isAvailable = discoveredModelIds?.has(model.id)}
             <option
@@ -52,14 +52,14 @@
               {model.name}
               {#if discoveredModelIds !== null}
                 ({isAvailable
-                  ? $t('apiKeyModal.available')
-                  : $t('apiKeyModal.unavailable')})
+                  ? i18n.t('apiKeyModal.available')
+                  : i18n.t('apiKeyModal.unavailable')})
               {/if}
             </option>
           {/each}
         </optgroup>
         {#if discoveredModels.length > 0}
-          <optgroup label={$t('apiKeyModal.optgroup.discovered')}>
+          <optgroup label={i18n.t('apiKeyModal.optgroup.discovered')}>
             {#each discoveredModels as model}
               <option value={model.id}>{model.name} *</option>
             {/each}

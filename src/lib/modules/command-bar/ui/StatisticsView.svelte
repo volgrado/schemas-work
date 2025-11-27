@@ -1,15 +1,15 @@
-<!-- src/lib/components/ui/command-bar/StatisticsView.svelte -->
+﻿<!-- src/lib/components/ui/command-bar/StatisticsView.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import * as statisticsService from '$lib/services/features/statisticsService';
+  import * as statisticsService from '$lib/modules/study/domain/statisticsService';
   import type {
     Statistics,
     CardStatusDistribution,
-  } from '$lib/services/features/statisticsService';
+  } from '$lib/modules/study/domain/statisticsService';
   // FIX: Import the `goBack` action function directly from the store.
   import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- UI Component Imports ---
   import Icon from '$lib/core/ui/Icon.svelte';
@@ -52,22 +52,22 @@
 
     return [
       {
-        label: $t('statistics.chart.new'),
+        label: i18n.t('statistics.chart.new'),
         value: cardDistribution.new,
         color: colors.new,
       },
       {
-        label: $t('statistics.chart.learning'),
+        label: i18n.t('statistics.chart.learning'),
         value: cardDistribution.learning,
         color: colors.learning,
       },
       {
-        label: $t('statistics.chart.young'),
+        label: i18n.t('statistics.chart.young'),
         value: cardDistribution.young,
         color: colors.young,
       },
       {
-        label: $t('statistics.chart.mature'),
+        label: i18n.t('statistics.chart.mature'),
         value: cardDistribution.mature,
         color: colors.mature,
       },
@@ -87,13 +87,13 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('statistics.title')} onBack={goBack} />
+  <ViewHeader title={i18n.t('statistics.title')} onBack={goBack} />
 
   <div class="content-area">
     {#if isLoading}
-      <div class="state-message">{$t('statistics.loading')}</div>
+      <div class="state-message">{i18n.t('statistics.loading')}</div>
     {:else if !stats || !cardDistribution}
-      <div class="state-message">{$t('statistics.noData')}</div>
+      <div class="state-message">{i18n.t('statistics.noData')}</div>
     {:else}
       <div class="stats-content" in:fade={{ duration: 300 }}>
         <!-- Stat Cards -->
@@ -102,14 +102,14 @@
             <div class="stat-icon"><Icon name="check-circle" size={24} /></div>
             <div class="stat-content">
               <span class="value">{stats.reviewsToday}</span>
-              <span class="label">{$t('statistics.reviewsToday')}</span>
+              <span class="label">{i18n.t('statistics.reviewsToday')}</span>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon"><Icon name="archive" size={24} /></div>
             <div class="stat-content">
               <span class="value">{stats.totalReviews}</span>
-              <span class="label">{$t('statistics.totalReviews')}</span>
+              <span class="label">{i18n.t('statistics.totalReviews')}</span>
             </div>
           </div>
           <div class="stat-card">
@@ -118,7 +118,7 @@
               <span class="value {getRetentionColor(youngRetention())}">
                 {youngRetention().toFixed(1)}%
               </span>
-              <span class="label">{$t('statistics.youngRetention')}</span>
+              <span class="label">{i18n.t('statistics.youngRetention')}</span>
             </div>
           </div>
           <div class="stat-card">
@@ -127,19 +127,19 @@
               <span class="value {getRetentionColor(matureRetention())}">
                 {matureRetention().toFixed(1)}%
               </span>
-              <span class="label">{$t('statistics.matureRetention')}</span>
+              <span class="label">{i18n.t('statistics.matureRetention')}</span>
             </div>
           </div>
         </div>
 
         <!-- Pie Chart Section -->
-        <h3 class="section-title">{$t('statistics.breakdownTitle')}</h3>
+        <h3 class="section-title">{i18n.t('statistics.breakdownTitle')}</h3>
         <div class="chart-container">
           {#if pieChartData().length > 0}
             <PieChart data={pieChartData()} />
           {:else}
             <div class="state-message chart-empty">
-              {$t('statistics.chartEmpty')}
+              {i18n.t('statistics.chartEmpty')}
             </div>
           {/if}
         </div>

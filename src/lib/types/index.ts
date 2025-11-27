@@ -52,7 +52,7 @@ export namespace SRS {
     learningStep: number;
   }
 
-  export type CardType = 'basic' | 'input' | 'sequencing';
+  export type CardType = 'basic' | 'input' | 'sequencing' | 'true_false' | 'multiple_choice';
 
   interface CardBase {
     id: string;
@@ -77,12 +77,24 @@ export namespace SRS {
     content: { prompt: string; items: string[] };
   }
 
-  export type Card = BasicCard | InputCard | SequencingCard;
+  export interface TrueFalseCard extends CardBase {
+    type: 'true_false';
+    content: { statement: string; isTrue: boolean };
+  }
+
+  export interface MultipleChoiceCard extends CardBase {
+    type: 'multiple_choice';
+    content: { question: string; options: string[]; correctOptionIndex: number };
+  }
+
+  export type Card = BasicCard | InputCard | SequencingCard | TrueFalseCard | MultipleChoiceCard;
 
   export type NewCard =
     | Omit<BasicCard, 'id' | 'deckId'>
     | Omit<InputCard, 'id' | 'deckId'>
-    | Omit<SequencingCard, 'id' | 'deckId'>;
+    | Omit<SequencingCard, 'id' | 'deckId'>
+    | Omit<TrueFalseCard, 'id' | 'deckId'>
+    | Omit<MultipleChoiceCard, 'id' | 'deckId'>;
 }
 
 // =================================================================

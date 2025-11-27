@@ -6,19 +6,12 @@
   import CommandBar from '$lib/modules/command-bar/ui/CommandBar.svelte';
   import NodeDetailPanel from '$lib/components/features/node-detail/NodeDetailPanel.svelte';
   import GlobalErrorBoundary from '$lib/core/ui/GlobalErrorBoundary.svelte';
+  import AppInitializer from '$lib/core/app-shell/AppInitializer.svelte';
   import type { Snippet } from 'svelte';
 
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
-
-  // --- RESTORED IMPORTS ---
   import { themeStore, _applyThemeToDOM } from '$lib/stores/themeStore.svelte';
-  import { initialize as initializeTts } from '$lib/modules/tts/ui/ttsStore.svelte';
-  import { settingsState } from '$lib/stores/settingsStore.svelte';
-  import { initializeDocumentStoreListeners } from '$lib/stores/documentStore.svelte';
-  import { initializeReviewStoreListeners } from '$lib/stores/reviewStore.svelte';
   import * as errorService from '$lib/core/services/errorService';
-  import { initializeIcons } from '$lib/services/iconService'; // NEW
-  import { registerCommandBarActions } from '$lib/init'; // NEW
 
   import '$lib/styles/app.css';
   import 'katex/dist/katex.min.css';
@@ -33,10 +26,9 @@
   // --- GLOBAL ERROR STATE ---
   let hasError = $state(false);
   let capturedError = $state<unknown>(null);
-  let isSafeMode = $state(false); // NEW
+  let isSafeMode = $state(false);
 
-  // --- RESTORED LOGIC ---
-  // Without this, your theme and stores will never load!
+  // --- CRITICAL INFRASTRUCTURE SETUP ---
   onMount(async () => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -44,14 +36,8 @@
         .catch(console.error);
     }
     
-    // NEW: Check Safe Mode
+    // Check Safe Mode
     isSafeMode = errorService.isSafeMode();
-
-    // NEW: Run Integrity Check
-    if (browser) {
-      initializeIcons(); // Register offline icons
-      registerCommandBarActions(); // Register command bar actions
-    }
   });
 
   $effect(() => {
@@ -70,49 +56,11 @@
       hasError = true;
 
     };
-    initializeReviewStoreListeners();
-    initializeDocumentStoreListeners();
-    initializeTts();
-
-    // Audio unlock logic...
-    const unlockAudioContext = () => {
-      const context = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
-      if (context.state === 'suspended') context.resume();
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-    };
-    window.addEventListener('click', unlockAudioContext, { once: true });
-    window.addEventListener('touchstart', unlockAudioContext, { once: true });
 
     return () => {
       window.removeEventListener('error', handleGlobalError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  });
-
-  // RESTORED: THEME LOGIC
-  $effect(() => {
-    const currentTheme = themeStore.theme;
-    if (browser) {
-      localStorage.setItem('schemas-work-theme', currentTheme);
-      _applyThemeToDOM(currentTheme);
-
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleSystemChange = () => {
-        if (themeStore.theme === 'system') _applyThemeToDOM('system');
-      };
-      mediaQuery.addEventListener('change', handleSystemChange);
-      return () => mediaQuery.removeEventListener('change', handleSystemChange);
-    }
-  });
-
-  $effect(() => {
-    if (browser) {
-      localStorage.setItem(
-        'schemas-work-settings-v2',
-        JSON.stringify(settingsState)
-      );
-    }
   });
 
   function exitSafeMode() {
@@ -129,6 +77,7 @@
     This ensures the shell actually uses the theme colors defined in CSS variables.
   -->
   <div class="app-shell text-foreground">
+    <AppInitializer />
     <Toaster position="bottom-center" />
 
     {#if isSafeMode}

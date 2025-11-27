@@ -1,5 +1,6 @@
 import { addCollection } from '@iconify/svelte';
 import * as lucide from '@iconify-json/lucide/icons.json';
+import * as errorService from '$lib/core/services/errorService';
 
 /**
  * Initializes the icon registry with the bundled Lucide icons.
@@ -19,6 +20,9 @@ export function initializeIcons() {
     addCollection(iconData);
     console.log('[IconService] Lucide icons bundled and registered for offline use.');
   } catch (error) {
-    console.error('[IconService] Failed to register icons:', error);
+    errorService.reportError(error as Error, {
+      context: 'IconService',
+      action: 'initializeIcons',
+    });
   }
 }

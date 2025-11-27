@@ -1,6 +1,6 @@
-<!-- src/lib/components/ui/command-bar/VaultView.svelte -->
+﻿<!-- src/lib/components/ui/command-bar/VaultView.svelte -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   // FIX: Import the action functions directly from the store.
   import {
     goBack,
@@ -14,20 +14,20 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('vault_view.title')} onBack={goBack}>
+  <ViewHeader title={i18n.t('vault_view.title')} onBack={goBack}>
   </ViewHeader>
 
   <div class="action-list">
     <!-- FIX: Call the imported action function directly. -->
     <CommandButton onclick={() => openPasswordModal('export')}>
       <Icon name="download-cloud" size={20} />
-      <span>{$t('vault_view.export_button')}</span>
+      <span>{i18n.t('vault_view.export_button')}</span>
     </CommandButton>
 
     <!-- FIX: Call the imported action function directly. -->
     <CommandButton onclick={() => openPasswordModal('import')}>
       <Icon name="upload-cloud" size={20} />
-      <span>{$t('vault_view.import_button')}</span>
+      <span>{i18n.t('vault_view.import_button')}</span>
     </CommandButton>
   </div>
 </div>

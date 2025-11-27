@@ -1,10 +1,10 @@
-<!-- src/lib/components/ui/CommandBar.svelte -->
+﻿<!-- src/lib/components/ui/CommandBar.svelte -->
 <script lang="ts">
   // --- Svelte & Third-Party ---
   import { fade, fly } from 'svelte/transition';
   import { quintOut, cubicOut } from 'svelte/easing';
   import type { TransitionConfig } from 'svelte/transition';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- UI Components & Modals ---
   import ApiKeyModal from '$lib/components/features/settings/ApiKeyModal.svelte';
@@ -200,9 +200,9 @@
 {#if commandBarState.isSchemaModalOpen}
   <TextInputModal
     show={commandBarState.isSchemaModalOpen}
-    title={$t('command.new_schema')}
-    placeholder={$t('file_explorer.default_schema_name')}
-    submitLabel={$t('common.create')}
+    title={i18n.t('command.new_schema')}
+    placeholder={i18n.t('file_explorer.default_schema_name')}
+    submitLabel={i18n.t('common.create')}
     onClose={closeSchemaModal}
     onsubmit={async (name) => {
       // Import dynamically to avoid circular deps if needed, or just use the store
@@ -222,7 +222,7 @@
     class="overlay"
     onclick={closeCommandBar}
     transition:fade={{ duration: 150 }}
-    aria-label={$t('command_bar.close_aria_label')}
+    aria-label={i18n.t('command_bar.close_aria_label')}
   ></button>
 
   <div
@@ -232,7 +232,7 @@
     out:fade={{ duration: 150 }}
     role="dialog"
     aria-modal="true"
-    aria-label={$t('command_bar.title')}
+    aria-label={i18n.t('command_bar.title')}
     tabindex="-1"
     onkeydown={handlePanelKeydown}
   >
@@ -242,9 +242,9 @@
       <input
         type="text"
         bind:value={query}
-        placeholder={$t('command.search_vault')}
+        placeholder={i18n.t('command.search_vault')}
         class="search-input"
-        aria-label={$t('command.search_vault')}
+        aria-label={i18n.t('command.search_vault')}
         bind:this={searchInputElement}
       />
       {#if searchViewInstance?.status === 'loading'}

@@ -1,5 +1,5 @@
-<script lang="ts">
-  import { t } from '$lib/utils/i18n';
+﻿<script lang="ts">
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Button from '@ui/Button.svelte';
   import Icon from '@ui/Icon.svelte';
   import * as backupService from '$lib/services/features/backupService';
@@ -16,7 +16,7 @@
 
   async function handleEmergencyBackup() {
     try {
-      const password = prompt($t('backup_service.prompts.enter_password_export'));
+      const password = prompt(i18n.t('backup_service.prompts.enter_password_export'));
       if (!password) return;
 
       await backupService.exportVault(password);
@@ -27,7 +27,7 @@
   }
 
   async function handleFactoryReset() {
-    if (confirm($t('settings.danger_zone.reset_confirm'))) {
+    if (confirm(i18n.t('settings.danger_zone.reset_confirm'))) {
       try {
         await fileSystemStore.clear();
         localStorage.clear();
@@ -90,38 +90,27 @@ ${getTelemetry(error)}
 <div class="error-boundary">
   <div class="content">
     <div class="icon-wrapper">
-      <Icon name="alert-triangle" size={48} />
-    </div>
-    <h1>{$t('error_boundary.title') || 'Something went wrong'}</h1>
-    <p class="subtitle">{$t('error_boundary.description') || 'The application encountered an unexpected error. Don\'t worry, your data is likely safe.'}</p>
-
-    <div class="actions">
       <Button onclick={handleReload} variant="primary">
         <Icon name="refresh-cw" size={16} />
-        {$t('error_boundary.actions.reload')}
-      </Button>
-      
-      <Button onclick={handleEmergencyBackup} variant="secondary">
-        <Icon name="download-cloud" size={16} />
-        {$t('error_boundary.actions.backup')}
+        {i18n.t('error_boundary.actions.reload')}
       </Button>
 
       <Button onclick={handleReportBug} variant="secondary">
         <Icon name="git-branch" size={16} />
-        {$t('error_boundary.actions.report')}
+        {i18n.t('error_boundary.actions.report')}
       </Button>
 
       <div class="divider"></div>
 
       <Button onclick={handleFactoryReset} variant="danger">
         <Icon name="trash-2" size={16} />
-        {$t('error_boundary.actions.reset')}
+        {i18n.t('error_boundary.actions.reset')}
       </Button>
     </div>
 
     <div class="details">
       <button class="toggle-details" onclick={() => isExpanded = !isExpanded}>
-        {isExpanded ? $t('error_boundary.details.hide') : $t('error_boundary.details.show')}
+        {isExpanded ? i18n.t('error_boundary.details.hide') : i18n.t('error_boundary.details.show')}
         <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
       </button>
       
@@ -170,24 +159,7 @@ ${getTelemetry(error)}
     margin-bottom: var(--space-sm);
   }
 
-  h1 {
-    font-size: 2rem;
-    margin: 0;
-    font-weight: 700;
-  }
 
-  .subtitle {
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  .actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-    margin-top: var(--space-md);
-  }
 
   .divider {
     height: 1px;

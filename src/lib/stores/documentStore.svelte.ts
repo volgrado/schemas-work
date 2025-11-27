@@ -1,15 +1,14 @@
-/**
+﻿/**
  * @file Manages the lifecycle, state, and persistence of the active schema document using Svelte 5 Runes.
  * @module documentStore
  */
 import type { SchemaMetadata } from '$lib/types';
 import * as Y from 'yjs';
 import type { IndexeddbPersistence } from 'y-indexeddb';
-import { get as getStoreValue } from 'svelte/store';
 import { fileSystemStore } from '@modules/file-system';
 import { getDocumentProvider } from '$lib/core/services/persistenceService';
 import * as errorService from '$lib/core/services/errorService';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 
 // --- Type and State Definitions ---
 export interface DocumentState {
@@ -62,14 +61,25 @@ export async function load(
       setTimeout(resolve, MIN_LOADING_TIME)
     );
     const loadData = async () => {
+      console.log(`[documentStore] Loading metadata for docId: ${docId}`);
       const metadata = fileSystemStore.getItem(docId);
       if (!metadata || metadata.type !== 'schema') {
         throw new Error(
-          getStoreValue(t)('document.invalid_document_error', { docId })
+          i18n.t('document.invalid_document_error', { docId })
         );
       }
+      console.log(`[documentStore] Metadata loaded. Getting provider...`);
       const { ydoc, provider } = getDocumentProvider(docId);
-      await provider.whenSynced;
+      
+      // Add a timeout for the sync process
+      const SYNC_TIMEOUT = 5000; // 5 seconds
+      const syncPromise = provider.whenSynced;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Document sync timed out')), SYNC_TIMEOUT)
+      );
+
+      await Promise.race([syncPromise, timeoutPromise]);
+      console.log(`[documentStore] Provider synced.`);
       return { metadata, ydoc, provider };
     };
     const [loadedData] = await Promise.all([loadData(), minDelay]);
@@ -77,7 +87,7 @@ export async function load(
     documentState.ydoc = loadedData.ydoc;
     documentState.provider = loadedData.provider;
     documentState.status = 'ready';
-    console.log(`[documentStore] Document loaded. Status set to 'ready'.`); // Added this log for confirmation
+    console.log(`[documentStore] Document loaded. Status set to 'ready'.`);
     await fileSystemStore.setLastActiveDocId(docId);
   } catch (error) {
     errorService.reportError(error, { operation: 'loadDocument', docId });
@@ -168,13 +178,36 @@ export function initializeDocumentStoreListeners(): void {
       const item = event.item;
       // Handle "deleted all" or specific delete
       if (event.type === 'deleted') {
-           if (item.id === 'all' || item.id === documentState.docId) {
+           if (item.id === 'all' || (documentState.docId && !fileSystemStore.getItem(documentState.docId))) {
                cleanup();
            }
            return;
       }
 
       if (event.type === 'updated' && item.id === documentState.docId) {
+        // Sync H1 title if metadata title changed
+        if (documentState.metadata && documentState.metadata.title !== item.title) {
+          const ydoc = documentState.ydoc;
+          if (ydoc) {
+            const fragment = ydoc.getXmlFragment('prosemirror');
+            const firstNode = fragment.get(0);
+            
+            // Check if the first node is an H1 heading
+            if (
+              firstNode instanceof Y.XmlElement && 
+              firstNode.nodeName === 'heading' && 
+              Number(firstNode.getAttribute('level')) === 1
+            ) {
+              // Update the text content of the H1
+              if (firstNode.length > 0) {
+                firstNode.delete(0, firstNode.length);
+              }
+              const newText = new Y.XmlText(item.title);
+              firstNode.insert(0, [newText]);
+            }
+          }
+        }
+
         if (JSON.stringify(documentState.metadata) !== JSON.stringify(item)) {
           documentState.metadata = item;
         }

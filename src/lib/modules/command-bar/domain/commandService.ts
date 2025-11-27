@@ -1,12 +1,11 @@
-/**
+﻿/**
  * @file commandService.ts
  * @service
  * @description Central registry for all application commands, designed for the Svelte 5 Runes architecture.
  */
 
 import type { Search, TTS } from '$lib/types';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 import { toast } from 'svelte-sonner';
 import {
   commandBarState,
@@ -29,7 +28,7 @@ export function getCommands(
   ttsStatus: TTS.Status,
   isEditorReady: boolean
 ): Search.Command[] {
-  const _t = get(t);
+  const _t = i18n.t;
   return [
     {
       id: 'new-schema',
@@ -118,7 +117,7 @@ export function getAiCommands(
   hasActiveDocument: boolean,
   hasEditorInstance: boolean
 ): Search.Command[] {
-  const _t = get(t);
+  const _t = i18n.t;
   return [
     {
       id: 'create-schema-from-text',

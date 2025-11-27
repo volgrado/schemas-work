@@ -1,4 +1,4 @@
-import * as Y from 'yjs';
+﻿import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { fileSystemStore } from '@modules/file-system';
 import {
@@ -10,8 +10,7 @@ import {
 import type { Vault } from '$lib/types';
 import { toast } from 'svelte-sonner';
 import * as errorService from '$lib/core/services/errorService';
-import { t } from '$lib/utils/i18n';
-import { get } from 'svelte/store';
+import { i18n } from '$lib/utils/i18n.svelte';
 
 // --- HELPER FUNCTIONS (INTERNAL) ---
 
@@ -97,7 +96,7 @@ function isValidVault(data: any): data is Vault {
  * @param password The password to use for encrypting the vault.
  */
 export async function exportVault(password: string): Promise<void> {
-  const _t = get(t);
+  const _t = i18n.t;
   try {
     if (!password) {
       throw new Error(_t('backup_service.errors.password_required_export'));
@@ -158,7 +157,7 @@ export async function exportVault(password: string): Promise<void> {
  */
 export async function importVault(password: string): Promise<void> {
   let file: File | null = null;
-  const _t = get(t);
+  const _t = i18n.t;
   try {
     file = await selectFile();
     if (!file) return;

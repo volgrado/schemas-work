@@ -1,23 +1,20 @@
-<script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+﻿<script lang="ts">
+  import { i18n } from '$lib/utils/i18n.svelte';
   import FloatingActionButton from '$lib/core/ui/FloatingActionButton.svelte';
-  import { t } from '$lib/utils/i18n';
 
   let { 
-    colorMode 
+    colorMode,
+    onColorChange
   }: { 
     colorMode: 'none' | 'by-level' | 'by-path';
+    onColorChange?: (mode: 'none' | 'by-level' | 'by-path') => void;
   } = $props();
-
-  const dispatch = createEventDispatcher<{
-    colorChange: 'none' | 'by-level' | 'by-path';
-  }>();
 
   function cycleColorMode() {
     const modes: ('none' | 'by-level' | 'by-path')[] = ['none', 'by-level', 'by-path'];
     const currentIndex = modes.indexOf(colorMode);
     const nextIndex = (currentIndex + 1) % modes.length;
-    dispatch('colorChange', modes[nextIndex]);
+    onColorChange?.(modes[nextIndex]);
   }
 
   function getColorModeIcon(mode: string): any {
@@ -30,9 +27,9 @@
 
   function getColorModeLabel(mode: string): string {
     switch (mode) {
-      case 'by-level': return $t('visualization.color_mode.by_level');
-      case 'by-path': return $t('visualization.color_mode.by_path');
-      default: return $t('visualization.color_mode.none');
+      case 'by-level': return i18n.t('visualization.color_mode.by_level');
+      case 'by-path': return i18n.t('visualization.color_mode.by_path');
+      default: return i18n.t('visualization.color_mode.none');
     }
   }
 </script>

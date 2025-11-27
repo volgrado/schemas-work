@@ -1,4 +1,4 @@
-// src/lib/services/ai/modelDiscoveryService.ts
+import * as errorService from '$lib/core/services/errorService';
 
 // NEW: A list of keywords to filter out unwanted, specialized, or internal models.
 // This list can be easily updated in the future.
@@ -68,7 +68,10 @@ export async function fetchAvailableGeminiModels(
     }
     return modelIds;
   } catch (error) {
-    console.error('Error during model discovery:', error);
+    errorService.reportError(error as Error, {
+      context: 'ModelDiscoveryService',
+      action: 'fetchAvailableGeminiModels',
+    });
     return new Set(); // Return an empty set on error
   }
 }

@@ -1,53 +1,55 @@
-import { actionRegistry } from '$lib/actions/registry';
+﻿import { actionRegistry } from '$lib/actions/registry';
 import { close, setView, openDiagnosticModal, openApiKeyModal } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
+import { i18n } from '$lib/utils/i18n.svelte';
 
 export function registerCommandBarActions() {
+  const t = i18n.t;
+
   const actions = [
     // --- Navigation Actions ---
     {
       id: 'app.newSchema',
-      title: 'New Schema',
-      description: 'Create a new schema document.',
+      title: t('command.new_schema'),
+      description: t('command.new_schema'), // Reusing title as description for now or add specific key
       icon: 'plus',
       context: 'view:command-bar',
       handler: async () => {
         const { create } = await import('$lib/stores/documentStore.svelte');
         const { get } = await import('svelte/store');
-        const { t } = await import('$lib/utils/i18n');
         
-        const defaultName = get(t)('file_explorer.default_schema_name');
+        const defaultName = t('file_explorer.default_schema_name');
         await create(defaultName);
         close();
       }
     },
     {
       id: 'app.switchSchema',
-      title: 'Explore Schemas',
-      description: 'Browse and switch between schemas.',
+      title: t('command.explore_schemas'),
+      description: t('command.explore_schemas'),
       icon: 'folder',
       context: 'view:command-bar',
       handler: () => setView('file-explorer')
     },
     {
       id: 'app.studyDecks',
-      title: 'Study Decks',
-      description: 'Review your flashcard decks.',
+      title: t('command.study_decks'),
+      description: t('command.study_decks'),
       icon: 'book-open',
       context: 'view:command-bar',
       handler: () => setView('study-hub')
     },
     {
       id: 'app.aiSubmenu',
-      title: 'AI Assistant',
-      description: 'Access AI-powered tools.',
+      title: t('command.ai_assistant'),
+      description: t('command.ai_assistant'),
       icon: 'sparkles',
       context: 'view:command-bar',
       handler: () => setView('ai-actions')
     },
     {
       id: 'app.vaultManagement',
-      title: 'Vault Management',
-      description: 'Manage your secure vault.',
+      title: t('command.vault_management'),
+      description: t('command.vault_management'),
       icon: 'lock',
       context: 'view:command-bar',
       handler: () => setView('vault')
@@ -56,8 +58,8 @@ export function registerCommandBarActions() {
     // --- Feature Actions ---
     {
       id: 'app.readAloud',
-      title: 'Read Schema',
-      description: 'Listen to the current schema.',
+      title: t('command.read_schema'),
+      description: t('command.read_schema'),
       icon: 'volume-2',
       context: 'view:command-bar',
       handler: async () => {
@@ -73,22 +75,22 @@ export function registerCommandBarActions() {
            startReading(nodesToRead);
            close();
         } else {
-           toast.error('Editor not ready');
+           toast.error(t('common.editor_not_ready'));
         }
       }
     },
     {
       id: 'app.openDiagnosticModal',
-      title: 'System Diagnostics',
-      description: 'View system health and logs.',
+      title: t('command.diagnostics_and_error_report'),
+      description: t('command.diagnostics_and_error_report'),
       icon: 'activity',
       context: 'view:command-bar',
       handler: () => openDiagnosticModal()
     },
     {
       id: 'app.openApiKeyModal',
-      title: 'API Keys',
-      description: 'Manage your API keys.',
+      title: t('command.set_api_key'),
+      description: t('command.set_api_key'),
       icon: 'key',
       context: 'view:command-bar',
       handler: () => openApiKeyModal()

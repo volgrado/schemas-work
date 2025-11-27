@@ -1,11 +1,11 @@
-<!-- src/lib/components/ui/command-bar/AiView.svelte -->
+﻿<!-- src/lib/components/ui/command-bar/AiView.svelte -->
 <script lang="ts">
   // --- VVVV CORRECTED IMPORTS VVVV ---
   import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
   import { documentState } from '$lib/stores/documentStore.svelte'; // Changed from documentStore
   import { getAiCommands } from '$lib/modules/command-bar/domain/commandService';
   import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { Search } from '$lib/types';
   type Command = Search.Command;
 
@@ -35,7 +35,7 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('ai_view.title')} onBack={goBack} />
+  <ViewHeader title={i18n.t('ai_view.title')} onBack={goBack} />
 
   <div class="action-list">
     {#each aiCommands as command (command.id)}

@@ -1,15 +1,9 @@
-// src/lib/stores/cardEditorStore.svelte.ts
-/**
- * @file Manages the state and interactions for the `CardEditorPanel` component using Svelte 5 Runes.
- * @module cardEditorStore
- */
-
-import type { SRS } from '$lib/types';
+﻿import type { SRS } from '$lib/types';
 import * as errorService from '$lib/core/services/errorService';
-import * as cardService from '$lib/services/features/cardService';
+import * as cardService from '$lib/modules/study/domain/cardService';
 import { toast } from 'svelte-sonner';
-import { t } from '$lib/utils/i18n';
-import { get } from 'svelte/store';
+import { i18n } from '$lib/utils/i18n.svelte';
+
 
 export type SaveStatus = 'idle' | 'saving' | 'saved';
 export type FetchStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -50,7 +44,7 @@ export async function open(docId: string): Promise<void> {
     cardEditorState.fetchStatus = 'loaded';
   } catch (err) {
     errorService.reportError(err, { operation: 'cardEditorStore.open', docId });
-    toast.error(get(t)('card_editor.load_error'));
+    toast.error(i18n.t('card_editor.load_error'));
     cardEditorState.fetchStatus = 'error';
   }
 }
@@ -67,17 +61,21 @@ export function close(): void {
 /**
  * Creates a new, empty card of a specified type.
  */
+import { SRS_DEFAULTS } from '$lib/constants';
+
+// ... imports
+
 export async function addCard(type: SRS.CardType): Promise<void> {
   if (!cardEditorState.docId) return;
 
   cardEditorState.lastAddedCardId = null;
 
   const defaultSrs: SRS.Data = {
-    easeFactor: 2.5,
-    interval: 0,
-    repetitions: 0,
+    easeFactor: SRS_DEFAULTS.EASE_FACTOR,
+    interval: SRS_DEFAULTS.INTERVAL,
+    repetitions: SRS_DEFAULTS.REPETITIONS,
     dueDate: Date.now(),
-    learningStep: 1,
+    learningStep: SRS_DEFAULTS.LEARNING_STEP,
   };
 
   let newCardData: Omit<SRS.Card, 'id' | 'deckId'>;
@@ -86,7 +84,7 @@ export async function addCard(type: SRS.CardType): Promise<void> {
       newCardData = {
         type: 'input',
         content: {
-          prompt: get(t)('card_editor.input_prompt_fallback'),
+          prompt: i18n.t('card_editor.input_prompt_fallback'),
           expected: '',
         },
         srs: defaultSrs,
@@ -98,7 +96,7 @@ export async function addCard(type: SRS.CardType): Promise<void> {
       newCardData = {
         type: 'sequencing',
         content: {
-          prompt: get(t)('card_editor.sequencing_prompt'),
+          prompt: i18n.t('card_editor.sequencing_prompt'),
           items: ['Item 1', 'Item 2'],
         },
         srs: defaultSrs,
@@ -110,7 +108,7 @@ export async function addCard(type: SRS.CardType): Promise<void> {
     default:
       newCardData = {
         type: 'basic',
-        content: { question: get(t)('card_editor.new_question'), answer: '' },
+        content: { question: i18n.t('card_editor.new_question'), answer: '' },
         srs: defaultSrs,
         tags: [],
         suspended: false,
@@ -127,7 +125,7 @@ export async function addCard(type: SRS.CardType): Promise<void> {
     cardEditorState.lastAddedCardId = newCard.id;
   } catch (err) {
     errorService.reportError(err, { operation: 'cardEditorStore.addCard' });
-    toast.error(get(t)('card_editor.create_error'));
+    toast.error(i18n.t('card_editor.create_error'));
   }
 }
 
@@ -158,7 +156,7 @@ export async function updateCard(updatedCard: SRS.Card): Promise<void> {
       operation: 'cardEditorStore.updateCard',
       cardId: updatedCard.id,
     });
-    toast.error(get(t)('card_editor.save_error'));
+    toast.error(i18n.t('card_editor.save_error'));
     cardEditorState.status = 'idle';
   }
 }
@@ -183,7 +181,7 @@ export async function deleteCard(
       operation: 'cardEditorStore.deleteCard',
       cardId,
     });
-    toast.error(get(t)('card_editor.delete_error'));
+    toast.error(i18n.t('card_editor.delete_error'));
     cardEditorState.cards.splice(cardIndex, 0, cardToDelete);
   }
 }
@@ -203,7 +201,7 @@ export async function restoreCard(cardToRestore: SRS.Card): Promise<void> {
       operation: 'cardEditorStore.restoreCard',
       cardId: cardToRestore.id,
     });
-    toast.error(get(t)('card_editor.restore_error'));
+    toast.error(i18n.t('card_editor.restore_error'));
   }
 }
 

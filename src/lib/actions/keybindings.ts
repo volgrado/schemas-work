@@ -4,6 +4,7 @@
  */
 import { onMount, onDestroy } from 'svelte';
 import { actionRegistry } from './registry';
+import { uiState } from '$lib/stores/uiStore.svelte';
 
 type KeyHandler = (event: KeyboardEvent) => void;
 
@@ -38,24 +39,44 @@ class KeybindingManager {
 
     if (actions.length === 0) return;
 
-    // Prioritize actions based on context?
-    // For now, just execute the first enabled one.
-    // In a real app, we'd check if the context matches (e.g. is editor focused).
-    
-    for (const action of actions) {
-      // TODO: Add context checking logic here.
-      // For now, we rely on the action's handler or isEnabled check.
+    // Determine current context
+    let currentContext = 'global';
+    if (uiState.commandBar.isOpen) {
+      currentContext = 'view:command-bar';
+    } else if (uiState.activeView === 'editor') {
+      currentContext = 'editor';
+    } else if (uiState.activeView === 'tree') {
+      currentContext = 'tree';
+    }
+
+    // Filter actions by context
+    // We prioritize specific context matches over global ones if both exist?
+    // Or we just execute the one that matches the current context.
+    const validActions = actions.filter(a => 
+      a.context === 'global' || a.context === currentContext
+    );
+
+    if (validActions.length === 0) return;
+
+    // If we have multiple matches (e.g. global and specific), which one wins?
+    // Usually specific wins.
+    validActions.sort((a, b) => {
+      if (a.context === currentContext && b.context === 'global') return -1;
+      if (a.context === 'global' && b.context === currentContext) return 1;
+      return 0;
+    });
+
+    const actionToExecute = validActions[0];
+
+    if (actionToExecute) {
+      // Check if enabled
+      if (actionToExecute.isEnabled && !actionToExecute.isEnabled()) {
+        return;
+      }
       
-      // Prevent default if action is executed
-      // We might want to check if the action actually did something.
-      
-      // Simple heuristic: if it's an editor command and we are in the editor, execute.
-      // If it's a global command, execute.
-      
-      actionRegistry.execute(action.id);
+      actionRegistry.execute(actionToExecute.id);
       event.preventDefault();
       event.stopPropagation();
-      return;
     }
   };
 

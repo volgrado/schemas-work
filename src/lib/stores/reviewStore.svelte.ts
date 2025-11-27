@@ -1,21 +1,21 @@
-/**
+﻿/**
  * @file Manages the state and logic for the spaced repetition review feature using Svelte 5 Runes.
  * @module reviewStore
  */
 
 import { browser } from '$app/environment';
 import type { SRS } from '$lib/types';
-import type { DeckOptions } from '$lib/services/features/deckService';
-import { get as getStoreValue } from 'svelte/store';
+import type { DeckOptions } from '$lib/modules/study/domain/deckService';
+
 // --- VVVV CORRECTED IMPORTS VVVV ---
 import { editorState } from '@modules/editor';
 import { documentState, load as loadDocument } from './documentStore.svelte';
 import { toast } from 'svelte-sonner';
-import * as reviewService from '$lib/services/features/reviewService';
-import * as cardService from '$lib/services/features/cardService';
-import * as deckService from '$lib/services/features/deckService';
-import * as reviewLogService from '$lib/services/features/reviewLogService';
-import { t } from '$lib/utils/i18n';
+import * as reviewService from '$lib/modules/study/domain/reviewService';
+import * as cardService from '$lib/modules/study/domain/cardService';
+import * as deckService from '$lib/modules/study/domain/deckService';
+import * as reviewLogService from '$lib/modules/study/domain/reviewLogService';
+import { i18n } from '$lib/utils/i18n.svelte';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
@@ -144,17 +144,17 @@ export async function startReview(deckIds?: string[]): Promise<void> {
   if (finalCards.length > 0) {
     startReviewSession(
       finalCards,
-      getStoreValue(t)('review.scheduled_review'),
+      i18n.t('review.scheduled_review'),
       deckIds,
       options
     );
     return;
   }
 
-  toast.success(getStoreValue(t)('review.all_reviewed_toast'), {
-    description: getStoreValue(t)('review.all_reviewed_description'),
+  toast.success(i18n.t('review.all_reviewed_toast'), {
+    description: i18n.t('review.all_reviewed_description'),
     action: {
-      label: getStoreValue(t)('review.review_weakest_button'),
+      label: i18n.t('review.review_weakest_button'),
       onClick: () => startAdditionalReview(deckIds),
     },
   });
@@ -165,14 +165,14 @@ export async function startAdditionalReview(deckIds?: string[]): Promise<void> {
   const weakestCards = await reviewService.getWeakestCards(WEAKEST_CARDS_COUNT);
 
   if (weakestCards.length === 0) {
-    toast.info(getStoreValue(t)('review.no_cards_for_additional_review'));
+    toast.info(i18n.t('review.no_cards_for_additional_review'));
     return;
   }
 
   const options = { deckId: 'default', ...deckService.defaultDeckOptions };
   startReviewSession(
     weakestCards,
-    getStoreValue(t)('review.additional_review'),
+    i18n.t('review.additional_review'),
     deckIds,
     options
   );
@@ -185,7 +185,7 @@ function startReviewSession(
   options?: Omit<DeckOptions, 'deckId'>
 ): void {
   toast.info(
-    getStoreValue(t)('review.review_started_toast', {
+    i18n.t('review.review_started_toast', {
       type,
       count: cards.length,
     })
@@ -254,7 +254,7 @@ export async function submitReview(quality: SRS.ReviewQuality): Promise<void> {
 
   if (quality < 3) {
     newFailedQueue.push(reviewedCard);
-    toast.info(getStoreValue(t)('review.card_will_reappear_toast'));
+    toast.info(i18n.t('review.card_will_reappear_toast'));
   }
 
   if (newCardsToReview.length === 0 && newFailedQueue.length > 0) {
@@ -265,8 +265,8 @@ export async function submitReview(quality: SRS.ReviewQuality): Promise<void> {
   if (newCardsToReview.length === 0) {
     reviewState.isFinished = true;
     reviewState.decorationSet = DecorationSet.empty;
-    toast.success(getStoreValue(t)('review.review_complete_toast'), {
-      description: getStoreValue(t)('review.review_complete_description', {
+    toast.success(i18n.t('review.review_complete_toast'), {
+      description: i18n.t('review.review_complete_description', {
         count: reviewState.sessionCardCount,
       }),
     });

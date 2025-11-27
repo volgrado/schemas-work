@@ -93,17 +93,21 @@ class FileSystemStore {
     return updated;
   }
 
-  async deleteItem(id: string) {
-    const toDelete = new Set<string>([id]);
-    
-    // Recursive delete
+  getDescendants(id: string): FileSystemNode[] {
+    const descendants: FileSystemNode[] = [];
     const collectChildren = (pid: string) => {
       this.items.filter(i => i.parentId === pid).forEach(child => {
-        toDelete.add(child.id);
+        descendants.push(child);
         if (child.type === 'folder') collectChildren(child.id);
       });
     };
     collectChildren(id);
+    return descendants;
+  }
+
+  async deleteItem(id: string) {
+    const descendants = this.getDescendants(id);
+    const toDelete = new Set<string>([id, ...descendants.map(d => d.id)]);
 
     this.items = this.items.filter(i => !toDelete.has(i.id));
     this.persist();

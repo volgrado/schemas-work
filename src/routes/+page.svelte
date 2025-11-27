@@ -1,8 +1,7 @@
-<!-- src/routes/+page.svelte -->
+﻿<!-- src/routes/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { get } from 'svelte/store';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { load as loadDocument, create as createDocument } from '$lib/stores/documentStore.svelte';
   import { fileSystemStore } from '@modules/file-system';
   import { WELCOME_SEEN_KEY } from '$lib/constants';
@@ -58,7 +57,7 @@
         await loadDocument(allSchemas[0].id);
       } else {
         console.log('[+page] No schemas found, creating new one');
-        await createDocument(get(t)('document.first_schema_title'));
+        await createDocument(i18n.t('document.first_schema_title'));
       }
     } catch (error) {
       console.error('[+page] initialDocumentLoad failed:', error);

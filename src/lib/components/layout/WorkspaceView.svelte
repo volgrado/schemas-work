@@ -1,5 +1,5 @@
-<script lang="ts">
-  import { get } from 'svelte/store';
+﻿<script lang="ts">
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
   import { fade } from 'svelte/transition';
 
@@ -11,6 +11,14 @@
   import Spinner from '$lib/core/ui/Spinner.svelte';
   import EmptyState from '$lib/core/ui/EmptyState.svelte';
 
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
+  import {
+    nodeDetailState,
+    openPanel,
+    setFlattenedTree,
+  } from '$lib/stores/nodeDetailStore.svelte';
+  import { extractContentWithPositions } from '$lib/utils/contentExtraction';
+
   // --- Stores ---
   import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
@@ -20,7 +28,7 @@
     setFocusCommand,
   } from '$lib/stores/documentStore.svelte';
   import { editorState, updateSelection } from '$lib/modules/editor/ui/editorStore.svelte';
-  import { t } from '$lib/utils/i18n';
+
 
   // --- Services ---
   import * as schemaService from '$lib/services/features/schemaService';
@@ -40,29 +48,82 @@
     if (docStatus === 'ready' && editorDoc) {
       const generatedTree = schemaService.documentToTreeData(editorDoc);
       treeData = generatedTree;
+      // Flatten tree whenever data changes
+      flattenTreeForNavigation(generatedTree);
     } else {
       treeData = null;
+      setFlattenedTree([]);
     }
   });
 
-  function handleNodeClick(e: CustomEvent<{ id: string }>) {
+
+  function flattenTreeForNavigation(data: any): void {
     const editor = editorState.instance;
-    if (editor) {
-      let foundPos: number | null = null;
-      editor.state.doc.descendants((node: ProseMirrorNode, pos: number) => {
-        if (node.attrs.nodeId === e.detail.id) {
-          foundPos = pos;
+    if (!editor || !data) {
+      setFlattenedTree([]);
+      return;
+    }
+
+    const flattenedNodes: Array<{ id: string; title: string; content: string }> = [];
+    
+    // Recursive traversal of treeData
+    const traverse = (node: any) => {
+      const nodeId = node.id;
+      
+      // Find the heading node in the ProseMirror document
+      let headingNode: ProseMirrorNode | null = null;
+      let headingPos = -1;
+      
+      editor.state.doc.descendants((pmNode, pos) => {
+        if (pmNode.attrs.nodeId === nodeId && pmNode.type.name.startsWith('heading')) {
+          headingNode = pmNode;
+          headingPos = pos;
           return false;
         }
-        return true;
       });
-      if (foundPos !== null) {
-        const node = editor.state.doc.nodeAt(foundPos);
-        if (node) updateSelection(node, foundPos);
-        setFocusCommand(e.detail.id);
-        setActiveView('editor');
+      
+      if (headingNode) {
+        const typedHeadingNode = headingNode as ProseMirrorNode;
+        const title = typedHeadingNode.textContent;
+        
+        // Extract content
+        let endPos = editor.state.doc.content.size;
+        const currentLevel = typedHeadingNode.attrs.level;
+        let foundNextHeading = false;
+
+        editor.state.doc.nodesBetween(
+          headingPos + typedHeadingNode.nodeSize,
+          editor.state.doc.content.size,
+          (pmNode: ProseMirrorNode, pos: number) => {
+            if (foundNextHeading) return false;
+
+            if (pmNode.type.name === 'heading') {
+              if (pmNode.attrs.level <= currentLevel) {
+                endPos = pos;
+                foundNextHeading = true;
+                return false;
+              }
+            }
+          }
+        );
+        
+        const content = extractContentWithPositions(
+          editor.state.doc,
+          headingPos + typedHeadingNode.nodeSize,
+          endPos,
+          editor.state.schema
+        );
+        
+        flattenedNodes.push({ id: nodeId, title, content });
       }
-    }
+
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    };
+
+    traverse(data);
+    setFlattenedTree(flattenedNodes);
   }
 </script>
 
@@ -74,25 +135,25 @@
   {#if documentState.status === 'loading'}
     <div class="status-message loading-state" in:fade>
       <Spinner size="lg" />
-      <p>{$t('page.status.loading_schema')}</p>
+      <p>{i18n.t('page.status.loading_schema')}</p>
     </div>
   {:else if documentState.status === 'error'}
     <div class="status-container" in:fade>
       <div class="error-content">
         <Icon name="alert-triangle" size={48} color="var(--color-danger)" />
-        <h2>{$t('page.status.load_error_title')}</h2>
-        <p>{$t('page.status.load_error_message')}</p>
+        <h2>{i18n.t('page.status.load_error_title')}</h2>
+        <p>{i18n.t('page.status.load_error_message')}</p>
         <div class="error-actions">
           <Button
             variant="primary"
-            onclick={() => createDocument(get(t)('document.new_schema_title'))}
+            onclick={() => createDocument(i18n.t('document.new_schema_title'))}
           >
             <Icon name="file-plus" />
-            {$t('page.actions.create_new')}
+            {i18n.t('page.actions.create_new')}
           </Button>
           <Button variant="secondary" onclick={openCommandBar}>
             <Icon name="command" />
-            {$t('page.actions.open_menu')}
+            {i18n.t('page.actions.open_menu')}
           </Button>
         </div>
       </div>
@@ -107,11 +168,13 @@
       in:fade={{ duration: 200 }}
     >
       <div class="sheet-container glass-panel">
-        <DocumentView
-          ydoc={documentState.ydoc}
-          initialContent={documentState.initialContent}
-          provider={documentState.provider}
-        />
+        {#key documentState.docId}
+          <DocumentView
+            ydoc={documentState.ydoc}
+            initialContent={documentState.initialContent}
+            provider={documentState.provider}
+          />
+        {/key}
       </div>
     </div>
 
@@ -130,7 +193,6 @@
               <StandardTree
                 treeData={currentTreeData}
                 selectedNodeId={editorState.selectedNode?.attrs.nodeId ?? null}
-                on:nodeClick={handleNodeClick}
               />
             {:catch error}
               <div class="status-message error">
@@ -141,7 +203,7 @@
         {:else}
           <div class="status-message">
             <Spinner size="md" />
-            <span style="margin-left: 10px;">{$t('page.status.generating_tree')}</span>
+            <span style="margin-left: 10px;">{i18n.t('page.status.generating_tree')}</span>
           </div>
         {/if}
       </div>
@@ -150,13 +212,13 @@
     <!-- Empty State (No Document Loaded) -->
     <div class="view-wrapper" style:display="flex" style:justify-content="center" style:align-items="center">
       <EmptyState
-        title={$t('document.empty_state.title')}
-        description={$t('document.empty_state.description')}
+        title={i18n.t('document.empty_state.title')}
+        description={i18n.t('document.empty_state.description')}
         icon="layout"
-        actionLabel={$t('page.actions.create_new')}
+        actionLabel={i18n.t('page.actions.create_new')}
         actionId="new-schema-button"
         onaction={() => {
-          createDocument(get(t)('document.new_schema_title'));
+          createDocument(i18n.t('document.new_schema_title'));
         }}
       />
     </div>

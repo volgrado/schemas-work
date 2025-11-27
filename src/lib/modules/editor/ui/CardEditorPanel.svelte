@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   CardEditorPanel
 
@@ -22,7 +22,7 @@
   import Spinner from '$lib/core/ui/Spinner.svelte';
 
   // --- Stores, Actions, and Utilities ---
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { cardEditorState } from '$lib/modules/editor/ui/cardEditorStore.svelte';
   import { CardEditorController } from '$lib/modules/editor/ui/CardEditorController.svelte';
   import { autosize } from '$lib/actions/autosize';
@@ -51,17 +51,17 @@
     <header class="header">
       <div class="header-left">
         <div class="header-title">
-          <h3 id="panel-title">{$t('card_editor_panel.title')}</h3>
-          <HelpTooltip>{$t('card_editor_panel.tooltip')}</HelpTooltip>
+          <h3 id="panel-title">{i18n.t('card_editor_panel.title')}</h3>
+          <HelpTooltip>{i18n.t('card_editor_panel.tooltip')}</HelpTooltip>
         </div>
         {#if cardEditorState.status !== 'idle'}
           <div class="save-status" in:fade={{ duration: 100 }}>
             {#if cardEditorState.status === 'saving'}
               <Spinner size="sm" />
-              <span>{$t('card_editor_panel.saving')}</span>
+              <span>{i18n.t('card_editor_panel.saving')}</span>
             {:else if cardEditorState.status === 'saved'}
               <Icon name="check-circle" size={14} />
-              <span>{$t('card_editor_panel.saved')}</span>
+              <span>{i18n.t('card_editor_panel.saved')}</span>
             {/if}
           </div>
         {/if}
@@ -74,7 +74,7 @@
             size="sm"
             onclick={() => (controller.showAddMenu = !controller.showAddMenu)}
           >
-            <Icon name="plus" size={16} />{$t('card_editor_panel.add_card')}
+            <Icon name="plus" size={16} />{i18n.t('card_editor_panel.add_card')}
           </Button>
         </div>
 
@@ -87,14 +87,14 @@
           <ul class="add-menu" role="menu">
             <li role="presentation">
               <button role="menuitem" onclick={() => controller.handleAddCard('basic')}
-                ><Icon name="pen-tool" size={16} />{$t(
+                ><Icon name="pen-tool" size={16} />{i18n.t(
                   'card_editor_panel.add_basic'
                 )}</button
               >
             </li>
             <li role="presentation">
               <button role="menuitem" onclick={() => controller.handleAddCard('input')}
-                ><Icon name="edit-3" size={16} />{$t(
+                ><Icon name="edit-3" size={16} />{i18n.t(
                   'card_editor_panel.add_input'
                 )}</button
               >
@@ -103,8 +103,26 @@
               <button
                 role="menuitem"
                 onclick={() => controller.handleAddCard('sequencing')}
-                ><Icon name="list" size={16} />{$t(
+                ><Icon name="list" size={16} />{i18n.t(
                   'card_editor_panel.add_sequence'
+                )}</button
+              >
+            </li>
+            <li role="presentation">
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('true_false')}
+                ><Icon name="check-circle" size={16} />{i18n.t(
+                  'card_editor_panel.add_true_false'
+                )}</button
+              >
+            </li>
+            <li role="presentation">
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('multiple_choice')}
+                ><Icon name="list" size={16} />{i18n.t(
+                  'card_editor_panel.add_multiple_choice'
                 )}</button
               >
             </li>
@@ -112,16 +130,16 @@
         </Popup>
 
         <Button onclick={() => controller.closePanel()} variant="primary" size="sm"
-          >{$t('card_editor_panel.done')}</Button
+          >{i18n.t('card_editor_panel.done')}</Button
         >
       </div>
     </header>
 
     <div class="editor-content">
       {#if cardEditorState.fetchStatus === 'loading'}
-        <p>{$t('card_editor_panel.loading')}</p>
+        <p>{i18n.t('card_editor_panel.loading')}</p>
       {:else if cardEditorState.fetchStatus === 'error'}
-        <p>{$t('card_editor_panel.load_error')}</p>
+        <p>{i18n.t('card_editor_panel.load_error')}</p>
       {:else if cardEditorState.cards.length > 0}
         <div class="cards-list">
           {#each cardEditorState.cards as card (card.id)}
@@ -142,23 +160,23 @@
                 {#if card.type === 'basic'}
                   <div class="field">
                     <label for="q-{card.id}"
-                      >{$t('card_editor_panel.question_label')}</label
+                      >{i18n.t('card_editor_panel.question_label')}</label
                     >
                     <input
                       id="q-{card.id}"
                       type="text"
-                      placeholder={$t('card_editor_panel.question_placeholder')}
+                      placeholder={i18n.t('card_editor_panel.question_placeholder')}
                       bind:value={card.content.question}
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
                     <label for="a-{card.id}"
-                      >{$t('card_editor_panel.answer_label')}</label
+                      >{i18n.t('card_editor_panel.answer_label')}</label
                     >
                     <textarea
                       id="a-{card.id}"
-                      placeholder={$t('card_editor_panel.answer_placeholder')}
+                      placeholder={i18n.t('card_editor_panel.answer_placeholder')}
                       bind:value={card.content.answer}
                       oninput={() => controller.handleUpdate(card)}
                       use:autosize
@@ -167,24 +185,24 @@
                 {:else if card.type === 'input'}
                   <div class="field">
                     <label for="p-{card.id}"
-                      >{$t('card_editor_panel.prompt_label')}</label
+                      >{i18n.t('card_editor_panel.prompt_label')}</label
                     >
                     <input
                       id="p-{card.id}"
                       type="text"
-                      placeholder={$t('card_editor_panel.prompt_placeholder')}
+                      placeholder={i18n.t('card_editor_panel.prompt_placeholder')}
                       bind:value={card.content.prompt}
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
                     <label for="e-{card.id}"
-                      >{$t('card_editor_panel.expected_answer_label')}</label
+                      >{i18n.t('card_editor_panel.expected_answer_label')}</label
                     >
                     <input
                       id="e-{card.id}"
                       type="text"
-                      placeholder={$t(
+                      placeholder={i18n.t(
                         'card_editor_panel.expected_answer_placeholder'
                       )}
                       bind:value={card.content.expected}
@@ -194,12 +212,12 @@
                 {:else if card.type === 'sequencing'}
                   <div class="field">
                     <label for="s-{card.id}"
-                      >{$t('card_editor_panel.instruction_label')}</label
+                      >{i18n.t('card_editor_panel.instruction_label')}</label
                     >
                     <input
                       id="s-{card.id}"
                       type="text"
-                      placeholder={$t(
+                      placeholder={i18n.t(
                         'card_editor_panel.instruction_placeholder'
                       )}
                       bind:value={card.content.prompt}
@@ -230,7 +248,7 @@
                         >
                         <input
                           type="text"
-                          placeholder={$t(
+                          placeholder={i18n.t(
                             'card_editor_panel.sequence_item_placeholder'
                           )}
                           bind:value={card.content.items[itemIndex]}
@@ -247,10 +265,103 @@
                   <button
                     class="add-item-button"
                     onclick={() => controller.addSequenceItem(card)}
-                    ><Icon name="plus" size={14} />{$t(
+                    ><Icon name="plus" size={14} />{i18n.t(
                       'card_editor_panel.add_item'
                     )}</button
                   >
+                {:else if card.type === 'true_false'}
+                  <div class="field">
+                    <label for="s-{card.id}">{i18n.t('card_editor_panel.statement_label')}</label>
+                    <input
+                      id="s-{card.id}"
+                      type="text"
+                      placeholder={i18n.t('card_editor_panel.statement_placeholder')}
+                      bind:value={card.content.statement}
+                      oninput={() => controller.handleUpdate(card)}
+                    />
+                  </div>
+                  <div class="field">
+                    <span class="field-label">{i18n.t('card_editor_panel.is_true_label')}</span>
+                    <div class="radio-group">
+                      <label class="radio-label">
+                        <input
+                          type="radio"
+                          name="tf-{card.id}"
+                          value={true}
+                          bind:group={card.content.isTrue}
+                          onchange={() => controller.handleUpdate(card)}
+                        />
+                        {i18n.t('card_editor_panel.true')}
+                      </label>
+                      <label class="radio-label">
+                        <input
+                          type="radio"
+                          name="tf-{card.id}"
+                          value={false}
+                          bind:group={card.content.isTrue}
+                          onchange={() => controller.handleUpdate(card)}
+                        />
+                        {i18n.t('card_editor_panel.false')}
+                      </label>
+                    </div>
+                  </div>
+                {:else if card.type === 'multiple_choice'}
+                  <div class="field">
+                    <label for="q-{card.id}">{i18n.t('card_editor_panel.question_label')}</label>
+                    <input
+                      id="q-{card.id}"
+                      type="text"
+                      placeholder={i18n.t('card_editor_panel.question_placeholder')}
+                      bind:value={card.content.question}
+                      oninput={() => controller.handleUpdate(card)}
+                    />
+                  </div>
+                  <div class="field">
+                    <span class="field-label">{i18n.t('card_editor_panel.options_label')}</span>
+                    <div class="sequence-items">
+                      {#each card.content.options as option, optIndex}
+                        <div class="sequence-item">
+                          <input
+                            type="radio"
+                            name="correct-{card.id}"
+                            checked={card.content.correctOptionIndex === optIndex}
+                            onchange={() => {
+                              card.content.correctOptionIndex = optIndex;
+                              controller.handleUpdate(card);
+                            }}
+                          />
+                          <input
+                            type="text"
+                            placeholder={i18n.t('card_editor_panel.option_placeholder')}
+                            bind:value={card.content.options[optIndex]}
+                            oninput={() => controller.handleUpdate(card)}
+                          />
+                          <button
+                            class="remove-item-button"
+                            onclick={() => {
+                              card.content.options.splice(optIndex, 1);
+                              if (card.content.correctOptionIndex >= card.content.options.length) {
+                                card.content.correctOptionIndex = Math.max(0, card.content.options.length - 1);
+                              }
+                              controller.handleUpdate(card);
+                            }}
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
+                        </div>
+                      {/each}
+                      <button
+                        class="add-item-button"
+                        onclick={() => {
+                          card.content.options.push('');
+                          controller.handleUpdate(card);
+                        }}
+                      >
+                        <Icon name="plus" size={14} />
+                        {i18n.t('card_editor_panel.add_option')}
+                      </button>
+                    </div>
+                  </div>
                 {/if}
                 <div class="field">
                   <label for="tags-{card.id}">Tags</label>
@@ -273,8 +384,8 @@
       {:else}
         <div class="empty-state">
           <Icon name="plus-square" size={40} />
-          <h4>{$t('card_editor_panel.empty_title')}</h4>
-          <p>{$t('card_editor_panel.empty_message')}</p>
+          <h4>{i18n.t('card_editor_panel.empty_title')}</h4>
+          <p>{i18n.t('card_editor_panel.empty_message')}</p>
         </div>
       {/if}
     </div>

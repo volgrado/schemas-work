@@ -1,18 +1,27 @@
-<!-- src/lib/components/ai/CardPreview.svelte -->
+﻿<!-- src/lib/components/ai/CardPreview.svelte -->
 <script lang="ts">
   import type { SRS } from '$lib/types';
   type Card = SRS.Card;
   type NewCard = SRS.NewCard;
   import { fade } from 'svelte/transition';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   type PreviewCard = Card | NewCard;
 
   // --- Props ---
-  let { cards, loading = false } = $props<{
-    cards: PreviewCard[];
+  let { cards: rawCards, loading = false } = $props<{
+    cards: PreviewCard[] | { type: string; content: PreviewCard[] };
     loading?: boolean;
   }>();
+
+  // Robustly extract the array of cards
+  let cards = $derived.by(() => {
+    if (Array.isArray(rawCards)) return rawCards;
+    if (rawCards && typeof rawCards === 'object' && 'content' in rawCards && Array.isArray(rawCards.content)) {
+      return rawCards.content as PreviewCard[];
+    }
+    return [];
+  });
 
   // --- Keying for Svelte animations ---
   const cardKeys = new WeakMap<PreviewCard, string>();
@@ -31,12 +40,16 @@
       '<span class="input-blank">_________</span>'
     );
   }
+
+  $effect(() => {
+    console.log('[CardPreview] Cards prop updated:', cards);
+  });
 </script>
 
 <div class="card-preview-container">
   <header class="preview-header">
     <span class="card-count"
-      >{cards?.length ?? 0} {$t('card_workbench.cards_visible')}</span
+      >{cards?.length ?? 0} {i18n.t('card_workbench.cards_visible')}</span
     >
   </header>
 

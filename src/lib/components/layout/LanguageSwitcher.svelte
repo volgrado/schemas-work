@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   LanguageSwitcher
 
@@ -8,7 +8,7 @@
   and intuitive user experience, adhering to modern Svelte 5 patterns.
 -->
 <script lang="ts">
-  import { locale, translations, t } from '$lib/utils/i18n';
+  import { i18n, translations } from '$lib/utils/i18n.svelte';
   import type { Action } from 'svelte/action';
 
   // --- UI Components ---
@@ -63,8 +63,8 @@
   });
 
   function changeLanguage(lang: string) {
-    if ($locale !== lang) {
-      locale.set(lang);
+    if (i18n.locale !== lang) {
+      i18n.setLocale(lang);
     }
     menuVisible = false;
   }
@@ -82,9 +82,9 @@
       onclick={() => (menuVisible = !menuVisible)}
       aria-haspopup="true"
       aria-expanded={menuVisible}
-      aria-label={$t('languages.switcher_aria_label')}
+      aria-label={i18n.t('languages.switcher_aria_label')}
     >
-      {$locale.toUpperCase()}
+      {i18n.locale.toUpperCase()}
     </Button>
   </div>
 
@@ -104,10 +104,10 @@
         <li role="presentation">
           <button
             role="menuitem"
-            class:current={$locale === lang}
+            class:current={i18n.locale === lang}
             onclick={() => changeLanguage(lang)}
           >
-            {$t(`languages.${lang}`)}
+            {i18n.t(`languages.${lang}`)}
           </button>
         </li>
       {/each}

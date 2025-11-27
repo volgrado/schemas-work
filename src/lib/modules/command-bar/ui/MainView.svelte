@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @file MainView.svelte
   @component
 
@@ -8,12 +8,13 @@
   the `commandService`, ensuring the UI is always in sync with the application's state.
 -->
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   // REMOVED: import { getCommands } from '$lib/modules/command-bar/domain/commandService';
   import { actionRegistry } from '$lib/actions/registry';
   // --- VVVV CORRECTED (1/2): Import the reactive state object directly. VVVV ---
   import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
   import { editorState } from '$lib/modules/editor/ui/editorStore.svelte'; // Changed from editorStore
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { Search } from '$lib/types';
   type Command = Search.Command;
 
@@ -33,21 +34,30 @@
 
   // The command list is reactively updated whenever the dependent state changes.
   // We fetch from registry.
-  // TODO: Make registry reactive or re-fetch on mount/changes?
-  // For now, static fetch is fine as actions are registered at startup.
-  let mainCommands = $derived(
-    actionRegistry.getActionsByContext('view:command-bar').map(action => ({
+  let registryVersion = $state(0);
+
+  $effect(() => {
+    const unsubscribe = actionRegistry.subscribe(() => {
+      registryVersion++;
+    });
+    return unsubscribe;
+  });
+
+  let mainCommands = $derived.by(() => {
+    // Depend on registryVersion to trigger re-calculation
+    registryVersion; 
+    return actionRegistry.getActionsByContext('view:command-bar').map(action => ({
       id: action.id,
       label: action.title,
       icon: (action.icon || 'help-circle') as IconName,
       action: () => actionRegistry.execute(action.id),
       isEnabled: action.isEnabled
-    }))
-  );
+    }));
+  });
 </script>
 
 <div class="view-container">
-  <ViewHeader title={$t('main_view.title')} />
+  <ViewHeader title={i18n.t('main_view.title')} />
 
   <div class="action-list">
     {#each mainCommands as command (command.id)}

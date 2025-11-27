@@ -1,5 +1,5 @@
-<script lang="ts">
-  import { t } from '$lib/utils/i18n';
+﻿<script lang="ts">
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
 
@@ -13,12 +13,12 @@
 <div class="error-boundary">
   <div class="error-content">
     <Icon name="alert-triangle" size="48" class="text-error" />
-    <h1>{$t('error.global_boundary_title')}</h1>
+    <h1>{i18n.t('error.global_boundary_title')}</h1>
     <p class="error-message">
       {error instanceof Error ? error.message : String(error)}
     </p>
     <Button variant="primary" onclick={reload}>
-      {$t('common.reload')}
+      {i18n.t('common.reload')}
     </Button>
   </div>
 </div>
@@ -27,7 +27,6 @@
   .error-boundary {
     display: flex;
     justify-content: center;
-    align-items: center;
     height: 100vh;
     width: 100vw;
     background-color: var(--color-background);

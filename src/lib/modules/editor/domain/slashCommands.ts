@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file Defines the slash commands available in the Tiptap editor.
  * @module slashCommands
  */
@@ -15,7 +15,7 @@ import { startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
 import { open as openCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
 import { openModal } from '$lib/stores/modalStore.svelte';
 import { documentState } from '$lib/stores/documentStore.svelte';
-import { gett } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
 import { toast } from 'svelte-sonner';
 import { actionRegistry, type Action } from '$lib/actions/registry';
@@ -61,7 +61,7 @@ function findCurrentSectionNodeId(editor: Editor): string | null {
  * This function is idempotent.
  */
 function registerCommands() {
-  const t = gett();
+  const t = i18n.t;
 
   const commands: Action<any>[] = [
     // --- Group: Content ---

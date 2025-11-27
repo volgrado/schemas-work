@@ -12,6 +12,7 @@ import type { SRS } from '$lib/types';
 import Dexie, { type Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import * as errorService from '$lib/core/services/errorService';
+import { SRS_DEFAULTS } from '$lib/constants';
 
 class CardDB extends Dexie {
   cards!: Table<SRS.Card>;
@@ -37,11 +38,11 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
   // defaults. This ensures that defaults are only applied if they don't already exist.
   const baseSrs: SRS.Data = {
     ...(card.srs || {}),
-    easeFactor: card.srs?.easeFactor ?? 2.5,
-    interval: card.srs?.interval ?? 0,
-    repetitions: card.srs?.repetitions ?? 0,
+    easeFactor: card.srs?.easeFactor ?? SRS_DEFAULTS.EASE_FACTOR,
+    interval: card.srs?.interval ?? SRS_DEFAULTS.INTERVAL,
+    repetitions: card.srs?.repetitions ?? SRS_DEFAULTS.REPETITIONS,
     dueDate: card.srs?.dueDate ?? Date.now(),
-    learningStep: 1, // Always start in the learning step for a new card.
+    learningStep: SRS_DEFAULTS.LEARNING_STEP, // Always start in the learning step for a new card.
   };
 
   switch (card.type) {
@@ -70,6 +71,26 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
         id,
         deckId,
         type: 'sequencing',
+        content: card.content,
+        srs: baseSrs,
+        tags: [],
+        suspended: false,
+      };
+    case 'true_false':
+      return {
+        id,
+        deckId,
+        type: 'true_false',
+        content: card.content,
+        srs: baseSrs,
+        tags: [],
+        suspended: false,
+      };
+    case 'multiple_choice':
+      return {
+        id,
+        deckId,
+        type: 'multiple_choice',
         content: card.content,
         srs: baseSrs,
         tags: [],
@@ -125,7 +146,8 @@ export async function addCard(
 ): Promise<SRS.Card> {
   try {
     // Optimization: Use structuredClone instead of JSON serialization
-    const plainCard = structuredClone(card);
+    // REVERTED: structuredClone fails with Svelte 5 proxies. Using JSON serialization as a safe fallback.
+    const plainCard = JSON.parse(JSON.stringify(card));
     const newCard = createCard(deckId, plainCard);
     await db.cards.add(newCard);
     return newCard;
@@ -142,7 +164,27 @@ export async function addCards(
 ): Promise<void> {
   try {
     // Optimization: Use structuredClone instead of JSON serialization
-    const plainCards = structuredClone(cards);
+    // REVERTED: structuredClone fails with Svelte 5 proxies. Using JSON serialization as a safe fallback.
+    let plainCards = JSON.parse(JSON.stringify(cards));
+
+    // ROBUSTNESS: Svelte 5 array proxies can serialize as objects with numeric keys.
+    // We attempt to convert back to an array using Object.values.
+    if (!Array.isArray(plainCards)) {
+      // Check if it's a document object wrapping the cards
+      if (plainCards && typeof plainCards === 'object' && plainCards.type === 'doc' && Array.isArray(plainCards.content)) {
+        console.warn('[cardService] Received document object instead of card array. Extracting content.', plainCards);
+        plainCards = plainCards.content;
+      } else {
+        console.warn('[cardService] plainCards is not an array. Attempting Object.values conversion.', plainCards);
+        plainCards = Object.values(plainCards);
+      }
+    }
+
+    if (!Array.isArray(plainCards)) {
+      console.error('[cardService] Expected plainCards to be an array, but got:', plainCards);
+      throw new Error('Expected plainCards to be an array');
+    }
+
     const newCards = plainCards.map((card: SRS.NewCard) =>
       createCard(deckId, card)
     );
@@ -157,7 +199,8 @@ export async function addCards(
 export async function updateCard(card: SRS.Card): Promise<void> {
   try {
     // Optimization: Use structuredClone instead of JSON serialization
-    const plainCard = structuredClone(card);
+    // REVERTED: structuredClone fails with Svelte 5 proxies. Using JSON serialization as a safe fallback.
+    const plainCard = JSON.parse(JSON.stringify(card));
     await db.cards.put(plainCard);
   } catch (error) {
     errorService.reportError(error, {

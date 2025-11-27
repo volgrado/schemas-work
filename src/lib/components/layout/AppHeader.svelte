@@ -1,12 +1,12 @@
-<!-- src/lib/components/layout/AppHeader.svelte -->
+﻿<!-- src/lib/components/layout/AppHeader.svelte -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+
   import { fade } from 'svelte/transition';
   import type { Snippet } from 'svelte';
 
   // --- UI Components & Utilities ---
   import Logo from '$lib/core/ui/Logo.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
   import ThemeToggleButton from '$lib/core/ui/ThemeToggleButton.svelte';
 
@@ -23,13 +23,13 @@
     show = false,
     class: className = '',
     children,
+    onShowWelcome,
   } = $props<{
     show?: boolean;
     class?: string;
     children: Snippet;
+    onShowWelcome?: () => void;
   }>();
-
-  const dispatch = createEventDispatcher<{ showWelcome: void }>();
 
   /**
    * Resets all relevant app states and dispatches the 'showWelcome' event.
@@ -40,7 +40,7 @@
     stopReading();
     closeCardEditor();
     finishReview();
-    dispatch('showWelcome');
+    onShowWelcome?.();
   }
 </script>
 
@@ -52,7 +52,7 @@
         <button
           class="brand-button"
           onclick={showWelcome}
-          aria-label={$t('appHeader.aria.returnToWelcome')}
+          aria-label={i18n.t('appHeader.aria.returnToWelcome')}
         >
           <div class="logo-wrapper"><Logo size={24} /></div>
           <h1 class="brand-name">

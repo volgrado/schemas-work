@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file aiService.ts
  * @service
  *
@@ -12,8 +12,7 @@
 import { z } from 'zod';
 import * as errorService from '$lib/core/services/errorService';
 import type { AiModel } from './aiModels';
-import { get } from 'svelte/store';
-import { t } from '$lib/utils/i18n';
+import { i18n } from '$lib/utils/i18n.svelte';
 import { AiValidationError } from './AiValidationError';
 import { fileToBase64 } from '$lib/utils/fileUtils';
 
@@ -55,7 +54,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const modelId = 'gemini-embedding-001';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:embedContent?key=${apiKey}`;
-  const _t = get(t);
+
 
   try {
     const response = await fetch(apiUrl, {
@@ -67,7 +66,7 @@ export async function generateEmbedding(
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        _t('ai_service.errors.gemini_api_error', {
+        i18n.t('ai_service.errors.gemini_api_error', {
           status: response.status,
           message: errorBody.error?.message || 'Unknown embedding API error',
         })
@@ -78,7 +77,7 @@ export async function generateEmbedding(
     const embedding = jsonResponse.embedding?.values;
 
     if (!embedding || !Array.isArray(embedding)) {
-      throw new AiServiceError(_t('ai_service.errors.no_embedding'));
+      throw new AiServiceError(i18n.t('ai_service.errors.no_embedding'));
     }
 
     return embedding;
@@ -88,7 +87,7 @@ export async function generateEmbedding(
     });
     if (error instanceof AiServiceError) throw error;
     throw new AiServiceError(
-      _t('ai_service.errors.unexpected_embedding_error')
+      i18n.t('ai_service.errors.unexpected_embedding_error')
     );
   }
 }
@@ -103,7 +102,6 @@ export async function generateEmbedding(
  * @returns The unique name/identifier of the uploaded file (e.g., "files/12345abc").
  */
 async function uploadFile(file: File, apiKey: string): Promise<string> {
-  const _t = get(t);
   const uploadUrl = `https://generativelanguage.googleapis.com/v1beta/files?key=${apiKey}`;
 
   const formData = new FormData();
@@ -126,7 +124,7 @@ async function uploadFile(file: File, apiKey: string): Promise<string> {
   if (!response.ok) {
     const errorBody = await response.json();
     throw new AiServiceError(
-      _t('ai_service.errors.file_api_upload_failed', {
+      i18n.t('ai_service.errors.file_api_upload_failed', {
         message: errorBody.error?.message || 'Unknown file upload error',
       })
     );
@@ -148,11 +146,10 @@ export async function generateContent<T extends z.ZodType<any, any>>(
   file: File | null = null,
   retries = 1
 ): Promise<z.infer<T>> {
-  const _t = get(t);
 
   if (model.provider !== 'gemini') {
     throw new AiServiceError(
-      _t('ai_service.errors.unsupported_provider', { provider: model.provider })
+      i18n.t('ai_service.errors.unsupported_provider', { provider: model.provider })
     );
   }
 
@@ -161,7 +158,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
   if (file) {
     if (file.size > FILE_API_SIZE_LIMIT_BYTES) {
       throw new AiServiceError(
-        _t('ai_service.errors.file_too_large_hard_limit', {
+        i18n.t('ai_service.errors.file_too_large_hard_limit', {
           limit: FILE_API_SIZE_LIMIT_BYTES / (1024 * 1024),
         })
       );
@@ -197,7 +194,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     if (!response.ok) {
       const errorBody = await response.json();
       throw new AiServiceError(
-        _t('ai_service.errors.gemini_api_error', {
+        i18n.t('ai_service.errors.gemini_api_error', {
           status: response.status,
           message: errorBody.error?.message || 'Unknown API error',
         })
@@ -209,7 +206,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     lastResponseText = content || '';
 
     if (!content) {
-      throw new AiServiceError(_t('ai_service.errors.no_content'));
+      throw new AiServiceError(i18n.t('ai_service.errors.no_content'));
     }
 
     const dataFromApi = JSON.parse(content);
@@ -270,7 +267,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
     if (error instanceof AiServiceError || error instanceof AiValidationError)
       throw error;
     throw new AiServiceError(
-      _t('ai_service.errors.unexpected_generate_content_error')
+      i18n.t('ai_service.errors.unexpected_generate_content_error')
     );
   }
 }

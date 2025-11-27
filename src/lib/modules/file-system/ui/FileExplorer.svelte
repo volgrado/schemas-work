@@ -1,9 +1,9 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { tick } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { toast } from 'svelte-sonner';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- UI Components ---
   import Icon from '@ui/Icon.svelte';
@@ -33,15 +33,17 @@
     close as closeCommandBar,
     setCurrentParentId,
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
+  import { setActiveView } from '$lib/stores/uiStore.svelte';
   import {
     documentState,
     load as loadDocument,
     create as createDocument,
   } from '$lib/stores/documentStore.svelte';
   
-  import { fileSystemStore } from '../stores/fileSystemStore.svelte';
+  import { fileSystemStore } from '@modules/file-system';
   import type { FileSystemNode } from '../domain/FileSystemNode';
   import * as errorService from '$lib/core/services/errorService';
+  import { dataService } from '$lib/services/dataService';
 
   // --- Component State (Svelte 5 Runes) ---
   // We use a derived state or effect to sync with store
@@ -94,7 +96,7 @@
     try {
       if (type === 'folder') {
         await fileSystemStore.createFolder(name, currentParentId);
-        toast.success($t('file_explorer.toast.folder_created', { name }));
+        toast.success(i18n.t('file_explorer.toast.folder_created', { name }));
       } else {
         // createDocument still uses the old logic? 
         // Ideally document creation should also go through fileSystemStore for the file part,
@@ -109,14 +111,15 @@
         // I will have to update documentStore to use fileSystemStore.
         
         await createDocument(name, undefined, currentParentId);
-        toast.success($t('file_explorer.toast.schema_created', { name }));
+        toast.success(i18n.t('file_explorer.toast.schema_created', { name }));
+        setActiveView('editor');
         closeCommandBar();
       }
     } catch (e) {
       const errorMessage =
         e instanceof Error
           ? e.message
-          : $t('file_explorer.toast.create_failed', { type });
+          : i18n.t('file_explorer.toast.create_failed', { type });
       toast.error(errorMessage);
       errorService.reportError(e, { operation: 'commitNewItem', name, type });
       itemBeingCreated = type;
@@ -138,6 +141,7 @@
       currentParentId = item.id;
     } else {
       loadDocument(item.id);
+      setActiveView('editor');
       closeCommandBar();
     }
   }
@@ -168,13 +172,13 @@
         title: trimmedTitle,
       });
       toast.success(
-        $t('file_explorer.toast.renamed', { oldTitle, newTitle: trimmedTitle })
+        i18n.t('file_explorer.toast.renamed', { oldTitle, newTitle: trimmedTitle })
       );
     } catch (e) {
       const errorMessage =
         e instanceof Error
           ? e.message
-          : $t('file_explorer.toast.rename_failed');
+          : i18n.t('file_explorer.toast.rename_failed');
       toast.error(errorMessage);
       errorService.reportError(e, {
         operation: 'commitRename',
@@ -201,21 +205,21 @@
     if (isProcessingAction) return;
     const itemType =
       item.type === 'folder'
-        ? $t('file_explorer.item_type.folder')
-        : $t('file_explorer.item_type.schema');
+        ? i18n.t('file_explorer.item_type.folder')
+        : i18n.t('file_explorer.item_type.schema');
     toast.warning(
-      $t('file_explorer.delete_confirm.title', { title: item.title }),
+      i18n.t('file_explorer.delete_confirm.title', { title: item.title }),
       {
-        description: $t('file_explorer.delete_confirm.description', {
+        description: i18n.t('file_explorer.delete_confirm.description', {
           itemType,
         }),
         action: {
-          label: $t('file_explorer.delete_confirm.action'),
+          label: i18n.t('file_explorer.delete_confirm.action'),
           onClick: async () => {
             isProcessingAction = true;
             try {
-              await fileSystemStore.deleteItem(item.id);
-              toast.success($t('file_explorer.toast.item_deleted'));
+              await dataService.deleteNode(item.id);
+              toast.success(i18n.t('file_explorer.toast.item_deleted'));
               
               if (documentState.docId === item.id) {
                 const allSchemas = fileSystemStore.getAll().filter((i) => i.type === 'schema');
@@ -223,17 +227,18 @@
                   await loadDocument(allSchemas[0].id);
                 } else {
                   await createDocument(
-                    $t('file_explorer.default_schema_name'),
+                    i18n.t('file_explorer.default_schema_name'),
                     undefined,
                     null
                   );
+                  setActiveView('editor');
                 }
               }
             } catch (e) {
               const errorMessage =
                 e instanceof Error
                   ? e.message
-                  : $t('file_explorer.toast.delete_failed');
+                  : i18n.t('file_explorer.toast.delete_failed');
               toast.error(errorMessage);
               errorService.reportError(e, {
                 operation: 'handleDeleteItem',
@@ -311,11 +316,11 @@
     try {
       await fileSystemStore.moveItem(draggedItemId, targetFolderId);
       toast.success(
-        $t('file_explorer.toast.item_moved', { title: movedItem?.title ?? '' })
+        i18n.t('file_explorer.toast.item_moved', { title: movedItem?.title ?? '' })
       );
     } catch (e) {
       const errorMessage =
-        e instanceof Error ? e.message : $t('file_explorer.toast.move_failed');
+        e instanceof Error ? e.message : i18n.t('file_explorer.toast.move_failed');
       toast.error(errorMessage);
     } finally {
       resetDragState();
@@ -342,22 +347,22 @@
   >
     <button type="button" onclick={() => contextMenu && handleItemClick(contextMenu.item)}>
       <Icon name="folder" size={16} />
-      <span>{$t('file_explorer.context_menu.open')}</span>
+      <span>{i18n.t('file_explorer.context_menu.open')}</span>
     </button>
     <hr />
     <button type="button" onclick={() => contextMenu && startEditing(contextMenu.item)}>
       <Icon name="edit-3" size={16} />
-      <span>{$t('file_explorer.context_menu.rename')}</span>
+      <span>{i18n.t('file_explorer.context_menu.rename')}</span>
     </button>
     <button type="button" onclick={() => contextMenu && handleDeleteItem(contextMenu.item)}>
       <Icon name="trash-2" size={16} />
-      <span>{$t('file_explorer.context_menu.delete')}</span>
+      <span>{i18n.t('file_explorer.context_menu.delete')}</span>
     </button>
   </ContextMenu>
 {/if}
 
 <div class="view-container">
-  <ViewHeader title={$t('file_explorer.title')} onBack={goBack}>
+  <ViewHeader title={i18n.t('file_explorer.title')} onBack={goBack}>
     <Button
       onclick={() => startCreatingItem('schema')}
       size="sm"
@@ -365,7 +370,7 @@
       disabled={isProcessingAction}
     >
       <Icon name="plus" size={14} />
-      <span>{$t('file_explorer.header.new_schema_button')}</span>
+      <span>{i18n.t('file_explorer.header.new_schema_button')}</span>
     </Button>
     <Button
       onclick={() => startCreatingItem('folder')}
@@ -374,7 +379,7 @@
       disabled={isProcessingAction}
     >
       <Icon name="folder" size={14} />
-      <span>{$t('file_explorer.header.new_folder_button')}</span>
+      <span>{i18n.t('file_explorer.header.new_folder_button')}</span>
     </Button>
 
   </ViewHeader>
@@ -383,7 +388,7 @@
     <div
       class="breadcrumb-bar"
       role="group"
-      aria-label={$t('file_explorer.header.drop_zone_aria_label')}
+      aria-label={i18n.t('file_explorer.header.drop_zone_aria_label')}
       ondragover={(e) => e.preventDefault()}
       ondrop={(e) => {
         e.preventDefault();
@@ -398,7 +403,7 @@
           onclick={() => navigateToBreadcrumb(null, 0)}
           disabled={isProcessingAction}
         >
-          {$t('file_explorer.header.root_breadcrumb')}
+          {i18n.t('file_explorer.header.root_breadcrumb')}
         </button>
         {#each breadcrumbs as crumb, i (crumb.id)}
           <span>/</span>
@@ -416,7 +421,7 @@
       {#if isLoading}
         <div class="state-message is-loading" transition:fade>
           <Spinner size="md" /><span
-            >{$t('file_explorer.state.loading')}</span
+            >{i18n.t('file_explorer.state.loading')}</span
           >
         </div>
       {:else if error}
@@ -424,8 +429,8 @@
       {:else if items.length === 0 && !itemBeingCreated}
         <div class="state-message empty-state" transition:fade|local>
           <Icon name="folder" size={32} />
-          <h3>{$t('file_explorer.state.empty_folder_title')}</h3>
-          <p>{$t('file_explorer.state.empty_folder_message')}</p>
+          <h3>{i18n.t('file_explorer.state.empty_folder_title')}</h3>
+          <p>{i18n.t('file_explorer.state.empty_folder_message')}</p>
         </div>
       {/if}
 
@@ -440,7 +445,7 @@
               type="text"
               class="rename-input"
               class:input-error={inputError}
-              placeholder={$t('file_explorer.new_item_placeholder', {
+              placeholder={i18n.t('file_explorer.new_item_placeholder', {
                 type: itemBeingCreated,
               })}
               bind:value={newItemName}
@@ -502,7 +507,7 @@
                   onkeydown={(e) => handleRenameKeyDown(e, item)}
                   onclick={(event) => event.stopPropagation()}
                   disabled={isProcessingAction}
-                  aria-label={$t('file_explorer.rename_input_aria_label', {
+                  aria-label={i18n.t('file_explorer.rename_input_aria_label', {
                     title: item.title,
                   })}
                 />
@@ -531,7 +536,7 @@
                     startEditing(item);
                   }}
                   disabled={isProcessingAction}
-                  aria-label={$t('file_explorer.item_actions.rename')}
+                  aria-label={i18n.t('file_explorer.item_actions.rename')}
                 >
                   <Icon name="edit-3" size={16} />
                 </button>
@@ -542,7 +547,7 @@
                     handleDeleteItem(item);
                   }}
                   disabled={isProcessingAction}
-                  aria-label={$t('file_explorer.item_actions.delete')}
+                  aria-label={i18n.t('file_explorer.item_actions.delete')}
                 >
                   <Icon name="trash-2" size={16} />
                 </button>

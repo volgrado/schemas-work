@@ -5,9 +5,9 @@
 
 // REFINEMENT: Import the SRS namespace for all card-related types.
 import type { SRS } from '$lib/types';
-import * as cardService from '$lib/services/features/cardService';
+import * as cardService from './cardService';
 import { fileSystemStore } from '@modules/file-system';
-import type { DeckOptions } from '$lib/services/features/deckService';
+import type { DeckOptions } from './deckService';
 import { parseTime } from '$lib/core/utils/time';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

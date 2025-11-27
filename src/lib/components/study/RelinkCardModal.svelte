@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   @component
   RelinkCardModal
 
@@ -8,14 +8,13 @@
   and emits events to notify the parent of changes.
 -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { toast } from 'svelte-sonner';
-  import { createEventDispatcher } from 'svelte';
   // FIX: Import the SRS namespace and create a local alias for the Card type.
   import type { SRS, SchemaMetadata } from '$lib/types';
   type Card = SRS.Card;
   import { fileSystemStore } from '@modules/file-system';
-  import * as cardService from '$lib/services/features/cardService';
+  import * as cardService from '$lib/modules/study/domain/cardService';
 
   // --- UI Component Imports ---
   import Modal from '@ui/Modal.svelte';
@@ -23,14 +22,16 @@
   import Icon from '@ui/Icon.svelte';
 
   // --- Svelte 5 Props and Events ---
-  let { show = $bindable(false), card } = $props<{
+  let { 
+    show = $bindable(false), 
+    card,
+    onClose,
+    onUpdate
+  } = $props<{
     show?: boolean;
     card: Card;
-  }>();
-
-  const dispatch = createEventDispatcher<{
-    close: void;
-    update: Card;
+    onClose?: () => void;
+    onUpdate?: (card: Card) => void;
   }>();
 
   // --- State ---
@@ -54,12 +55,12 @@
 
   async function handleRelink() {
     if (!selectedSchemaId) {
-      toast.error($t('relinkCard.noSelectionError'));
+      toast.error(i18n.t('relinkCard.noSelectionError'));
       return;
     }
     if (selectedSchemaId === card.deckId) {
-      toast.info($t('relinkCard.alreadyInDocInfo'));
-      dispatch('close');
+      toast.info(i18n.t('relinkCard.alreadyInDocInfo'));
+      onClose?.();
       return;
     }
 
@@ -67,11 +68,11 @@
 
     try {
       await cardService.updateCard(updatedCard);
-      toast.success($t('relinkCard.updateSuccess'));
-      dispatch('update', updatedCard);
-      dispatch('close');
+      toast.success(i18n.t('relinkCard.updateSuccess'));
+      onUpdate?.(updatedCard);
+      onClose?.();
     } catch (error) {
-      toast.error($t('relinkCard.updateFailed'));
+      toast.error(i18n.t('relinkCard.updateFailed'));
       console.error(error);
     }
   }
@@ -79,11 +80,11 @@
 
 <Modal
   bind:show
-  title={$t('relinkCard.title')}
-  onClose={() => dispatch('close')}
+  title={i18n.t('relinkCard.title')}
+  onClose={() => onClose?.()}
 >
   <div class="relink-content">
-    <p class="description">{$t('relinkCard.description')}</p>
+    <p class="description">{i18n.t('relinkCard.description')}</p>
 
     {#if isLoading}
       <ul class="schema-list skeleton-list">
@@ -104,7 +105,7 @@
               <Icon name="file-text" size={16} />
               <span class="schema-title">{schema.title}</span>
               {#if schema.id === card.deckId}
-                <span class="current-tag">{$t('relinkCard.current')}</span>
+                <span class="current-tag">{i18n.t('relinkCard.current')}</span>
               {/if}
             </button>
           </li>
@@ -114,11 +115,11 @@
   </div>
 
   <footer class="modal-footer">
-    <Button variant="secondary" onclick={() => dispatch('close')}>
-      {$t('relinkCard.cancel')}
+    <Button variant="secondary" onclick={() => onClose?.()}>
+      {i18n.t('relinkCard.cancel')}
     </Button>
     <Button onclick={handleRelink} disabled={!selectedSchemaId}>
-      {$t('relinkCard.confirm')}
+      {i18n.t('relinkCard.confirm')}
     </Button>
   </footer>
 </Modal>

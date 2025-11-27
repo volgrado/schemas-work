@@ -1,4 +1,4 @@
-<!-- src/lib/components/ai/StrategySessionModal.svelte -->
+﻿<!-- src/lib/components/ai/StrategySessionModal.svelte -->
 <script lang="ts">
   import { getCommand } from '$lib/services/ai/commands/CommandFactory';
   import type { WorkbenchState } from '$lib/services/ai/commands/IAICommand';
@@ -19,7 +19,7 @@
     normalizeTiptapJSON,
     postProcessKaTeX,
   } from '$lib/utils/tiptapUtils';
-  import { get } from 'svelte/store';
+
   import { toast } from 'svelte-sonner';
 
   // --- UI Components ---
@@ -29,7 +29,7 @@
   import Spinner from '$lib/core/ui/Spinner.svelte';
   import TiptapPreview from '$lib/components/ai/TiptapPreview.svelte';
   import CardPreview from '$lib/components/ai/CardPreview.svelte';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import type { SRS } from '$lib/types';
   import Toggle from '$lib/core/ui/Toggle.svelte';
   type Card = SRS.Card;
@@ -117,7 +117,7 @@
     if (file) {
       if (file.size > FILE_API_SIZE_LIMIT_MB * 1024 * 1024) {
         toast.error(
-          get(t)('ai_workbench.errors.file_too_large', {
+          i18n.t('ai_workbench.errors.file_too_large', {
             default: `File is too large. The maximum size is ${FILE_API_SIZE_LIMIT_MB} MB.`,
             limit: FILE_API_SIZE_LIMIT_MB,
           })
@@ -172,7 +172,7 @@
     const apiKeyObject = getNextAvailableKey('gemini');
 
     if (!model || !apiKeyObject) {
-      errorMessage = $t('aiHelper.errors.config_missing');
+      errorMessage = i18n.t('aiHelper.errors.config_missing');
       view = 'error';
       return;
     }
@@ -204,9 +204,16 @@
       }
 
       // Step 3: Set the final content based on the action type.
-      if (actionStr.includes('cards')) {
+      console.warn('[StrategySession] Action String:', actionStr);
+      if (
+        actionStr.includes('cards') ||
+        actionStr.includes('flashcards') ||
+        actionStr === 'generate-flashcards-doc' // Explicit check
+      ) {
         // For cards, we expect an array, which normalizeTiptapJSON places in the `content` property.
+        console.warn('[StrategySession] Normalized Result for Cards:', normalizedResult);
         draftContent = normalizedResult.content || [];
+        console.warn('[StrategySession] Draft Content (Cards):', draftContent);
       } else {
         // For documents, we use the entire processed document object.
         draftContent = normalizedResult;
@@ -216,7 +223,7 @@
       view = 'refine';
       setTimeout(() => refineTextarea?.focus(), 100);
     } catch (err: any) {
-      errorMessage = err.message || $t('aiHelper.errors.unknown');
+      errorMessage = err.message || i18n.t('aiHelper.errors.unknown');
       view = 'error';
     }
   }
@@ -286,22 +293,22 @@
   {show}
   onClose={closeStrategySession}
   onBack={handleBack}
-  title={command?.title || $t('ai_workbench.default_title')}
+  title={command?.title || i18n.t('ai_workbench.default_title')}
   width="xl"
 >
   <div class="session-container">
     {#if view === 'loading'}
       <div class="status-overlay" transition:fade>
         <Spinner size="lg" />
-        <p>{$t('ai_workbench.loading_text')}</p>
+        <p>{i18n.t('ai_workbench.loading_text')}</p>
       </div>
     {:else if view === 'error'}
       <div class="status-overlay error" transition:fade>
         <Icon name="alert-triangle" size={32} />
-        <p>{$t('ai_workbench.error_title')}</p>
+        <p>{i18n.t('ai_workbench.error_title')}</p>
         <pre>{errorMessage}</pre>
         <Button onclick={() => (view = 'configure')} variant="secondary">
-          {$t('common.try_again')}
+          {i18n.t('common.try_again')}
         </Button>
       </div>
     {/if}
@@ -366,7 +373,7 @@
             <div class="panel-section">
               <h4 class="panel-title">
                 <Icon name="file-plus" />
-                <span>{$t('ai_workbench.configure.title')}</span>
+                <span>{i18n.t('ai_workbench.configure.title')}</span>
               </h4>
 
               {#if currentAction?.includes('cards')}
@@ -383,7 +390,7 @@
               {/if}
 
               <p class="panel-description">
-                {$t(
+                {i18n.t(
                   command?.description || 'ai_workbench.configure.description'
                 )}
               </p>
@@ -391,18 +398,16 @@
                 bind:this={configTextarea}
                 bind:value={configurationInput}
                 rows="10"
-                placeholder={$t(
+                placeholder={i18n.t(
                   command?.placeholder || 'ai_workbench.configure.placeholder'
                 )}
               ></textarea>
               <div class="context-upload-section">
                 <h5 class="panel-subtitle">
                   <Icon name="paperclip" size={16} />
-                  <span
-                    >{$t('ai_workbench.configure.pdf_context_title', {
+                  <span>{i18n.t('ai_workbench.configure.pdf_context_title', {
                       default: 'Add PDF Context (Optional)',
-                    })}</span
-                  >
+                    })}</span>
                 </h5>
                 <input
                   type="file"
@@ -414,8 +419,8 @@
                 <label for="pdf-upload" class="file-label">
                   <Icon name="upload-cloud" size={16} />
                   {selectedPdfFile
-                    ? $t('common.change_file', { default: 'Change PDF' })
-                    : $t('common.upload_file', { default: 'Upload PDF' })}
+                    ? i18n.t('common.change_file', { default: 'Change PDF' })
+                    : i18n.t('common.upload_file', { default: 'Upload PDF' })}
                 </label>
                 {#if selectedPdfFile}
                   <p class="file-status" title={selectedPdfFile.name}>
@@ -429,10 +434,10 @@
             <div class="panel-section">
               <h4 class="panel-title">
                 <Icon name="edit-3" />
-                <span>{$t('ai_workbench.refine.title')}</span>
+                <span>{i18n.t('ai_workbench.refine.title')}</span>
               </h4>
               <p class="panel-description">
-                {$t('ai_workbench.refine.description')}
+                {i18n.t('ai_workbench.refine.description')}
               </p>
               <div class="quick-actions">
                 {#each command?.quickActions || [] as quickAction}
@@ -447,8 +452,8 @@
                 bind:value={refinementText}
                 rows="5"
                 placeholder={hasSelection
-                  ? $t('ai_workbench.refine.placeholder_with_selection')
-                  : $t('ai_workbench.refine.placeholder')}
+                  ? i18n.t('ai_workbench.refine.placeholder_with_selection')
+                  : i18n.t('ai_workbench.refine.placeholder')}
               ></textarea>
             </div>
           {/if}
@@ -461,15 +466,15 @@
         >
           <h4 class="panel-title">
             <Icon name="eye" />
-            <span>{$t('ai_workbench.preview_title')}</span>
+            <span>{i18n.t('ai_workbench.preview_title')}</span>
           </h4>
           <div class="preview-content-wrapper" onpointerup={handlePointerUp}>
             <div class="preview-content">
               {#if !draftContent}
                 <div class="empty-preview">
                   <Icon name="sparkles" size={48} />
-                  <p>{$t('ai_workbench.empty_preview.title')}</p>
-                  <span>{$t('ai_workbench.empty_preview.description')}</span>
+                  <p>{i18n.t('ai_workbench.empty_preview.title')}</p>
+                  <span>{i18n.t('ai_workbench.empty_preview.description')}</span>
                 </div>
               {:else if currentAction?.includes('document') || currentAction?.includes('schema')}
                 <TiptapPreview
@@ -497,7 +502,7 @@
       />
     </div>
     <Button onclick={closeStrategySession} variant="secondary">
-      {$t('common.cancel')}
+      {i18n.t('common.cancel')}
     </Button>
     {#if view === 'configure'}
       <Button
@@ -506,7 +511,7 @@
         disabled={!configurationInput && !selectedPdfFile}
       >
         <Icon name="zap" size={16} />
-        {isManualMode ? 'Get Prompt' : $t('common.generate')}
+        {isManualMode ? 'Get Prompt' : i18n.t('common.generate')}
       </Button>
     {:else if view === 'refine'}
       <Button
@@ -515,11 +520,11 @@
         disabled={!refinementText}
       >
         <Icon name="refresh-cw" size={16} />
-        {$t('common.regenerate')}
+        {i18n.t('common.regenerate')}
       </Button>
       <Button onclick={handleApplyChanges} variant="primary">
         <Icon name="check" size={16} />
-        {$t('common.accept_close')}
+        {i18n.t('common.accept_close')}
       </Button>
     {/if}
   </footer>

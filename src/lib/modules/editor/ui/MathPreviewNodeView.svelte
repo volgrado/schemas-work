@@ -1,4 +1,4 @@
-<!-- src/lib/components/editor/MathPreviewNodeView.svelte -->
+﻿<!-- src/lib/components/editor/MathPreviewNodeView.svelte -->
 <script lang="ts">
   import type { Editor } from '@tiptap/core';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
@@ -6,7 +6,7 @@
   import type katex from 'katex';
   import { openModal } from '$lib/stores/modalStore.svelte';
   import type { Modal } from '$lib/types';
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- Props from Tiptap Node View ---
   let { editor, node, getPos, selected } = $props<{
@@ -103,7 +103,7 @@
   onclick={handleWrapperClick}
   role="button"
   tabindex="0"
-  aria-label={$t('math_editor.edit_aria_label')}
+  aria-label={i18n.t('math_editor.edit_aria_label')}
   onkeydown={handleWrapperKeydown}
 >
   <div bind:this={previewEl}></div>

@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 <!--
   @component
   WelcomeScreen
@@ -17,7 +17,7 @@
   import { quintOut } from 'svelte/easing';
 
   // --- UI Components & Utilities ---
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
 
@@ -57,9 +57,9 @@
       in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 100 }}
     >
       <h1 class="title">
-        {$t('app_name')}<span class="accent-word">.Work</span>
+        {i18n.t('app_name')}<span class="accent-word">.Work</span>
       </h1>
-      <p class="subtitle">{$t('welcome.tagline')}</p>
+      <p class="subtitle">{i18n.t('welcome.tagline')}</p>
     </header>
 
     <main class="features-grid">
@@ -75,8 +75,8 @@
         >
           <Icon name={feature.icon} size={24} />
           <div class="feature-text">
-            <h2 class="feature-title">{$t(feature.title)}</h2>
-            <p>{$t(feature.desc)}</p>
+            <h2 class="feature-title">{i18n.t(feature.title)}</h2>
+            <p>{i18n.t(feature.desc)}</p>
           </div>
         </div>
       {/each}
@@ -91,10 +91,10 @@
           console.log('[WelcomeScreen] Get Started clicked');
           if (typeof onstart === 'function') onstart();
         }} size="lg" variant="primary">
-          {$t('welcome.cta')}
+          {i18n.t('welcome.cta')}
         </Button>
       </div>
-      <p class="cta-support-text">{$t('welcome.cta_support')}</p>
+      <p class="cta-support-text">{i18n.t('welcome.cta_support')}</p>
     </footer>
   </div>
 </div>

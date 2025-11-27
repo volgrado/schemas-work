@@ -1,9 +1,9 @@
-<!-- src/lib/components/ui/command-bar/DeckOptionsView.svelte -->
+﻿<!-- src/lib/components/ui/command-bar/DeckOptionsView.svelte -->
 <script lang="ts">
-  import { t } from '$lib/utils/i18n';
+  import { i18n } from '$lib/utils/i18n.svelte';
   import { toast } from 'svelte-sonner';
-  import type { DeckOptions } from '$lib/services/features/deckService';
-  import * as deckService from '$lib/services/features/deckService';
+  import type { DeckOptions } from '$lib/modules/study/domain/deckService';
+  import * as deckService from '$lib/modules/study/domain/deckService';
   import { fileSystemStore } from '@modules/file-system';
   import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 
@@ -44,10 +44,10 @@
     isSaving = true;
     try {
       await deckService.saveDeckOptions(options);
-      toast.success($t('deckOptions.saveSuccess'));
+      toast.success(i18n.t('deckOptions.saveSuccess'));
       goBack();
     } catch (error) {
-      toast.error($t('deckOptions.saveFailed'));
+      toast.error(i18n.t('deckOptions.saveFailed'));
       console.error(error);
     } finally {
       isSaving = false;
@@ -58,14 +58,14 @@
 <!-- The entire template and style sections are correct. No changes are needed there. -->
 
 <div class="view-container">
-  <ViewHeader title={deckName || $t('deckOptions.title')} onBack={goBack}>
+  <ViewHeader title={deckName || i18n.t('deckOptions.title')} onBack={goBack}>
     <Button size="sm" onclick={handleSave} disabled={isSaving || !options}>
       {#if isSaving}
         <Spinner size="sm" />
       {:else}
         <Icon name="check" size={14} />
       {/if}
-      {$t('deckOptions.save')}
+      {i18n.t('deckOptions.save')}
     </Button>
   </ViewHeader>
 
@@ -82,7 +82,7 @@
     {:else}
       <div class="options-form">
         <div class="form-field">
-          <label for="maxNew">{$t('deckOptions.maxNew')}</label>
+          <label for="maxNew">{i18n.t('deckOptions.maxNew')}</label>
           <Input
             id="maxNew"
             type="number"
@@ -90,7 +90,7 @@
           />
         </div>
         <div class="form-field">
-          <label for="maxReviews">{$t('deckOptions.maxReviews')}</label>
+          <label for="maxReviews">{i18n.t('deckOptions.maxReviews')}</label>
           <Input
             id="maxReviews"
             type="number"
@@ -98,7 +98,7 @@
           />
         </div>
         <div class="form-field">
-          <label for="learningSteps">{$t('deckOptions.learningSteps')}</label>
+          <label for="learningSteps">{i18n.t('deckOptions.learningSteps')}</label>
           <Input
             id="learningSteps"
             type="text"
@@ -107,7 +107,7 @@
         </div>
         <div class="form-field">
           <label for="graduatingInterval"
-            >{$t('deckOptions.graduatingInterval')}</label
+            >{i18n.t('deckOptions.graduatingInterval')}</label
           >
           <Input
             id="graduatingInterval"
