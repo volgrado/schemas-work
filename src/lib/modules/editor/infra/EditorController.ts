@@ -1,4 +1,19 @@
-﻿import { Editor } from '@tiptap/core';
+/**
+ * @file EditorController.ts
+ * @module editor
+ * @description
+ * The main controller logic for the Tiptap editor instance.
+ *
+ * This class handles:
+ * - Editor initialization and configuration (extensions, props).
+ * - Reactivity bindings to the `editorStore`.
+ * - State synchronization (title, neural index, persistence).
+ * - Handling of collaborative editing updates via Yjs.
+ * - Dynamic extension loading for performance.
+ * - View updates for highlighting and color modes.
+ */
+
+import { Editor } from '@tiptap/core';
 import type { EditorEvents } from '@tiptap/core';
 import Collaboration from '@tiptap/extension-collaboration';
 import Document from '@tiptap/extension-document';
@@ -33,12 +48,18 @@ import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
 import type { IndexeddbPersistence } from 'y-indexeddb';
 import * as Y from 'yjs';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import { Decoration, DecorationSet } from 'prosemirror-view';
 
+/**
+ * Configuration options for the EditorController.
+ */
 export interface EditorControllerOptions {
+  /** The HTML element to mount the editor into. */
   element: HTMLElement;
+  /** The Y.js document for collaboration/persistence. */
   ydoc: Y.Doc;
+  /** The Y-IndexedDB provider (optional, for offline sync status). */
   provider: IndexeddbPersistence | null;
+  /** Initial content to seed the document with (e.g., from a template or AI). */
   initialContent?: object | null;
 }
 
@@ -51,10 +72,14 @@ export class EditorController {
     this.options = options;
   }
 
+  /**
+   * Initializes and mounts the Tiptap editor.
+   * Dynamically imports heavy extensions (Math, YouTube) to optimize initial load.
+   */
   public async mount(): Promise<void> {
     const { element, ydoc, provider, initialContent } = this.options;
 
-    // Dynamically import heavy extensions
+    // Performance Optimization: Lazy load heavy/optional extensions.
     const [
       { default: YouTube },
       { ResizableImage },
@@ -68,20 +93,33 @@ export class EditorController {
     this.editor = new Editor({
       element: element,
       extensions: [
+        // Basic Nodes
         Document,
         Paragraph,
         HorizontalRule,
         Text,
         Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+
+        // Basic Marks
         Bold,
         Italic,
+
+        // Rich Content
         YouTube.configure({}),
         MathInline,
         MathBlock,
-        NodeIdExtension,
-        DynamicHighlighter,
-        SlashCommandExtension,
+        ResizableImage.configure({}),
+
+        // Infrastructure
+        NodeIdExtension, // Ensures every node has a unique ID
+        DynamicHighlighter, // Handles TTS and Search highlighting
+        SlashCommandExtension, // Handles "/" menu triggers
+        ColorModeExtension, // Handles node coloring visualization
+
+        // Collaboration & State
         Collaboration.configure({ document: ydoc }),
+
+        // UX
         Placeholder.configure({
           placeholder: ({ editor, node, pos }) => {
             const tValue = i18n.t;
@@ -90,6 +128,7 @@ export class EditorController {
             }
             if (node.type.name === 'paragraph' && !node.textContent) {
               const before = editor.state.doc.resolve(pos).nodeBefore;
+              // If it's the first paragraph or follows a heading, it's a description.
               if (pos === 1 || before?.type.name === 'heading') {
                 return tValue('doc_view.placeholder.description');
               }
@@ -98,30 +137,33 @@ export class EditorController {
             return '';
           },
         }),
-        ResizableImage.configure({}),
-        ColorModeExtension,
       ],
       editorProps: { attributes: { class: 'prose' } },
       onUpdate: this.handleUpdate.bind(this),
       onSelectionUpdate: this.handleSelectionUpdate.bind(this),
     });
 
+    // Register the instance in the global store
     setInstance(this.editor);
 
+    // Seed initial content if provided (e.g. from "Create from Text" AI command)
     if (initialContent) {
       this.editor.commands.setContent(initialContent, { emitUpdate: false });
       const currentDocId = documentState.docId;
+      // Immediately index the new content for search
       if (currentDocId) {
         neuralIndexService.indexDocument(currentDocId, this.editor.state.doc);
       }
       clearInitialContent();
     }
 
-    // Ensure all headings have IDs
+    // Critical: Ensure structural integrity by forcing IDs on all headings
     this.editor.commands.ensureNodeIds();
 
+    // Initial title sync
     this.syncTitleWithStore(this.editor);
 
+    // Sync editing permissions with data availability
     const onSync = (event: { synced: boolean }) => {
       if (this.editor && !this.editor.isDestroyed) {
         this.editor.setEditable(event.synced);
@@ -137,6 +179,9 @@ export class EditorController {
     }
   }
 
+  /**
+   * Cleans up the editor instance and store bindings.
+   */
   public destroy(): void {
     if (this.editor) {
       this.editor.destroy();
@@ -148,13 +193,19 @@ export class EditorController {
     }
   }
 
+  /**
+   * Handler for Tiptap's `update` event.
+   * Manages reactivity syncing, title updates, and search indexing.
+   */
   private handleUpdate({ editor, transaction }: EditorEvents['update']) {
+    // Ignore internal plugin updates (like highlighting) to prevent loops
     if (transaction.getMeta('isHighlighterUpdate')) {
       return;
     }
     if (transaction.docChanged) {
-      syncState();
+      syncState(); // Notify Svelte components
       this.syncTitleWithStore(editor);
+
       const currentDocId = documentState.docId;
       if (currentDocId) {
         neuralIndexService.indexDocument(currentDocId, editor.state.doc);
@@ -162,6 +213,10 @@ export class EditorController {
     }
   }
 
+  /**
+   * Handler for Tiptap's `selectionUpdate` event.
+   * Updates the `editorStore` with the currently active node.
+   */
   private handleSelectionUpdate({ editor, transaction }: EditorEvents['selectionUpdate']) {
     if (transaction.getMeta('isHighlighterUpdate')) {
       return;
@@ -169,6 +224,8 @@ export class EditorController {
     const { selection } = editor.state;
     let newSelectedNode: ProseMirrorNode | null = null;
     let newSelectedPos: number | null = null;
+
+    // Case 1: Node Selection (e.g., clicked on a handle)
     if (
       selection.constructor.name === 'NodeSelection' &&
       (selection as any).node.type.name === 'heading' &&
@@ -176,7 +233,9 @@ export class EditorController {
     ) {
       newSelectedNode = (selection as any).node;
       newSelectedPos = selection.from;
-    } else if (selection.empty) {
+    }
+    // Case 2: Text Cursor inside a heading
+    else if (selection.empty) {
       const { $from: resolvedPos } = selection;
       const parentNode = resolvedPos.parent;
       if (parentNode.type.name === 'heading') {
@@ -187,6 +246,10 @@ export class EditorController {
     updateSelection(newSelectedNode, newSelectedPos);
   }
 
+  /**
+   * Syncs the document's H1 title with the application metadata store.
+   * Debounced to prevent thrashing the database on every keystroke.
+   */
   private syncTitleWithStore = debounce((editorInstance: Editor) => {
     const titleNode = editorInstance.state.doc.firstChild;
     if (
@@ -201,7 +264,9 @@ export class EditorController {
   }, 750);
 
   /**
-   * Updates the dynamic highlighter plugin state.
+   * Dispatch a transaction to update the Dynamic Highlighter plugin state.
+   * Used by TTS and Search to visualize active ranges.
+   * @param meta - The metadata payload for the plugin.
    */
   public updateHighlighter(meta: any) {
     if (!this.editor || this.editor.isDestroyed) return;
@@ -212,7 +277,8 @@ export class EditorController {
   }
 
   /**
-   * Updates the color mode plugin state.
+   * Dispatch a transaction to update the Color Mode plugin.
+   * @param mode - The current visualization mode (e.g., 'by-level').
    */
   public updateColorMode(mode: string) {
     if (!this.editor || this.editor.isDestroyed) return;
@@ -221,8 +287,8 @@ export class EditorController {
   }
 
   /**
-   * Smoothly scrolls the editor to keep the currently highlighted element
-   * in a comfortable reading position.
+   * Smoothly scrolls the editor to keep the currently highlighted TTS element in view.
+   * Uses smart thresholds to avoid unnecessary scrolling if the user is reading comfortably.
    */
   public autoscrollToHighlight() {
     if (!this.editor) return;
@@ -235,6 +301,7 @@ export class EditorController {
 
     const rect = targetEl.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
+    // Define a "comfortable reading zone" in the middle of the screen
     const topThreshold = viewportHeight * 0.3;
     const bottomThreshold = viewportHeight * 0.7;
 
