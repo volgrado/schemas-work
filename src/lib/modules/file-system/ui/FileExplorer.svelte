@@ -1,4 +1,19 @@
-﻿<script lang="ts">
+<!--
+  @component
+  FileExplorer
+
+  @description
+  A comprehensive, interactive file system browser designed for the Command Bar.
+
+  Core Features:
+  - **Navigation:** Browse folders and schemas with breadcrumb support.
+  - **CRUD:** Create, Rename, Delete files and folders.
+  - **Drag & Drop:** Move items between folders using native HTML5 drag and drop API.
+  - **Context Menu:** Right-click actions for power users.
+  - **State Management:** Syncs directly with `fileSystemStore` via Svelte 5 Runes.
+  - **Keyboard Support:** Full keyboard navigation and shortcuts (Enter to open, Escape to cancel).
+-->
+<script lang="ts">
   import { tick } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
@@ -6,25 +21,11 @@
   import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- UI Components ---
-  import Icon from '@ui/Icon.svelte';
-  import Spinner from '@ui/Spinner.svelte';
-  import Button from '@ui/Button.svelte';
-  import ContextMenu from '@ui/ContextMenu.svelte';
-  // Assuming ViewHeader and CommandButton are local to command-bar feature, 
-  // but if we move this, we might need to refactor them too or import them.
-  // For now, I'll assume they are passed as slots or I need to check where they are.
-  // Wait, ViewHeader is in the same folder as FileExplorerView. 
-  // I should probably keep FileExplorer as a pure UI component and let the container handle headers?
-  // Or I should copy ViewHeader too? 
-  // Let's use the existing ViewHeader for now, assuming I can import it.
-  // Actually, ViewHeader is specific to CommandBar. 
-  // I will replace ViewHeader with a simple header or just keep the structure if I can't find it.
-  // Let's assume I need to import ViewHeader from the command-bar feature for now, 
-  // OR better, make FileExplorer self-contained.
-  // I'll stick to the existing logic but replace directoryService calls.
-  
-  // Since ViewHeader is in `src/lib/components/features/command-bar/ViewHeader.svelte`,
-  // I'll import it from there for now to avoid breaking too much.
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import ContextMenu from '$lib/core/ui/ContextMenu.svelte';
+  // Imported from parent module for visual consistency
   import ViewHeader from '$lib/modules/command-bar/ui/ViewHeader.svelte';
 
   // --- Stores & Services ---
@@ -46,39 +47,56 @@
   import { dataService } from '$lib/services/dataService';
 
   // --- Component State (Svelte 5 Runes) ---
-  // We use a derived state or effect to sync with store
+
+  /** The ID of the current folder being viewed. Null implies the root directory. */
   let currentParentId = $state<string | null>(null);
   
-  // Derived items from store
+  /** Derived list of items in the current folder, sorted by Type (Folder > Schema) then Name. */
   let items = $derived(fileSystemStore.getChildren(currentParentId).sort((a, b) => {
       if (a.type === 'folder' && b.type === 'schema') return -1;
       if (a.type === 'schema' && b.type === 'folder') return 1;
       return a.title.localeCompare(b.title);
   }));
 
+  // --- Local UI State ---
   let breadcrumbs = $state<FileSystemNode[]>([]);
-  let isLoading = $state(false); // Store is sync now (localStorage), so no loading state needed really
+  let isLoading = $state(false);
   let error = $state<string | null>(null);
+
+  // Action States
   let isProcessingAction = $state(false);
   let editingItemId = $state<string | null>(null);
   let itemBeingCreated = $state<'schema' | 'folder' | null>(null);
   let newItemName = $state('');
+
+  // Drag & Drop State
   let draggedItemId = $state<string | null>(null);
   let dropTargetId = $state<string | null>(null);
+
+  // Context Menu State
   let contextMenu = $state<{
     x: number;
     y: number;
     item: FileSystemNode;
   } | null>(null);
+
+  // DOM Refs & Validation
   let inputError = $state(false);
   let renameInput = $state<HTMLInputElement | null>(null);
   let newItemInput = $state<HTMLInputElement | null>(null);
 
+  // --- Effects ---
+
+  // Sync local navigation state with the global command bar store
   $effect(() => {
     setCurrentParentId(currentParentId);
-    // No need to fetch, store is reactive
   });
 
+  // --- Actions ---
+
+  /**
+   * Initiates the creation flow for a new item.
+   */
   async function startCreatingItem(type: 'schema' | 'folder') {
     if (isProcessingAction) return;
     itemBeingCreated = type;
@@ -86,30 +104,24 @@
     newItemInput?.focus();
   }
 
+  /**
+   * Finalizes the creation of a new item.
+   */
   async function commitNewItem() {
     const name = newItemName.trim();
     const type = itemBeingCreated;
     itemBeingCreated = null;
     newItemName = '';
+
     if (!name || !type || isProcessingAction) return;
+
     isProcessingAction = true;
     try {
       if (type === 'folder') {
         await fileSystemStore.createFolder(name, currentParentId);
         toast.success(i18n.t('file_explorer.toast.folder_created', { name }));
       } else {
-        // createDocument still uses the old logic? 
-        // Ideally document creation should also go through fileSystemStore for the file part,
-        // but documentStore handles the YJS/IndexedDB part.
-        // For now, I'll keep using createDocument but I should verify if it uses directoryService internally.
-        // If createDocument uses directoryService, I need to refactor documentStore too.
-        // Let's assume createDocument is high-level and we might need to update it later.
-        // Wait, createDocument calls directoryService.createSchema.
-        // I should probably use fileSystemStore.createSchema here and then initialize the doc?
-        // Or just let createDocument do its thing for now and refactor documentStore later.
-        // BUT, if I replace directoryService, createDocument will break if it imports it.
-        // I will have to update documentStore to use fileSystemStore.
-        
+        // Create and open the document
         await createDocument(name, undefined, currentParentId);
         toast.success(i18n.t('file_explorer.toast.schema_created', { name }));
         setActiveView('editor');
@@ -122,6 +134,8 @@
           : i18n.t('file_explorer.toast.create_failed', { type });
       toast.error(errorMessage);
       errorService.reportError(e, { operation: 'commitNewItem', name, type });
+
+      // Restore UI state for retry
       itemBeingCreated = type;
       newItemName = name;
       inputError = true;
@@ -134,6 +148,9 @@
     }
   }
 
+  /**
+   * Handles clicking on a file (open) or folder (navigate).
+   */
   function handleItemClick(item: FileSystemNode) {
     if (isProcessingAction || editingItemId === item.id) return;
     if (item.type === 'folder') {
@@ -146,11 +163,16 @@
     }
   }
 
+  /**
+   * Jumps to a specific point in the breadcrumb trail.
+   */
   function navigateToBreadcrumb(folderId: string | null, index: number) {
     if (isProcessingAction) return;
     currentParentId = folderId;
     breadcrumbs = breadcrumbs.slice(0, index);
   }
+
+  // --- Renaming Logic ---
 
   async function startEditing(item: FileSystemNode) {
     contextMenu = null;
@@ -165,7 +187,9 @@
     const oldTitle = item.title;
     const trimmedTitle = newTitle.trim();
     editingItemId = null;
+
     if (!trimmedTitle || trimmedTitle === oldTitle) return;
+
     isProcessingAction = true;
     try {
       await fileSystemStore.updateItem(item.id, {
@@ -200,13 +224,17 @@
     }
   }
 
+  // --- Deletion Logic ---
+
   function handleDeleteItem(item: FileSystemNode) {
     contextMenu = null;
     if (isProcessingAction) return;
+
     const itemType =
       item.type === 'folder'
         ? i18n.t('file_explorer.item_type.folder')
         : i18n.t('file_explorer.item_type.schema');
+
     toast.warning(
       i18n.t('file_explorer.delete_confirm.title', { title: item.title }),
       {
@@ -221,11 +249,13 @@
               await dataService.deleteNode(item.id);
               toast.success(i18n.t('file_explorer.toast.item_deleted'));
               
+              // If the deleted item was the active document, switch context
               if (documentState.docId === item.id) {
                 const allSchemas = fileSystemStore.getAll().filter((i) => i.type === 'schema');
                 if (allSchemas.length > 0) {
                   await loadDocument(allSchemas[0].id);
                 } else {
+                  // Fallback: Create a new blank schema if nothing is left
                   await createDocument(
                     i18n.t('file_explorer.default_schema_name'),
                     undefined,
@@ -252,6 +282,8 @@
       }
     );
   }
+
+  // --- Drag & Drop Logic ---
 
   function isDescendant(
     childId: string | null,
@@ -288,7 +320,7 @@
       dropTargetId = null;
       return;
     }
-    // Synchronous check is fine now
+    // Prevent dropping a folder into its own child
     if (isDescendant(draggedItemId, item.id)) {
         dropTargetId = null;
         return;
@@ -306,11 +338,13 @@
       resetDragState();
       return;
     }
-    const targetItem = fileSystemStore.getItem(targetFolderId!);
+
+    const targetItem = targetFolderId ? fileSystemStore.getItem(targetFolderId) : null;
     if (targetFolderId !== null && targetItem?.type !== 'folder') {
       resetDragState();
       return;
     }
+
     isProcessingAction = true;
     const movedItem = fileSystemStore.getItem(draggedItemId);
     try {
@@ -333,12 +367,15 @@
     dropTargetId = null;
   }
 
+  // --- Context Menu ---
+
   function openContextMenu(event: MouseEvent, item: FileSystemNode) {
     event.preventDefault();
     contextMenu = { x: event.clientX, y: event.clientY, item };
   }
 </script>
 
+<!-- Right-click Context Menu -->
 {#if contextMenu}
   <ContextMenu
     x={contextMenu.x}
@@ -384,7 +421,9 @@
 
   </ViewHeader>
 
+  <!-- Main List Area -->
   <div class="content-area">
+    <!-- Breadcrumbs & Drop Target -->
     <div
       class="breadcrumb-bar"
       role="group"
@@ -417,6 +456,7 @@
       </div>
     </div>
 
+    <!-- File List -->
     <div class="list-view" role="list" ondragleave={handleDragLeave}>
       {#if isLoading}
         <div class="state-message is-loading" transition:fade>
@@ -434,6 +474,7 @@
         </div>
       {/if}
 
+      <!-- Inline Creation Input -->
       {#if itemBeingCreated}
         <div class="schema-item editing" transition:slide|local>
           <div class="schema-edit-wrapper">
@@ -464,6 +505,7 @@
         </div>
       {/if}
 
+      <!-- File/Folder Items -->
       {#each items as item, i (item.id)}
         <div
           role="listitem"
@@ -493,6 +535,7 @@
               (!!editingItemId && editingItemId !== item.id)}
           >
             {#if editingItemId === item.id}
+              <!-- Inline Rename -->
               <div class="schema-edit-wrapper">
                 <Icon
                   name={item.type === 'folder' ? 'folder' : 'file-text'}
@@ -513,6 +556,7 @@
                 />
               </div>
             {:else}
+              <!-- Standard Display -->
               <div
                 class="item-main-content"
                 role="button"
@@ -528,6 +572,7 @@
                 />
                 <span>{item.title}</span>
               </div>
+              <!-- Hover Actions -->
               <div class="schema-actions">
                 <button
                   class="icon-button"
@@ -561,6 +606,7 @@
 </div>
 
 <style>
+  /* Styles remain unchanged */
   .view-container {
     display: flex;
     flex-direction: column;

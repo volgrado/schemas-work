@@ -1,4 +1,19 @@
-﻿<script lang="ts">
+<!--
+  @component
+  TTSController
+
+  @description
+  The central UI for the Text-to-Speech (TTS) player.
+  It handles:
+  - **Playback Control:** Play, Pause, Previous, Next, Stop, Replay.
+  - **Progress Visualization:** Shows a progress bar and the current text being read.
+  - **Configuration:** Provides a collapsible panel to adjust Voice, Speed (Rate), and Volume.
+  - **Shortcuts:** Listens for keyboard shortcuts (Space, Arrows) when active.
+  - **Responsive Design:** Can be rendered as a floating widget (default) or embedded in a sidebar.
+
+  State is fully managed by `ttsStore.svelte.ts`.
+-->
+<script lang="ts">
   import { fly, slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -23,15 +38,20 @@
   import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- Props ---
+  /** Whether the controller is embedded in another panel (e.g., Node Detail) or floating. */
   let { embedded = false } = $props<{ embedded?: boolean }>();
 
-  // --- SVELTE 5 DERIVED STATE ---
+  // --- Derived State ---
+  // Calculate playback progress percentage (0-100)
   const progress = $derived(() => {
     const nodes = ttsState.nodesToRead;
     if (!nodes || nodes.length === 0) return 0;
+    // Simple progress based on node index.
+    // Enhancement idea: Use character count for smoother progress.
     return ((ttsState.currentNodeIndex + 1) / nodes.length) * 100;
   });
 
+  // Get the title of the currently playing node
   const currentTitle = $derived(() => {
     const { status, nodesToRead, currentNodeIndex } = ttsState;
     const currentNode = nodesToRead?.[currentNodeIndex];
@@ -41,7 +61,8 @@
     return '...';
   });
 
-  // --- EVENT HANDLERS ---
+  // --- Event Handlers ---
+
   function handleTogglePause() {
     if (ttsState.status === 'paused') {
       resumeReading();
@@ -66,9 +87,10 @@
     setVolume(newVolume);
   }
 
-  // --- KEYBOARD SHORTCUTS ---
+  // --- Keyboard Shortcuts ---
   $effect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      // Prevent triggering shortcuts when user is typing in an input
       const activeElement = document.activeElement;
       if (
         activeElement &&
@@ -78,11 +100,11 @@
       }
 
       switch (event.key) {
-        case ' ':
+        case ' ': // Spacebar: Play/Pause
           event.preventDefault();
           handleTogglePause();
           break;
-        case 'ArrowRight':
+        case 'ArrowRight': // Next Node
           event.preventDefault();
           if (
             ttsState.nodesToRead &&
@@ -91,7 +113,7 @@
             nextNode();
           }
           break;
-        case 'ArrowLeft':
+        case 'ArrowLeft': // Previous Node
           event.preventDefault();
           if (ttsState.currentNodeIndex > 0) {
             previousNode();
@@ -100,6 +122,7 @@
       }
     }
 
+    // Only register listeners if TTS is active
     if (ttsState.status !== 'idle') {
       window.addEventListener('keydown', handleKeyDown);
       return () => {
@@ -109,11 +132,15 @@
   });
 </script>
 
-<!-- The controller renders when TTS is active. 
-     If global (not embedded), it hides when the detail panel is open. 
-     If embedded, it always shows (controlled by parent). -->
+<!--
+  Render Logic:
+  - Only show if status is NOT 'idle'.
+  - If embedded, always render (parent controls visibility).
+  - If floating, only render if the Node Detail panel is closed to avoid UI clutter.
+-->
 {#if ttsState.status !== 'idle' && (embedded || !nodeDetailState.isOpen)}
   {#if embedded}
+    <!-- Embedded Layout -->
     <div
       class="panel embedded"
       role="region"
@@ -125,6 +152,7 @@
       </div>
     </div>
   {:else}
+    <!-- Floating Layout with Transition -->
     <div
       class="panel floating"
       transition:fly={{ y: 50, duration: 400, easing: quintOut }}
@@ -144,6 +172,7 @@
   {/if}
 {/if}
 
+<!-- Reusable Snippet for Content -->
 {#snippet content()}
   {#if ttsState.status === 'initializing'}
     <div class="status-view">
@@ -163,7 +192,7 @@
   {:else}
     <div class="controls-view">
       <div class="main-controls">
-        <!-- Text Info -->
+        <!-- Text Info (Title & Number) -->
         <div class="info-section">
           <p class="current-text" title={currentTitle()}>
             {#if ttsState.nodesToRead.length > 0}
@@ -175,7 +204,7 @@
           </p>
         </div>
 
-        <!-- Playback Controls -->
+        <!-- Playback Controls (Prev, Play/Pause, Next) -->
         <div class="playback-actions">
            <Button
             onclick={previousNode}
@@ -214,7 +243,7 @@
           </Button>
         </div>
 
-        <!-- Secondary Actions -->
+        <!-- Secondary Actions (Replay, Settings, Stop) -->
         <div class="secondary-actions">
            <Button
             onclick={replay}
@@ -253,6 +282,7 @@
         </div>
       </div>
 
+      <!-- Collapsible Settings Panel -->
       {#if ttsState.isSettingsExpanded}
         <div
           class="settings-panel"

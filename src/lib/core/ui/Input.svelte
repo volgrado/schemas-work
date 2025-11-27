@@ -2,39 +2,26 @@
   @component
   Input
 
-  An exceptional, reusable text input component. It serves as a powerful and flexible
-  building block for all forms in the application.
+  @description
+  A versatile, styled text input wrapper.
+  It enhances the standard HTML `<input>` with slots for leading/trailing icons
+  and consistent focus states that match the application's design system.
 
-  This component inherits its core styling from the global stylesheet for perfect design
-  consistency and features slots for leading and trailing icons, enabling rich UI patterns.
-
-  Props:
-  - `value`: {string | number} - The bindable value of the input.
-  - `class`: {string} - Additional CSS classes to apply to the main wrapper element.
-
-  Slots:
-  - `leading`: An area for an icon or element at the start of the input.
-  - `trailing`: An area for an icon or element at the end of the input.
-
-  @restProps All other standard HTML attributes (e.g., `placeholder`, `type`, `disabled`) are passed
-  directly to the underlying `<input>` element.
+  @props
+  - `value` (bindable string | number): The current value of the input.
+  - `class` (string): Additional classes for the wrapper.
+  - `children`:
+    - `leading` (snippet): An icon or element to place at the start.
+    - `trailing` (snippet): An icon or element to place at the end.
+  - `...rest`: All other standard HTML input attributes (placeholder, type, disabled, etc.).
 -->
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
 
   let {
-    /**
-     * @prop {string | number} [value='']
-     * The input's value. Can be bound to a variable in the parent component.
-     * @bindable
-     */
     value = $bindable(''),
-    /**
-     * @prop {string} [class='']
-     * Optional CSS classes to add to the wrapper element for layout control.
-     */
     class: additionalClasses = '',
-    children, // Capture slots for Svelte 5
+    children, // Svelte 5 snippets for icons
     ...rest
   } = $props<
     {
@@ -48,22 +35,28 @@
   >();
 </script>
 
-<!-- ENHANCEMENT: A wrapper to position the input and potential icons -->
 <div class="input-wrapper {additionalClasses}">
-  {#if children.leading}
+  <!-- Leading Icon Slot -->
+  {#if children?.leading}
     <span class="icon-wrapper leading-icon">
       {@render children.leading()}
     </span>
   {/if}
 
+  <!--
+    The core input element.
+    Classes adjust padding based on icon presence.
+    Styles like border, background, and focus are inherited from global app.css
+  -->
   <input
     {...rest}
-    class:has-leading-icon={children.leading}
-    class:has-trailing-icon={children.trailing}
+    class:has-leading-icon={children?.leading}
+    class:has-trailing-icon={children?.trailing}
     bind:value
   />
 
-  {#if children.trailing}
+  <!-- Trailing Icon Slot -->
+  {#if children?.trailing}
     <span class="icon-wrapper trailing-icon">
       {@render children.trailing()}
     </span>
@@ -76,12 +69,6 @@
     width: 100%;
   }
 
-  /*
-    ENHANCEMENT: All core input styling (border, background, focus, etc.) is now
-    inherited from the global `input[type='text']` styles in `app.css`.
-    This component's styles are only for managing the icon layout.
-  */
-
   .icon-wrapper {
     position: absolute;
     top: 0;
@@ -90,7 +77,7 @@
     align-items: center;
     color: var(--color-text-tertiary);
     transition: color var(--duration-fast) var(--ease-out);
-    pointer-events: none; /* Allows click-through to the input */
+    pointer-events: none; /* Ensure clicks pass through to the input focus */
   }
 
   .leading-icon {
@@ -101,16 +88,16 @@
     right: 12px;
   }
 
-  /* When an icon is present, add padding to the input so text doesn't overlap it */
+  /* Padding adjustments to prevent text overlap with icons */
   :global(input.has-leading-icon) {
-    padding-left: calc(var(--space-sm) + 24px + var(--space-xs)) !important; /* 8 + 24 + 4 = 36px */
+    padding-left: calc(var(--space-sm) + 24px + var(--space-xs)) !important;
   }
 
   :global(input.has-trailing-icon) {
     padding-right: calc(var(--space-sm) + 24px + var(--space-xs)) !important;
   }
 
-  /* ENHANCEMENT: When the user focuses the input, the icon becomes more prominent */
+  /* Visual feedback: highlight icon when input is focused */
   .input-wrapper:focus-within .icon-wrapper {
     color: var(--color-accent);
   }

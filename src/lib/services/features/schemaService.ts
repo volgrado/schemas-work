@@ -1,7 +1,11 @@
 /**
- * @file Provides business logic for interpreting and transforming schema documents.
+ * @file schemaService.ts
+ * @service
+ * @description
+ * Provides sophisticated business logic for interpreting and transforming schema documents.
  * This service is responsible for converting the flat ProseMirror document structure
- * into hierarchical data structures needed for UI components like the Tree View.
+ * into hierarchical data structures (Tree Data) needed for UI components like the Tree View.
+ * It also handles breadcrumb generation and other structural analysis tasks.
  */
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 import type { TreeNodeData } from '$lib/components/visualization/StandardTree.svelte';
@@ -10,8 +14,12 @@ import type { TreeNodeData } from '$lib/components/visualization/StandardTree.sv
  * Converts a ProseMirror document object into a hierarchical tree structure
  * by interpreting the semantic levels of heading nodes (h2, h3, etc.).
  *
- * @param doc The ProseMirror document node.
- * @returns A root TreeNodeData object representing the document's hierarchy, or null if the document is empty.
+ * This function performs a depth-first traversal of the document's block nodes
+ * to reconstruct the parent-child relationships implied by heading levels.
+ * It also calculates word counts for each section to provide data for visualization sizing.
+ *
+ * @param {ProseMirrorNode | null} doc - The ProseMirror document node to process.
+ * @returns {TreeNodeData | null} A root TreeNodeData object representing the document's hierarchy, or null if the document is empty or invalid.
  */
 export function documentToTreeData(
   doc: ProseMirrorNode | null
@@ -32,7 +40,11 @@ export function documentToTreeData(
     title = firstNode.textContent.trim() || title;
   }
 
-  // Helper to count words in a string
+  /**
+   * Helper to count words in a string.
+   * @param text The text to analyze.
+   * @returns The number of words.
+   */
   const countWords = (text: string) => {
     return text.trim().split(/\s+/).filter(w => w.length > 0).length;
   };
@@ -44,17 +56,19 @@ export function documentToTreeData(
     value: 0
   };
   
+  // Use a stack to track the current nesting path based on heading levels.
   const stack: { data: TreeNodeData, level: number }[] = [{ data: root, level: 1 }];
   
-  doc.descendants((node, pos) => {
+  doc.descendants((node) => {
     if (node.type.name === 'heading') {
       const level = node.attrs.level;
-      // H1 is root, already in stack.
+      // H1 is the root and is already initialized in the stack.
       if (level === 1) return; 
 
       const nodeId = node.attrs.nodeId;
-      // If no ID, treat as content of current parent? Or skip? Let's skip for tree structure but count words?
-      // For now, strictly follow tree structure.
+
+      // If a heading lacks an ID, we cannot link it reliably in the tree.
+      // In the future, we might generate a temporary ID, but for now, we skip it.
       if (!nodeId) return;
 
       const newNode: TreeNodeData = {
@@ -64,7 +78,7 @@ export function documentToTreeData(
         value: countWords(node.textContent) // Start with heading's own words
       };
 
-      // Pop stack until we find the parent (level < current level)
+      // Pop the stack until we find the parent (a heading with a strictly lower level).
       while (stack.length > 0 && stack[stack.length - 1].level >= level) {
         stack.pop();
       }
@@ -76,7 +90,7 @@ export function documentToTreeData(
       
       stack.push({ data: newNode, level });
     } else if (node.isText) {
-      // Add word count to the current node at the top of the stack
+      // Add the word count of text nodes to the section currently at the top of the stack.
       const current = stack[stack.length - 1];
       if (current && node.text) {
         current.data.value = (current.data.value || 0) + countWords(node.text);
@@ -89,11 +103,11 @@ export function documentToTreeData(
 
 /**
  * Generates a breadcrumb path string (e.g., "Topic > Sub-Topic") for a given position in the editor.
- * This is achieved by walking up the document tree from the given position.
+ * This is achieved by walking up the document tree from the given position to find all parent headings.
  *
- * @param doc The ProseMirror document node.
- * @param pos The numerical position in the document.
- * @returns A formatted breadcrumb string.
+ * @param {ProseMirrorNode} doc - The ProseMirror document node.
+ * @param {number} pos - The numerical position (cursor or selection start) in the document.
+ * @returns {string} A formatted breadcrumb string representing the path to the current position.
  */
 export function getBreadcrumbForPosition(
   doc: ProseMirrorNode,

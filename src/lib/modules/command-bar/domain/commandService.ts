@@ -1,7 +1,14 @@
-﻿/**
+/**
  * @file commandService.ts
- * @service
- * @description Central registry for all application commands, designed for the Svelte 5 Runes architecture.
+ * @module command-bar
+ * @description
+ * A centralized registry and factory for all application commands available via the Command Bar (Spotlight).
+ *
+ * This service is responsible for:
+ * 1. Defining the list of available commands (Navigation, AI, Utilities).
+ * 2. Handling the dynamic availability of commands (e.g., "Read Aloud" only when an editor is active).
+ * 3. Executing command logic, which often involves coordinating multiple stores (Editor, TTS, Document).
+ * 4. Filtering commands based on user search queries.
  */
 
 import type { Search, TTS } from '$lib/types';
@@ -19,10 +26,21 @@ import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
 import { ttsState, startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
 import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
 
+/**
+ * Configuration options passed to the command factory.
+ */
 export interface SearchOptions {
   openApiKeyModal: () => void;
 }
 
+/**
+ * Generates the list of primary (top-level) commands.
+ *
+ * @param openApiKeyModal - Callback to open the API Key settings modal.
+ * @param ttsStatus - Current status of the Text-to-Speech engine.
+ * @param isEditorReady - Whether the editor instance is initialized and mounted.
+ * @returns {Search.Command[]} An array of executable command objects.
+ */
 export function getCommands(
   openApiKeyModal: () => void,
   ttsStatus: TTS.Status,
@@ -35,6 +53,7 @@ export function getCommands(
       label: _t('command.new_schema'),
       icon: 'plus',
       action: () => {
+        // Create a new document in the current folder (if any)
         const parentId = commandBarState.viewPayload?.parentId || null;
         createDocument(
           _t('file_explorer.default_schema_name'),
@@ -66,19 +85,21 @@ export function getCommands(
       id: 'read-aloud',
       label: _t('command.read_schema'),
       icon: 'volume-2',
-      // --- FINAL, ROBUST ACTION TO SOLVE TIMING ISSUES ---
+      /**
+       * Orchestrates the "Read Aloud" feature.
+       * It ensures the document structure is valid (IDs exist) before extracting content.
+       */
       action: () => {
         const { instance: editor } = editorState;
         if (editor) {
-          // 1. Force ID Generation: Run the command from your NodeIdExtension
-          //    to retroactively add IDs to any nodes that are missing them.
+          // 1. Force ID Generation: Run the command from NodeIdExtension
+          //    to retroactively add IDs to any nodes that might be missing them.
           editor.chain().focus().ensureNodeIds().run();
 
-          // 2. Get Readable Nodes: Now that we know the IDs exist,
-          //    call your utility function to create the narration script.
+          // 2. Get Readable Nodes: Parse the document into a linear playlist.
           const nodesToRead = getReadableNodes(editor);
 
-          // 3. Start Reading: Pass the perfectly formed script to the store.
+          // 3. Start Reading: Pass the script to the TTS store.
           startReading(nodesToRead);
         } else {
           toast.error(_t('common.editor_not_ready'));
@@ -111,6 +132,15 @@ export function getCommands(
   ];
 }
 
+/**
+ * Generates the list of context-aware AI commands.
+ *
+ * @param isNodeSelected - Whether a specific node (heading) is selected.
+ * @param isTextSelected - Whether a text range is selected.
+ * @param hasActiveDocument - Whether a document is currently open.
+ * @param hasEditorInstance - Whether the editor is ready.
+ * @returns {Search.Command[]} An array of AI commands.
+ */
 export function getAiCommands(
   isNodeSelected: boolean,
   isTextSelected: boolean,
@@ -136,6 +166,7 @@ export function getAiCommands(
         if (editorInstance) {
           openStrategySession({
             action: 'refine-document',
+            // Pass the full document context for "Whole Document" refinement
             fullDocumentJSON: editorInstance.state.doc.toJSON(),
           });
         } else {
@@ -164,10 +195,18 @@ export function getAiCommands(
   ];
 }
 
+/**
+ * Performs a search against all available commands.
+ *
+ * @param query - The user's search string.
+ * @param options - Configuration options.
+ * @returns {Promise<Search.Command[]>} A filtered list of commands.
+ */
 export async function searchCommands(
   query: string,
   options: SearchOptions
 ): Promise<Search.Command[]> {
+  // Gather context
   const ttsStatus = ttsState.status;
   const hasEditorInstance = !!editorState.instance;
   const isNodeSelected = editorState.selectedNode !== null;
@@ -176,6 +215,7 @@ export async function searchCommands(
     : false;
   const hasActiveDocument = !!documentState.docId;
 
+  // Compile all commands
   const primaryCommands = getCommands(
     options.openApiKeyModal,
     ttsStatus,
@@ -189,12 +229,14 @@ export async function searchCommands(
   );
   const allAvailableCommands = [...primaryCommands, ...aiCommands];
 
+  // If no query, return all enabled commands (default view)
   if (!query) {
     return allAvailableCommands.filter((command) =>
       command.isEnabled ? command.isEnabled() : true
     );
   }
 
+  // Perform case-insensitive substring search
   const lowerCaseQuery = query.toLowerCase();
   return allAvailableCommands.filter((command) => {
     const isCommandEnabled = command.isEnabled ? command.isEnabled() : true;
