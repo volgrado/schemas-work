@@ -10,7 +10,10 @@ export interface TTSHighlightStorage {
   decoration: Decoration | null;
 }
 
-export const TTSHighlightExtension = Extension.create<TTSHighlightOptions, TTSHighlightStorage>({
+export const TTSHighlightExtension = Extension.create<
+  TTSHighlightOptions,
+  TTSHighlightStorage
+>({
   name: 'ttsHighlight',
 
   addOptions() {
@@ -33,12 +36,15 @@ export const TTSHighlightExtension = Extension.create<TTSHighlightOptions, TTSHi
           if (dispatch) {
             // Find the node in the local document that matches the original position
             let localPos: number | null = null;
-            
+
             state.doc.descendants((node, pos) => {
               if (localPos !== null) return false;
-              
+
               // dataPos is stored as a string attribute
-              if (node.attrs.dataPos && parseInt(node.attrs.dataPos) === originalNodePos) {
+              if (
+                node.attrs.dataPos &&
+                parseInt(node.attrs.dataPos) === originalNodePos
+              ) {
                 localPos = pos;
                 return false;
               }
@@ -47,9 +53,9 @@ export const TTSHighlightExtension = Extension.create<TTSHighlightOptions, TTSHi
             if (localPos !== null) {
               const from = localPos + 1 + relFrom;
               const to = localPos + 1 + relTo;
-              
+
               // Create a decoration
-              // We use a transaction metadata or plugin state to store this? 
+              // We use a transaction metadata or plugin state to store this?
               // Actually, the easiest way is to update the plugin state via a meta transaction.
               tr.setMeta('ttsHighlight', { from, to });
             } else {
@@ -83,14 +89,16 @@ export const TTSHighlightExtension = Extension.create<TTSHighlightOptions, TTSHi
           apply(tr, oldSet) {
             // Check for our meta property
             const meta = tr.getMeta('ttsHighlight');
-            
+
             if (meta === null) {
               return DecorationSet.empty;
             }
-            
+
             if (meta && typeof meta === 'object') {
               const { from, to } = meta;
-              const deco = Decoration.inline(from, to, { class: highlightClass });
+              const deco = Decoration.inline(from, to, {
+                class: highlightClass,
+              });
               return DecorationSet.create(tr.doc, [deco]);
             }
 
@@ -111,7 +119,11 @@ export const TTSHighlightExtension = Extension.create<TTSHighlightOptions, TTSHi
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     ttsHighlight: {
-      setTTSHighlight: (originalNodePos: number, relFrom: number, relTo: number) => ReturnType;
+      setTTSHighlight: (
+        originalNodePos: number,
+        relFrom: number,
+        relTo: number
+      ) => ReturnType;
       clearTTSHighlight: () => ReturnType;
     };
   }

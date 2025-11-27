@@ -149,7 +149,9 @@
         />
       </div>
       <div class="form-group">
-        <label for="media-title">{i18n.t('media_editor.label.title_text')}</label>
+        <label for="media-title"
+          >{i18n.t('media_editor.label.title_text')}</label
+        >
         <input
           id="media-title"
           type="text"
@@ -161,7 +163,9 @@
 
     {#if initialAttrs.mediaType === 'youtube'}
       <div class="form-group">
-        <label for="media-start">{i18n.t('media_editor.label.start_time')}</label>
+        <label for="media-start"
+          >{i18n.t('media_editor.label.start_time')}</label
+        >
         <input
           id="media-start"
           type="number"

@@ -4,21 +4,17 @@
  */
 
 import type { Editor, Range } from '@tiptap/core';
-import type { IconName } from '$lib/types/iconName';
+import type { IconName } from '$lib/core/domain/iconName';
 import type { Modal } from '$lib/types';
-import {
-  openStrategySession,
-  type StrategySessionContext,
-} from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
-import { startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
-import { open as openCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
-import { openModal } from '$lib/stores/modalStore.svelte';
-import { documentState } from '$lib/stores/documentStore.svelte';
-import { i18n } from '$lib/utils/i18n.svelte';
-import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
-import { toast } from 'svelte-sonner';
+import { openStrategySession } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import { actionRegistry, type Action } from '$lib/actions/registry';
+import { i18n } from '$lib/utils/i18n.svelte';
+import { openModal } from '$lib/modules/editor/ui/modalStore.svelte';
+import { open as openCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
+import { documentState } from '$lib/modules/editor/ui/documentStore.svelte';
+import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
+import { startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
+import { toast } from 'svelte-sonner';
 
 export interface SlashCommandProps {
   editor: Editor;
@@ -358,12 +354,12 @@ export const getCommands = (): CommandItem[] => {
   const actions = actionRegistry.getActionsByContext('editor');
 
   // Map to CommandItem format expected by Tiptap extension
-  return actions.map(action => ({
+  return actions.map((action: Action<any>) => ({
     title: action.title,
     description: action.description || '',
     group: action.group || 'General',
     icon: action.icon || 'help-circle', // Fallback to a valid icon
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SlashCommandProps) => {
       actionRegistry.execute(action.id, { editor, range });
     }
   }));

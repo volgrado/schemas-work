@@ -11,7 +11,7 @@
   - `size` ('sm' | 'md' | 'lg'): The size of the spinner. Defaults to 'md'.
 -->
 <script lang="ts">
-  let { size = 'md' } = $props<{ size?: 'sm' | 'md' | 'lg' }>();
+  const { size = 'md' } = $props<{ size?: 'sm' | 'md' | 'lg' }>();
 </script>
 
 <div class="spinner spinner-{size}" role="status" aria-label="Loading">
@@ -29,10 +29,19 @@
     position: relative;
     display: inline-block;
   }
-  
-  .spinner-sm { width: 16px; height: 16px; }
-  .spinner-md { width: 24px; height: 24px; }
-  .spinner-lg { width: 32px; height: 32px; }
+
+  .spinner-sm {
+    width: 16px;
+    height: 16px;
+  }
+  .spinner-md {
+    width: 24px;
+    height: 24px;
+  }
+  .spinner-lg {
+    width: 32px;
+    height: 32px;
+  }
 
   /* Main Rotation Animation */
   .orbit {
@@ -51,9 +60,18 @@
   }
 
   /* Node Sizes relative to container */
-  .spinner-sm .node { width: 4px; height: 4px; }
-  .spinner-md .node { width: 5px; height: 5px; }
-  .spinner-lg .node { width: 6px; height: 6px; }
+  .spinner-sm .node {
+    width: 4px;
+    height: 4px;
+  }
+  .spinner-md .node {
+    width: 5px;
+    height: 5px;
+  }
+  .spinner-lg .node {
+    width: 6px;
+    height: 6px;
+  }
 
   /*
     Node Positioning & Pulse Animation
@@ -79,18 +97,29 @@
   }
 
   @keyframes orbitRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   @keyframes nodePulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.3); }
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.3);
+    }
   }
 
   /* Enhanced glow in dark mode */
   :global(.dark-theme) .node {
-    box-shadow: 
+    box-shadow:
       0 0 10px var(--color-accent),
       0 0 20px rgba(var(--color-accent-rgb), 0.3);
   }

@@ -8,7 +8,7 @@ import { toast } from 'svelte-sonner';
 
 import { i18n } from '$lib/utils/i18n.svelte';
 import type { TTS } from '$lib/types';
-import { WebSpeechTTSService } from '../infra/webSpeechTTSService';
+
 
 // --- State Definition ---
 
@@ -52,8 +52,11 @@ const initialState: TTSState = {
 
 export const ttsState = $state<TTSState>({ ...initialState });
 
+import type { TTSService } from '../domain/ttsService';
+
 // --- Service Instance ---
-const ttsService = new WebSpeechTTSService();
+let ttsService: TTSService;
+
 
 // --- Private Helper Functions ---
 
@@ -207,8 +210,10 @@ function speakNodeAtIndex(index: number, startOffset: number = 0): void {
  * Initializes the TTS system by loading voices.
  * This should be called once from a root component.
  */
-export function initialize(): void {
+export function initialize(service: TTSService): void {
   if (ttsState.isInitialized || !browser) return;
+  ttsService = service;
+
   ttsState.isInitialized = true;
   ttsState.status = 'initializing';
 
@@ -225,8 +230,9 @@ export function initialize(): void {
 }
 
 export function startReading(nodes: TTS.ReadableNode[]): void {
-  if (!ttsState.isInitialized) {
-    initialize();
+  if (!ttsState.isInitialized || !ttsService) {
+    console.warn('TTS: Service not initialized. Call initialize(service) first.');
+    return;
   }
   transitionToIdle();
   if (nodes.length === 0) {

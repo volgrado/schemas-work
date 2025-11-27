@@ -14,7 +14,7 @@ const pathsToDelete = [
   'node_modules',
   'playwright-report',
   'test-results',
-  'package-lock.json'
+  'package-lock.json',
 ];
 
 console.log('🧹 Starting deep clean...');
@@ -33,4 +33,6 @@ pathsToDelete.forEach((dir) => {
   }
 });
 
-console.log('✨ Deep clean complete! Run "npm install" to reinstall dependencies.');
+console.log(
+  '✨ Deep clean complete! Run "npm install" to reinstall dependencies.'
+);

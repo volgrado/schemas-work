@@ -6,7 +6,15 @@ export const DataPosExtension = Extension.create({
   addGlobalAttributes() {
     return [
       {
-        types: ['heading', 'paragraph', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock'],
+        types: [
+          'heading',
+          'paragraph',
+          'bulletList',
+          'orderedList',
+          'listItem',
+          'blockquote',
+          'codeBlock',
+        ],
         attributes: {
           dataPos: {
             default: null,

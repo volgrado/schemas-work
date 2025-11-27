@@ -17,14 +17,16 @@
 <script lang="ts">
   import { actionRegistry } from '$lib/actions/registry';
   import { i18n } from '$lib/utils/i18n.svelte';
-  import type { IconName } from '$lib/types/iconName';
+  import type { IconName } from '$lib/core/domain/iconName';
 
   // --- UI Components ---
   import Icon from '$lib/core/ui/Icon.svelte';
   import CommandButton from './CommandButton.svelte';
   import ViewHeader from './ViewHeader.svelte';
 
-  let { openApiKeyModal } = $props<{ openApiKeyModal: () => void }>();
+  const { openApiKeyModal: _openApiKeyModal } = $props<{
+    openApiKeyModal: () => void;
+  }>();
 
   // --- Reactive State ---
   // We use a version counter to trigger re-evaluation of the command list
@@ -39,16 +41,18 @@
   });
 
   // Derive the list of commands for the 'view:command-bar' context
-  let mainCommands = $derived.by(() => {
+  const mainCommands = $derived.by(() => {
     // Dependency on registryVersion ensures reactivity
-    registryVersion; 
-    return actionRegistry.getActionsByContext('view:command-bar').map(action => ({
-      id: action.id,
-      label: action.title,
-      icon: (action.icon || 'help-circle') as IconName,
-      action: () => actionRegistry.execute(action.id),
-      isEnabled: action.isEnabled
-    }));
+    registryVersion;
+    return actionRegistry
+      .getActionsByContext('view:command-bar')
+      .map((action) => ({
+        id: action.id,
+        label: action.title,
+        icon: (action.icon || 'help-circle') as IconName,
+        action: () => actionRegistry.execute(action.id),
+        isEnabled: action.isEnabled,
+      }));
   });
 </script>
 

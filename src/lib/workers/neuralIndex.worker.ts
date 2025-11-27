@@ -16,7 +16,7 @@
 
 export interface TiptapNode {
   type: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   attrs?: {
     level?: number;
     nodeId?: string;
@@ -64,9 +64,11 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
  * @param docJson - The raw Tiptap document.
  * @returns Array of chunks with ID and plain text content.
  */
-function atomizeDocument(docJson: { content?: TiptapNode[] }): { id: string; content: string }[] {
+function atomizeDocument(docJson: {
+  content?: TiptapNode[];
+}): { id: string; content: string }[] {
   const chunks: { id: string; content: string }[] = [];
-  
+
   if (!docJson || !docJson.content || !Array.isArray(docJson.content)) {
     return chunks;
   }
@@ -90,9 +92,7 @@ function atomizeDocument(docJson: { content?: TiptapNode[] }): { id: string; con
         (nextNode.content || []).length > 0
       ) {
         // Extract text content safely
-        const term = (node.content || [])
-          .map((c) => c.text || '')
-          .join('');
+        const term = (node.content || []).map((c) => c.text || '').join('');
         const description = (nextNode.content || [])
           .map((c) => c.text || '')
           .join('');

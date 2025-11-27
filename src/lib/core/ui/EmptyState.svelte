@@ -2,13 +2,13 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import Button from '$lib/core/ui/Button.svelte';
 
-  let {
+  const {
     title = 'No items found',
     description = 'There are no items to display at this time.',
     icon = 'inbox',
     actionLabel,
     actionId,
-    onaction
+    onaction,
   } = $props<{
     title?: string;
     description?: string;

@@ -1,4 +1,8 @@
-import type { TTSService, TTSVoice, TTSSpeakOptions } from '../domain/ttsService';
+import type {
+  TTSService,
+  TTSVoice,
+  TTSSpeakOptions,
+} from '../domain/ttsService';
 
 /**
  * Implementation of the TTSService using the browser's Web Speech API.
@@ -23,7 +27,7 @@ export class WebSpeechTTSService implements TTSService {
             name: `${v.name} (${v.lang})`,
             lang: v.lang,
           }));
-          
+
           if (!resolved) {
             resolved = true;
             resolve();
@@ -40,7 +44,9 @@ export class WebSpeechTTSService implements TTSService {
       // Fallback timeout
       setTimeout(() => {
         if (!resolved) {
-          console.warn('WebSpeechTTSService: Voices loading timed out or no voices found.');
+          console.warn(
+            'WebSpeechTTSService: Voices loading timed out or no voices found.'
+          );
           resolved = true;
           resolve();
         }
@@ -60,7 +66,9 @@ export class WebSpeechTTSService implements TTSService {
       this.currentUtterance = utterance;
 
       if (options?.voiceId) {
-        const voice = window.speechSynthesis.getVoices().find((v) => v.voiceURI === options.voiceId);
+        const voice = window.speechSynthesis
+          .getVoices()
+          .find((v) => v.voiceURI === options.voiceId);
         if (voice) utterance.voice = voice;
       }
 
@@ -78,16 +86,16 @@ export class WebSpeechTTSService implements TTSService {
         this.currentUtterance = null;
         // Ignore interrupted errors as they are often intentional (cancellation)
         if (event.error === 'interrupted' || event.error === 'canceled') {
-            resolve(); // Resolve gracefully on cancellation
-            return;
+          resolve(); // Resolve gracefully on cancellation
+          return;
         }
-        
+
         if (options?.onError) {
-            options.onError(new Error(event.error));
+          options.onError(new Error(event.error));
         }
-        // We resolve here to avoid unhandled promise rejections for playback errors, 
+        // We resolve here to avoid unhandled promise rejections for playback errors,
         // letting the onError callback handle the reporting.
-        resolve(); 
+        resolve();
       };
 
       if (options?.onBoundary) {

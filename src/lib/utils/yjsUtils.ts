@@ -53,5 +53,8 @@ export function yDocToProsemirrorJson(ydoc: Y.Doc): ProseMirrorJSONDocument {
   // Use the official utility from y-prosemirror for a reliable conversion.
   // The second argument, 'prosemirror', is the name of the top-level shared type
   // that Tiptap's collaboration extension uses by default.
-  return yDocToProsemirrorJSON(ydoc, 'prosemirror') as unknown as ProseMirrorJSONDocument;
+  return yDocToProsemirrorJSON(
+    ydoc,
+    'prosemirror'
+  ) as unknown as ProseMirrorJSONDocument;
 }

@@ -19,11 +19,16 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  let {
+  const {
     class: additionalClasses = '',
     children, // Svelte 5 snippet for content
     ...rest
-  } = $props<HTMLButtonAttributes & { class?: string; children?: import('svelte').Snippet }>();
+  } = $props<
+    HTMLButtonAttributes & {
+      class?: string;
+      children?: import('svelte').Snippet;
+    }
+  >();
 </script>
 
 <button class="action-button {additionalClasses}" {...rest}>

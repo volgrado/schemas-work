@@ -1,12 +1,13 @@
-﻿<!-- src/routes/+page.svelte -->
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from 'svelte';
+  import MainLayout from '$lib/core/ui/layout/MainLayout.svelte';
+  import { fileSystemStore } from '$lib/modules/file-system/stores/fileSystemStore.svelte';
+  import {
+    create as createDocument,
+    load as loadDocument,
+  } from '$lib/modules/editor/ui/documentStore.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
-  import { load as loadDocument, create as createDocument } from '$lib/stores/documentStore.svelte';
-  import { fileSystemStore } from '@modules/file-system';
   import { WELCOME_SEEN_KEY } from '$lib/constants';
-  import MainApp from '$lib/components/app/MainApp.svelte';
-  import { browser } from '$app/environment';
 
   let showWelcomeUI = $state(false);
   let showMainUI = $state(false);
@@ -46,14 +47,17 @@
           return;
         }
       }
-      
+
       console.log('[+page] No last active doc, checking all items');
-      const allSchemas = fileSystemStore.getAll().filter(
-        (i) => i.type === 'schema'
-      );
-      
+      const allSchemas = fileSystemStore
+        .getAll()
+        .filter((i: any) => i.type === 'schema');
+
       if (allSchemas.length > 0) {
-        console.log('[+page] Loading first available schema:', allSchemas[0].id);
+        console.log(
+          '[+page] Loading first available schema:',
+          allSchemas[0].id
+        );
         await loadDocument(allSchemas[0].id);
       } else {
         console.log('[+page] No schemas found, creating new one');
@@ -82,17 +86,19 @@
 
 {#if showWelcomeUI}
   {#if showIntroAnimation}
-    {#await import('$lib/components/layout/WelcomeAnimator.svelte') then { default: WelcomeAnimator }}
+    {#await import('$lib/core/ui/layout/WelcomeAnimator.svelte') then { default: WelcomeAnimator }}
       <WelcomeAnimator oncomplete={handleIntroComplete} />
     {/await}
   {:else}
-    {#await import('$lib/components/layout/WelcomeScreen.svelte') then { default: WelcomeScreen }}
+    {#await import('$lib/core/ui/layout/WelcomeScreen.svelte') then { default: WelcomeScreen }}
       <WelcomeScreen onstart={onWelcomeAnimationComplete} />
     {/await}
   {/if}
 {:else if showMainUI}
-  <MainApp onShowWelcome={() => {
-    showMainUI = false;
-    showWelcomeUI = true;
-  }} />
+  <MainLayout
+    onShowWelcome={() => {
+      showMainUI = false;
+      showWelcomeUI = true;
+    }}
+  />
 {/if}

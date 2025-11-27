@@ -24,12 +24,17 @@
   import { computePosition, flip, shift } from '@floating-ui/dom';
   import type { VirtualElement } from '@floating-ui/dom';
 
-  let {
+  const {
     x,
     y,
     onClose,
     children, // Accept the children render snippet
-  } = $props<{ x: number; y: number; onClose: () => void; children: import('svelte').Snippet }>();
+  } = $props<{
+    x: number;
+    y: number;
+    onClose: () => void;
+    children: import('svelte').Snippet;
+  }>();
 
   let menuElement = $state<HTMLDivElement | null>(null);
   let floatingStyle = $state('opacity: 0;'); // Start invisible to prevent flash before position calculation
@@ -116,7 +121,7 @@
     position: fixed;
     z-index: var(--z-dropdown);
     min-width: var(--width-menu-min);
-    
+
     /* Premium Glassmorphism */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));

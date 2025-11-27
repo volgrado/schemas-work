@@ -10,3 +10,12 @@ export * from './domain/schema';
 export * from './domain/slashCommands';
 export { EditorController } from './infra/EditorController';
 export { default as CardEditorPanel } from './ui/CardEditorPanel.svelte';
+export * from './infra/extensions/SlashCommandExtension';
+export * from './infra/extensions/DataPosExtension';
+export * from './infra/extensions/TTSHighlightExtension';
+export * from './infra/extensions/NodeIdExtension';
+export { default as SlashMenuController } from './ui/SlashMenuController.svelte';
+
+// Node Detail
+export { default as NodeDetailPanel } from './ui/node-detail/NodeDetailPanel.svelte';
+export { default as NodeDetailHeader } from './ui/node-detail/NodeDetailHeader.svelte';

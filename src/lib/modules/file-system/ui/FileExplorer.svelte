@@ -34,34 +34,37 @@
     close as closeCommandBar,
     setCurrentParentId,
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { setActiveView } from '$lib/stores/uiStore.svelte';
+  import { setActiveView } from '$lib/core/ui/uiStore.svelte';
+  import { fileSystemStore } from '$lib/modules/file-system/stores/fileSystemStore.svelte';
   import {
-    documentState,
-    load as loadDocument,
     create as createDocument,
-  } from '$lib/stores/documentStore.svelte';
-  
-  import { fileSystemStore } from '@modules/file-system';
-  import type { FileSystemNode } from '../domain/FileSystemNode';
+    load as loadDocument,
+    documentState,
+  } from '$lib/modules/editor/ui/documentStore.svelte';
+  import { dataService } from '$lib/modules/file-system/infra/dataService';
   import * as errorService from '$lib/core/services/errorService';
-  import { dataService } from '$lib/services/dataService';
+  import type { FileSystemNode } from '$lib/modules/file-system/domain/types';
 
   // --- Component State (Svelte 5 Runes) ---
 
   /** The ID of the current folder being viewed. Null implies the root directory. */
   let currentParentId = $state<string | null>(null);
-  
+
   /** Derived list of items in the current folder, sorted by Type (Folder > Schema) then Name. */
-  let items = $derived(fileSystemStore.getChildren(currentParentId).sort((a, b) => {
-      if (a.type === 'folder' && b.type === 'schema') return -1;
-      if (a.type === 'schema' && b.type === 'folder') return 1;
-      return a.title.localeCompare(b.title);
-  }));
+  const items = $derived(
+    fileSystemStore
+      .getChildren(currentParentId)
+      .sort((a: FileSystemNode, b: FileSystemNode) => {
+        if (a.type === 'folder' && b.type === 'schema') return -1;
+        if (a.type === 'schema' && b.type === 'folder') return 1;
+        return a.title.localeCompare(b.title);
+      })
+  );
 
   // --- Local UI State ---
   let breadcrumbs = $state<FileSystemNode[]>([]);
-  let isLoading = $state(false);
-  let error = $state<string | null>(null);
+  const isLoading = $state(false);
+  const error = $state<string | null>(null);
 
   // Action States
   let isProcessingAction = $state(false);
@@ -196,7 +199,10 @@
         title: trimmedTitle,
       });
       toast.success(
-        i18n.t('file_explorer.toast.renamed', { oldTitle, newTitle: trimmedTitle })
+        i18n.t('file_explorer.toast.renamed', {
+          oldTitle,
+          newTitle: trimmedTitle,
+        })
       );
     } catch (e) {
       const errorMessage =
@@ -248,10 +254,12 @@
             try {
               await dataService.deleteNode(item.id);
               toast.success(i18n.t('file_explorer.toast.item_deleted'));
-              
+
               // If the deleted item was the active document, switch context
               if (documentState.docId === item.id) {
-                const allSchemas = fileSystemStore.getAll().filter((i) => i.type === 'schema');
+                const allSchemas = fileSystemStore
+                  .getAll()
+                  .filter((i: FileSystemNode) => i.type === 'schema');
                 if (allSchemas.length > 0) {
                   await loadDocument(allSchemas[0].id);
                 } else {
@@ -292,7 +300,7 @@
     if (!childId || !ancestorId) return false;
     try {
       const all = fileSystemStore.getAll();
-      const map = new Map(all.map((i) => [i.id, i]));
+      const map = new Map(all.map((i: FileSystemNode) => [i.id, i]));
       let current = map.get(childId);
       while (current && current.parentId) {
         if (current.parentId === ancestorId) return true;
@@ -322,8 +330,8 @@
     }
     // Prevent dropping a folder into its own child
     if (isDescendant(draggedItemId, item.id)) {
-        dropTargetId = null;
-        return;
+      dropTargetId = null;
+      return;
     }
     event.preventDefault();
     dropTargetId = item.id;
@@ -339,7 +347,9 @@
       return;
     }
 
-    const targetItem = targetFolderId ? fileSystemStore.getItem(targetFolderId) : null;
+    const targetItem = targetFolderId
+      ? fileSystemStore.getItem(targetFolderId)
+      : null;
     if (targetFolderId !== null && targetItem?.type !== 'folder') {
       resetDragState();
       return;
@@ -350,11 +360,15 @@
     try {
       await fileSystemStore.moveItem(draggedItemId, targetFolderId);
       toast.success(
-        i18n.t('file_explorer.toast.item_moved', { title: movedItem?.title ?? '' })
+        i18n.t('file_explorer.toast.item_moved', {
+          title: movedItem?.title ?? '',
+        })
       );
     } catch (e) {
       const errorMessage =
-        e instanceof Error ? e.message : i18n.t('file_explorer.toast.move_failed');
+        e instanceof Error
+          ? e.message
+          : i18n.t('file_explorer.toast.move_failed');
       toast.error(errorMessage);
     } finally {
       resetDragState();
@@ -382,16 +396,25 @@
     y={contextMenu.y}
     onClose={() => (contextMenu = null)}
   >
-    <button type="button" onclick={() => contextMenu && handleItemClick(contextMenu.item)}>
+    <button
+      type="button"
+      onclick={() => contextMenu && handleItemClick(contextMenu.item)}
+    >
       <Icon name="folder" size={16} />
       <span>{i18n.t('file_explorer.context_menu.open')}</span>
     </button>
     <hr />
-    <button type="button" onclick={() => contextMenu && startEditing(contextMenu.item)}>
+    <button
+      type="button"
+      onclick={() => contextMenu && startEditing(contextMenu.item)}
+    >
       <Icon name="edit-3" size={16} />
       <span>{i18n.t('file_explorer.context_menu.rename')}</span>
     </button>
-    <button type="button" onclick={() => contextMenu && handleDeleteItem(contextMenu.item)}>
+    <button
+      type="button"
+      onclick={() => contextMenu && handleDeleteItem(contextMenu.item)}
+    >
       <Icon name="trash-2" size={16} />
       <span>{i18n.t('file_explorer.context_menu.delete')}</span>
     </button>
@@ -418,7 +441,6 @@
       <Icon name="folder" size={14} />
       <span>{i18n.t('file_explorer.header.new_folder_button')}</span>
     </Button>
-
   </ViewHeader>
 
   <!-- Main List Area -->

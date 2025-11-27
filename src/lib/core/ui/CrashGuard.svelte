@@ -1,29 +1,17 @@
 ﻿<script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import Button from '@ui/Button.svelte';
-  import Icon from '@ui/Icon.svelte';
-  import * as backupService from '$lib/services/features/backupService';
-  import { fileSystemStore } from '@modules/file-system';
+  import Icon from '$lib/core/ui/Icon.svelte';
+
+  import { fileSystemStore } from '$lib/modules/file-system/stores/fileSystemStore.svelte';
   import { toast } from 'svelte-sonner';
 
-  let { error } = $props<{ error: unknown }>();
+  const { error } = $props<{ error: unknown }>();
 
   let isExpanded = $state(false);
 
   function handleReload() {
     window.location.reload();
-  }
-
-  async function handleEmergencyBackup() {
-    try {
-      const password = prompt(i18n.t('backup_service.prompts.enter_password_export'));
-      if (!password) return;
-
-      await backupService.exportVault(password);
-    } catch (e) {
-      console.error('Emergency backup failed:', e);
-      alert('Backup failed. Please try to copy your data manually if possible.');
-    }
   }
 
   async function handleFactoryReset() {
@@ -38,7 +26,9 @@
         window.location.reload();
       } catch (e) {
         console.error('Factory reset failed:', e);
-        alert('Factory reset failed. You may need to clear site data manually in browser settings.');
+        alert(
+          'Factory reset failed. You may need to clear site data manually in browser settings.'
+        );
       }
     }
   }
@@ -55,12 +45,17 @@ Flight Recorder:
 ${getTelemetry(error)}
     `.trim();
 
-    navigator.clipboard.writeText(report).then(() => {
-      toast.success('Error report copied to clipboard!');
-      window.open('https://github.com/your-repo/issues/new', '_blank');
-    }).catch(() => {
-      alert('Could not copy report. Please copy it manually from the details below.');
-    });
+    navigator.clipboard
+      .writeText(report)
+      .then(() => {
+        toast.success('Error report copied to clipboard!');
+        window.open('https://github.com/your-repo/issues/new', '_blank');
+      })
+      .catch(() => {
+        alert(
+          'Could not copy report. Please copy it manually from the details below.'
+        );
+      });
   }
 
   function getErrorMessage(err: unknown): string {
@@ -109,11 +104,13 @@ ${getTelemetry(error)}
     </div>
 
     <div class="details">
-      <button class="toggle-details" onclick={() => isExpanded = !isExpanded}>
-        {isExpanded ? i18n.t('error_boundary.details.hide') : i18n.t('error_boundary.details.show')}
+      <button class="toggle-details" onclick={() => (isExpanded = !isExpanded)}>
+        {isExpanded
+          ? i18n.t('error_boundary.details.hide')
+          : i18n.t('error_boundary.details.show')}
         <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
       </button>
-      
+
       {#if isExpanded}
         <pre class="error-log">
 {getErrorMessage(error)}
@@ -158,8 +155,6 @@ ${getTelemetry(error)}
     color: var(--color-danger);
     margin-bottom: var(--space-sm);
   }
-
-
 
   .divider {
     height: 1px;

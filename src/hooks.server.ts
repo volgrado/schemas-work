@@ -6,7 +6,7 @@
  * requests and responses. This is primarily used for setting the `lang` attribute
  * on the HTML element based on the current route.
  */
-import { building } from '$app/environment';
+
 import type { Handle } from '@sveltejs/kit';
 
 /**

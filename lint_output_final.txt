@@ -1,0 +1,337 @@
+
+> schemas-work@0.0.1 lint
+> prettier --check . && eslint .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\app.d.ts
+  22:15  error  An empty interface declaration allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\hooks.server.ts
+  9:10  warning  'building' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\app-shell\AppInitializer.svelte
+  77:5  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\AppController.ts
+  177:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\errorService.ts
+   13:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:17  error    Empty block statement                     no-empty
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\integrityService.ts
+    9:13  warning  'errorService' is defined but never used  @typescript-eslint/no-unused-vars
+  135:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  161:29  warning  'report' is defined but never used        @typescript-eslint/no-unused-vars
+  168:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\migrationService.ts
+  14:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\CrashGuard.svelte
+  17:18  warning  'handleEmergencyBackup' is defined but never used  @typescript-eslint/no-unused-vars
+  91:33  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\HelpTooltip.svelte
+  18:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\Icon.svelte
+  29:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\Modal.svelte
+  41:5  warning  'width' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\PieChart.svelte
+  31:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\TextInputModal.svelte
+  5:10  warning  'Icon' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\WorkspaceView.svelte
+  29:5   warning  'nodeDetailState' is defined but never used    @typescript-eslint/no-unused-vars
+  41:25  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  48:11  warning  'revision' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  70:43  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  84:29  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\utils\debounce.ts
+  23:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\aiService.ts
+  73:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\domain\aiSchemas.ts
+  33:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\embeddingStrategies.ts
+  71:18  warning  'text' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\neuralIndexService.ts
+  24:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:32  warning  'reject' is defined but never used        @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\prompts.ts
+  19:49  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\providers\geminiProvider.ts
+  92:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\AIHelperModal.svelte
+  91:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\CardPreview.svelte
+   79:7   error    Each block should have a key      svelte/require-each-key
+   79:31  warning  '_' is defined but never used     @typescript-eslint/no-unused-vars
+  103:20  error    `{@html}` can lead to XSS attack  svelte/no-at-html-tags
+  117:19  error    Each block should have a key      svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\StrategySessionModal.svelte
+   55:8   warning  'Card' is defined but never used          @typescript-eslint/no-unused-vars
+  255:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  294:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  489:17  error    Each block should have a key              svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\domain\commandService.ts
+  22:3  warning  'openApiKeyModal' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\domain\types.ts
+  10:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\DeckOptionsView.svelte
+  92:33  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\MainView.svelte
+  27:9  warning  'openApiKeyModal' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  44:5  error    Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\SearchView.svelte
+   20:12  warning  'searchCommands' is defined but never used                    @typescript-eslint/no-unused-vars
+   47:7   error    Prefer using writable $derived instead of $state and $effect  svelte/prefer-writable-derived
+  120:9   error    Unexpected lexical declaration in case block                  no-case-declarations
+  249:9   error    Each block should have a key                                  svelte/require-each-key
+  301:19  error    `{@html}` can lead to XSS attack                              svelte/no-at-html-tags
+  305:21  error    `{@html}` can lead to XSS attack                              svelte/no-at-html-tags
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\StudyHubView.svelte
+  77:33  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\commandBarStore.svelte.ts
+  43:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  97:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\slashMenuStore.svelte.ts
+  72:31  error  Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+  88:31  error  Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\diagnostics\ui\ErrorDiagnosticModal.svelte
+  97:7  error  `{@html}` can lead to XSS attack  svelte/no-at-html-tags
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\modalTypes.ts
+  11:8   error    ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+  26:27  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\nodeDetailService.ts
+  51:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\schema.ts
+  43:3  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\slashCommands.ts
+    9:10  warning  'openStrategySession' is defined but never used  @typescript-eslint/no-unused-vars
+   62:26  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  357:38  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\EditorController.ts
+  234:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  235:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  237:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\documentService.ts
+  38:13  warning  'Y' is defined but never used       @typescript-eslint/no-unused-vars
+  39:15  warning  'Editor' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\Math.ts
+   43:7  error  'component' is never reassigned. Use 'const' instead  prefer-const
+  106:7  error  'component' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\Selection.ts
+  35:11  error  Unexpected aliasing of 'this' to local variable  @typescript-eslint/no-this-alias
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\SlashCommandExtension.ts
+  62:13  warning  'editor' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  62:21  warning  'render' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\CardEditorController.svelte.ts
+  41:18  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  43:28  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\CardEditorPanel.svelte
+  255:50  warning  'item' is defined but never used    @typescript-eslint/no-unused-vars
+  370:23  error    Each block should have a key        svelte/require-each-key
+  370:54  warning  'option' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\DocumentView.svelte
+  19:21  warning  'onDestroy' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\FormulaEditorModal.svelte
+  17:5  warning  'nodePos' is assigned a value but never used                                                                                                                       @typescript-eslint/no-unused-vars
+  54:9  error    Don't manipulate the DOM directly. The Svelte runtime can get confused if there is a difference between the actual DOM and the DOM expected by the Svelte runtime  svelte/no-dom-manipulating
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\MathPreviewNodeView.svelte
+  42:7  error  Don't manipulate the DOM directly. The Svelte runtime can get confused if there is a difference between the actual DOM and the DOM expected by the Svelte runtime  svelte/no-dom-manipulating
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\MediaEditModal.svelte
+  15:17   warning  'HTMLInputAttributes' is defined but never used  @typescript-eslint/no-unused-vars
+  99:113  error    Unnecessary escape character: \?                 no-useless-escape
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\SlashMenuController.svelte
+  42:11  warning  'index' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  75:9   error    Each block should have a key                svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\NodeDetailEditor.svelte
+  20:21  warning  'onDestroy' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\file-system\stores\fileSystemStore.svelte.ts
+  208:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\infra\backupService.ts
+  78:30  warning  'event' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\ApiKeyModal.svelte
+  74:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\api-key-modal\ApiKeyModelsTab.svelte
+  38:11  error  Each block should have a key  svelte/require-each-key
+  55:13  error  Each block should have a key  svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\settingsStore.svelte.ts
+  46:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:27  warning  'key' is defined but never used           @typescript-eslint/no-unused-vars
+  87:40  warning  'model' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\cardService.ts
+  101:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\reviewSessionService.ts
+  86:5  warning  'deckIds' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\statisticsService.ts
+  13:15  warning  'SRS' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\types.ts
+  8:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\QuickCardEditorModal.svelte
+  150:29  warning  'item' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\RelinkCardModal.svelte
+  100:33  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\ReviewController.svelte
+   43:8   warning  'ReviewQuality' is defined but never used  @typescript-eslint/no-unused-vars
+  253:19  error    Each block should have a key               svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\domain\ttsService.ts
+  49:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\domain\types.ts
+  10:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\infra\ttsUtils.ts
+  13:7  warning  'SUPPORTED_NODE_TYPES' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\infra\webSpeechTTSService.ts
+  64:34  warning  'reject' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\domain\TreeVisualizer.ts
+    2:30  warning  'TreeLayout' is defined but never used    @typescript-eslint/no-unused-vars
+  425:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  425:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  433:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  433:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  444:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  457:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  458:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  468:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  485:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  490:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  495:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\domain\types.ts
+  8:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\ui\StandardTree.svelte
+   15:17  warning  'Selection' is defined but never used                                      @typescript-eslint/no-unused-vars
+   15:28  warning  'BaseType' is defined but never used                                       @typescript-eslint/no-unused-vars
+   19:5   warning  'TreeLayout' is defined but never used                                     @typescript-eslint/no-unused-vars
+   32:5   warning  'DOMSerializer' is defined but never used                                  @typescript-eslint/no-unused-vars
+   48:9   warning  'dispatch' is assigned a value but never used                              @typescript-eslint/no-unused-vars
+   58:19  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   59:7   warning  'isD3Loaded' is assigned a value but never used                            @typescript-eslint/no-unused-vars
+   62:55  warning  'd3Transition' is assigned a value but never used                          @typescript-eslint/no-unused-vars
+  210:29  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  228:23  error    Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  336:5   error    Expected an assignment or function call and instead saw an expression      @typescript-eslint/no-unused-expressions
+  397:42  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  422:36  error    Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+  542:13  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  550:13  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  577:26  error    Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  617:41  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  621:40  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  633:24  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  640:13  error    Expected an assignment or function call and instead saw an expression      @typescript-eslint/no-unused-expressions
+  648:31  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  702:28  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  792:24  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  794:37  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  809:64  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  820:64  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\ui\ViewSwitcher.svelte
+  20:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\canvas-themes.ts
+   73:10  warning  'drawDustLane' is defined but never used  @typescript-eslint/no-unused-vars
+  140:10  warning  'drawFilament' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\i18n.svelte.ts
+   13:43  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   67:28  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   71:16  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  123:21  error    Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\tiptapUtils.ts
+  19:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\yjsUtils.ts
+  15:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\routes\+page.svelte
+  54:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\service-worker.ts
+  108:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+??? 170 problems (43 errors, 127 warnings)
+

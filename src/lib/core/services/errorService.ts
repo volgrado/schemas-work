@@ -22,8 +22,9 @@ const CRASH_LOOP_THRESHOLD = 3;
 const CRASH_LOOP_WINDOW_MS = 60000; // 1 minute
 
 // --- STATE ---
-let flightRecorderBuffer: string[] = [];
-let recentErrorCounts: Record<string, { count: number; timestamp: number }> = {};
+const flightRecorderBuffer: string[] = [];
+const recentErrorCounts: Record<string, { count: number; timestamp: number }> =
+  {};
 
 // --- TELEMETRY (FLIGHT RECORDER) ---
 
@@ -34,12 +35,15 @@ let recentErrorCounts: Record<string, { count: number; timestamp: number }> = {}
 export function recordAction(action: string, data?: any): void {
   const timestamp = new Date().toISOString().split('T')[1].slice(0, -1); // HH:mm:ss.sss
   let entry = `[${timestamp}] ${action}`;
-  
+
   if (data) {
     try {
       // Simple sanitization for privacy (very basic)
       const safeData = JSON.stringify(data, (key, value) => {
-        if (key.toLowerCase().includes('password') || key.toLowerCase().includes('key')) {
+        if (
+          key.toLowerCase().includes('password') ||
+          key.toLowerCase().includes('key')
+        ) {
           return '***MASKED***';
         }
         return value;
@@ -78,18 +82,18 @@ export function setSafeMode(enabled: boolean): void {
 
 function checkCrashLoop(): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const now = Date.now();
     const rawTimestamps = localStorage.getItem(CRASH_TIMESTAMPS_KEY);
     let timestamps: number[] = rawTimestamps ? JSON.parse(rawTimestamps) : [];
-    
+
     // Filter out old crashes
-    timestamps = timestamps.filter(t => now - t < CRASH_LOOP_WINDOW_MS);
+    timestamps = timestamps.filter((t) => now - t < CRASH_LOOP_WINDOW_MS);
     timestamps.push(now);
-    
+
     localStorage.setItem(CRASH_TIMESTAMPS_KEY, JSON.stringify(timestamps));
-    
+
     if (timestamps.length >= CRASH_LOOP_THRESHOLD) {
       console.error('[Error Service] Crash loop detected! Enabling Safe Mode.');
       setSafeMode(true);
@@ -133,12 +137,15 @@ export function reportError(
   const errorKey = String(error);
   const now = Date.now();
   const recent = recentErrorCounts[errorKey];
-  
+
   if (recent && now - recent.timestamp < 1000) {
     recent.count++;
     if (recent.count > 10) {
       if (recent.count === 11) {
-        console.warn('[Error Service] Rate limiting active for error:', errorKey);
+        console.warn(
+          '[Error Service] Rate limiting active for error:',
+          errorKey
+        );
       }
       return; // Drop error
     }
@@ -157,8 +164,13 @@ export function reportError(
     stack = error.stack;
   } else if (typeof error === 'string') {
     message = error;
-  } else if (typeof error === 'object' && error !== null && isPotentialError(error)) {
-    message = typeof error.message === 'string' ? error.message : JSON.stringify(error);
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    isPotentialError(error)
+  ) {
+    message =
+      typeof error.message === 'string' ? error.message : JSON.stringify(error);
     stack = typeof error.stack === 'string' ? error.stack : undefined;
   }
 
@@ -167,7 +179,7 @@ export function reportError(
     message,
     stack,
     context,
-    telemetry: [...flightRecorderBuffer] // Snapshot current telemetry
+    telemetry: [...flightRecorderBuffer], // Snapshot current telemetry
   };
 
   const existingLogs = getLogs();
@@ -178,10 +190,16 @@ export function reportError(
     localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs));
   } catch (e) {
     // Quota management logic (same as before)
-    if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
-       if (trimmedLogs.length > 1) {
+    if (
+      e instanceof DOMException &&
+      (e.name === 'QuotaExceededError' || e.code === 22)
+    ) {
+      if (trimmedLogs.length > 1) {
         try {
-          localStorage.setItem(ERROR_LOGS_STORAGE_KEY, JSON.stringify(trimmedLogs.slice(0, -1)));
+          localStorage.setItem(
+            ERROR_LOGS_STORAGE_KEY,
+            JSON.stringify(trimmedLogs.slice(0, -1))
+          );
         } catch {}
       }
     }

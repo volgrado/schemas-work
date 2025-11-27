@@ -8,33 +8,29 @@
   and "Generate Flashcards".
 
   Features:
-  - **Context Awareness:** Commands are dynamically enabled/disabled based on the editor state
-    (e.g., "Refine Selection" is only enabled if text is selected).
-  - **Reactivity:** Derived state ensures the menu updates instantly as the user interacts with the editor.
+  - Context-aware command generation.
 -->
 <script lang="ts">
-  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
-  import { documentState } from '$lib/stores/documentStore.svelte';
-  import { getAiCommands } from '$lib/modules/command-bar/domain/commandService';
-  import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { i18n } from '$lib/utils/i18n.svelte';
-
-  // --- UI Component Imports ---
-  import Icon from '$lib/core/ui/Icon.svelte';
   import CommandButton from './CommandButton.svelte';
   import ViewHeader from './ViewHeader.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import { documentState } from '$lib/modules/editor/ui/documentStore.svelte';
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
+  import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
+  import { i18n } from '$lib/utils/i18n.svelte';
+  import { getAiCommands } from '../domain/commandService';
 
   // --- Reactive State ---
   // Determine context from global stores
-  let isNodeSelected = $derived(editorState.selectedNodePos !== null);
-  let isTextSelected = $derived(
+  const isNodeSelected = $derived(editorState.selectedNodePos !== null);
+  const isTextSelected = $derived(
     editorState.instance ? !editorState.instance.state.selection.empty : false
   );
-  let hasActiveDocument = $derived(!!documentState.docId);
-  let hasEditorInstance = $derived(!!editorState.instance);
+  const hasActiveDocument = $derived(!!documentState.docId);
+  const hasEditorInstance = $derived(!!editorState.instance);
 
   // Generate the list of available commands based on current context
-  let aiCommands = $derived(
+  const aiCommands = $derived(
     getAiCommands(
       isNodeSelected,
       isTextSelected,

@@ -25,7 +25,10 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import YouTube from '@tiptap/extension-youtube';
 import { ResizableImage } from '$lib/modules/editor/infra/extensions/ResizableImage';
 import { NodeIdExtension } from '$lib/modules/editor/infra/extensions/NodeIdExtension';
-import { MathInline, MathBlock } from '$lib/modules/editor/infra/extensions/Math';
+import {
+  MathInline,
+  MathBlock,
+} from '$lib/modules/editor/infra/extensions/Math';
 
 /**
  * The list of Tiptap extensions that contribute to the document schema.
@@ -45,8 +48,8 @@ const extensions = [
   YouTube.configure({}),
   ResizableImage.configure({}),
   NodeIdExtension, // Adds 'nodeId' attribute to headings
-  MathInline,      // Adds inline LaTeX support
-  MathBlock,       // Adds block-level LaTeX support
+  MathInline, // Adds inline LaTeX support
+  MathBlock, // Adds block-level LaTeX support
 ];
 
 /**

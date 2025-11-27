@@ -9,10 +9,13 @@
  */
 
 import { actionRegistry, type ActionContextType } from './registry';
-import { uiState } from '$lib/stores/uiStore.svelte';
+import { uiState } from '$lib/core/ui/uiStore.svelte';
 
 class KeybindingManager {
-  private isMac = typeof navigator !== 'undefined' ? /Mac|iPod|iPhone|iPad/.test(navigator.platform) : false;
+  private isMac =
+    typeof navigator !== 'undefined'
+      ? /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+      : false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -35,9 +38,11 @@ class KeybindingManager {
     if (!keyString) return;
 
     // 2. Find all actions registered with this shortcut
-    const actions = actionRegistry.getAll().filter(a => 
-      a.shortcuts?.some(s => this.normalizeShortcut(s) === keyString)
-    );
+    const actions = actionRegistry
+      .getAll()
+      .filter((a) =>
+        a.shortcuts?.some((s) => this.normalizeShortcut(s) === keyString)
+      );
 
     if (actions.length === 0) return;
 
@@ -52,8 +57,8 @@ class KeybindingManager {
     }
 
     // 4. Filter actions: Only allow Global actions or actions matching current context
-    const validActions = actions.filter(a => 
-      a.context === 'global' || a.context === currentContext
+    const validActions = actions.filter(
+      (a) => a.context === 'global' || a.context === currentContext
     );
 
     if (validActions.length === 0) return;
@@ -73,7 +78,7 @@ class KeybindingManager {
       if (actionToExecute.isEnabled && !actionToExecute.isEnabled()) {
         return;
       }
-      
+
       // Execute via Registry
       actionRegistry.execute(actionToExecute.id);
 
@@ -93,11 +98,11 @@ class KeybindingManager {
     if (event.ctrlKey && !this.isMac) parts.push('Mod');
     if (event.altKey) parts.push('Alt');
     if (event.shiftKey) parts.push('Shift');
-    
+
     // Ignore modifier-only events
     const key = event.key.toUpperCase();
     if (['CONTROL', 'SHIFT', 'ALT', 'META'].includes(key)) return '';
-    
+
     parts.push(key);
     return parts.join('+');
   }

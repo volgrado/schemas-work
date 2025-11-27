@@ -5,20 +5,20 @@
     onResizeEnd?: () => void;
   }
 
-  let { onResize, onResizeStart, onResizeEnd }: Props = $props();
+  const { onResize, onResizeStart, onResizeEnd }: Props = $props();
 
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault(); // Prevent text selection
     onResizeStart?.();
-    
+
     const startX = e.clientX;
-    
+
     function onMouseMove(e: MouseEvent) {
       // Calculate delta from start position
-      const deltaX = startX - e.clientX; 
+      const deltaX = startX - e.clientX;
       onResize(deltaX);
     }
-    
+
     function onMouseUp() {
       onResizeEnd?.();
       window.removeEventListener('mousemove', onMouseMove);
@@ -26,7 +26,7 @@
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     }
-    
+
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     document.body.style.cursor = 'col-resize';
@@ -35,7 +35,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div 
+<div
   class="resize-handle"
   role="separator"
   aria-orientation="vertical"
@@ -62,7 +62,7 @@
   /* Hover area background */
   .resize-handle:hover,
   .resize-handle:active {
-    background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.05), transparent);
   }
 
   /* The vertical line indicator */
@@ -93,7 +93,7 @@
     border-radius: 0 4px 4px 0;
     margin-left: 0; /* Attached to left edge */
     transition: background-color 0.2s;
-    box-shadow: 1px 0 2px rgba(0,0,0,0.1);
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.1);
   }
 
   .resize-handle:hover::after,

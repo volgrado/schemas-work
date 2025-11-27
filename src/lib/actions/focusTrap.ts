@@ -19,13 +19,16 @@
  */
 export function focusTrap(node: HTMLElement, enabled: boolean = true) {
   // Selector for all standard interactive elements
-  const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  const focusableSelector =
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
   function handleKeydown(event: KeyboardEvent) {
     if (!enabled) return;
     if (event.key !== 'Tab') return;
 
-    const focusable = Array.from(node.querySelectorAll(focusableSelector)) as HTMLElement[];
+    const focusable = Array.from(
+      node.querySelectorAll(focusableSelector)
+    ) as HTMLElement[];
     if (focusable.length === 0) {
       event.preventDefault();
       return;
@@ -58,13 +61,15 @@ export function focusTrap(node: HTMLElement, enabled: boolean = true) {
   if (enabled) {
     // Small timeout to ensure DOM is fully rendered/transitioned
     setTimeout(() => {
-        const focusable = Array.from(node.querySelectorAll(focusableSelector)) as HTMLElement[];
-        if (focusable.length > 0) {
-          focusable[0].focus();
-        } else {
-          // Fallback: focus the container if nothing inside is interactive
-          node.focus();
-        }
+      const focusable = Array.from(
+        node.querySelectorAll(focusableSelector)
+      ) as HTMLElement[];
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        // Fallback: focus the container if nothing inside is interactive
+        node.focus();
+      }
     }, 10);
   }
 
@@ -80,6 +85,6 @@ export function focusTrap(node: HTMLElement, enabled: boolean = true) {
       if (previousFocus && previousFocus.focus) {
         previousFocus.focus();
       }
-    }
+    },
   };
 }

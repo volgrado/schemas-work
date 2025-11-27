@@ -32,7 +32,6 @@ declare module '@tiptap/core' {
       ItalicCommands<ReturnType>,
       HeadingCommands<ReturnType>,
       BulletListCommands<ReturnType> {
-
     /**
      * Custom command extensions can be declared here.
      * Example: Commands related to the `schemaNode` or other custom nodes.

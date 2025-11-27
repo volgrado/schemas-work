@@ -223,9 +223,15 @@
     color: var(--color-text);
   }
 
-  .retention-good { color: var(--color-green-500) !important; }
-  .retention-ok { color: var(--color-orange-500) !important; }
-  .retention-bad { color: var(--color-danger) !important; }
+  .retention-good {
+    color: var(--color-green-500) !important;
+  }
+  .retention-ok {
+    color: var(--color-orange-500) !important;
+  }
+  .retention-bad {
+    color: var(--color-danger) !important;
+  }
 
   .section-title {
     font-size: 0.9rem;

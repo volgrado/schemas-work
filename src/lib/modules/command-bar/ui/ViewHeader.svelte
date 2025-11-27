@@ -19,11 +19,11 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
 
-  let {
-    title,
-    onBack,
-    children,
-  } = $props<{ title: string; onBack?: () => void; children?: import('svelte').Snippet }>();
+  const { title, onBack, children } = $props<{
+    title: string;
+    onBack?: () => void;
+    children?: import('svelte').Snippet;
+  }>();
 </script>
 
 <header class="view-header">

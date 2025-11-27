@@ -89,7 +89,7 @@
     {#if !options}
       <!-- Skeleton Loading State -->
       <div class="options-form">
-        {#each { length: 4 } as _, i (i)}
+        {#each { length: 4 } as _skeleton, i (i)}
           <div class="form-field">
             <div class="skeleton label-skeleton"></div>
             <div class="skeleton input-skeleton"></div>
@@ -116,7 +116,9 @@
           />
         </div>
         <div class="form-field">
-          <label for="learningSteps">{i18n.t('deckOptions.learningSteps')}</label>
+          <label for="learningSteps"
+            >{i18n.t('deckOptions.learningSteps')}</label
+          >
           <Input
             id="learningSteps"
             type="text"
@@ -176,10 +178,19 @@
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   @keyframes pulse {
-    50% { opacity: 0.6; }
+    50% {
+      opacity: 0.6;
+    }
   }
-  .label-skeleton { height: 14px; width: 120px; margin-bottom: 2px; }
-  .input-skeleton { height: 40px; width: 100%; }
+  .label-skeleton {
+    height: 14px;
+    width: 120px;
+    margin-bottom: 2px;
+  }
+  .input-skeleton {
+    height: 40px;
+    width: 100%;
+  }
 
   :global(.dark-theme) .skeleton {
     background-color: var(--color-gray-800);

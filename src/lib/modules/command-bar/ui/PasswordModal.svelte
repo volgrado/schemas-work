@@ -23,7 +23,7 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
   import { commandBarState } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import * as backupService from '$lib/services/features/backupService';
+  import * as backupService from '$lib/modules/settings/infra/backupService';
   import * as errorService from '$lib/core/services/errorService';
 
   // --- Props ---

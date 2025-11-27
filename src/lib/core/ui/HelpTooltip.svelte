@@ -13,7 +13,7 @@
   import Icon from './Icon.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
 
-  let { placement = 'top' as Placement, children } = $props<{
+  const { placement = 'top' as Placement, children } = $props<{
     placement?: Placement;
     children: any;
   }>();
@@ -114,7 +114,7 @@
   .tooltip-content {
     position: fixed;
     z-index: var(--z-tooltip);
-    
+
     /* Premium Glassmorphism */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));

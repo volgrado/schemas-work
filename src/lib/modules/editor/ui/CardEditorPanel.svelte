@@ -26,13 +26,12 @@
   import { cardEditorState } from '$lib/modules/editor/ui/cardEditorStore.svelte';
   import { CardEditorController } from '$lib/modules/editor/ui/CardEditorController.svelte';
   import { autosize } from '$lib/actions/autosize';
-  
+
   // Initialize Controller
   const controller = new CardEditorController();
-  
+
   // Element references for popups/focus management
   let addCardButtonEl = $state<HTMLElement | null>(null);
-
 </script>
 
 {#if cardEditorState.isOpen}
@@ -92,14 +91,18 @@
         >
           <ul class="add-menu" role="menu">
             <li role="presentation">
-              <button role="menuitem" onclick={() => controller.handleAddCard('basic')}
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('basic')}
                 ><Icon name="pen-tool" size={16} />{i18n.t(
                   'card_editor_panel.add_basic'
                 )}</button
               >
             </li>
             <li role="presentation">
-              <button role="menuitem" onclick={() => controller.handleAddCard('input')}
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('input')}
                 ><Icon name="edit-3" size={16} />{i18n.t(
                   'card_editor_panel.add_input'
                 )}</button
@@ -135,8 +138,10 @@
           </ul>
         </Popup>
 
-        <Button onclick={() => controller.closePanel()} variant="primary" size="sm"
-          >{i18n.t('card_editor_panel.done')}</Button
+        <Button
+          onclick={() => controller.closePanel()}
+          variant="primary"
+          size="sm">{i18n.t('card_editor_panel.done')}</Button
         >
       </div>
     </header>
@@ -175,7 +180,9 @@
                     <input
                       id="q-{card.id}"
                       type="text"
-                      placeholder={i18n.t('card_editor_panel.question_placeholder')}
+                      placeholder={i18n.t(
+                        'card_editor_panel.question_placeholder'
+                      )}
                       bind:value={card.content.question}
                       oninput={() => controller.handleUpdate(card)}
                     />
@@ -186,14 +193,16 @@
                     >
                     <textarea
                       id="a-{card.id}"
-                      placeholder={i18n.t('card_editor_panel.answer_placeholder')}
+                      placeholder={i18n.t(
+                        'card_editor_panel.answer_placeholder'
+                      )}
                       bind:value={card.content.answer}
                       oninput={() => controller.handleUpdate(card)}
                       use:autosize
                     ></textarea>
                   </div>
 
-                <!-- Input Card Inputs -->
+                  <!-- Input Card Inputs -->
                 {:else if card.type === 'input'}
                   <div class="field">
                     <label for="p-{card.id}"
@@ -202,14 +211,18 @@
                     <input
                       id="p-{card.id}"
                       type="text"
-                      placeholder={i18n.t('card_editor_panel.prompt_placeholder')}
+                      placeholder={i18n.t(
+                        'card_editor_panel.prompt_placeholder'
+                      )}
                       bind:value={card.content.prompt}
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
                     <label for="e-{card.id}"
-                      >{i18n.t('card_editor_panel.expected_answer_label')}</label
+                      >{i18n.t(
+                        'card_editor_panel.expected_answer_label'
+                      )}</label
                     >
                     <input
                       id="e-{card.id}"
@@ -222,7 +235,7 @@
                     />
                   </div>
 
-                <!-- Sequencing Card Inputs -->
+                  <!-- Sequencing Card Inputs -->
                 {:else if card.type === 'sequencing'}
                   <div class="field">
                     <label for="s-{card.id}"
@@ -245,15 +258,19 @@
                         role="listitem"
                         animate:flip={{ duration: 250 }}
                         draggable="true"
-                        ondragstart={(e) => controller.handleDragStart(itemIndex, e)}
-                        ondragover={(e) => controller.handleDragOver(itemIndex, e)}
+                        ondragstart={(e) =>
+                          controller.handleDragStart(itemIndex, e)}
+                        ondragover={(e) =>
+                          controller.handleDragOver(itemIndex, e)}
                         ondrop={(e) => {
                           e.preventDefault();
                           controller.handleDrop(itemIndex, card);
                         }}
                         ondragend={() => controller.resetDragState()}
-                        class:is-dragging={controller.draggedItemIndex === itemIndex}
-                        class:drop-target={controller.dropTargetIndex === itemIndex &&
+                        class:is-dragging={controller.draggedItemIndex ===
+                          itemIndex}
+                        class:drop-target={controller.dropTargetIndex ===
+                          itemIndex &&
                           controller.draggedItemIndex !== itemIndex}
                       >
                         <span
@@ -270,7 +287,8 @@
                         />
                         <button
                           class="remove-item-button"
-                          onclick={() => controller.removeSequenceItem(card, itemIndex)}
+                          onclick={() =>
+                            controller.removeSequenceItem(card, itemIndex)}
                           ><Icon name="x" size={14} /></button
                         >
                       </div>
@@ -284,20 +302,26 @@
                     )}</button
                   >
 
-                <!-- True/False Card Inputs -->
+                  <!-- True/False Card Inputs -->
                 {:else if card.type === 'true_false'}
                   <div class="field">
-                    <label for="s-{card.id}">{i18n.t('card_editor_panel.statement_label')}</label>
+                    <label for="s-{card.id}"
+                      >{i18n.t('card_editor_panel.statement_label')}</label
+                    >
                     <input
                       id="s-{card.id}"
                       type="text"
-                      placeholder={i18n.t('card_editor_panel.statement_placeholder')}
+                      placeholder={i18n.t(
+                        'card_editor_panel.statement_placeholder'
+                      )}
                       bind:value={card.content.statement}
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
-                    <span class="field-label">{i18n.t('card_editor_panel.is_true_label')}</span>
+                    <span class="field-label"
+                      >{i18n.t('card_editor_panel.is_true_label')}</span
+                    >
                     <div class="radio-group">
                       <label class="radio-label">
                         <input
@@ -322,27 +346,34 @@
                     </div>
                   </div>
 
-                <!-- Multiple Choice Card Inputs -->
+                  <!-- Multiple Choice Card Inputs -->
                 {:else if card.type === 'multiple_choice'}
                   <div class="field">
-                    <label for="q-{card.id}">{i18n.t('card_editor_panel.question_label')}</label>
+                    <label for="q-{card.id}"
+                      >{i18n.t('card_editor_panel.question_label')}</label
+                    >
                     <input
                       id="q-{card.id}"
                       type="text"
-                      placeholder={i18n.t('card_editor_panel.question_placeholder')}
+                      placeholder={i18n.t(
+                        'card_editor_panel.question_placeholder'
+                      )}
                       bind:value={card.content.question}
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
                   <div class="field">
-                    <span class="field-label">{i18n.t('card_editor_panel.options_label')}</span>
+                    <span class="field-label"
+                      >{i18n.t('card_editor_panel.options_label')}</span
+                    >
                     <div class="sequence-items">
-                      {#each card.content.options as option, optIndex}
+                      {#each card.content.options as option, optIndex (optIndex)}
                         <div class="sequence-item">
                           <input
                             type="radio"
                             name="correct-{card.id}"
-                            checked={card.content.correctOptionIndex === optIndex}
+                            checked={card.content.correctOptionIndex ===
+                              optIndex}
                             onchange={() => {
                               card.content.correctOptionIndex = optIndex;
                               controller.handleUpdate(card);
@@ -350,7 +381,9 @@
                           />
                           <input
                             type="text"
-                            placeholder={i18n.t('card_editor_panel.option_placeholder')}
+                            placeholder={i18n.t(
+                              'card_editor_panel.option_placeholder'
+                            )}
                             bind:value={card.content.options[optIndex]}
                             oninput={() => controller.handleUpdate(card)}
                           />
@@ -358,8 +391,14 @@
                             class="remove-item-button"
                             onclick={() => {
                               card.content.options.splice(optIndex, 1);
-                              if (card.content.correctOptionIndex >= card.content.options.length) {
-                                card.content.correctOptionIndex = Math.max(0, card.content.options.length - 1);
+                              if (
+                                card.content.correctOptionIndex >=
+                                card.content.options.length
+                              ) {
+                                card.content.correctOptionIndex = Math.max(
+                                  0,
+                                  card.content.options.length - 1
+                                );
                               }
                               controller.handleUpdate(card);
                             }}

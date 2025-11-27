@@ -4,12 +4,12 @@
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
   // Lazy load KaTeX - import type only
   import type katex from 'katex';
-  import { openModal } from '$lib/stores/modalStore.svelte';
+  import { openModal } from '$lib/modules/editor/ui/modalStore.svelte';
   import type { Modal } from '$lib/types';
   import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- Props from Tiptap Node View ---
-  let { editor, node, getPos, selected } = $props<{
+  const { editor, node, getPos, selected } = $props<{
     editor: Editor;
     node: ProseMirrorNode;
     getPos: () => number | undefined;
@@ -175,7 +175,11 @@
   }
   :global(.dark-theme) .is-block:hover {
     border-color: var(--color-accent);
-    background-color: color-mix(in srgb, var(--color-background-raised), var(--color-accent) 5%);
+    background-color: color-mix(
+      in srgb,
+      var(--color-background-raised),
+      var(--color-accent) 5%
+    );
   }
   :global(.dark-theme) .is-block.is-empty::before,
   :global(.dark-theme) .is-inline.is-empty::before {

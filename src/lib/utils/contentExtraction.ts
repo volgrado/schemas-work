@@ -1,9 +1,13 @@
-import { DOMSerializer, type Node as ProseMirrorNode, type Schema } from 'prosemirror-model';
+import {
+  DOMSerializer,
+  type Node as ProseMirrorNode,
+  type Schema,
+} from 'prosemirror-model';
 
 /**
  * Extracts content from a range in the document, serializing each node individually
  * and attaching its document position as a data attribute.
- * 
+ *
  * @param doc The ProseMirror document node
  * @param startPos The starting position to extract from
  * @param endPos The ending position to extract to
@@ -11,9 +15,9 @@ import { DOMSerializer, type Node as ProseMirrorNode, type Schema } from 'prosem
  * @returns An HTML string with data-pos attributes injected
  */
 export function extractContentWithPositions(
-  doc: ProseMirrorNode, 
-  startPos: number, 
-  endPos: number, 
+  doc: ProseMirrorNode,
+  startPos: number,
+  endPos: number,
   schema: Schema
 ): string {
   const serializer = DOMSerializer.fromSchema(schema);
@@ -23,9 +27,9 @@ export function extractContentWithPositions(
     // Skip the container node itself if it matches startPos exactly (unless it's an isolated node)
     // But usually nodesBetween gives us the children if we pass the range correctly.
     // We only want top-level nodes within the range (paragraphs, lists, etc.)
-    
+
     if (pos < startPos) return true; // Enter children
-    
+
     // We only care about block nodes that can be read
     if (node.isBlock) {
       const dom = serializer.serializeNode(node);
@@ -45,5 +49,8 @@ export function extractContentWithPositions(
     return false;
   });
 
-  return container.innerHTML || '<p class="text-muted">No content under this heading.</p>';
+  return (
+    container.innerHTML ||
+    '<p class="text-muted">No content under this heading.</p>'
+  );
 }

@@ -16,7 +16,7 @@ export const ColorModeExtension = Extension.create({
           apply(tr, prevState) {
             const meta = tr.getMeta('COLOR_MODE_UPDATE');
             const mode = meta !== undefined ? meta : prevState.mode;
-            
+
             if (mode !== 'by-path') {
               return { mode, decorations: DecorationSet.empty };
             }
@@ -33,11 +33,11 @@ export const ColorModeExtension = Extension.create({
               if (node.type.name === 'heading') {
                 const level = node.attrs.level;
                 const nodeId = node.attrs.nodeId;
-                
+
                 if (level === 1) {
                   // H1 is the root, it starts a new context but has no "branch color" itself.
                   // We reset the branch ID so H1 and any immediate non-H2 children (if any valid) don't get colored.
-                  currentBranchId = null; 
+                  currentBranchId = null;
                 } else if (level === 2) {
                   // H2 starts a new branch.
                   currentBranchId = nodeId;
@@ -46,28 +46,31 @@ export const ColorModeExtension = Extension.create({
                 if (currentBranchId) {
                   let hash = 0;
                   for (let i = 0; i < currentBranchId.length; i++) {
-                    hash = ((hash << 5) - hash) + currentBranchId.charCodeAt(i);
+                    hash = (hash << 5) - hash + currentBranchId.charCodeAt(i);
                     hash = hash & hash;
                   }
                   const index = Math.abs(hash) % 6; // 6 gradients available
-                  
+
                   const deco = Decoration.node(pos, pos + node.nodeSize, {
-                    class: `branch-color-${index}`
+                    class: `branch-color-${index}`,
                   });
                   decorations.push(deco);
                 }
               }
             });
 
-            return { mode, decorations: DecorationSet.create(doc, decorations) };
-          }
+            return {
+              mode,
+              decorations: DecorationSet.create(doc, decorations),
+            };
+          },
         },
         props: {
           decorations(state) {
             return this.getState(state)?.decorations || DecorationSet.empty;
-          }
-        }
-      })
+          },
+        },
+      }),
     ];
-  }
+  },
 });

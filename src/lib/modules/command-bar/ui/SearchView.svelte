@@ -10,18 +10,15 @@
   - **Keyboard Navigation:** Supports Arrow keys for selection and Enter for execution.
   - **Result Highlighting:** Uses `highlightText` to visually emphasize matches.
   - **Debouncing:** Limits search API calls for performance.
-
-  @props
-  - `query` (bindable string): The current search text entered by the user.
-  - `openApiKeyModal` (function): Callback to open settings if needed by a command.
 -->
 <script lang="ts">
-  import { close as closeCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { load as loadDocument } from '$lib/stores/documentStore.svelte';
   import { debounce } from '$lib/core/utils/debounce';
-  import { performSearch } from '$lib/modules/search/domain/searchService';
-  import type { SearchOptions } from '$lib/modules/command-bar/domain/commandService';
+  import { close as closeCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
+  import { load as loadDocument } from '$lib/modules/editor/ui/documentStore.svelte';
   import type { Search } from '$lib/types';
+  import { performSearch } from '$lib/modules/search/domain/searchService';
+
+  import type { SearchOptions } from '$lib/modules/command-bar/domain/commandService';
   import {
     getRecentSearches,
     addRecentSearch,
@@ -212,6 +209,11 @@
       activeElement.scrollIntoView({ block: 'nearest' });
     }
   });
+  function getItemKey(item: ResultItem, index: number): string | number {
+    if ('id' in item) return item.id;
+    if ('docId' in item) return item.docId + (item.nodeId || '');
+    return index;
+  }
 </script>
 
 <div
@@ -249,8 +251,9 @@
             ? i18n.t('search_view.group.commands')
             : i18n.t('search_view.group.knowledge')}
         </h3>
-        {#each group.items as item, itemIndexInGroup}
-          {@const flatIndex = groupStartIndices()[groupIndex] + itemIndexInGroup}
+        {#each group.items as item, itemIndexInGroup (getItemKey(item, itemIndexInGroup))}
+          {@const flatIndex =
+            groupStartIndices()[groupIndex] + itemIndexInGroup}
           {#if group.type === 'Commands'}
             {@const command = item as Command}
             {@const enabled = command.isEnabled ? command.isEnabled() : true}
@@ -300,10 +303,12 @@
                   </div>
                 {/if}
                 <div class="result-term">
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html highlightText(parsed.term, query)}
                 </div>
                 {#if parsed.description}
                   <div class="result-description">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                     {@html highlightText(parsed.description, query)}
                   </div>
                 {/if}
@@ -326,7 +331,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .results-container {
     height: 100%;
     overflow-y: auto;

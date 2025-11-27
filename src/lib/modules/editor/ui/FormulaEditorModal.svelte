@@ -113,10 +113,7 @@
 </script>
 
 <Modal title={i18n.t('math_editor.title')} bind:show onClose={requestClose}>
-  <form
-    class="formula-editor-modal-wrapper"
-    onsubmit={handleSave}
-  >
+  <form class="formula-editor-modal-wrapper" onsubmit={handleSave}>
     <div class="editor-pane">
       <div class="symbol-toolbar">
         <Button

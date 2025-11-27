@@ -3,7 +3,7 @@
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
 
-  let { error } = $props<{ error: unknown }>();
+  const { error } = $props<{ error: unknown }>();
 
   function reload() {
     window.location.reload();

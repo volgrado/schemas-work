@@ -20,7 +20,7 @@
     slashMenuState,
     setActiveGroup,
     triggerCommandByIndex,
-  } from '$lib/stores/slashMenuStore.svelte';
+  } from '$lib/modules/command-bar/ui/slashMenuStore.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
   import { fade, fly } from 'svelte/transition';
@@ -40,12 +40,13 @@
 
     // Dependency on selectedIndex triggers re-run
     const index = slashMenuState.selectedIndex;
-    
+
     tick().then(() => {
-       const selectedItem = itemsListEl?.querySelector<HTMLElement>('.is-selected');
-       if (selectedItem) {
-         selectedItem.scrollIntoView({ block: 'nearest' });
-       }
+      const selectedItem =
+        itemsListEl?.querySelector<HTMLElement>('.is-selected');
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: 'nearest' });
+      }
     });
   });
 </script>
@@ -71,7 +72,7 @@
     {#if slashMenuState.allItems.length > 0}
       <!-- Group Tabs (e.g., "Content", "Media", "AI") -->
       <div class="group-tabs" role="tablist">
-        {#each slashMenuState.groups as group, index}
+        {#each slashMenuState.groups as group, index (group)}
           <button
             class="group-tab"
             class:is-active={index === slashMenuState.activeGroupIndex}
@@ -81,12 +82,15 @@
           >
             {group}
             {#if index === slashMenuState.activeGroupIndex}
-              <div class="active-indicator" transition:fade={{ duration: 150 }}></div>
+              <div
+                class="active-indicator"
+                transition:fade={{ duration: 150 }}
+              ></div>
             {/if}
           </button>
         {/each}
       </div>
-      
+
       <!-- Scrollable List of Commands -->
       <div class="items-list" bind:this={itemsListEl} role="listbox">
         {#each slashMenuState.filteredItems as item, index (item.title)}
@@ -133,8 +137,10 @@
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    
+    box-shadow:
+      var(--shadow-xl),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
@@ -281,13 +287,13 @@
     color: var(--color-text-secondary);
     font-size: 0.9rem;
   }
-  
+
   /* --- Theme Overrides --- */
   :global(.dark-theme) .slash-menu-container {
     background: rgba(22, 20, 29, 0.85);
     border-color: var(--color-border);
   }
-  
+
   :global(.dark-theme) .menu-item.is-selected {
     background-color: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);

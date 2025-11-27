@@ -1,4 +1,4 @@
-import type { FileSystemNode } from '../domain/FileSystemNode';
+import type { FileSystemNode } from '../domain/types';
 import { DIRECTORY_STORAGE_KEY } from '$lib/constants';
 
 export class LocalStorageAdapter {

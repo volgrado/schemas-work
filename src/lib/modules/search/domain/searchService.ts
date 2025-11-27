@@ -11,8 +11,11 @@
  * - Path generation for breadcrumbs.
  */
 
-import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
-import { fileSystemStore } from '@modules/file-system';
+import {
+  neuralIndexService,
+  type ScoredChunk,
+} from '$lib/modules/ai/neuralIndexService';
+import { fileSystemStore } from '$lib/modules/file-system/stores/fileSystemStore.svelte';
 import type { SchemaMetadata } from '$lib/types';
 import { searchCommands, type SearchOptions } from '@modules/command-bar';
 import type { Search } from '$lib/types';
@@ -126,31 +129,33 @@ async function findContent(
 
   const topChunks = chunksResult.value;
 
-  const results: (Search.ContentResult | null)[] = topChunks.map((chunk) => {
-    const doc = docMap.get(chunk.docId);
-    if (!doc) return null;
+  const results: (Search.ContentResult | null)[] = topChunks.map(
+    (chunk: ScoredChunk) => {
+      const doc = docMap.get(chunk.docId);
+      if (!doc) return null;
 
-    // Format the content for display
-    // Assuming chunk content is stored as "Term\nDescription: ..."
-    const snippetParts = chunk.content.split('\nDescription: ');
-    const term = snippetParts[0];
-    const description = snippetParts[1] || '';
-    const centeredDescription = createCenteredSnippet(
-      description,
-      queryText,
-      150
-    );
-    const finalSnippet = `${term}\nDescription: ${centeredDescription}`;
+      // Format the content for display
+      // Assuming chunk content is stored as "Term\nDescription: ..."
+      const snippetParts = chunk.content.split('\nDescription: ');
+      const term = snippetParts[0];
+      const description = snippetParts[1] || '';
+      const centeredDescription = createCenteredSnippet(
+        description,
+        queryText,
+        150
+      );
+      const finalSnippet = `${term}\nDescription: ${centeredDescription}`;
 
-    return {
-      docId: chunk.docId,
-      title: doc.title,
-      snippet: finalSnippet,
-      score: chunk.similarity,
-      path: getItemPath(chunk.docId, docMap) || undefined,
-      nodeId: chunk.nodeId,
-    };
-  });
+      return {
+        docId: chunk.docId,
+        title: doc.title,
+        snippet: finalSnippet,
+        score: chunk.similarity,
+        path: getItemPath(chunk.docId, docMap) || undefined,
+        nodeId: chunk.nodeId,
+      };
+    }
+  );
 
   return results.filter((r): r is Search.ContentResult => r !== null);
 }

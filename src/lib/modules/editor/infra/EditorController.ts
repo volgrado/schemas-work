@@ -15,6 +15,9 @@
 
 import { Editor } from '@tiptap/core';
 import type { EditorEvents } from '@tiptap/core';
+import * as Y from 'yjs';
+import { IndexeddbPersistence } from 'y-indexeddb';
+import { i18n } from '$lib/utils/i18n.svelte';
 import Collaboration from '@tiptap/extension-collaboration';
 import Document from '@tiptap/extension-document';
 import Text from '@tiptap/extension-text';
@@ -34,19 +37,16 @@ import { ColorModeExtension } from '$lib/modules/editor/infra/extensions/ColorMo
 import {
   setInstance,
   updateSelection,
-  destroyEditor,
   syncState,
+  destroyEditor,
 } from '$lib/modules/editor/ui/editorStore.svelte';
 import {
+  documentState,
   updateTitle,
   clearInitialContent,
-  documentState,
-} from '$lib/stores/documentStore.svelte';
+} from '$lib/modules/editor/ui/documentStore.svelte';
+import { neuralIndexService } from '$lib/modules/ai/neuralIndexService';
 import { debounce } from '$lib/core/utils/debounce';
-import { i18n } from '$lib/utils/i18n.svelte';
-import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
-import type { IndexeddbPersistence } from 'y-indexeddb';
-import * as Y from 'yjs';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
 
 /**
@@ -83,11 +83,11 @@ export class EditorController {
     const [
       { default: YouTube },
       { ResizableImage },
-      { MathInline, MathBlock }
+      { MathInline, MathBlock },
     ] = await Promise.all([
       import('@tiptap/extension-youtube'),
       import('$lib/modules/editor/infra/extensions/ResizableImage'),
-      import('$lib/modules/editor/infra/extensions/Math')
+      import('$lib/modules/editor/infra/extensions/Math'),
     ]);
 
     this.editor = new Editor({
@@ -217,7 +217,10 @@ export class EditorController {
    * Handler for Tiptap's `selectionUpdate` event.
    * Updates the `editorStore` with the currently active node.
    */
-  private handleSelectionUpdate({ editor, transaction }: EditorEvents['selectionUpdate']) {
+  private handleSelectionUpdate({
+    editor,
+    transaction,
+  }: EditorEvents['selectionUpdate']) {
     if (transaction.getMeta('isHighlighterUpdate')) {
       return;
     }

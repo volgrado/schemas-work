@@ -50,7 +50,7 @@
     children?: import('svelte').Snippet;
   }>();
 
-  let panelClass = 'modal-panel';
+  const panelClass = 'modal-panel';
   let modalPanel = $state<HTMLDivElement | null>(null);
   let modalOverlay = $state<HTMLDivElement | null>(null);
 
@@ -158,7 +158,7 @@
     -webkit-backdrop-filter: blur(4px);
     transition: opacity var(--duration-base) var(--ease-out);
   }
-  
+
   .modal-overlay:focus-visible {
     outline: 2px solid var(--color-accent);
   }
@@ -171,7 +171,7 @@
     z-index: var(--z-modal-panel);
     width: 100%;
     max-width: 640px;
-    
+
     /* Premium Glassmorphism */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));

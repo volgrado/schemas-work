@@ -3,20 +3,22 @@
   import type { TransitionConfig } from 'svelte/transition';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
-  import type { IconName } from '$lib/types/iconName';
+  import type { IconName } from '$lib/core/domain/iconName';
 
   type FlyAndScaleParams = { y: number; duration: number };
 
-  let {
+  const {
     icon,
     label,
     position = 'center' as 'center' | 'right' | 'left',
     ...rest
-  } = $props<{
-    icon: IconName;
-    label: string;
-    position?: 'center' | 'right' | 'left';
-  } & import('svelte/elements').HTMLButtonAttributes>();
+  } = $props<
+    {
+      icon: IconName;
+      label: string;
+      position?: 'center' | 'right' | 'left';
+    } & import('svelte/elements').HTMLButtonAttributes
+  >();
 
   const flyAndScale = (
     node: Element,

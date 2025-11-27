@@ -14,7 +14,7 @@
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
   // SVELTE 5 RUNES UPDATE:
-  let {
+  const {
     variant = 'primary',
     size = 'md',
     children,
@@ -160,8 +160,12 @@
     padding: 0;
     border-radius: var(--radius-md);
   }
-  .btn-icon.btn-sm { width: 32px; }
-  .btn-icon.btn-lg { width: 48px; }
+  .btn-icon.btn-sm {
+    width: 32px;
+  }
+  .btn-icon.btn-lg {
+    width: 48px;
+  }
 
   .btn-icon:hover:not(:disabled) {
     background-color: var(--btn-hover-bg);

@@ -31,7 +31,7 @@
     stopReading,
     toggleSettings,
   } from '$lib/modules/tts/ui/ttsStore.svelte';
-  import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
+  import { nodeDetailState } from '$lib/modules/editor/ui/nodeDetailStore.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
@@ -39,7 +39,7 @@
 
   // --- Props ---
   /** Whether the controller is embedded in another panel (e.g., Node Detail) or floating. */
-  let { embedded = false } = $props<{ embedded?: boolean }>();
+  const { embedded = false } = $props<{ embedded?: boolean }>();
 
   // --- Derived State ---
   // Calculate playback progress percentage (0-100)
@@ -164,7 +164,7 @@
       <div class="progress-track">
         <div class="progress-fill" style="width: {progress}%"></div>
       </div>
-      
+
       <div class="content-wrapper">
         {@render content()}
       </div>
@@ -197,7 +197,8 @@
           <p class="current-text" title={currentTitle()}>
             {#if ttsState.nodesToRead.length > 0}
               <span class="section-badge">
-                {ttsState.nodesToRead[ttsState.currentNodeIndex]?.hierarchicalIndex ?? '#'}
+                {ttsState.nodesToRead[ttsState.currentNodeIndex]
+                  ?.hierarchicalIndex ?? '#'}
               </span>
             {/if}
             <span class="title-text">{currentTitle()}</span>
@@ -206,7 +207,7 @@
 
         <!-- Playback Controls (Prev, Play/Pause, Next) -->
         <div class="playback-actions">
-           <Button
+          <Button
             onclick={previousNode}
             variant="ghost"
             size="sm"
@@ -221,7 +222,9 @@
             onclick={handleTogglePause}
             variant="primary"
             size="lg"
-            aria-label={ttsState.status === 'paused' ? i18n.t('tts.play') : i18n.t('tts.pause')}
+            aria-label={ttsState.status === 'paused'
+              ? i18n.t('tts.play')
+              : i18n.t('tts.pause')}
             class="play-pause-btn"
           >
             <Icon
@@ -235,7 +238,8 @@
             onclick={nextNode}
             variant="ghost"
             size="sm"
-            disabled={ttsState.nodesToRead && ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
+            disabled={ttsState.nodesToRead &&
+              ttsState.currentNodeIndex >= ttsState.nodesToRead.length - 1}
             aria-label={i18n.t('tts.next_node')}
             class="control-btn secondary"
           >
@@ -245,7 +249,7 @@
 
         <!-- Secondary Actions (Replay, Settings, Stop) -->
         <div class="secondary-actions">
-           <Button
+          <Button
             onclick={replay}
             variant="ghost"
             size="sm"
@@ -255,15 +259,19 @@
           >
             <Icon name="rotate-ccw" size={18} />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
             onclick={toggleSettings}
-            aria-label={ttsState.isSettingsExpanded ? i18n.t('tts.collapse') : i18n.t('tts.expand')}
+            aria-label={ttsState.isSettingsExpanded
+              ? i18n.t('tts.collapse')
+              : i18n.t('tts.expand')}
             aria-expanded={ttsState.isSettingsExpanded}
             aria-controls="tts-settings-panel"
-            class="control-btn tertiary {ttsState.isSettingsExpanded ? 'active' : ''}"
+            class="control-btn tertiary {ttsState.isSettingsExpanded
+              ? 'active'
+              : ''}"
             title="Settings"
           >
             <Icon name="sliders" size={18} />
@@ -317,7 +325,11 @@
             <div class="setting-group slider-group">
               <div class="setting-header">
                 <Icon name="zap" size={14} class="text-muted" />
-                <label for="rate-slider">{i18n.t('tts.speed')} <span class="value-badge">{ttsState.rate.toFixed(1)}x</span></label>
+                <label for="rate-slider"
+                  >{i18n.t('tts.speed')}
+                  <span class="value-badge">{ttsState.rate.toFixed(1)}x</span
+                  ></label
+                >
               </div>
               <input
                 id="rate-slider"
@@ -376,7 +388,9 @@
     width: 90%;
     max-width: 600px;
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow:
+      var(--shadow-xl),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
   .panel.embedded {
@@ -406,7 +420,11 @@
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+    background: linear-gradient(
+      90deg,
+      var(--color-accent),
+      var(--color-accent-hover)
+    );
     box-shadow: 0 0 10px var(--color-accent);
     transition: width 0.3s linear;
   }
@@ -490,7 +508,9 @@
     align-items: center !important;
     justify-content: center !important;
     box-shadow: 0 4px 12px rgba(var(--color-accent-hsl), 0.4) !important;
-    transition: transform 0.1s ease, box-shadow 0.2s ease !important;
+    transition:
+      transform 0.1s ease,
+      box-shadow 0.2s ease !important;
   }
 
   :global(.play-pause-btn:hover) {
@@ -504,7 +524,9 @@
 
   :global(.control-btn) {
     color: var(--color-text-secondary) !important;
-    transition: color 0.2s, background-color 0.2s !important;
+    transition:
+      color 0.2s,
+      background-color 0.2s !important;
     border-radius: var(--radius-full) !important;
     width: 28px !important;
     height: 28px !important;
@@ -641,7 +663,7 @@
     border: 2px solid var(--color-accent);
     cursor: pointer;
     transition: transform 0.1s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .premium-slider::-webkit-slider-thumb:hover {
@@ -656,7 +678,7 @@
     border: 2px solid var(--color-accent);
     cursor: pointer;
     transition: transform 0.1s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   /* --- Responsive Adjustments --- */
@@ -668,7 +690,7 @@
       max-width: none;
       border-radius: var(--radius-lg);
       /* Ensure we don't overlap the FAB which is usually at bottom-right */
-      margin-bottom: 0; 
+      margin-bottom: 0;
     }
 
     .content-wrapper {
@@ -685,7 +707,7 @@
       min-width: 0;
       overflow: hidden;
     }
-    
+
     .current-text {
       font-size: 0.8rem;
     }
@@ -702,7 +724,7 @@
     .secondary-actions {
       gap: 2px;
     }
-    
+
     :global(.play-pause-btn) {
       width: 36px !important;
       height: 36px !important;
@@ -712,7 +734,7 @@
       width: 26px !important;
       height: 26px !important;
     }
-    
+
     .sliders-row {
       grid-template-columns: 1fr;
       gap: var(--space-md);

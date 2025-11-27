@@ -1,0 +1,929 @@
+
+> schemas-work@0.0.1 lint
+> prettier --check . && eslint .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\app.d.ts
+  22:15  error  An empty interface declaration allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\hooks.server.ts
+  9:10  error  'building' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\actions\keybindings.ts
+  11:56  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:25  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\actions\registry.ts
+  12:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\app-shell\AppInitializer.svelte
+  20:27  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  24:33  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  30:10  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  31:33  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  32:24  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  77:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\connectivity\onlineStore.svelte.ts
+  1:25  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\AppController.ts
+    7:25  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+    8:33  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+    9:45  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   10:37  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   11:48  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   12:50  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   13:22  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   18:8   error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   19:32  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+  176:7   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  178:43  error    Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\errorService.ts
+    7:56  error  Importing unknown elements is not allowed                        boundaries/no-unknown
+   13:28  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   25:5   error  'flightRecorderBuffer' is never reassigned. Use 'const' instead  prefer-const
+   26:5   error  'recentErrorCounts' is never reassigned. Use 'const' instead     prefer-const
+   34:53  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  127:28  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  185:17  error  Empty block statement                                            no-empty
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\iconService.ts
+  12:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\identityService.ts
+  16:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:38  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\integrityService.ts
+    8:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+    9:13  error  'errorService' is defined but never used   @typescript-eslint/no-unused-vars
+    9:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  135:12  error  'e' is defined but never used              @typescript-eslint/no-unused-vars
+  161:29  error  'report' is defined but never used         @typescript-eslint/no-unused-vars
+  168:48  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\services\migrationService.ts
+  14:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\CrashGuard.svelte
+   2:24  error  Importing unknown elements is not allowed          boundaries/no-unknown
+   4:20  error  Importing unknown elements is not allowed          boundaries/no-unknown
+   5:34  error  Importing unknown elements is not allowed          boundaries/no-unknown
+   6:35  error  Importing unknown elements is not allowed          boundaries/no-unknown
+  17:18  error  'handleEmergencyBackup' is defined but never used  @typescript-eslint/no-unused-vars
+  91:33  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\EmptyState.svelte
+  2:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  3:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\FloatingActionButton.svelte
+  4:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  5:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  6:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\GlobalErrorBoundary.svelte
+  2:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  3:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  4:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\HelpTooltip.svelte
+  14:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:15  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\Icon.svelte
+  18:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:20  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\Modal.svelte
+  27:20  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  28:24  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  29:29  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  41:5   error  'width' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\OrganicCanvas.svelte
+  21:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:50  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\PieChart.svelte
+   5:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:71  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\TagInput.svelte
+  13:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\TextInputModal.svelte
+  3:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  4:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  5:10  error  'Icon' is defined but never used           @typescript-eslint/no-unused-vars
+  5:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  6:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\Textarea.svelte
+  20:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\ThemeToggleButton.svelte
+   7:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   8:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\AppHeader.svelte
+  25:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  34:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  35:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  36:44  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  37:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\LanguageSwitcher.svelte
+  15:38  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\MainLayout.svelte
+  21:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:25  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:29  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:43  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  34:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  35:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  36:42  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  37:44  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  38:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\WelcomeScreen.svelte
+  18:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\layout\WorkspaceView.svelte
+  16:24  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  21:32  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  22:22  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  23:20  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  24:23  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  25:26  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  29:5   error  'nodeDetailState' is defined but never used    @typescript-eslint/no-unused-vars
+  31:10  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  32:31  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  36:10  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  37:43  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  38:34  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  39:47  error  Importing unknown elements is not allowed      boundaries/no-unknown
+  41:25  error  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  48:11  error  'revision' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  70:43  error  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  84:29  error  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\ui\uiStore.svelte.ts
+   8:28   error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:80   error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:114  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:85   error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\utils\debounce.ts
+  23:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\core\utils\nameUtils.ts
+  1:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\aiModels.ts
+  12:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\aiService.ts
+  13:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  14:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  15:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  73:59  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  73:64  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\domain\aiSchemas.ts
+  33:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\embeddingStrategies.ts
+  16:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  71:18  error  'text' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\infra\schemaService.ts
+  11:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\modelDiscoveryService.ts
+  10:31  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+  52:7   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\neuralIndexService.ts
+   8:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  13:38  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:10  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  38:18  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  38:23  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  69:12  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  71:32  error  'reject' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\prompts.test.ts
+  2:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  3:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\prompts.ts
+  12:26  error  Importing unknown elements is not allowed                                                                                                                                                                                                                                                                                                                                                  boundaries/no-unknown
+  19:49  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\providers\geminiProvider.ts
+   9:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  92:14  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\AIHelperModal.svelte
+  29:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  32:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  33:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  34:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  91:14  error  'e' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\CardPreview.svelte
+   20:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   22:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   79:7   error  Each block should have a key               svelte/require-each-key
+   79:31  error  '_' is defined but never used              @typescript-eslint/no-unused-vars
+  103:20  error  `{@html}` can lead to XSS attack           svelte/no-at-html-tags
+  117:19  error  Each block should have a key               svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\ai\ui\StrategySessionModal.svelte
+   23:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   24:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   29:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   33:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   34:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   35:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   37:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   41:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   46:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   47:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   48:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   49:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   50:29  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   51:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   52:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   53:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   54:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   55:8   error  'Card' is defined but never used           @typescript-eslint/no-unused-vars
+  255:19  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  294:19  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  489:17  error  Each block should have a key               svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\domain\commandService.ts
+  14:34  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  15:22  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  22:3   error  'openApiKeyModal' is defined but never used  @typescript-eslint/no-unused-vars
+  24:8   error  Importing unknown elements is not allowed    boundaries/no-unknown
+  28:8   error  Importing unknown elements is not allowed    boundaries/no-unknown
+  29:29  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  30:34  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  31:40  error  Importing unknown elements is not allowed    boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\domain\types.ts
+   8:31  error  Importing unknown elements is not allowed          boundaries/no-unknown
+  10:8   error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\AiView.svelte
+  16:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\CommandBar.svelte
+  25:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  32:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  33:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  40:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  55:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  56:44  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  58:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\DeckOptionsView.svelte
+  20:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  92:33  error  '_' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\MainView.svelte
+  18:34  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  19:24  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  20:33  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  23:20  error  Importing unknown elements is not allowed                              boundaries/no-unknown
+  27:9   error  'openApiKeyModal' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  44:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\PasswordModal.svelte
+  20:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\SearchView.svelte
+   15:28  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   16:44  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   17:40  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   18:31  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   19:33  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   20:12  error  'searchCommands' is defined but never used                    @typescript-eslint/no-unused-vars
+   20:34  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   21:38  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   25:10  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   26:20  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   27:24  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   28:33  error  Importing unknown elements is not allowed                     boundaries/no-unknown
+   47:7   error  Prefer using writable $derived instead of $state and $effect  svelte/prefer-writable-derived
+  120:9   error  Unexpected lexical declaration in case block                  no-case-declarations
+  249:9   error  Each block should have a key                                  svelte/require-each-key
+  301:19  error  `{@html}` can lead to XSS attack                              svelte/no-at-html-tags
+  305:21  error  `{@html}` can lead to XSS attack                              svelte/no-at-html-tags
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\StatisticsView.svelte
+  17:38  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\StudyHubView.svelte
+  17:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  77:33  error  '_' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\VaultView.svelte
+  15:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\ViewHeader.svelte
+  19:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\commandBarStore.svelte.ts
+   8:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  43:16  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  97:56  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\command-bar\ui\slashMenuStore.svelte.ts
+  13:34  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+  72:31  error  Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+  88:31  error  Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\diagnostics\ui\ErrorDiagnosticModal.svelte
+  21:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:42  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  97:7   error  `{@html}` can lead to XSS attack           svelte/no-at-html-tags
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\documentService.ts
+   9:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\modalTypes.ts
+  11:8   error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+  26:27  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\nodeDetailService.ts
+  51:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\schema.ts
+  26:32  error  Importing unknown elements is not allowed                                                                            boundaries/no-unknown
+  27:33  error  Importing unknown elements is not allowed                                                                            boundaries/no-unknown
+  31:8   error  Importing unknown elements is not allowed                                                                            boundaries/no-unknown
+  43:3   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\domain\slashCommands.ts
+    7:31  error  Importing unknown elements is not allowed        boundaries/no-unknown
+    8:28  error  Importing unknown elements is not allowed        boundaries/no-unknown
+    9:10  error  'openStrategySession' is defined but never used  @typescript-eslint/no-unused-vars
+    9:37  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   10:45  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   11:22  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   12:27  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   13:40  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   14:31  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   15:34  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   16:30  error  Importing unknown elements is not allowed        boundaries/no-unknown
+   62:26  error  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  357:38  error  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\EditorController.ts
+   20:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   30:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   31:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   35:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+   36:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   42:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+   47:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+   48:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   49:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  234:21  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  235:22  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  237:39  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  274:34  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\documentService.ts
+  38:13  error  'Y' is defined but never used       @typescript-eslint/no-unused-vars
+  39:15  error  'Editor' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\Math.ts
+   10:33  error  Importing unknown elements is not allowed             boundaries/no-unknown
+   43:7   error  'component' is never reassigned. Use 'const' instead  prefer-const
+  106:7   error  'component' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\Selection.ts
+  35:11  error  Unexpected aliasing of 'this' to local variable  @typescript-eslint/no-this-alias
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\infra\extensions\SlashCommandExtension.ts
+  13:47  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  22:8   error  Importing unknown elements is not allowed    boundaries/no-unknown
+  23:25  error  Importing unknown elements is not allowed    boundaries/no-unknown
+  62:13  error  'editor' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  62:21  error  'render' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\CardEditorController.svelte.ts
+  21:8   error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+  22:26  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+  23:26  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+  25:22  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+  41:18  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  43:28  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\CardEditorPanel.svelte
+   17:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   18:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   19:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   20:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   21:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   22:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   25:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   26:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   27:40  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   28:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  255:50  error  'item' is defined but never used           @typescript-eslint/no-unused-vars
+  370:23  error  Each block should have a key               svelte/require-each-key
+  370:54  error  'option' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\DocumentView.svelte
+  19:21  error  'onDestroy' is defined but never used      @typescript-eslint/no-unused-vars
+  27:41  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  32:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\FormulaEditorModal.svelte
+   3:24  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+   8:21  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+   9:22  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+  17:5   error  'nodePos' is assigned a value but never used                                                                                                                       @typescript-eslint/no-unused-vars
+  54:9   error  Don't manipulate the DOM directly. The Svelte runtime can get confused if there is a difference between the actual DOM and the DOM expected by the Svelte runtime  svelte/no-dom-manipulating
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\MathPreviewNodeView.svelte
+   7:29  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+   8:30  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+   9:24  error  Importing unknown elements is not allowed                                                                                                                          boundaries/no-unknown
+  42:7   error  Don't manipulate the DOM directly. The Svelte runtime can get confused if there is a difference between the actual DOM and the DOM expected by the Svelte runtime  svelte/no-dom-manipulating
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\MediaEditModal.svelte
+  12:21   error  Importing unknown elements is not allowed        boundaries/no-unknown
+  13:22   error  Importing unknown elements is not allowed        boundaries/no-unknown
+  14:24   error  Importing unknown elements is not allowed        boundaries/no-unknown
+  15:17   error  'HTMLInputAttributes' is defined but never used  @typescript-eslint/no-unused-vars
+  99:113  error  Unnecessary escape character: \?                 no-useless-escape
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\SlashMenuController.svelte
+  23:10  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  24:20  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  25:24  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  31:21  error  Importing unknown elements is not allowed   boundaries/no-unknown
+  42:11  error  'index' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  75:9   error  Each block should have a key                svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\cardEditorStore.svelte.ts
+  15:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\documentStore.svelte.ts
+   5:37  error  Importing unknown elements is not allowed                 boundaries/no-unknown
+   9:31  error  Importing unknown elements is not allowed                 boundaries/no-unknown
+  10:33  error  Importing unknown elements is not allowed                 boundaries/no-unknown
+  34:12  error  'documentState' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\modalStore.svelte.ts
+  5:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\NodeDetailEditor.svelte
+  20:21  error  'onDestroy' is defined but never used      @typescript-eslint/no-unused-vars
+  27:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  28:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\NodeDetailFooter.svelte
+  15:42  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:29  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\NodeDetailHeader.svelte
+  19:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\NodeDetailPanel.svelte
+  24:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\node-detail\controllers\TTSAutoFollowController.svelte
+  18:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:47  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\editor\ui\nodeDetailStore.svelte.ts
+  8:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\file-system\infra\dataService.ts
+  13:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  14:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  15:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\file-system\infra\localStorageAdapter.ts
+  1:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  2:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\file-system\stores\fileSystemStore.svelte.ts
+   11:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   12:54  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   13:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  208:61  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  256:68  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\file-system\ui\FileExplorer.svelte
+  21:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  25:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  26:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  36:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  37:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  38:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  43:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  44:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  45:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  46:39  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\search\domain\recentSearchesService.test.ts
+  2:40  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  3:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\search\domain\recentSearchesService.ts
+  8:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\search\domain\searchService.ts
+  17:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:37  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:29  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\infra\backupService.ts
+   18:8   error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   19:28  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   21:31  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   22:22  error    Importing unknown elements is not allowed                                                              boundaries/no-unknown
+   78:30  error    'event' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+  212:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\ApiKeyModal.svelte
+  24:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  29:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  30:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  32:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  34:46  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  35:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  36:42  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  74:14  error  'error' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\api-key-modal\ApiKeyKeysTab.svelte
+   7:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   8:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  13:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\api-key-modal\ApiKeyModelsTab.svelte
+   5:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   6:50  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   7:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   8:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  38:11  error  Each block should have a key               svelte/require-each-key
+  55:13  error  Each block should have a key               svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\settingsStore.svelte.ts
+   7:25  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   8:44  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  46:51  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  87:27  error  'key' is defined but never used            @typescript-eslint/no-unused-vars
+  87:40  error  'model' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\settings\ui\themeStore.svelte.ts
+   6:25  error  Importing unknown elements is not allowed          boundaries/no-unknown
+   7:35  error  Importing unknown elements is not allowed          boundaries/no-unknown
+  25:7   error  'isDark' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\cardService.ts
+   11:26  error  Importing unknown elements is not allowed     boundaries/no-unknown
+   14:31  error  Importing unknown elements is not allowed     boundaries/no-unknown
+   15:30  error  Importing unknown elements is not allowed     boundaries/no-unknown
+  101:9   error  Unexpected lexical declaration in case block  no-case-declarations
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\deckService.ts
+  15:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\reviewLogService.ts
+  16:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  17:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\reviewService.ts
+  15:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  18:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  19:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\reviewSessionService.ts
+  10:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  11:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  13:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  14:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  15:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  16:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  86:5   error  'deckIds' is defined but never used        @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\statisticsService.ts
+  11:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  13:15  error  'SRS' is defined but never used            @typescript-eslint/no-unused-vars
+  13:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\domain\types.ts
+  8:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\QuickCardEditorModal.svelte
+   25:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   26:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   27:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   31:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   32:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   33:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   34:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   35:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   36:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   37:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  150:29  error  'item' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\RelinkCardModal.svelte
+   21:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   23:44  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   25:32  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   28:21  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   29:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   30:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  100:33  error  '_' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\ReviewController.svelte
+   23:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   32:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   33:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   36:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   37:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   40:28  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   43:8   error  'ReviewQuality' is defined but never used  @typescript-eslint/no-unused-vars
+  253:19  error  Each block should have a key               svelte/require-each-key
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\study\ui\reviewStore.svelte.ts
+   6:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   7:34  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:53  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  12:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  13:38  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  14:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\domain\ttsService.ts
+  49:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\domain\types.ts
+  10:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\infra\ttsUtils.ts
+  10:26  error  Importing unknown elements is not allowed                  boundaries/no-unknown
+  13:7   error  'SUPPORTED_NODE_TYPES' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\infra\webSpeechTTSService.ts
+   5:8   error  Importing unknown elements is not allowed  boundaries/no-unknown
+  64:34  error  'reject' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\ui\TTSController.svelte
+  33:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  34:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  35:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  36:20  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  37:23  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  38:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\tts\ui\ttsStore.svelte.ts
+   6:25  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:22  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  55:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\domain\TreeVisualizer.ts
+    2:30  error  'TreeLayout' is defined but never used    @typescript-eslint/no-unused-vars
+  425:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  425:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  433:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  433:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  444:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  457:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  458:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  468:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  485:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  490:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  495:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\domain\types.ts
+  8:8  error  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\ui\StandardTree.svelte
+   12:37  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   15:17  error  'Selection' is defined but never used                                      @typescript-eslint/no-unused-vars
+   15:28  error  'BaseType' is defined but never used                                       @typescript-eslint/no-unused-vars
+   19:5   error  'TreeLayout' is defined but never used                                     @typescript-eslint/no-unused-vars
+   23:28  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   24:31  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   25:27  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   30:10  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   32:5   error  'DOMSerializer' is defined but never used                                  @typescript-eslint/no-unused-vars
+   35:47  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   48:9   error  'dispatch' is assigned a value but never used                              @typescript-eslint/no-unused-vars
+   58:19  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   59:7   error  'isD3Loaded' is assigned a value but never used                            @typescript-eslint/no-unused-vars
+   62:55  error  'd3Transition' is assigned a value but never used                          @typescript-eslint/no-unused-vars
+  210:29  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  228:23  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  336:5   error  Expected an assignment or function call and instead saw an expression      @typescript-eslint/no-unused-expressions
+  397:42  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  422:36  error  Found a mutable instance of the built-in Set class. Use SvelteSet instead  svelte/prefer-svelte-reactivity
+  542:13  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  550:13  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  577:26  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+  617:41  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  621:40  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  633:24  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  640:13  error  Expected an assignment or function call and instead saw an expression      @typescript-eslint/no-unused-expressions
+  648:31  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  702:28  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  792:24  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  794:37  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  809:64  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  820:64  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\modules\visualization\ui\ViewSwitcher.svelte
+   2:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   3:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:44  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\canvas-themes.ts
+   73:10  error  'drawDustLane' is defined but never used  @typescript-eslint/no-unused-vars
+  140:10  error  'drawFilament' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\contentExtraction.test.ts
+  2:45  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\i18n.svelte.ts
+    6:16  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+    7:16  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+    8:16  error  Importing unknown elements is not allowed                                  boundaries/no-unknown
+   13:43  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   67:28  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   71:16  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  123:21  error  Found a mutable instance of the built-in Map class. Use SvelteMap instead  svelte/prefer-svelte-reactivity
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\tiptapUtils.ts
+  19:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\utils\yjsUtils.ts
+   9:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  15:26  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  18:11  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\lib\workers\neuralIndex.worker.ts
+  19:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\routes\+layout.svelte
+  17:27  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  20:29  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  21:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  22:31  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  23:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  24:30  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  27:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  31:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  32:33  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  35:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\routes\+page.svelte
+   3:26  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   4:35  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   8:10  error  Importing unknown elements is not allowed  boundaries/no-unknown
+   9:24  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  10:36  error  Importing unknown elements is not allowed  boundaries/no-unknown
+  54:21  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\asoly\OneDrive\Aplicaciones\schemas-work\src\service-worker.ts
+  108:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+??? 653 problems (649 errors, 4 warnings)
+  4 errors and 4 warnings potentially fixable with the `--fix` option.
+

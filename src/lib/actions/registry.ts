@@ -9,7 +9,7 @@
  * actions, dynamic enabling/disabling, and a subscription mechanism for reactive UI updates.
  */
 
-import type { IconName } from '$lib/types/iconName';
+import type { IconName } from '$lib/core/domain/iconName';
 
 /**
  * Defines the scopes where an action is valid.
@@ -18,7 +18,11 @@ import type { IconName } from '$lib/types/iconName';
  * - `tree`: Only available when the tree visualization is active.
  * - `view:command-bar`: Actions specifically displayed in the Command Bar's main view.
  */
-export type ActionContextType = 'global' | 'editor' | 'tree' | 'view:command-bar';
+export type ActionContextType =
+  | 'global'
+  | 'editor'
+  | 'tree'
+  | 'view:command-bar';
 
 /**
  * A flexible interface for passing runtime context to action handlers.
@@ -79,7 +83,9 @@ class ActionRegistry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register(action: Action<any>) {
     if (this.actions.has(action.id)) {
-      console.warn(`[ActionRegistry] Overwriting existing action: "${action.id}"`);
+      console.warn(
+        `[ActionRegistry] Overwriting existing action: "${action.id}"`
+      );
     }
     this.actions.set(action.id, action);
     this.notify();
@@ -118,7 +124,9 @@ class ActionRegistry {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getActionsByContext(context: ActionContextType): Action<any>[] {
-    return this.getAll().filter(a => a.context === context || a.context === 'global');
+    return this.getAll().filter(
+      (a) => a.context === context || a.context === 'global'
+    );
   }
 
   /**
@@ -132,7 +140,9 @@ class ActionRegistry {
     const action = this.get(actionId);
     if (action) {
       if (action.isEnabled && !action.isEnabled(context)) {
-        console.log(`[ActionRegistry] Action "${actionId}" is currently disabled.`);
+        console.log(
+          `[ActionRegistry] Action "${actionId}" is currently disabled.`
+        );
         return;
       }
       try {
@@ -159,7 +169,7 @@ class ActionRegistry {
   }
 
   private notify() {
-    this.listeners.forEach(l => l());
+    this.listeners.forEach((l) => l());
   }
 }
 

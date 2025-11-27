@@ -1,11 +1,14 @@
 ﻿<!-- src/lib/components/ui/ThemeToggleButton.svelte -->
 <script lang="ts">
   // --- Imports for core functionality ---
-  import { themeStore, type Theme } from '$lib/stores/themeStore.svelte';
+  import {
+    themeStore,
+    type Theme,
+  } from '$lib/modules/settings/ui/themeStore.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
-  import type { IconName } from '$lib/types/iconName';
+  import type { IconName } from '$lib/core/domain/iconName';
 
   // --- Type definition for our configuration object ---
   interface Config {
@@ -33,7 +36,7 @@
   // --- The reactive core of the component ---
   // `$derived` creates a new reactive value that automatically updates
   // whenever `themeStore.theme` changes. This is the heart of the component.
-  let currentConfig = $derived(themeConfig[themeStore.theme]);
+  const currentConfig = $derived(themeConfig[themeStore.theme]);
 </script>
 
 <Button

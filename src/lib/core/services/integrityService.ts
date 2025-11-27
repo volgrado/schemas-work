@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { DIRECTORY_STORAGE_KEY } from '$lib/constants';
-import * as errorService from '$lib/core/services/errorService';
+
 
 const SETTINGS_STORAGE_KEY = 'schemas-work-settings-v2';
 const THEME_STORAGE_KEY = 'schemas-work-theme';
@@ -132,7 +132,7 @@ function validateItem(
       return false;
     }
     return true;
-  } catch (e) {
+  } catch (_e) {
     const issue = `JSON parse error for ${key}`;
     report.issues.push(issue);
     if (action === 'quarantine') {
@@ -158,7 +158,7 @@ function quarantineItem(key: string, content: string, report: HealthReport) {
   }
 }
 
-async function checkOrphans(report: HealthReport) {
+async function checkOrphans(_report: HealthReport) {
   if (!window.indexedDB) return;
 
   try {

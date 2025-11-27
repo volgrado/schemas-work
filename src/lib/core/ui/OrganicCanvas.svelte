@@ -18,14 +18,14 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { themeStore } from '$lib/stores/themeStore.svelte';
-  import type { Theme } from '$lib/stores/themeStore.svelte';
+  import { themeStore } from '$lib/modules/settings/ui/themeStore.svelte';
+  import type { Theme } from '$lib/modules/settings/ui/themeStore.svelte';
   import { drawStars, drawArtisticDetails } from '$lib/utils/canvas-themes';
   import type { CanvasTheme } from '$lib/utils/canvas-themes';
   import { debounce } from '$lib/core/utils/debounce';
   import { mulberry32 } from '$lib/core/utils/prng';
 
-  let { isExiting = false } = $props<{ isExiting?: boolean }>();
+  const { isExiting = false } = $props<{ isExiting?: boolean }>();
 
   // --- Component State ---
   let canvasEl: HTMLCanvasElement;
@@ -105,13 +105,16 @@
       staticBgCanvas.height = canvasEl.height;
       const staticCtx = staticBgCanvas.getContext('2d');
       if (!staticCtx) return;
-      
+
       // Use CSS variables for consistent theme colors
       const computedStyle = getComputedStyle(document.documentElement);
-      const bgColor = currentTheme === 'dark' 
-        ? computedStyle.getPropertyValue('--color-background').trim() || '#000000'
-        : computedStyle.getPropertyValue('--color-background').trim() || '#f0f4f8';
-        
+      const bgColor =
+        currentTheme === 'dark'
+          ? computedStyle.getPropertyValue('--color-background').trim() ||
+            '#000000'
+          : computedStyle.getPropertyValue('--color-background').trim() ||
+            '#f0f4f8';
+
       staticCtx.fillStyle = bgColor;
       staticCtx.fillRect(0, 0, staticBgCanvas.width, staticBgCanvas.height);
 
@@ -160,10 +163,19 @@
     let x, y;
 
     // Spawn from random edge
-    if (edge === 0) { x = 0; y = Math.random() * canvasEl.height; }
-    else if (edge === 1) { x = canvasEl.width; y = Math.random() * canvasEl.height; }
-    else if (edge === 2) { x = Math.random() * canvasEl.width; y = 0; }
-    else { y = canvasEl.height; x = Math.random() * canvasEl.width; }
+    if (edge === 0) {
+      x = 0;
+      y = Math.random() * canvasEl.height;
+    } else if (edge === 1) {
+      x = canvasEl.width;
+      y = Math.random() * canvasEl.height;
+    } else if (edge === 2) {
+      x = Math.random() * canvasEl.width;
+      y = 0;
+    } else {
+      y = canvasEl.height;
+      x = Math.random() * canvasEl.width;
+    }
 
     shootingStars.push({
       x,
@@ -195,11 +207,12 @@
     if (staticBgCanvas) {
       ctx.drawImage(staticBgCanvas, 0, 0);
     }
-    
+
     // Draw animations
     ctx.globalAlpha = artisticDetailsAlpha;
-    const starColor = currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130';
-    
+    const starColor =
+      currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130';
+
     for (let i = shootingStars.length - 1; i >= 0; i--) {
       const s = shootingStars[i];
       s.x += s.speed * Math.cos(s.angle);
@@ -291,7 +304,8 @@
 </script>
 
 <div class="canvas-container" class:is-exiting={isExiting}>
-  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true"></canvas>
+  <canvas bind:this={canvasEl} class="organic-canvas" aria-hidden="true"
+  ></canvas>
 </div>
 
 <style>

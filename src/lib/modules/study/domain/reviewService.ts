@@ -99,7 +99,8 @@ export async function calculateNextReview(
     // "Good" or "Easy" - Calculate new interval
     let newInterval: number;
     if (srs.repetitions === 0) newInterval = options.graduatingInterval;
-    else if (srs.repetitions === 1) newInterval = 6; // Default jump for second repetition
+    else if (srs.repetitions === 1)
+      newInterval = 6; // Default jump for second repetition
     else newInterval = Math.round(srs.interval * srs.easeFactor);
 
     // Adjust Ease Factor based on performance

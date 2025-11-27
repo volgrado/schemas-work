@@ -13,18 +13,22 @@ export function generateUniqueName(
   allItems: SchemaMetadata[]
 ): string {
   const trimmedBase = baseTitle.trim();
-  const siblings = allItems.filter(item => item.parentId === parentId);
-  
+  const siblings = allItems.filter((item) => item.parentId === parentId);
+
   // Check if base title is available
-  if (!siblings.some(s => s.title.toLowerCase() === trimmedBase.toLowerCase())) {
+  if (
+    !siblings.some((s) => s.title.toLowerCase() === trimmedBase.toLowerCase())
+  ) {
     return trimmedBase;
   }
-  
+
   // Find next available number
   let counter = 1;
   while (true) {
     const candidate = `${trimmedBase} (${counter})`;
-    if (!siblings.some(s => s.title.toLowerCase() === candidate.toLowerCase())) {
+    if (
+      !siblings.some((s) => s.title.toLowerCase() === candidate.toLowerCase())
+    ) {
       return candidate;
     }
     counter++;

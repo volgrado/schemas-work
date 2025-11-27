@@ -125,7 +125,10 @@ export async function deleteDocument(docId: string): Promise<void> {
   try {
     await Dexie.delete(docId);
   } catch (error) {
-    console.error(`[persistenceService] Failed to delete database for ${docId}`, error);
+    console.error(
+      `[persistenceService] Failed to delete database for ${docId}`,
+      error
+    );
     throw error;
   }
 }

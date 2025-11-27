@@ -19,13 +19,16 @@
   import { Toaster } from 'svelte-sonner';
   import OrganicCanvas from '$lib/core/ui/OrganicCanvas.svelte';
   import CommandBar from '$lib/modules/command-bar/ui/CommandBar.svelte';
-  import NodeDetailPanel from '$lib/components/features/node-detail/NodeDetailPanel.svelte';
+  import NodeDetailPanel from '$lib/modules/editor/ui/node-detail/NodeDetailPanel.svelte';
   import GlobalErrorBoundary from '$lib/core/ui/GlobalErrorBoundary.svelte';
   import AppInitializer from '$lib/core/app-shell/AppInitializer.svelte';
   import type { Snippet } from 'svelte';
 
-  import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
-  import { themeStore, _applyThemeToDOM } from '$lib/stores/themeStore.svelte';
+  import { nodeDetailState } from '$lib/modules/editor/ui/nodeDetailStore.svelte';
+  import {
+    themeStore,
+    _applyThemeToDOM,
+  } from '$lib/modules/settings/ui/themeStore.svelte';
   import * as errorService from '$lib/core/services/errorService';
 
   // Import global styles
@@ -33,7 +36,7 @@
   import 'katex/dist/katex.min.css';
 
   // Svelte 5 Snippets for slot content
-  let { children } = $props<{ children: Snippet }>();
+  const { children } = $props<{ children: Snippet }>();
 
   // --- APPLY THEME IMMEDIATELY TO PREVENT FOUC ---
   // We access the theme store directly and apply it synchronously if in the browser.
@@ -54,7 +57,7 @@
         .register('/service-worker.js')
         .catch(console.error);
     }
-    
+
     // Check if the app is currently running in Safe Mode (usually due to a crash loop)
     isSafeMode = errorService.isSafeMode();
   });
@@ -81,7 +84,6 @@
       errorService.reportError(event.reason, { source: 'unhandledrejection' });
       capturedError = event.reason;
       hasError = true;
-
     };
 
     window.addEventListener('error', handleGlobalError);
@@ -89,7 +91,10 @@
 
     return () => {
       window.removeEventListener('error', handleGlobalError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection
+      );
     };
   });
 
@@ -142,11 +147,13 @@
       Dynamically adjusts columns to accommodate the side panel (NodeDetailPanel).
       The inline style handles the smooth transition of the panel width.
     -->
-    <main 
-      class="app-grid" 
+    <main
+      class="app-grid"
       class:panel-open={nodeDetailState.isOpen}
       class:is-resizing={nodeDetailState.isResizing}
-      style="grid-template-columns: 1fr {nodeDetailState.isOpen ? `min(${nodeDetailState.width}px, 90vw)` : '0px'}"
+      style="grid-template-columns: 1fr {nodeDetailState.isOpen
+        ? `min(${nodeDetailState.width}px, 90vw)`
+        : '0px'}"
     >
       <!-- The main content area where pages are rendered -->
       <div class="content-area">

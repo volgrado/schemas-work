@@ -25,9 +25,9 @@
   import { i18n } from '$lib/utils/i18n.svelte';
 
   // --- UI Components & Modals ---
-  import ApiKeyModal from '$lib/components/features/settings/ApiKeyModal.svelte';
-  import ErrorDiagnosticModal from '$lib/components/features/diagnostics/ErrorDiagnosticModal.svelte';
-  import StrategySessionModal from '$lib/components/ai/StrategySessionModal.svelte';
+  import ApiKeyModal from '$lib/modules/settings/ui/ApiKeyModal.svelte';
+  import ErrorDiagnosticModal from '$lib/modules/diagnostics/ui/ErrorDiagnosticModal.svelte';
+  import StrategySessionModal from '$lib/modules/ai/ui/StrategySessionModal.svelte';
   import PasswordModal from './PasswordModal.svelte';
   import Icon from '$lib/core/ui/Icon.svelte'; // Corrected absolute import
   import Spinner from '$lib/core/ui/Spinner.svelte'; // Corrected absolute import
@@ -51,9 +51,10 @@
     closeDiagnosticModal,
     closeSchemaModal,
     closeApiKeyModal,
-    openApiKeyModal
+    openApiKeyModal,
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  
+  import { create as createDocument } from '$lib/modules/editor/ui/documentStore.svelte';
+
   import TextInputModal from '$lib/core/ui/TextInputModal.svelte'; // Corrected absolute import
 
   // --- Local State ---
@@ -62,6 +63,12 @@
   let searchInputElement = $state<HTMLInputElement | null>(null);
   let previouslyFocusedElement: HTMLElement | null = null;
   let searchViewInstance = $state<SearchView | null>(null);
+
+  async function handleCreateSchema(name: string) {
+    await createDocument(name);
+    closeSchemaModal();
+    closeCommandBar();
+  }
 
   // --- Effects for Lifecycle and Side Effects ---
 
@@ -93,7 +100,7 @@
       // Save current focus to restore later
       previouslyFocusedElement = document.activeElement as HTMLElement;
       query = '';
-      
+
       // Check if we are on mobile to prevent auto-focusing and opening the keyboard
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
       if (!isMobile) {
@@ -122,14 +129,17 @@
     if (query.trim().length === 0) {
       if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
         event.preventDefault();
-        
+
         const contentContainer = panelElement?.querySelector('.view-content');
         if (!contentContainer) return;
 
         // Find all interactive elements in the current view
-        const focusableSelector = 'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
-        const focusableItems = Array.from(contentContainer.querySelectorAll(focusableSelector)) as HTMLElement[];
-        
+        const focusableSelector =
+          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+        const focusableItems = Array.from(
+          contentContainer.querySelectorAll(focusableSelector)
+        ) as HTMLElement[];
+
         if (focusableItems.length === 0) return;
 
         const currentFocus = document.activeElement as HTMLElement;
@@ -205,11 +215,13 @@
     }
     return flyAndScale(node, params);
   };
-
 </script>
 
 <!-- Global Modals Managed by Command Bar -->
-<ApiKeyModal show={commandBarState.isApiKeyModalOpen} onClose={closeApiKeyModal} />
+<ApiKeyModal
+  show={commandBarState.isApiKeyModalOpen}
+  onClose={closeApiKeyModal}
+/>
 
 <ErrorDiagnosticModal
   show={commandBarState.isDiagnosticModalOpen}
@@ -225,17 +237,8 @@
   <TextInputModal
     show={commandBarState.isSchemaModalOpen}
     title={i18n.t('command.new_schema')}
-    placeholder={i18n.t('file_explorer.default_schema_name')}
-    submitLabel={i18n.t('common.create')}
     onClose={closeSchemaModal}
-    onsubmit={async (name) => {
-      // Import dynamically to avoid circular deps if needed
-      const { create } = await import('$lib/stores/documentStore.svelte');
-      await create(name);
-      // Close modal via the imported action to ensure state consistency
-      const { closeSchemaModal } = await import('$lib/modules/command-bar/ui/commandBarStore.svelte');
-      closeSchemaModal();
-    }}
+    onsubmit={handleCreateSchema}
   />
 {/if}
 
@@ -318,7 +321,7 @@
         >
           <SearchView
             bind:this={searchViewInstance}
-            bind:query={query}
+            bind:query
             {openApiKeyModal}
           />
         </div>
@@ -348,14 +351,14 @@
     width: 100%;
     max-width: 640px;
     max-height: 70vh;
-    
+
     /* Premium Glassmorphism */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    
+
     border-radius: var(--radius-xl);
     z-index: var(--z-command-bar);
     display: flex;
@@ -410,7 +413,7 @@
   .view-content {
     flex-grow: 1;
     display: grid;
-    grid-template-areas: "content";
+    grid-template-areas: 'content';
     position: relative;
     padding: var(--space-sm);
     overflow: hidden;

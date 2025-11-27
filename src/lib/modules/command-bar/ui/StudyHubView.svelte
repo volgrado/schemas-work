@@ -22,7 +22,7 @@
     setView,
     close as closeCommandBar,
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { startReview } from '$lib/stores/reviewStore.svelte';
+  import { startReview } from '$lib/modules/study/ui/reviewStore.svelte';
   import * as reviewService from '$lib/modules/study/domain/reviewService';
 
   // --- Types ---
@@ -102,7 +102,8 @@
           {i18n.t('studyHub.reviewHeader')}
         </div>
         <div class="header-cell" role="columnheader">
-          <span class="visually-hidden">{i18n.t('studyHub.actionsHeader')}</span>
+          <span class="visually-hidden">{i18n.t('studyHub.actionsHeader')}</span
+          >
         </div>
 
         <!-- Deck Rows -->
@@ -182,7 +183,9 @@
   .deck-grid {
     display: grid;
     /* Flexible columns: Title takes space, counts fit content, actions auto */
-    grid-template-columns: minmax(0, 1fr) repeat(3, minmax(60px, max-content)) auto;
+    grid-template-columns:
+      minmax(0, 1fr) repeat(3, minmax(60px, max-content))
+      auto;
     gap: var(--space-xs) var(--space-sm);
     align-items: center;
   }
@@ -258,9 +261,15 @@
   }
 
   /* Status Colors */
-  .new { color: var(--color-accent); }
-  .learning { color: var(--color-danger); }
-  .due { color: var(--color-green-500); }
+  .new {
+    color: var(--color-accent);
+  }
+  .learning {
+    color: var(--color-danger);
+  }
+  .due {
+    color: var(--color-green-500);
+  }
 
   /* Skeleton Loader */
   .skeleton {
@@ -272,12 +281,23 @@
   }
 
   @keyframes pulse {
-    50% { opacity: 0.5; }
+    50% {
+      opacity: 0.5;
+    }
   }
 
-  .deck-title-skeleton { height: 20px; width: 80%; }
-  .deck-count-skeleton { height: 20px; width: 50%; margin: 0 auto; }
-  .deck-actions-skeleton { background-color: transparent !important; }
+  .deck-title-skeleton {
+    height: 20px;
+    width: 80%;
+  }
+  .deck-count-skeleton {
+    height: 20px;
+    width: 50%;
+    margin: 0 auto;
+  }
+  .deck-actions-skeleton {
+    background-color: transparent !important;
+  }
 
   /* Dark Theme */
   :global(.dark-theme) .deck-row:hover,

@@ -27,12 +27,12 @@
   import type { EditorController } from '$lib/modules/editor/infra/EditorController';
 
   // --- STORES ---
-  import { reviewState } from '$lib/stores/reviewStore.svelte';
+  import { reviewState } from '$lib/modules/study/ui/reviewStore.svelte';
   import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
-  import { uiState } from '$lib/stores/uiStore.svelte';
+  import { uiState } from '$lib/core/ui/uiStore.svelte';
 
   // --- COMPONENT PROPERTIES ---
-  let {
+  const {
     ydoc,
     initialContent = null,
     provider,
@@ -55,8 +55,10 @@
 
     // Lazy load the heavy EditorController to keep initial bundle size small
     (async () => {
-      const { EditorController } = await import('$lib/modules/editor/infra/EditorController');
-      
+      const { EditorController } = await import(
+        '$lib/modules/editor/infra/EditorController'
+      );
+
       if (!element) return; // Component might have unmounted during load
 
       controller = new EditorController({
@@ -80,14 +82,15 @@
   $effect(() => {
     const reviewDecorations = reviewState.decorationSet;
     if (!controller) return;
-    
+
     controller.updateHighlighter({ reviewDecorations });
   });
 
   // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER & AUTOSCROLL BRIDGE FOR TTS ---
   // Syncs Text-to-Speech highlights and triggers auto-scrolling.
   $effect(() => {
-    const { status, nodesToRead, currentNodeIndex, currentWordRange } = ttsState;
+    const { status, nodesToRead, currentNodeIndex, currentWordRange } =
+      ttsState;
     if (!controller || !controller.editor) return;
 
     // 1. Highlight the current node (paragraph/heading)
@@ -112,7 +115,9 @@
         currentWordRange.to,
         { class: 'is-current-tts-word' }
       );
-      wordDecoSet = DecorationSet.create(controller.editor.state.doc, [wordDeco]);
+      wordDecoSet = DecorationSet.create(controller.editor.state.doc, [
+        wordDeco,
+      ]);
     }
 
     // 3. Update the highlighter plugin
@@ -136,7 +141,7 @@
   });
 </script>
 
-<div 
+<div
   bind:this={element}
   class:color-mode-by-level={uiState.colorMode === 'by-level'}
   class:color-mode-by-path={uiState.colorMode === 'by-path'}
@@ -168,15 +173,31 @@
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-md);
   }
-  :global(.resize-handle.top-left) { top: -8px; left: -8px; cursor: nwse-resize; }
-  :global(.resize-handle.top-right) { top: -8px; right: -8px; cursor: nesw-resize; }
-  :global(.resize-handle.bottom-left) { bottom: -8px; left: -8px; cursor: nesw-resize; }
-  :global(.resize-handle.bottom-right) { bottom: -8px; right: -8px; cursor: nwse-resize; }
+  :global(.resize-handle.top-left) {
+    top: -8px;
+    left: -8px;
+    cursor: nwse-resize;
+  }
+  :global(.resize-handle.top-right) {
+    top: -8px;
+    right: -8px;
+    cursor: nesw-resize;
+  }
+  :global(.resize-handle.bottom-left) {
+    bottom: -8px;
+    left: -8px;
+    cursor: nesw-resize;
+  }
+  :global(.resize-handle.bottom-right) {
+    bottom: -8px;
+    right: -8px;
+    cursor: nwse-resize;
+  }
 
   /* Cleanup: Remove default ProseMirror selection outlines to rely on our custom styling */
   :global(.ProseMirror-selectednode),
-  :global([class*="ProseMirror-selected"]),
-  :global([class*="selectednode"]) {
+  :global([class*='ProseMirror-selected']),
+  :global([class*='selectednode']) {
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
@@ -194,7 +215,7 @@
   /* --- COLOR MODE: BY LEVEL (Gradients applied to Headings) --- */
   /* Level 2: Blue */
   :global(.color-mode-by-level h2) {
-    color: #3b82f6; 
+    color: #3b82f6;
     background: var(--gradient-blue);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;

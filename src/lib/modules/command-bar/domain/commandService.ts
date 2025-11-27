@@ -21,14 +21,14 @@ import {
   openDiagnosticModal,
   openStrategySession,
 } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-import { documentState, create as createDocument } from '$lib/stores/documentStore.svelte';
+import {
+  create as createDocument,
+  documentState,
+} from '$lib/modules/editor/ui/documentStore.svelte';
 import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
-import { ttsState, startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
 import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
+import { startReading, ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
 
-/**
- * Configuration options passed to the command factory.
- */
 export interface SearchOptions {
   openApiKeyModal: () => void;
 }

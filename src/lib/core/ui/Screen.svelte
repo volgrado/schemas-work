@@ -27,7 +27,7 @@
     start?: number;
   };
 
-  let {
+  const {
     /**
      * @prop {boolean} [show=false] - Controls the visibility of the screen.
      */

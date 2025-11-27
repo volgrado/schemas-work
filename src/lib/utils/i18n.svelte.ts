@@ -39,7 +39,9 @@ class I18nState {
     if (locales.includes(newLocale)) {
       this.locale = newLocale;
     } else {
-      console.warn(`[i18n] Locale '${newLocale}' not supported. Falling back to '${defaultLocale}'.`);
+      console.warn(
+        `[i18n] Locale '${newLocale}' not supported. Falling back to '${defaultLocale}'.`
+      );
       this.locale = defaultLocale;
     }
   }
@@ -90,8 +92,8 @@ function translate(
   vars: Record<string, string | number>
 ): string {
   if (!key) {
-      // Return empty string or warning if no key, consistent with previous behavior or safety
-      return ''; 
+    // Return empty string or warning if no key, consistent with previous behavior or safety
+    return '';
   }
 
   // 1. Attempt to find the translation string in the current locale.

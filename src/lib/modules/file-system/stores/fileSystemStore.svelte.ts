@@ -9,7 +9,7 @@
  */
 import { v4 as uuidv4 } from 'uuid';
 import { LocalStorageAdapter } from '../infra/localStorageAdapter';
-import type { FileSystemNode, FileSystemEvent } from '../domain/FileSystemNode';
+import type { FileSystemNode, FileSystemEvent } from '../domain/types';
 import { generateUniqueName } from '$lib/core/utils/nameUtils';
 
 class FileSystemStore {
@@ -81,11 +81,13 @@ class FileSystemStore {
   getDescendants(id: string): FileSystemNode[] {
     const descendants: FileSystemNode[] = [];
     const collectChildren = (pid: string) => {
-      this.items.filter(i => i.parentId === pid).forEach(child => {
-        descendants.push(child);
-        // If the child is a folder, recursively collect its children.
-        if (child.type === 'folder') collectChildren(child.id);
-      });
+      this.items
+        .filter((i) => i.parentId === pid)
+        .forEach((child) => {
+          descendants.push(child);
+          // If the child is a folder, recursively collect its children.
+          if (child.type === 'folder') collectChildren(child.id);
+        });
     };
     collectChildren(id);
     return descendants;
@@ -110,7 +112,10 @@ class FileSystemStore {
    * @param parentId - The ID of the parent folder (optional).
    * @returns {Promise<FileSystemNode>} The newly created node.
    */
-  async createSchema(title: string, parentId: string | null = null): Promise<FileSystemNode> {
+  async createSchema(
+    title: string,
+    parentId: string | null = null
+  ): Promise<FileSystemNode> {
     const uniqueTitle = generateUniqueName(title, parentId, this.items);
     const newItem: FileSystemNode = {
       id: uuidv4(),
@@ -134,7 +139,10 @@ class FileSystemStore {
    * @param parentId - The ID of the parent folder (optional).
    * @returns {Promise<FileSystemNode>} The newly created node.
    */
-  async createFolder(title: string, parentId: string | null = null): Promise<FileSystemNode> {
+  async createFolder(
+    title: string,
+    parentId: string | null = null
+  ): Promise<FileSystemNode> {
     const uniqueTitle = generateUniqueName(title, parentId, this.items);
     const newItem: FileSystemNode = {
       id: uuidv4(),
@@ -164,16 +172,20 @@ class FileSystemStore {
     if (index === -1) throw new Error('Item not found');
 
     const original = this.items[index];
-    
+
     // If the title is changing, ensure the new name is unique in its directory.
     if (updates.title && updates.title !== original.title) {
-       const others = this.items.filter(i => i.id !== id);
-       updates.title = generateUniqueName(updates.title, original.parentId, others);
+      const others = this.items.filter((i) => i.id !== id);
+      updates.title = generateUniqueName(
+        updates.title,
+        original.parentId,
+        others
+      );
     }
 
     const updated = { ...original, ...updates, updatedAt: Date.now() };
     this.items[index] = updated;
-    
+
     this.persist();
     this.notifyListeners({ type: 'updated', item: updated });
     return updated;
@@ -188,10 +200,10 @@ class FileSystemStore {
   async deleteItem(id: string) {
     // Identify all descendants to ensure complete cleanup.
     const descendants = this.getDescendants(id);
-    const toDelete = new Set<string>([id, ...descendants.map(d => d.id)]);
+    const toDelete = new Set<string>([id, ...descendants.map((d) => d.id)]);
 
     // Filter out the deleted nodes from the state.
-    this.items = this.items.filter(i => !toDelete.has(i.id));
+    this.items = this.items.filter((i) => !toDelete.has(i.id));
     this.persist();
     this.notifyListeners({ type: 'deleted', item: { id } as any });
   }
@@ -206,7 +218,7 @@ class FileSystemStore {
    * @throws {Error} If the node is not found or if a cycle is detected.
    */
   async moveItem(id: string, newParentId: string | null) {
-    const item = this.items.find(i => i.id === id);
+    const item = this.items.find((i) => i.id === id);
     if (!item) throw new Error('Item not found');
     if (item.parentId === newParentId) return;
 
@@ -215,7 +227,7 @@ class FileSystemStore {
       let curr = newParentId;
       while (curr) {
         if (curr === id) throw new Error('Cannot move folder into itself');
-        curr = this.items.find(i => i.id === curr)?.parentId ?? null;
+        curr = this.items.find((i) => i.id === curr)?.parentId ?? null;
       }
     }
 

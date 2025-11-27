@@ -15,9 +15,9 @@
 -->
 <script lang="ts">
   import Icon from '@iconify/svelte';
-  import type { IconName } from '$lib/types/iconName';
+  import type { IconName } from '$lib/core/domain/iconName';
 
-  let {
+  const {
     name,
     size = 16,
     class: additionalClasses = '',

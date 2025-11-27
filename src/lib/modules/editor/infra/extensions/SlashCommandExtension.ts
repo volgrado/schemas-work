@@ -19,8 +19,8 @@ import {
   moveSelection,
   moveGroup,
   triggerCommand,
-} from '$lib/stores/slashMenuStore.svelte';
-import { uiState } from '$lib/stores/uiStore.svelte';
+} from '$lib/modules/command-bar/ui/slashMenuStore.svelte';
+import { uiState } from '$lib/core/ui/uiStore.svelte';
 
 /**
  * @description The `SlashCommandExtension` integrates Tiptap's `Suggestion` plugin to create
