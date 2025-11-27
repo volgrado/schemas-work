@@ -1,6 +1,10 @@
-﻿/**
+/**
  * @file RefineDocumentCommand.ts
- * ... (description) ...
+ * @class
+ * @description
+ * Implements the "Refine Document" command for the AI Workbench.
+ * This command allows users to modify an existing document (or a selected portion of it)
+ * using natural language instructions, such as "Make this more formal" or "Summarize this section".
  */
 
 import type { IAICommand, WorkbenchState } from './IAICommand';
@@ -15,21 +19,39 @@ import type { JSONContent } from '@tiptap/core';
 
 import * as errorService from '$lib/core/services/errorService';
 
+/**
+ * Command to refine or transform an existing document based on user instructions.
+ */
 export class RefineDocumentCommand implements IAICommand {
+  /**
+   * The user-facing title of the command.
+   */
   public get title(): string {
     return i18n.t('ai_commands.refine_document.title', {
       fallback: 'Refine Document',
     });
   }
 
+  /**
+   * The Zod schema used to validate the AI's response.
+   * Ensures the output is a valid Tiptap document structure.
+   */
   public readonly validationSchema = aiSchemas.CreateSchemaAiResponseSchema;
 
+  /**
+   * Generates the prompt for the document refinement task.
+   *
+   * @param context - The session context (unused).
+   * @param workbenchState - The current state of the workbench, including draft content and selection.
+   * @param instruction - The user's specific refinement instruction.
+   * @returns {string} The prompt string.
+   * @throws {Error} If no draft content is available in the workbench state.
+   */
   public getPrompt(
     context: StrategySessionContext,
     workbenchState: WorkbenchState,
     instruction: string
   ): string {
-    // This line will no longer cause a TypeScript error.
     const { draftContent, selectedText } = workbenchState;
 
     if (!draftContent) {
@@ -45,6 +67,13 @@ export class RefineDocumentCommand implements IAICommand {
     );
   }
 
+  /**
+   * Handles the successful, validated response from the AI by updating the document.
+   *
+   * @param result - The valid Tiptap JSON content returned by the AI.
+   * @param context - The session context (unused).
+   * @returns {Promise<void>}
+   */
   public async onAccept(
     result: z.infer<typeof this.validationSchema>,
     context: StrategySessionContext
