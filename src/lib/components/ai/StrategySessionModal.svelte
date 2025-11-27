@@ -6,7 +6,7 @@
     commandBarState,
     closeStrategySession,
     open as openCommandBar,
-  } from '$lib/stores/commandBarStore.svelte';
+  } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import {
     settingsState,
     getNextAvailableKey,
@@ -23,15 +23,15 @@
   import { toast } from 'svelte-sonner';
 
   // --- UI Components ---
-  import Modal from '$lib/components/core/Modal.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import Spinner from '$lib/components/core/Spinner.svelte';
+  import Modal from '$lib/core/ui/Modal.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
   import TiptapPreview from '$lib/components/ai/TiptapPreview.svelte';
   import CardPreview from '$lib/components/ai/CardPreview.svelte';
   import { t } from '$lib/utils/i18n';
   import type { SRS } from '$lib/types';
-  import Toggle from '$lib/components/core/Toggle.svelte';
+  import Toggle from '$lib/core/ui/Toggle.svelte';
   type Card = SRS.Card;
 
   const FILE_API_SIZE_LIMIT_MB = 50;

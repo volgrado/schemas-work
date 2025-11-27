@@ -6,9 +6,9 @@
 // REFINEMENT: Import the SRS namespace for all card-related types.
 import type { SRS } from '$lib/types';
 import * as cardService from '$lib/services/features/cardService';
-import * as directoryService from '$lib/services/core/directoryService';
+import { fileSystemStore } from '@modules/file-system';
 import type { DeckOptions } from '$lib/services/features/deckService';
-import { parseTime } from '$lib/utils/time';
+import { parseTime } from '$lib/core/utils/time';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -131,7 +131,7 @@ export async function getDueCards(deckIds?: string[]): Promise<SRS.Card[]> {
 export async function getAllDeckStats(): Promise<
   Map<string, { title: string; new: number; learning: number; due: number }>
 > {
-  const allDocs = await directoryService.getAllItems();
+  const allDocs = fileSystemStore.getAll();
   const allCards = await cardService.getAllCards();
   const now = Date.now();
   const stats = new Map<

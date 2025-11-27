@@ -4,8 +4,8 @@
  */
 
 import type { IAICommand, WorkbenchState } from './IAICommand';
-import { type StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
-import { setDocument } from '$lib/stores/editorStore.svelte';
+import { type StrategySessionContext } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
+import { setDocument } from '$lib/modules/editor/ui/editorStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { toast } from 'svelte-sonner';

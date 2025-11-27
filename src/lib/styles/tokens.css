@@ -42,6 +42,14 @@
   --chart-color-4: #f56565;
   --chart-color-5: #a0aec0;
 
+  /* --- Gradients (By-Path Coloring) --- */
+  --gradient-blue: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  --gradient-orange: linear-gradient(90deg, #f97316, #db2777);
+  --gradient-green: linear-gradient(90deg, #10b981, #0ea5e9);
+  --gradient-purple: linear-gradient(90deg, #8b5cf6, #d946ef);
+  --gradient-cyan: linear-gradient(90deg, #06b6d4, #3b82f6);
+  --gradient-indigo: linear-gradient(90deg, #6366f1, #a855f7);
+
   /* --- Grayscale --- */
   --color-gray-50: hsl(210 20% 99%);
   --color-gray-100: hsl(210 20% 96%);

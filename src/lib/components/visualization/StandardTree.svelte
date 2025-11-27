@@ -27,8 +27,8 @@
   import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
   import { linkHorizontal } from 'd3-shape';
   import 'd3-transition'; // Side-effect import for transition support
-  import { ttsState } from '$lib/stores/ttsStore.svelte';
-  import { editorState } from '$lib/stores/editorStore.svelte';
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
   import { uiState } from '$lib/stores/uiStore.svelte';
   import {
     nodeDetailState,

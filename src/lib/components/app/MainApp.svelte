@@ -5,19 +5,19 @@
   // --- Stores ---
   import { uiState, openCommandBar, closeModal, setActiveView, cycleColorMode } from '$lib/stores/uiStore.svelte';
   import { reviewState, startReview } from '$lib/stores/reviewStore.svelte';
-  import { open as openCardEditor } from '$lib/stores/cardEditorStore.svelte';
+  import { open as openCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
   import { documentState } from '$lib/stores/documentStore.svelte';
   
   // --- Core Components ---
   import AppHeader from '$lib/components/layout/AppHeader.svelte';
   import WorkspaceView from '$lib/components/layout/WorkspaceView.svelte';
-  import TTSController from '$lib/components/tts/TTSController.svelte';
-  import SlashMenuController from '$lib/components/editor/SlashMenuController.svelte';
-  import FloatingActionButton from '$lib/components/core/FloatingActionButton.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import Modal from '$lib/components/core/Modal.svelte';
-  import Spinner from '$lib/components/core/Spinner.svelte';
+  import TTSController from '$lib/modules/tts/ui/TTSController.svelte';
+  import SlashMenuController from '$lib/modules/editor/ui/SlashMenuController.svelte';
+  import FloatingActionButton from '$lib/core/ui/FloatingActionButton.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Modal from '$lib/core/ui/Modal.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
 
   // --- Props ---
   let { onShowWelcome } = $props<{ onShowWelcome: () => void }>();
@@ -102,7 +102,7 @@
     <WorkspaceView />
 
     <!-- Lazy Load Card Editor -->
-    {#await import('$lib/components/card/CardEditorPanel.svelte') then { default: CardEditorPanel }}
+    {#await import('$lib/modules/editor/ui/CardEditorPanel.svelte') then { default: CardEditorPanel }}
        <CardEditorPanel />
     {/await}
 
@@ -119,7 +119,7 @@
 
     {#if uiState.modal.show && config}
       {#if config.type === 'formula'}
-        {#await import('$lib/components/editor/FormulaEditorModal.svelte') then { default: FormulaEditorModal }}
+        {#await import('$lib/modules/editor/ui/FormulaEditorModal.svelte') then { default: FormulaEditorModal }}
           {#if config.onsave}
             <FormulaEditorModal
               bind:show={uiState.modal.show}

@@ -10,7 +10,7 @@
  */
 
 import { z } from 'zod';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 import type { AiModel } from './aiModels';
 import { get } from 'svelte/store';
 import { t } from '$lib/utils/i18n';

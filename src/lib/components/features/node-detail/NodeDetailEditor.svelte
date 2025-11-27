@@ -2,12 +2,12 @@
   import { onMount, onDestroy } from 'svelte';
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
-  import { SlashCommandExtension } from '$lib/editor/extensions/SlashCommandExtension';
-  import { DataPosExtension } from '$lib/editor/extensions/DataPosExtension';
-  import { TTSHighlightExtension } from '$lib/editor/extensions/TTSHighlightExtension'; // NEW
+  import { SlashCommandExtension } from '$lib/modules/editor/infra/extensions/SlashCommandExtension';
+  import { DataPosExtension } from '$lib/modules/editor/infra/extensions/DataPosExtension';
+  import { TTSHighlightExtension } from '$lib/modules/editor/infra/extensions/TTSHighlightExtension'; // NEW
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
-  import { editorState } from '$lib/stores/editorStore.svelte';
-  import { ttsState } from '$lib/stores/ttsStore.svelte'; // NEW
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte'; // NEW
   import { DOMSerializer, DOMParser } from 'prosemirror-model';
 
   let element = $state<HTMLDivElement | null>(null);

@@ -7,11 +7,11 @@
 
 import type { Modal } from '$lib/types';
 import { modalState, openModal as _openModal, closeModal as _closeModal } from './modalStore.svelte';
-import { commandBarState, open as _openCommandBar, close as _closeCommandBar, toggle as _toggleCommandBar } from './commandBarStore.svelte';
+import { commandBarState, open as _openCommandBar, close as _closeCommandBar, toggle as _toggleCommandBar } from '@modules/command-bar';
 import { nodeDetailState, openPanel as _openPanel, closePanel as _closePanel } from './nodeDetailStore.svelte';
 
 // Re-export types
-export type { CommandBarState } from './commandBarStore.svelte';
+export type { CommandBarState } from '@modules/command-bar';
 export type { NodeDetailState } from './nodeDetailStore.svelte';
 
 // --- Local State ---

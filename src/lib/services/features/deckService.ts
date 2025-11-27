@@ -12,7 +12,7 @@
  * of the learning experience.
  */
 import Dexie, { type Table } from 'dexie';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 
 /**
  * @interface DeckOptions

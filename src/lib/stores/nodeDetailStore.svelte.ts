@@ -160,7 +160,7 @@ export function setIsResizing(isResizing: boolean): void {
 export function alignEditorWithNode(): void {
   if (!nodeDetailState.activeNodeId) return;
 
-  import('$lib/stores/editorStore.svelte').then(({ editorState }) => {
+  import('$lib/modules/editor/ui/editorStore.svelte').then(({ editorState }) => {
     const editor = editorState.instance;
     if (!editor) return;
 
@@ -205,7 +205,7 @@ export function scrollToNodeInEditor(): void {
   closePanel();
   
   // Dynamic import to avoid circular dependency
-  import('$lib/stores/editorStore.svelte').then(({ editorState }) => {
+  import('$lib/modules/editor/ui/editorStore.svelte').then(({ editorState }) => {
     const editor = editorState.instance;
     if (!editor) return;
     
@@ -292,7 +292,7 @@ export function navigateToSibling(direction: 'next' | 'prev'): void {
  * @param domElement The DOM element containing the new content
  */
 export function updateNodeAtPos(pos: number, domElement: HTMLElement): void {
-  import('$lib/stores/editorStore.svelte').then(({ editorState }) => {
+  import('$lib/modules/editor/ui/editorStore.svelte').then(({ editorState }) => {
     const editor = editorState.instance;
     if (!editor) return;
 

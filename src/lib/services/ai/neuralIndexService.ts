@@ -5,12 +5,12 @@
  */
 
 import Dexie, { type Table } from 'dexie';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 import { getEmbedding } from '$lib/services/ai/embeddingStrategies';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
-import { debounce } from '$lib/utils/debounce';
-// REFINEMENT: Import the reactive `settingsState` object from the Rune-based store.
+import { debounce } from '$lib/core/utils/debounce';
 import { settingsState } from '$lib/stores/settingsStore.svelte';
+import { type Result, ok, err } from '$lib/types/result';
 
 // --- Type Definitions ---
 export interface KnowledgeChunk {
@@ -35,6 +35,8 @@ class NeuralIndexDB extends Dexie {
   cloud_chunks!: Table<KnowledgeChunk, string>;
   local_chunks!: Table<KnowledgeChunk, string>;
   metadata!: Table<IndexMetadata, 'key'>;
+  chunks!: Table<any, any>; // For migration/cleanup if needed
+
   constructor() {
     super('NeuralIndexDatabase');
     this.version(2).stores({
@@ -52,8 +54,6 @@ let worker: Worker | null = null;
 
 if (typeof Worker !== 'undefined') {
   // Initialize the worker
-  // Note: Vite handles the import with ?worker suffix automatically if configured,
-  // but standard new Worker(new URL(...)) is the modern standard.
   worker = new Worker(new URL('../../workers/neuralIndex.worker.ts', import.meta.url), {
     type: 'module',
   });
@@ -70,9 +70,6 @@ function atomizeDocumentInWorker(
 ): Promise<{ id: string; content: string }[]> {
   return new Promise((resolve, reject) => {
     if (!worker) {
-      // Fallback if worker is not available (e.g., SSR or error)
-      // We could keep the sync version as fallback, but for now let's just return empty
-      // or log an error.
       console.warn('Neural Index Worker not available.');
       resolve([]);
       return;
@@ -114,7 +111,6 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 const debouncedIndexDocument = debounce(
   async (docId: string, doc: ProseMirrorNode) => {
     try {
-      // REFINEMENT: Read directly from the reactive `settingsState` signal. No `get()` needed.
       const { embeddingMethod } = settingsState;
       const activeTable =
         embeddingMethod === 'local' ? db.local_chunks : db.cloud_chunks;
@@ -167,8 +163,13 @@ const debouncedIndexDocument = debounce(
  * @param docId The ID of the document.
  * @param doc The Tiptap document node.
  */
-export function indexDocument(docId: string, doc: ProseMirrorNode) {
-  debouncedIndexDocument(docId, doc);
+export async function indexDocument(docId: string, doc: ProseMirrorNode): Promise<Result<void>> {
+  try {
+    debouncedIndexDocument(docId, doc);
+    return ok(undefined);
+  } catch (e) {
+    return err(e instanceof Error ? e : new Error(String(e)));
+  }
 }
 
 /**
@@ -180,16 +181,15 @@ export function indexDocument(docId: string, doc: ProseMirrorNode) {
 export async function findSimilarChunksAcrossVault(
   queryText: string,
   limit: number = 10
-): Promise<ScoredChunk[]> {
+): Promise<Result<ScoredChunk[]>> {
   try {
-    // REFINEMENT: Read directly from the reactive `settingsState` signal.
     const { embeddingMethod } = settingsState;
     const activeTable =
       embeddingMethod === 'local' ? db.local_chunks : db.cloud_chunks;
     const queryEmbedding = await getEmbedding(queryText);
     const allChunks = await activeTable.toArray();
 
-    if (allChunks.length === 0) return [];
+    if (allChunks.length === 0) return ok([]);
 
     const allScoredChunks: ScoredChunk[] = allChunks.map((chunk) => ({
       nodeId: chunk.id,
@@ -199,11 +199,11 @@ export async function findSimilarChunksAcrossVault(
     }));
 
     allScoredChunks.sort((a, b) => b.similarity - a.similarity);
-    return allScoredChunks.slice(0, limit);
+    return ok(allScoredChunks.slice(0, limit));
   } catch (error) {
     errorService.reportError(error, {
       operation: 'findSimilarChunksAcrossVault',
     });
-    return [];
+    return err(error instanceof Error ? error : new Error(String(error)));
   }
 }

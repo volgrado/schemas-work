@@ -4,9 +4,10 @@
   import { get } from 'svelte/store';
   import { t } from '$lib/utils/i18n';
   import { load as loadDocument, create as createDocument } from '$lib/stores/documentStore.svelte';
-  import * as directoryService from '$lib/services/core/directoryService';
+  import { fileSystemStore } from '@modules/file-system';
   import { WELCOME_SEEN_KEY } from '$lib/constants';
   import MainApp from '$lib/components/app/MainApp.svelte';
+  import { browser } from '$app/environment';
 
   let showWelcomeUI = $state(false);
   let showMainUI = $state(false);
@@ -27,22 +28,37 @@
   async function initialDocumentLoad() {
     console.log('[+page] initialDocumentLoad started');
     try {
-      const lastActiveId = await directoryService.getLastActiveDocId();
+      // 1. Check URL for docId
+      const urlParams = new URLSearchParams(window.location.search);
+      const docIdFromUrl = urlParams.get('docId');
+
+      if (docIdFromUrl) {
+        await loadDocument(docIdFromUrl);
+        return;
+      }
+
+      // 2. Check last active document
+      const lastActiveId = fileSystemStore.getLastActiveDocId();
       if (lastActiveId) {
-        console.log('[+page] Loading last active doc:', lastActiveId);
-        await loadDocument(lastActiveId);
-      } else {
-        console.log('[+page] No last active doc, checking all items');
-        const allSchemas = (await directoryService.getAllItems()).filter(
-          (i) => i.type === 'schema'
-        );
-        if (allSchemas.length > 0) {
-          console.log('[+page] Loading first available schema:', allSchemas[0].id);
-          await loadDocument(allSchemas[0].id);
-        } else {
-          console.log('[+page] No schemas found, creating new one');
-          await createDocument(get(t)('document.first_schema_title'));
+        const exists = fileSystemStore.getItem(lastActiveId);
+        if (exists) {
+          console.log('[+page] Loading last active doc:', lastActiveId);
+          await loadDocument(lastActiveId);
+          return;
         }
+      }
+      
+      console.log('[+page] No last active doc, checking all items');
+      const allSchemas = fileSystemStore.getAll().filter(
+        (i) => i.type === 'schema'
+      );
+      
+      if (allSchemas.length > 0) {
+        console.log('[+page] Loading first available schema:', allSchemas[0].id);
+        await loadDocument(allSchemas[0].id);
+      } else {
+        console.log('[+page] No schemas found, creating new one');
+        await createDocument(get(t)('document.first_schema_title'));
       }
     } catch (error) {
       console.error('[+page] initialDocumentLoad failed:', error);

@@ -1,14 +1,14 @@
 <!-- src/lib/components/ui/ErrorDiagnosticModal.svelte -->
 <script lang="ts">
   import { t } from '$lib/utils/i18n';
-  import Modal from '$lib/components/core/Modal.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import * as errorService from '$lib/services/core/errorService';
-  import type { ErrorLog } from '$lib/services/core/errorService';
+  import Modal from '$lib/core/ui/Modal.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import * as errorService from '$lib/core/services/errorService';
+  import type { ErrorLog } from '$lib/core/services/errorService';
   import { toast } from 'svelte-sonner';
-  import EmptyState from '$lib/components/core/EmptyState.svelte';
-  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
+  import EmptyState from '$lib/core/ui/EmptyState.svelte';
+  import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 
   let {
     show = false,

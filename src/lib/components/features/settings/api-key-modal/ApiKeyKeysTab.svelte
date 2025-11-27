@@ -6,9 +6,9 @@
     type ApiKey,
   } from '$lib/stores/settingsStore.svelte';
   import { getModelById } from '$lib/services/ai/aiModels';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import Spinner from '$lib/components/core/Spinner.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
   import { toast } from 'svelte-sonner';
   import { t } from '$lib/utils/i18n';
   import { fade, slide } from 'svelte/transition';

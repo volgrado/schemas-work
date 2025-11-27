@@ -14,13 +14,13 @@
   // FIX: Import the SRS namespace and create a local alias for the Card type.
   import type { SRS, SchemaMetadata } from '$lib/types';
   type Card = SRS.Card;
-  import * as directoryService from '$lib/services/core/directoryService';
+  import { fileSystemStore } from '@modules/file-system';
   import * as cardService from '$lib/services/features/cardService';
 
   // --- UI Component Imports ---
-  import Modal from '$lib/components/core/Modal.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
+  import Modal from '@ui/Modal.svelte';
+  import Button from '@ui/Button.svelte';
+  import Icon from '@ui/Icon.svelte';
 
   // --- Svelte 5 Props and Events ---
   let { show = $bindable(false), card } = $props<{
@@ -43,7 +43,8 @@
       if (show) {
         isLoading = true;
         selectedSchemaId = card.deckId;
-        const allItems = await directoryService.getAllItems();
+        // fileSystemStore is synchronous
+        const allItems = fileSystemStore.getAll();
         schemas = allItems.filter((item) => item.type === 'schema');
         isLoading = false;
       }

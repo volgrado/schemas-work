@@ -14,6 +14,9 @@ const config = {
     }),
     alias: {
       $lib: 'src/lib',
+      '@core': 'src/lib/core',
+      '@modules': 'src/lib/modules',
+      '@ui': 'src/lib/core/ui',
     },
   },
 

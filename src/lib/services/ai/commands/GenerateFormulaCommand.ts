@@ -1,10 +1,10 @@
 // src/lib/services/ai/commands/GenerateFormulaCommand.ts
 
 import type { IAICommand, WorkbenchState } from './IAICommand';
-import { type StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
+import { type StrategySessionContext } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas'; // You would need a simple string schema
 import * as Prompts from '$lib/services/ai/prompts';
-import { editorState } from '$lib/stores/editorStore.svelte';
+import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
 import { z } from 'zod';
 
 export class GenerateFormulaCommand implements IAICommand {

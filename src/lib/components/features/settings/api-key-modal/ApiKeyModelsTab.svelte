@@ -7,8 +7,8 @@
     SUPPORTED_MODELS,
     type AiModel,
   } from '$lib/services/ai/aiModels';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import Spinner from '$lib/components/core/Spinner.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
   import { t } from '$lib/utils/i18n';
   import { fade } from 'svelte/transition';
 

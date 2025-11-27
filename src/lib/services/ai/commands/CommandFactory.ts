@@ -3,7 +3,7 @@
  * @factory
  */
 
-import type { AiHelperAction } from '$lib/stores/commandBarStore.svelte';
+import type { AiHelperAction } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import type { IAICommand } from './IAICommand';
 
 // --- Import all available concrete command classes ---

@@ -14,7 +14,7 @@
 import Dexie, { type Table } from 'dexie';
 // REFINEMENT: Import the SRS namespace for the ReviewQuality type.
 import type { SRS } from '$lib/types';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 
 /**
  * @interface ReviewLog

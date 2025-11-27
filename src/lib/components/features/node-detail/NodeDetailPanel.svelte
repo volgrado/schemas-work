@@ -13,12 +13,12 @@
     navigateToSibling, 
     requestFocus
   } from '$lib/stores/nodeDetailStore.svelte';
-  import { ttsState } from '$lib/stores/ttsStore.svelte';
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
   import { uiState } from '$lib/stores/uiStore.svelte';
   
   import NodeDetailHeader from './NodeDetailHeader.svelte';
   import NodeDetailFooter from './NodeDetailFooter.svelte';
-  import ResizeHandle from '$lib/components/core/ResizeHandle.svelte';
+  import ResizeHandle from '$lib/core/ui/ResizeHandle.svelte';
   import NodeDetailEditor from './NodeDetailEditor.svelte';
 
   import TTSAutoFollowController from './controllers/TTSAutoFollowController.svelte';

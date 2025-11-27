@@ -11,7 +11,7 @@
 import type { SRS } from '$lib/types';
 import Dexie, { type Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 
 class CardDB extends Dexie {
   cards!: Table<SRS.Card>;
@@ -76,8 +76,9 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
         suspended: false,
       };
     default:
-      const _exhaustiveCheck: never = card;
-      throw new Error(`Unhandled card type: ${(_exhaustiveCheck as any).type}`);
+        // Improved exhaustive check
+        const _exhaustiveCheck: never = card;
+        throw new Error(`Unhandled card type: ${JSON.stringify(_exhaustiveCheck)}`);
   }
 }
 
@@ -123,7 +124,8 @@ export async function addCard(
   card: SRS.NewCard
 ): Promise<SRS.Card> {
   try {
-    const plainCard = JSON.parse(JSON.stringify(card));
+    // Optimization: Use structuredClone instead of JSON serialization
+    const plainCard = structuredClone(card);
     const newCard = createCard(deckId, plainCard);
     await db.cards.add(newCard);
     return newCard;
@@ -139,7 +141,8 @@ export async function addCards(
   cards: SRS.NewCard[]
 ): Promise<void> {
   try {
-    const plainCards = JSON.parse(JSON.stringify(cards));
+    // Optimization: Use structuredClone instead of JSON serialization
+    const plainCards = structuredClone(cards);
     const newCards = plainCards.map((card: SRS.NewCard) =>
       createCard(deckId, card)
     );
@@ -153,7 +156,8 @@ export async function addCards(
 /** Updates an existing card in the database. */
 export async function updateCard(card: SRS.Card): Promise<void> {
   try {
-    const plainCard = JSON.parse(JSON.stringify(card));
+    // Optimization: Use structuredClone instead of JSON serialization
+    const plainCard = structuredClone(card);
     await db.cards.put(plainCard);
   } catch (error) {
     errorService.reportError(error, {

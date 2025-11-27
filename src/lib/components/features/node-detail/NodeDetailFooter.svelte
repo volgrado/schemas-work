@@ -2,16 +2,16 @@
   import {
     ttsState,
     startReading
-  } from '$lib/stores/ttsStore.svelte';
-  import { editorState } from '$lib/stores/editorStore.svelte';
+  } from '$lib/modules/tts/ui/ttsStore.svelte';
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
   import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
   import { nodeDetailState, scrollToNodeInEditor } from '$lib/stores/nodeDetailStore.svelte';
-  import { getReadableNodes } from '$lib/utils/ttsUtils';
+  import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
   import { toast } from 'svelte-sonner';
   import type { TTS } from '$lib/types';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import TTSController from '$lib/components/tts/TTSController.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import TTSController from '$lib/modules/tts/ui/TTSController.svelte';
 
   /**
    * Switch to editor view and scroll to the node's position.

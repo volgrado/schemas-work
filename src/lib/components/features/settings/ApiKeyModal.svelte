@@ -9,13 +9,13 @@
     createDiscoveredModel,
     type AiModel,
   } from '$lib/services/ai/aiModels';
-  import Modal from '$lib/components/core/Modal.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
+  import Modal from '$lib/core/ui/Modal.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
   import { toast } from 'svelte-sonner';
   import { fetchAvailableGeminiModels } from '$lib/services/ai/modelDiscoveryService';
   import { t } from '$lib/utils/i18n';
-  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
+  import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { fade } from 'svelte/transition';
 
   // Sub-components

@@ -4,8 +4,8 @@
     closePanel,
     navigateToSibling,
   } from '$lib/stores/nodeDetailStore.svelte';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
 
   function navigateToPrev() {
     navigateToSibling('prev');

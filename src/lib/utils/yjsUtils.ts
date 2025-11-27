@@ -6,7 +6,7 @@
 import * as Y from 'yjs';
 import { yDocToProsemirrorJSON, prosemirrorJSONToYDoc } from 'y-prosemirror';
 
-import { schema } from '$lib/editor/schema';
+import { schema } from '$lib/modules/editor/domain/schema';
 
 // --- SHARED TYPES ---
 // Define a comprehensive type for a ProseMirror node in JSON format.

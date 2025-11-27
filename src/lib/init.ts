@@ -1,5 +1,5 @@
 import { actionRegistry } from '$lib/actions/registry';
-import { close, setView, openDiagnosticModal, openApiKeyModal } from '$lib/stores/commandBarStore.svelte';
+import { close, setView, openDiagnosticModal, openApiKeyModal } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 
 export function registerCommandBarActions() {
   const actions = [
@@ -61,9 +61,9 @@ export function registerCommandBarActions() {
       icon: 'volume-2',
       context: 'view:command-bar',
       handler: async () => {
-        const { editorState } = await import('$lib/stores/editorStore.svelte');
-        const { startReading } = await import('$lib/stores/ttsStore.svelte');
-        const { getReadableNodes } = await import('$lib/utils/ttsUtils');
+        const { editorState } = await import('$lib/modules/editor/ui/editorStore.svelte');
+        const { startReading } = await import('$lib/modules/tts/ui/ttsStore.svelte');
+        const { getReadableNodes } = await import('$lib/modules/tts/infra/ttsUtils');
         const { toast } = await import('svelte-sonner');
         
         const editor = editorState.instance;

@@ -1,6 +1,0 @@
-1764026014089 START "c:\\Users\\asoly\\OneDrive\\Aplicaciones\\schemas-work"
-1764026029058 ERROR "src\\routes\\+layout.svelte" 5:29 "Cannot find module '$lib/components/ui/OrganicCanvas.svelte' or its corresponding type declarations."
-1764026029058 ERROR "src\\routes\\+layout.svelte" 6:26 "Cannot find module '$lib/components/ui/CommandBar.svelte' or its corresponding type declarations."
-1764026029058 ERROR "src\\routes\\+layout.svelte" 7:31 "Cannot find module '$lib/components/ui/NodeDetailPanel.svelte' or its corresponding type declarations."
-1764026029058 ERROR "src\\routes\\+layout.svelte" 8:35 "Cannot find module '$lib/components/ui/GlobalErrorBoundary.svelte' or its corresponding type declarations."
-1764026029059 COMPLETED 665 FILES 4 ERRORS 1 WARNINGS 2 FILES_WITH_PROBLEMS

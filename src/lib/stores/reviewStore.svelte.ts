@@ -8,7 +8,7 @@ import type { SRS } from '$lib/types';
 import type { DeckOptions } from '$lib/services/features/deckService';
 import { get as getStoreValue } from 'svelte/store';
 // --- VVVV CORRECTED IMPORTS VVVV ---
-import { editorState } from './editorStore.svelte';
+import { editorState } from '@modules/editor';
 import { documentState, load as loadDocument } from './documentStore.svelte';
 import { toast } from 'svelte-sonner';
 import * as reviewService from '$lib/services/features/reviewService';

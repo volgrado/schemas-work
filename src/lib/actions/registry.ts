@@ -12,7 +12,7 @@ export interface ActionContext {
   [key: string]: any;
 }
 
-export interface Action {
+export interface Action<T = ActionContext> {
   id: string;
   title: string;
   description?: string;
@@ -24,18 +24,18 @@ export interface Action {
    * The function to execute when the action is triggered.
    * Returns true if the action was successfully executed.
    */
-  handler: (context?: ActionContext) => void | Promise<void> | boolean;
+  handler: (context?: T) => void | Promise<void> | boolean;
   /**
    * Optional condition to check if the action is currently enabled/visible.
    */
-  isEnabled?: (context?: ActionContext) => boolean;
+  isEnabled?: (context?: T) => boolean;
 }
 
 class ActionRegistry {
-  private actions = new Map<string, Action>();
+  private actions = new Map<string, Action<any>>();
   private listeners = new Set<() => void>();
 
-  register(action: Action) {
+  register(action: Action<any>) {
     if (this.actions.has(action.id)) {
       console.warn(`Action with ID "${action.id}" is already registered. Overwriting.`);
     }
@@ -49,19 +49,19 @@ class ActionRegistry {
     }
   }
 
-  get(actionId: string): Action | undefined {
+  get(actionId: string): Action<any> | undefined {
     return this.actions.get(actionId);
   }
 
-  getAll(): Action[] {
+  getAll(): Action<any>[] {
     return Array.from(this.actions.values());
   }
 
-  getActionsByContext(context: ActionContextType): Action[] {
+  getActionsByContext(context: ActionContextType): Action<any>[] {
     return this.getAll().filter(a => a.context === context || a.context === 'global');
   }
 
-  execute(actionId: string, context?: ActionContext) {
+  execute(actionId: string, context?: any) {
     const action = this.get(actionId);
     if (action) {
       if (action.isEnabled && !action.isEnabled(context)) {

@@ -8,7 +8,7 @@
  * a method to generate a prompt, and a method to execute upon acceptance.
  */
 
-import type { StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
+import type { StrategySessionContext } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import type { z } from 'zod';
 import type { JSONContent } from '@tiptap/core';
 import type { SRS } from '$lib/types';

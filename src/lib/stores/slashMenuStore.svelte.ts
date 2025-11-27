@@ -10,7 +10,7 @@
  * between the Tiptap extension (logic), this store (state), and the Svelte component (view).
  */
 
-import type { CommandItem } from '$lib/editor/slashCommands';
+import type { CommandItem } from '$lib/modules/editor/domain/slashCommands';
 
 // --- Type and State Definitions ---
 

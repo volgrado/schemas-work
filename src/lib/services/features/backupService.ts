@@ -1,23 +1,15 @@
-/**
- * @file Implements the vault backup and restore functionality for the application.
- *
- * @remarks
- * This feature service orchestrates several core services to provide a comprehensive,
- * secure, and password-protected backup system for the user's entire dataset.
- */
-
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import * as directoryService from '$lib/services/core/directoryService';
+import { fileSystemStore } from '@modules/file-system';
 import {
   encryptData,
   decryptData,
   uint8ArrayToBase64,
   base64ToUint8Array,
-} from '$lib/utils/crypto';
+} from '$lib/core/utils/crypto';
 import type { Vault } from '$lib/types';
 import { toast } from 'svelte-sonner';
-import * as errorService from '$lib/services/core/errorService';
+import * as errorService from '$lib/core/services/errorService';
 import { t } from '$lib/utils/i18n';
 import { get } from 'svelte/store';
 
@@ -61,7 +53,7 @@ function readFile(file: File): Promise<string> {
  * @returns A promise that resolves when all data has been successfully cleared.
  */
 async function clearAllData(): Promise<void> {
-  const allItems = await directoryService.getAllItems();
+  const allItems = fileSystemStore.getAll();
   const schemasToDelete = allItems.filter((item) => item.type === 'schema');
 
   const deletionPromises = schemasToDelete.map(
@@ -79,7 +71,7 @@ async function clearAllData(): Promise<void> {
       })
   );
   await Promise.all(deletionPromises);
-  await directoryService.clearDirectory();
+  await fileSystemStore.clear();
 }
 
 /**
@@ -111,7 +103,7 @@ export async function exportVault(password: string): Promise<void> {
       throw new Error(_t('backup_service.errors.password_required_export'));
     }
 
-    const allItems = await directoryService.getAllItems();
+    const allItems = fileSystemStore.getAll();
     const schemasToExport = allItems.filter((item) => item.type === 'schema');
 
     const content: Record<string, string> = {};
@@ -204,7 +196,7 @@ export async function importVault(password: string): Promise<void> {
     }
 
     await clearAllData();
-    await directoryService.saveDirectory(vault.schemas);
+    await fileSystemStore.restore(vault.schemas);
 
     for (const schemaId in vault.content) {
       const ydoc = new Y.Doc();

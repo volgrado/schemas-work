@@ -5,18 +5,18 @@
   import type { Snippet } from 'svelte';
 
   // --- UI Components & Utilities ---
-  import Logo from '$lib/components/core/Logo.svelte';
+  import Logo from '$lib/core/ui/Logo.svelte';
   import { t } from '$lib/utils/i18n';
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
-  import ThemeToggleButton from '$lib/components/core/ThemeToggleButton.svelte';
+  import ThemeToggleButton from '$lib/core/ui/ThemeToggleButton.svelte';
 
   // VVVV CORRECTED IMPORTS VVVV
   import {
     documentState,
     close as closeDocument,
   } from '$lib/stores/documentStore.svelte';
-  import { stopReading } from '$lib/stores/ttsStore.svelte';
-  import { close as closeCardEditor } from '$lib/stores/cardEditorStore.svelte';
+  import { stopReading } from '$lib/modules/tts/ui/ttsStore.svelte';
+  import { close as closeCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
   import { finishReview } from '$lib/stores/reviewStore.svelte';
 
   let {

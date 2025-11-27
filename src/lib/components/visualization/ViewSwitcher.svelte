@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import FloatingActionButton from '$lib/components/core/FloatingActionButton.svelte';
+  import FloatingActionButton from '$lib/core/ui/FloatingActionButton.svelte';
   import { t } from '$lib/utils/i18n';
 
   let { 

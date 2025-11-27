@@ -22,8 +22,8 @@
   } from '$lib/stores/reviewStore.svelte';
   import { evaluateAnswer } from '$lib/services/features/reviewService';
 
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
   // FIX: Importar el namespace SRS y crear alias locales para los tipos.
   import type { SRS } from '$lib/types';
   type ReviewQuality = SRS.ReviewQuality;

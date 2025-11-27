@@ -2,23 +2,21 @@
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
   import { Toaster } from 'svelte-sonner';
-  import OrganicCanvas from '$lib/components/core/OrganicCanvas.svelte';
-  import CommandBar from '$lib/components/features/command-bar/CommandBar.svelte';
+  import OrganicCanvas from '$lib/core/ui/OrganicCanvas.svelte';
+  import CommandBar from '$lib/modules/command-bar/ui/CommandBar.svelte';
   import NodeDetailPanel from '$lib/components/features/node-detail/NodeDetailPanel.svelte';
-  import GlobalErrorBoundary from '$lib/components/core/GlobalErrorBoundary.svelte';
+  import GlobalErrorBoundary from '$lib/core/ui/GlobalErrorBoundary.svelte';
   import type { Snippet } from 'svelte';
 
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
 
   // --- RESTORED IMPORTS ---
   import { themeStore, _applyThemeToDOM } from '$lib/stores/themeStore.svelte';
-  import { initialize as initializeTts } from '$lib/stores/ttsStore.svelte';
+  import { initialize as initializeTts } from '$lib/modules/tts/ui/ttsStore.svelte';
   import { settingsState } from '$lib/stores/settingsStore.svelte';
-  import { initializeDirectoryListener } from '$lib/services/core/directoryService';
   import { initializeDocumentStoreListeners } from '$lib/stores/documentStore.svelte';
   import { initializeReviewStoreListeners } from '$lib/stores/reviewStore.svelte';
-  import * as errorService from '$lib/services/core/errorService';
-  import * as integrityService from '$lib/services/core/integrityService'; // NEW
+  import * as errorService from '$lib/core/services/errorService';
   import { initializeIcons } from '$lib/services/iconService'; // NEW
   import { registerCommandBarActions } from '$lib/init'; // NEW
 
@@ -51,7 +49,6 @@
 
     // NEW: Run Integrity Check
     if (browser) {
-      await integrityService.initialize();
       initializeIcons(); // Register offline icons
       registerCommandBarActions(); // Register command bar actions
     }
@@ -71,12 +68,8 @@
       errorService.reportError(event.reason, { source: 'unhandledrejection' });
       capturedError = event.reason;
       hasError = true;
+
     };
-
-    window.addEventListener('error', handleGlobalError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    const cleanupDirectoryListener = initializeDirectoryListener();
     initializeReviewStoreListeners();
     initializeDocumentStoreListeners();
     initializeTts();
@@ -94,7 +87,6 @@
     return () => {
       window.removeEventListener('error', handleGlobalError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      cleanupDirectoryListener();
     };
   });
 

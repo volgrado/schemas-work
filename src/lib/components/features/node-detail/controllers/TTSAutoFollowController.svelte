@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ttsState } from '$lib/stores/ttsStore.svelte';
-  import { editorState } from '$lib/stores/editorStore.svelte';
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
   import { uiState } from '$lib/stores/uiStore.svelte';
   import { nodeDetailState, openPanel } from '$lib/stores/nodeDetailStore.svelte';
   import { extractContentWithPositions } from '$lib/utils/contentExtraction';

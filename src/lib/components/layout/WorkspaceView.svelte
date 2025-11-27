@@ -4,22 +4,22 @@
   import { fade } from 'svelte/transition';
 
   // --- Components ---
-  import DocumentView from '$lib/components/editor/DocumentView.svelte';
+  import DocumentView from '$lib/modules/editor/ui/DocumentView.svelte';
   // SchemaTree is now lazy loaded
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
-  import Spinner from '$lib/components/core/Spinner.svelte';
-  import EmptyState from '$lib/components/core/EmptyState.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
+  import EmptyState from '$lib/core/ui/EmptyState.svelte';
 
   // --- Stores ---
-  import { open as openCommandBar } from '$lib/stores/commandBarStore.svelte';
+  import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
   import {
     documentState,
     create as createDocument,
     setFocusCommand,
   } from '$lib/stores/documentStore.svelte';
-  import { editorState, updateSelection } from '$lib/stores/editorStore.svelte';
+  import { editorState, updateSelection } from '$lib/modules/editor/ui/editorStore.svelte';
   import { t } from '$lib/utils/i18n';
 
   // --- Services ---

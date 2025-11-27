@@ -8,7 +8,7 @@ import type { IAICommand, WorkbenchState } from './IAICommand';
 import {
   type StrategySessionContext,
   commandBarState,
-} from '$lib/stores/commandBarStore.svelte';
+} from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 // VVVV CORRECTED IMPORT VVVV
 import { create as createDocument } from '$lib/stores/documentStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas';

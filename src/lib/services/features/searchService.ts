@@ -5,9 +5,9 @@
  */
 
 import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
-import * as directoryService from '$lib/services/core/directoryService';
+import { fileSystemStore } from '@modules/file-system';
 import type { SchemaMetadata } from '$lib/types';
-import { searchCommands, type SearchOptions } from './commandService';
+import { searchCommands, type SearchOptions } from '@modules/command-bar';
 // REFINEMENT: Import the Search namespace for all search-related types.
 import type { Search } from '$lib/types';
 
@@ -96,10 +96,17 @@ async function findContent(
   queryText: string,
   docMap: Map<string, SchemaMetadata>
 ): Promise<Search.ContentResult[]> {
-  const topChunks = await neuralIndexService.findSimilarChunksAcrossVault(
+  const chunksResult = await neuralIndexService.findSimilarChunksAcrossVault(
     queryText,
     10
   );
+
+  if (!chunksResult.ok) {
+    console.error('Search failed:', chunksResult.error);
+    return [];
+  }
+
+  const topChunks = chunksResult.value;
 
   const results: (Search.ContentResult | null)[] = topChunks.map((chunk) => {
     const doc = docMap.get(chunk.docId);
@@ -145,7 +152,7 @@ export async function performSearch(
 ): Promise<Search.ResultGroup[]> {
   const trimmedQuery = queryText.trim();
   const resultGroups: Search.ResultGroup[] = [];
-  const allDocs = await directoryService.getAllItems();
+  const allDocs = fileSystemStore.getAll();
   const docMap = new Map<string, SchemaMetadata>(
     allDocs.map((doc) => [doc.id, doc])
   );

@@ -6,15 +6,9 @@ import type { SchemaMetadata } from '$lib/types';
 import * as Y from 'yjs';
 import type { IndexeddbPersistence } from 'y-indexeddb';
 import { get as getStoreValue } from 'svelte/store';
-import {
-  directoryEvent,
-  getItemById,
-  setLastActiveDocId,
-  createSchema,
-  updateItemMetadata,
-} from '$lib/services/core/directoryService';
-import { getDocumentProvider } from '$lib/services/core/persistenceService';
-import * as errorService from '$lib/services/core/errorService';
+import { fileSystemStore } from '@modules/file-system';
+import { getDocumentProvider } from '$lib/core/services/persistenceService';
+import * as errorService from '$lib/core/services/errorService';
 import { t } from '$lib/utils/i18n';
 
 // --- Type and State Definitions ---
@@ -68,7 +62,7 @@ export async function load(
       setTimeout(resolve, MIN_LOADING_TIME)
     );
     const loadData = async () => {
-      const metadata = await getItemById(docId);
+      const metadata = fileSystemStore.getItem(docId);
       if (!metadata || metadata.type !== 'schema') {
         throw new Error(
           getStoreValue(t)('document.invalid_document_error', { docId })
@@ -84,7 +78,7 @@ export async function load(
     documentState.provider = loadedData.provider;
     documentState.status = 'ready';
     console.log(`[documentStore] Document loaded. Status set to 'ready'.`); // Added this log for confirmation
-    await setLastActiveDocId(docId);
+    await fileSystemStore.setLastActiveDocId(docId);
   } catch (error) {
     errorService.reportError(error, { operation: 'loadDocument', docId });
     Object.assign(documentState, initialState);
@@ -100,7 +94,7 @@ export async function create(
   cleanup();
   documentState.status = 'loading';
   try {
-    const newMetadata = await createSchema(title, parentId);
+    const newMetadata = await fileSystemStore.createSchema(title, parentId);
     const { ydoc, provider } = getDocumentProvider(newMetadata.id);
     await provider.whenSynced;
     documentState.docId = newMetadata.id;
@@ -120,7 +114,7 @@ export async function create(
       ],
     };
     documentState.focusedNodeId = null;
-    await setLastActiveDocId(newMetadata.id);
+    await fileSystemStore.setLastActiveDocId(newMetadata.id);
     return newMetadata;
   } catch (error) {
     errorService.reportError(error, {
@@ -142,7 +136,7 @@ export async function updateTitle(newTitle: string): Promise<void> {
   const oldMetadata = { ...currentMetadata };
   documentState.metadata = { ...currentMetadata, title: trimmedTitle };
   try {
-    await updateItemMetadata(docId, { title: trimmedTitle });
+    await fileSystemStore.updateItem(docId, { title: trimmedTitle });
   } catch (error) {
     errorService.reportError(error, {
       operation: 'documentStore.updateTitle',
@@ -153,10 +147,11 @@ export async function updateTitle(newTitle: string): Promise<void> {
 
 export function initializeDocumentStoreListeners(): void {
   $effect(() => {
-    const unsubscribe = directoryEvent.subscribe((event) => {
+    const unsubscribe = fileSystemStore.subscribe((event) => {
       if (!event || !documentState.docId) return;
-      if (event.type === 'reloaded' && Array.isArray(event.item)) {
-        const updatedMetadata = event.item.find(
+
+      if (event.type === 'reloaded') {
+        const updatedMetadata = event.items.find(
           (doc: SchemaMetadata) => doc.id === documentState.docId
         );
         if (!updatedMetadata) {
@@ -169,15 +164,19 @@ export function initializeDocumentStoreListeners(): void {
         }
         return;
       }
-      if (!Array.isArray(event.item)) {
-        const item = event.item;
-        if (event.type === 'deleted' && item.id === documentState.docId) {
-          cleanup();
-        }
-        if (event.type === 'updated' && item.id === documentState.docId) {
-          if (JSON.stringify(documentState.metadata) !== JSON.stringify(item)) {
-            documentState.metadata = item;
-          }
+
+      const item = event.item;
+      // Handle "deleted all" or specific delete
+      if (event.type === 'deleted') {
+           if (item.id === 'all' || item.id === documentState.docId) {
+               cleanup();
+           }
+           return;
+      }
+
+      if (event.type === 'updated' && item.id === documentState.docId) {
+        if (JSON.stringify(documentState.metadata) !== JSON.stringify(item)) {
+          documentState.metadata = item;
         }
       }
     });

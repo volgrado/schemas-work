@@ -4,10 +4,21 @@
  * to prevent blocking the main thread.
  */
 
+export interface TiptapNode {
+  type: string;
+  attrs?: {
+    level?: number;
+    nodeId?: string;
+    [key: string]: any;
+  };
+  content?: TiptapNode[];
+  text?: string;
+}
+
 export interface WorkerMessage {
   type: 'atomize';
   docId: string;
-  docJson: any; // Tiptap/ProseMirror document JSON
+  docJson: { content?: TiptapNode[] }; // Tiptap/ProseMirror document JSON
 }
 
 export interface WorkerResponse {
@@ -34,7 +45,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
 /**
  * Atomizes a Tiptap document JSON into "Term/Description" chunks based on heading levels.
  */
-function atomizeDocument(docJson: any): { id: string; content: string }[] {
+function atomizeDocument(docJson: { content?: TiptapNode[] }): { id: string; content: string }[] {
   const chunks: { id: string; content: string }[] = [];
   
   // Ensure we have content to process
@@ -58,10 +69,10 @@ function atomizeDocument(docJson: any): { id: string; content: string }[] {
         (nextNode.content || []).length > 0
       ) {
         const term = (node.content || [])
-          .map((c: any) => c.text || '')
+          .map((c) => c.text || '')
           .join('');
         const description = (nextNode.content || [])
-          .map((c: any) => c.text || '')
+          .map((c) => c.text || '')
           .join('');
         const nodeId = node.attrs.nodeId;
 

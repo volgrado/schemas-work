@@ -6,7 +6,7 @@
 
 import type { IAICommand, WorkbenchState } from './IAICommand';
 // VVVV THIS TYPE IS THE ONE WE'RE MODIFYING IN THE MODAL VVVV
-import { type StrategySessionContext } from '$lib/stores/commandBarStore.svelte';
+import { type StrategySessionContext } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import * as aiSchemas from '$lib/schemas/aiSchemas';
 import * as Prompts from '$lib/services/ai/prompts';
 import { documentState } from '$lib/stores/documentStore.svelte';

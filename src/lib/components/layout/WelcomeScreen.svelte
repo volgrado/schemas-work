@@ -18,8 +18,8 @@
 
   // --- UI Components & Utilities ---
   import { t } from '$lib/utils/i18n';
-  import Button from '$lib/components/core/Button.svelte';
-  import Icon from '$lib/components/core/Icon.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
 
   let { onstart } = $props<{ 
     onstart: () => void;

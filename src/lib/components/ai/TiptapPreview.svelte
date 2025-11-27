@@ -4,7 +4,7 @@
   import StarterKit from '@tiptap/starter-kit';
   import Heading from '@tiptap/extension-heading';
   // The custom Selection extension is no longer needed as we aren't firing a callback.
-  // import { Selection } from '$lib/editor/extensions/Selection';
+  // import { Selection } from '$lib/modules/editor/infra/extensions/Selection';
 
   // --- Props ---
   // FIX: The onSelectionUpdate prop has been removed.
