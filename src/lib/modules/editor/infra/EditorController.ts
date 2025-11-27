@@ -48,6 +48,7 @@ import {
 import { neuralIndexService } from '$lib/modules/ai/neuralIndexService';
 import { debounce } from '$lib/core/utils/debounce';
 import type { Node as ProseMirrorNode } from 'prosemirror-model';
+import { NodeSelection, TextSelection } from 'prosemirror-state';
 
 /**
  * Configuration options for the EditorController.
@@ -230,15 +231,14 @@ export class EditorController {
 
     // Case 1: Node Selection (e.g., clicked on a handle)
     if (
-      selection.constructor.name === 'NodeSelection' &&
-      (selection as any).node.type.name === 'heading' &&
-      !(selection as any).empty
+      selection instanceof NodeSelection &&
+      selection.node.type.name === 'heading'
     ) {
-      newSelectedNode = (selection as any).node;
+      newSelectedNode = selection.node;
       newSelectedPos = selection.from;
     }
     // Case 2: Text Cursor inside a heading
-    else if (selection.empty) {
+    else if (selection instanceof TextSelection && selection.empty) {
       const { $from: resolvedPos } = selection;
       const parentNode = resolvedPos.parent;
       if (parentNode.type.name === 'heading') {

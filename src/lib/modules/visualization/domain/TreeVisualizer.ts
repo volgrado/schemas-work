@@ -6,6 +6,8 @@ import type { Link } from 'd3-shape';
 // D3 Module Types (Lazy Loaded)
 type D3 = typeof import('d3');
 
+type D3Selection<T extends d3.BaseType> = Selection<T, unknown, null, undefined>;
+
 export interface TreeNodeData {
   id: string;
   content: string;
@@ -30,8 +32,8 @@ type PointNode = HierarchyNode<TreeNodeData> & {
 
 export class TreeVisualizer {
   private container: HTMLElement;
-  private svg: Selection<SVGSVGElement, unknown, null, undefined> | null = null;
-  private g: Selection<SVGGElement, unknown, null, undefined> | null = null;
+  private svg: D3Selection<SVGSVGElement> | null = null;
+  private g: D3Selection<SVGGElement> | null = null;
   private zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
 
   // D3 Library
@@ -151,7 +153,7 @@ export class TreeVisualizer {
       .selectAll('g.node')
       .classed(
         'is-selected',
-        (d: unknown) => (d as PointNode).data.id === nodeId
+        (d) => (d as PointNode).data.id === nodeId
       );
   }
 
@@ -162,7 +164,7 @@ export class TreeVisualizer {
       .selectAll('g.node')
       .classed(
         'is-reading',
-        (d: unknown) => (d as PointNode).data.id === nodeId
+        (d) => (d as PointNode).data.id === nodeId
       );
   }
 
@@ -234,7 +236,7 @@ export class TreeVisualizer {
     // Link casting fix
     this.g
       .selectAll('path.link')
-      .filter((l: unknown) => {
+      .filter((l) => {
         const link = l as { source: PointNode; target: PointNode };
         return (
           ancestorIds.has(link.source.data.id) &&
@@ -246,7 +248,7 @@ export class TreeVisualizer {
 
     this.g
       .selectAll('path.link')
-      .filter((l: unknown) => {
+      .filter((l) => {
         const link = l as { source: PointNode; target: PointNode };
         return (
           descendantIds.has(link.source.data.id) &&
@@ -441,7 +443,7 @@ export class TreeVisualizer {
         SVGPathElement,
         Link<unknown, PointNode, PointNode>
       >('path.link')
-      .data(links, (d: any) => d.target.data.id);
+      .data(links, (d) => (d as any).target.data.id);
 
     const linkEnter = link
       .enter()
@@ -492,7 +494,7 @@ export class TreeVisualizer {
       const colorUrl = this.getColorUrlForNode(pointNode);
       const rectEl = this.d3!.select(nodes[i]);
       const rectNode = nodes[i] as HTMLElement;
-      const nodeGroup = this.d3!.select(rectNode.parentNode as any);
+      const nodeGroup = this.d3!.select(rectNode.parentNode as Element);
 
       if (colorUrl) {
         rectNode.style.setProperty('--node-fill', colorUrl);

@@ -10,7 +10,7 @@ export interface ErrorLog {
   timestamp: string;
   message: string;
   stack?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   telemetry?: string[]; // Flight Recorder trace
 }
 
@@ -32,7 +32,7 @@ const recentErrorCounts: Record<string, { count: number; timestamp: number }> =
  * Records a user action or system event to the in-memory flight recorder.
  * These actions are attached to error reports to help reproduce issues.
  */
-export function recordAction(action: string, data?: any): void {
+export function recordAction(action: string, data?: unknown): void {
   const timestamp = new Date().toISOString().split('T')[1].slice(0, -1); // HH:mm:ss.sss
   let entry = `[${timestamp}] ${action}`;
 
@@ -128,7 +128,7 @@ export function getLogs(): ErrorLog[] {
 
 export function reportError(
   error: unknown,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ): void {
   if (typeof window === 'undefined') return;
 

@@ -103,9 +103,36 @@
     border-color: var(--color-accent-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+    overflow: hidden; /* For shine effect */
+    position: relative;
   }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
+  }
+  /* Shine Effect */
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transform: skewX(-20deg);
+    transition: none;
+  }
+  .btn-primary:hover:not(:disabled)::after {
+    animation: shine 0.75s;
+  }
+  @keyframes shine {
+    100% {
+      left: 200%;
+    }
   }
   .btn-primary:disabled {
     background: var(--color-gray-200);

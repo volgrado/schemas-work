@@ -27,6 +27,8 @@ export interface ReviewProcessingResult {
   shouldRequeue: boolean;
 }
 
+import * as scheduler from './scheduler';
+
 export class ReviewSessionService {
   /**
    * Prepares a standard review session by fetching due cards and applying limits.
@@ -41,13 +43,15 @@ export class ReviewSessionService {
 
     const dueCards = await reviewService.getDueCards(deckIds);
 
-    // Split into queues
-    const newCards = dueCards.filter((c) => !c.srs || c.srs.repetitions === 0);
+    // Split into queues using robust scheduler state
+    const newCards = dueCards.filter((c) => scheduler.getCardState(c) === 'new');
     const learningCards = dueCards.filter(
-      (c) => c.srs && c.srs.learningStep > 0
+      (c) =>
+        scheduler.getCardState(c) === 'learning' ||
+        scheduler.getCardState(c) === 'relearning'
     );
     const reviewCards = dueCards.filter(
-      (c) => c.srs && c.srs.repetitions > 0 && c.srs.learningStep === 0
+      (c) => scheduler.getCardState(c) === 'review'
     );
 
     // Apply limits

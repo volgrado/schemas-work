@@ -11,7 +11,7 @@
 // Define basic types for Tiptap JSON for clarity.
 type TiptapNode = {
   type: string;
-  attrs?: Record<string, any>;
+  attrs?: Record<string, unknown>;
   content?: TiptapNode[];
   text?: string;
 };

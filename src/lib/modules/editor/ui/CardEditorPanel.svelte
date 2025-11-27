@@ -20,6 +20,7 @@
   import HelpTooltip from '$lib/core/ui/HelpTooltip.svelte';
   import TagInput from '$lib/core/ui/TagInput.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
+  import EmptyState from '$lib/core/ui/EmptyState.svelte';
 
   // --- Stores, Actions, and Utilities ---
   import { i18n } from '$lib/utils/i18n.svelte';
@@ -32,7 +33,20 @@
 
   // Element references for popups/focus management
   let addCardButtonEl = $state<HTMLElement | null>(null);
+
+  /**
+   * Handle global keyboard shortcuts.
+   * - Ctrl+Enter: Close panel (Save & Done)
+   */
+  function handleKeydown(e: KeyboardEvent) {
+    if (cardEditorState.isOpen && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      controller.closePanel();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if cardEditorState.isOpen}
   <!-- Overlay Backdrop: Click to close -->
@@ -54,7 +68,12 @@
     <header class="header">
       <div class="header-left">
         <div class="header-title">
-          <h3 id="panel-title">{i18n.t('card_editor_panel.title')}</h3>
+          <h3 id="panel-title">
+            {i18n.t('card_editor_panel.title')}
+            <span class="card-count-badge">
+              {cardEditorState.cards.length}
+            </span>
+          </h3>
           <HelpTooltip>{i18n.t('card_editor_panel.tooltip')}</HelpTooltip>
         </div>
         {#if cardEditorState.status !== 'idle'}
@@ -132,6 +151,24 @@
                 onclick={() => controller.handleAddCard('multiple_choice')}
                 ><Icon name="list" size={16} />{i18n.t(
                   'card_editor_panel.add_multiple_choice'
+                )}</button
+              >
+            </li>
+            <li role="presentation">
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('cloze')}
+                ><Icon name="edit-3" size={16} />{i18n.t(
+                  'card_editor_panel.add_cloze'
+                )}</button
+              >
+            </li>
+            <li role="presentation">
+              <button
+                role="menuitem"
+                onclick={() => controller.handleAddCard('matching')}
+                ><Icon name="refresh-cw" size={16} />{i18n.t(
+                  'card_editor_panel.add_matching'
                 )}</button
               >
             </li>
@@ -421,9 +458,106 @@
                   </div>
                 {/if}
 
+                <!-- Cloze Card Inputs -->
+                {#if card.type === 'cloze'}
+                  <div class="field">
+                    <label for="c-{card.id}"
+                      >{i18n.t('card_editor_panel.cloze_text_label')}</label
+                    >
+                    <textarea
+                      id="c-{card.id}"
+                      placeholder={i18n.t(
+                        'card_editor_panel.cloze_text_placeholder'
+                      )}
+                      bind:value={card.content.text}
+                      oninput={() => {
+                        // Auto-extract clozes from text
+                        const matches =
+                          card.content.text.match(/\{\{(.*?)\}\}/g);
+                        if (matches) {
+                          card.content.clozes = matches.map((m) =>
+                            m.slice(2, -2)
+                          );
+                        } else {
+                          card.content.clozes = [];
+                        }
+                        controller.handleUpdate(card);
+                      }}
+                      use:autosize
+                    ></textarea>
+                    <p class="help-text">
+                      Use <code>&lbrace;&lbrace;word&rbrace;&rbrace;</code> to create a cloze deletion.
+                    </p>
+                  </div>
+
+                  <!-- Matching Card Inputs -->
+                {:else if card.type === 'matching'}
+                  <div class="field">
+                    <label for="m-{card.id}"
+                      >{i18n.t('card_editor_panel.prompt_label')}</label
+                    >
+                    <input
+                      id="m-{card.id}"
+                      type="text"
+                      placeholder={i18n.t(
+                        'card_editor_panel.prompt_placeholder'
+                      )}
+                      bind:value={card.content.prompt}
+                      oninput={() => controller.handleUpdate(card)}
+                    />
+                  </div>
+                  <div class="field">
+                    <span class="field-label"
+                      >{i18n.t('card_editor_panel.pairs_label')}</span
+                    >
+                    <div class="sequence-items">
+                      {#each card.content.pairs as pair, pairIndex (pairIndex)}
+                        <div class="sequence-item matching-pair-editor">
+                          <input
+                            type="text"
+                            placeholder="Left Item"
+                            bind:value={pair.left}
+                            oninput={() => controller.handleUpdate(card)}
+                          />
+                          <span class="connector">→</span>
+                          <input
+                            type="text"
+                            placeholder="Right Item"
+                            bind:value={pair.right}
+                            oninput={() => controller.handleUpdate(card)}
+                          />
+                          <button
+                            class="remove-item-button"
+                            onclick={() => {
+                              card.content.pairs.splice(pairIndex, 1);
+                              controller.handleUpdate(card);
+                            }}
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
+                        </div>
+                      {/each}
+                      <button
+                        class="add-item-button"
+                        onclick={() => {
+                          card.content.pairs.push({ left: '', right: '' });
+                          controller.handleUpdate(card);
+                        }}
+                      >
+                        <Icon name="plus" size={14} />
+                        {i18n.t('card_editor_panel.add_pair')}
+                      </button>
+                    </div>
+                  </div>
+                {/if}
+
                 <!-- Shared: Tags Input -->
                 <div class="field">
-                  <label for="tags-{card.id}">Tags</label>
+                  <label for="tags-{card.id}"
+                    >{i18n.t('card_editor_panel.tags_label', {
+                      defaultValue: 'Tags (Optional)',
+                    })}</label
+                  >
                   <TagInput
                     id="tags-{card.id}"
                     bind:tags={card.tags}
@@ -444,11 +578,14 @@
         </div>
       {:else}
         <!-- Empty State -->
-        <div class="empty-state">
-          <Icon name="plus-square" size={40} />
-          <h4>{i18n.t('card_editor_panel.empty_title')}</h4>
-          <p>{i18n.t('card_editor_panel.empty_message')}</p>
-        </div>
+        <!-- Empty State -->
+        <EmptyState
+          title={i18n.t('card_editor_panel.empty_title')}
+          description={i18n.t('card_editor_panel.empty_message')}
+          icon="plus-square"
+          actionLabel={i18n.t('card_editor_panel.add_card')}
+          onaction={() => (controller.showAddMenu = true)}
+        />
       {/if}
     </div>
   </div>
@@ -503,6 +640,18 @@
     font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  .card-count-badge {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background-color: var(--color-background-raised);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
   }
   .save-status {
     display: flex;
@@ -697,20 +846,6 @@
   .remove-item-button:hover {
     color: var(--color-danger);
     background-color: var(--color-danger-bg);
-  }
-  .empty-state {
-    text-align: center;
-    color: var(--color-text-secondary);
-    padding: var(--space-xl) 0;
-  }
-  .empty-state h4 {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: var(--color-text);
-    margin: var(--space-md) 0 0 0;
-  }
-  .empty-state p {
-    margin: var(--space-xs) 0 0 0;
   }
   @media (min-width: 640px) {
     .panel {

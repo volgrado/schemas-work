@@ -34,99 +34,18 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  * @param options - The configuration options for the current deck (e.g., learning steps).
  * @returns {Promise<SRS.Card>} A new Card object with updated scheduling data.
  */
+import * as scheduler from './scheduler';
+
+/**
+ * Calculates the updated SRS state for a card after a review session.
+ * Delegates to the robust scheduler module.
+ */
 export async function calculateNextReview(
   card: SRS.Card,
   quality: SRS.ReviewQuality,
   options: Omit<DeckOptions, 'deckId'>
 ): Promise<SRS.Card> {
-  // Initialize SRS data if missing (e.g. imported cards)
-  const srs = card.srs || {
-    repetitions: 0,
-    interval: 0,
-    easeFactor: 2.5,
-    dueDate: 0,
-    learningStep: 1, // Start in learning phase
-  };
-
-  const learningStepsMs = options.learningSteps.split(' ').map(parseTime);
-
-  // --- Phase 1: Learning ---
-  if (srs.learningStep > 0) {
-    if (quality >= 3) {
-      // "Good" or "Easy"
-      const currentStepIndex = srs.learningStep - 1;
-
-      // Check if there are more learning steps remaining
-      if (currentStepIndex < learningStepsMs.length - 1) {
-        // Advance to the next learning step
-        return {
-          ...card,
-          srs: {
-            ...srs,
-            learningStep: srs.learningStep + 1,
-            dueDate: Date.now() + learningStepsMs[srs.learningStep],
-          },
-        };
-      } else {
-        // Graduate the card to the Review phase
-        return {
-          ...card,
-          srs: {
-            ...srs,
-            learningStep: 0,
-            interval: options.graduatingInterval,
-            dueDate: Date.now() + options.graduatingInterval * ONE_DAY_MS,
-            repetitions: 1,
-          },
-        };
-      }
-    } else {
-      // "Again" - User forgot the card. Reset to the first learning step.
-      return {
-        ...card,
-        srs: {
-          ...srs,
-          learningStep: 1,
-          repetitions: 0, // Reset repetition count
-          dueDate: Date.now() + learningStepsMs[0],
-        },
-      };
-    }
-  }
-
-  // --- Phase 2: Review (Graduated) ---
-  if (quality >= 3) {
-    // "Good" or "Easy" - Calculate new interval
-    let newInterval: number;
-    if (srs.repetitions === 0) newInterval = options.graduatingInterval;
-    else if (srs.repetitions === 1)
-      newInterval = 6; // Default jump for second repetition
-    else newInterval = Math.round(srs.interval * srs.easeFactor);
-
-    // Adjust Ease Factor based on performance
-    const newEaseFactor =
-      srs.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-
-    const finalSrs: SRS.Data = {
-      repetitions: srs.repetitions + 1,
-      interval: newInterval,
-      easeFactor: Math.max(1.3, newEaseFactor), // Ease factor floor of 1.3
-      dueDate: Date.now() + newInterval * ONE_DAY_MS,
-      learningStep: 0,
-    };
-    return { ...card, srs: finalSrs };
-  } else {
-    // "Again" - Card lapsed. Re-enter learning phase.
-    const newSrs: SRS.Data = {
-      repetitions: 0,
-      interval: 0,
-      // Penalty: Reduce ease factor, but keep it above 1.3
-      easeFactor: Math.max(1.3, srs.easeFactor - 0.2),
-      dueDate: Date.now() + learningStepsMs[0],
-      learningStep: 1, // Back to step 1
-    };
-    return { ...card, srs: newSrs };
-  }
+  return scheduler.calculateNextReview(card, quality, options);
 }
 
 /**
@@ -184,12 +103,23 @@ export async function getAllDeckStats(): Promise<
     }
 
     const deckStat = stats.get(card.deckId)!;
-    const srs = card.srs;
+    const state = scheduler.getCardState(card);
 
-    // Categorize the card
-    if (!srs || srs.repetitions === 0) deckStat.new++;
-    else if (srs.learningStep > 0 && srs.dueDate <= now) deckStat.learning++;
-    else if (srs.dueDate <= now) deckStat.due++;
+    if (state === 'new') {
+      deckStat.new++;
+    } else if (state === 'learning' || state === 'relearning') {
+      // Only count as learning if due? Or total in queue?
+      // Anki counts total in learning queue usually.
+      // But for "Due" count in UI, we usually want what is actionable.
+      // Let's stick to actionable for now to match getDueCards logic.
+      if (card.srs.dueDate <= now) {
+        deckStat.learning++;
+      }
+    } else if (state === 'review') {
+      if (card.srs.dueDate <= now) {
+        deckStat.due++;
+      }
+    }
   }
   return stats;
 }

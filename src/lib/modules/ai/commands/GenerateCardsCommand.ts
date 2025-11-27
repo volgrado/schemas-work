@@ -56,8 +56,9 @@ export class GenerateCardsCommand implements IAICommand {
     const settings = {
       // Use the quantity from the UI if it's provided, otherwise default to 5.
       quantity: context.quantity ?? 5,
-      // Default set of card types to generate.
-      types: ['basic', 'input', 'true_false', 'multiple_choice'] as SRS.CardType[],
+      // Use types from context if provided, otherwise default to a mix.
+      types: (context.types as SRS.CardType[]) ??
+        (['basic', 'input', 'true_false', 'multiple_choice', 'cloze', 'matching'] as SRS.CardType[]),
     };
 
     return Prompts.getGenerateCardsPrompt(settings, documentText);

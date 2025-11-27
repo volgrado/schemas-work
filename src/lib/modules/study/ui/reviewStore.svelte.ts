@@ -7,7 +7,7 @@ import type { SRS } from '$lib/types';
 import type { DeckOptions } from '$lib/modules/study/domain/deckService';
 
 import { editorState } from '@modules/editor';
-import { documentState, load as loadDocument } from '$lib/modules/editor/ui/documentStore.svelte';
+import { documentState, load as loadDocument, setFocusCommand } from '$lib/modules/editor/ui/documentStore.svelte';
 import { toast } from 'svelte-sonner';
 import * as deckService from '$lib/modules/study/domain/deckService';
 import { ReviewSessionService } from '$lib/modules/study/domain/reviewSessionService';
@@ -231,6 +231,8 @@ export async function jumpToSource(): Promise<void> {
 
   if (currentCard.deckId !== currentDocId) {
     await loadDocument(currentCard.deckId, currentCard.id);
+  } else {
+    setFocusCommand(currentCard.id);
   }
 
   reviewState.isUiVisible = false;

@@ -41,7 +41,7 @@
       desc: 'feature.learn.description',
     },
     {
-      icon: 'lock',
+      icon: 'wifi-off', // Updated to reflect Offline capability
       title: 'feature.privacy.title',
       desc: 'feature.privacy.description',
     },
@@ -49,7 +49,8 @@
 </script>
 
 <div class="welcome-container">
-  <div class="content-panel">
+  <div class="background-mesh"></div>
+  <div class="content-panel glass-panel">
     <header
       class="header"
       in:fly={{ y: 20, duration: 500, easing: quintOut, delay: 100 }}
@@ -71,7 +72,9 @@
             delay: 300 + i * 100,
           }}
         >
-          <Icon name={feature.icon} size={24} />
+          <div class="icon-wrapper">
+            <Icon name={feature.icon} size={24} />
+          </div>
           <div class="feature-text">
             <h2 class="feature-title">{i18n.t(feature.title)}</h2>
             <p>{i18n.t(feature.desc)}</p>
@@ -110,11 +113,26 @@
     box-sizing: border-box;
     overflow-y: auto;
     position: relative;
+    background-color: var(--color-background);
+  }
+
+  /* Mesh Gradient Background */
+  .background-mesh {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     background: radial-gradient(
-      circle at 50% 30%,
-      hsl(var(--color-accent-hsl) / 0.08) 0%,
-      transparent 60%
-    );
+        circle at 15% 50%,
+        hsl(var(--color-accent-hsl) / 0.15),
+        transparent 25%
+      ),
+      radial-gradient(
+        circle at 85% 30%,
+        hsl(var(--color-accent-hsl) / 0.1),
+        transparent 25%
+      );
+    filter: blur(60px);
+    pointer-events: none;
   }
 
   /* --- Landing Styles --- */
@@ -122,18 +140,34 @@
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 640px;
+    max-width: 800px; /* Wider for better grid layout */
     display: flex;
     flex-direction: column;
     gap: var(--space-xl);
+    padding: var(--space-xl);
+    border-radius: 24px;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.03); /* Subtle glass tint */
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 4px 24px -1px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   }
+
+  :global(.dark-theme) .content-panel {
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow:
+      0 8px 32px -4px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  }
+
   .header,
   .footer {
     text-align: center;
   }
   .title {
     font-family: var(--font-main);
-    font-size: 3.5rem;
+    font-size: 4rem;
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 0;
@@ -153,26 +187,28 @@
     -webkit-text-fill-color: var(--color-accent);
   }
   .subtitle {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     color: var(--color-text-secondary);
-    margin-top: var(--space-sm);
+    margin-top: var(--space-md);
     font-weight: 400;
-    max-width: 450px;
+    max-width: 500px;
     margin-left: auto;
     margin-right: auto;
     line-height: 1.5;
   }
   .features-grid {
     display: grid;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
+    margin: var(--space-md) 0;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 768px) {
     .features-grid {
       grid-template-columns: 1fr 1fr;
-      gap: var(--space-lg) var(--space-xl);
+      gap: var(--space-xl);
     }
     .content-panel {
+      padding: 60px;
       gap: var(--space-xxl);
     }
   }
@@ -182,17 +218,32 @@
     text-align: left;
     align-items: flex-start;
     gap: var(--space-md);
+    padding: var(--space-md);
+    border-radius: 12px;
+    transition: background-color 0.2s ease;
   }
-  .feature :global(svg) {
+
+  .feature:hover {
+    background-color: var(--color-background-faint);
+  }
+
+  .icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: hsl(var(--color-accent-hsl) / 0.1);
     color: var(--color-accent);
     flex-shrink: 0;
-    margin-top: 2px;
-    filter: drop-shadow(0 2px 4px hsl(var(--color-accent-hsl) / 0.3));
   }
+
   .feature-title {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 600;
     margin: 0 0 var(--space-xs) 0;
+    color: var(--color-text);
   }
   .feature-text {
     min-width: 0;
@@ -200,12 +251,14 @@
   .feature-text p {
     margin: 0;
     line-height: 1.6;
-    color: var(--color-text);
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
   }
   .cta-support-text {
-    font-size: 0.85rem;
-    color: var(--color-text-secondary);
-    margin-top: var(--space-sm);
+    font-size: 0.9rem;
+    color: var(--color-text-tertiary);
+    margin-top: var(--space-md);
+    font-weight: 500;
   }
 
   .button-group {
@@ -230,12 +283,18 @@
     .subtitle {
       font-size: 1.1rem;
     }
+    .content-panel {
+      padding: var(--space-lg);
+    }
   }
   @media (max-width: 480px) {
     .feature {
       flex-direction: column;
       align-items: center;
       text-align: center;
+    }
+    .icon-wrapper {
+      margin-bottom: var(--space-xs);
     }
   }
 </style>

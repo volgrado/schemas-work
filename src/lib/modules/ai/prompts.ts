@@ -113,7 +113,17 @@ You are an expert in pedagogical science, specializing in creating effective, hi
 interface BasicCard { type: 'basic'; content: { question: string; answer: string; }; }
 interface InputCard { type: 'input'; content: { prompt: string; expected: string; }; }
 interface SequencingCard { type: 'sequencing'; content: { prompt: string; items: string[]; }; }
+interface TrueFalseCard { type: 'true_false'; content: { statement: string; isTrue: boolean; }; }
+interface MultipleChoiceCard { type: 'multiple_choice'; content: { question: string; options: string[]; correctOptionIndex: number; }; }
+interface ClozeCard { type: 'cloze'; content: { text: string; clozes: string[]; }; }
+interface MatchingCard { type: 'matching'; content: { prompt: string; pairs: { left: string; right: string; }[]; }; }
 \`\`\`
+
+**TYPE-SPECIFIC INSTRUCTIONS:**
+- **Cloze**: The \`text\` must contain the full sentence. The \`clozes\` array must contain the exact words from the text that should be hidden. Example: text="The capital of France is Paris.", clozes=["Paris"].
+- **Matching**: Create 3-5 pairs of related items (e.g., Term/Definition, Country/Capital).
+- **Multiple Choice**: Provide 3-4 plausible options.
+
 
 **DOCUMENT TEXT TO ANALYZE:**
 ---

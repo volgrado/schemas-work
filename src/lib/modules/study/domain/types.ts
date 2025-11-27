@@ -21,7 +21,9 @@ export namespace SRS {
     | 'input'
     | 'sequencing'
     | 'true_false'
-    | 'multiple_choice';
+    | 'multiple_choice'
+    | 'cloze'
+    | 'matching';
 
   interface CardBase {
     id: string;
@@ -60,17 +62,37 @@ export namespace SRS {
     };
   }
 
+  export interface ClozeCard extends CardBase {
+    type: 'cloze';
+    content: {
+      text: string; // The full text with clozes hidden, e.g., "The {{capital}} of France is {{Paris}}."
+      clozes: string[]; // The hidden words, e.g., ["capital", "Paris"]
+    };
+  }
+
+  export interface MatchingCard extends CardBase {
+    type: 'matching';
+    content: {
+      prompt: string;
+      pairs: { left: string; right: string }[];
+    };
+  }
+
   export type Card =
     | BasicCard
     | InputCard
     | SequencingCard
     | TrueFalseCard
-    | MultipleChoiceCard;
+    | MultipleChoiceCard
+    | ClozeCard
+    | MatchingCard;
 
   export type NewCard =
     | Omit<BasicCard, 'id' | 'deckId'>
     | Omit<InputCard, 'id' | 'deckId'>
     | Omit<SequencingCard, 'id' | 'deckId'>
     | Omit<TrueFalseCard, 'id' | 'deckId'>
-    | Omit<MultipleChoiceCard, 'id' | 'deckId'>;
+    | Omit<MultipleChoiceCard, 'id' | 'deckId'>
+    | Omit<ClozeCard, 'id' | 'deckId'>
+    | Omit<MatchingCard, 'id' | 'deckId'>;
 }

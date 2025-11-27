@@ -165,7 +165,7 @@ async function checkOrphans(_report: HealthReport) {
     const databases = await window.indexedDB.databases();
     const directoryRaw = localStorage.getItem(DIRECTORY_STORAGE_KEY);
     const directory = directoryRaw ? JSON.parse(directoryRaw) : [];
-    const validIds = new Set(directory.map((d: any) => d.id));
+    const validIds = new Set(directory.map((d: { id: string }) => d.id));
 
     for (const db of databases) {
       // Y.js databases usually use the UUID as the name

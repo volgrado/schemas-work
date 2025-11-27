@@ -138,6 +138,11 @@
     <TTSController />
     <SlashMenuController />
 
+    <!-- Resume Review FAB -->
+    {#await import('$lib/modules/study/ui/ReviewResumeFab.svelte') then { default: ReviewResumeFab }}
+      <ReviewResumeFab />
+    {/await}
+
     <!-- AI Command Bar Trigger -->
     <FloatingActionButton
       id="ai-strategy-btn"

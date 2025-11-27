@@ -1,26 +1,26 @@
 {
   "app_name": "Schemas",
   "welcome": {
-    "tagline": "Structure your knowledge, visualize your ideas, and learn effectively.",
-    "cta": "Get Started",
-    "cta_support": "Completely free and offline."
+    "tagline": "Build complex schemas, visualize ideas, and master any subject.",
+    "cta": "Start Creating",
+    "cta_support": "100% Offline & Private • No Sign-up Required"
   },
   "feature": {
     "ai_structure": {
       "title": "AI-Powered Structuring",
-      "description": "Transform unstructured notes into organized schemas with a single click."
+      "description": "Instantly transform messy notes into organized, hierarchical schemas."
     },
     "visualize": {
-      "title": "Visualize Connections",
-      "description": "Explore your knowledge as an interactive tree to see the bigger picture."
+      "title": "Interactive Visualization",
+      "description": "See the big picture with dynamic, auto-generated knowledge trees."
     },
     "learn": {
-      "title": "Learn with SRS",
-      "description": "Generate flashcards from your notes and master concepts with spaced repetition."
+      "title": "Master with SRS",
+      "description": "Turn any node into a flashcard and learn efficiently with Spaced Repetition."
     },
     "privacy": {
-      "title": "Privacy First & Offline",
-      "description": "All your data stays on your device, securely stored in your browser."
+      "title": "Offline & Private",
+      "description": "Your data lives in your browser. No cloud, no tracking, total privacy."
     }
   },
   "slashCommands": {
@@ -171,7 +171,17 @@
       "new_tooltip": "New cards",
       "learning_tooltip": "Learning cards",
       "due_tooltip": "Cards to review"
-    }
+    },
+    "true": "True",
+    "false": "False",
+    "correct_exclamation": "Correct!",
+    "incorrect_exclamation": "Incorrect.",
+    "the_answer_is": "The answer is",
+    "fill_blanks_instruction": "Fill in the blanks:",
+    "drop_here": "Drop here",
+    "available_items": "Available Items:",
+    "resume_button": "Resume",
+    "resume_tooltip": "Resume review session"
   },
   "card_editor": {
     "load_error": "Could not load cards for this node.",
@@ -193,6 +203,10 @@
     "add_basic": "Basic (Q/A)",
     "add_input": "Fill in the Blank",
     "add_sequence": "Sequence",
+    "add_true_false": "True/False",
+    "add_multiple_choice": "Multiple Choice",
+    "add_cloze": "Cloze (Fill-in-the-blank)",
+    "add_matching": "Matching",
     "done": "Done",
     "loading": "Loading cards...",
     "load_error": "Could not load the cards for this document.",
@@ -208,6 +222,19 @@
     "instruction_placeholder": "e.g., Order the following steps...",
     "sequence_item_placeholder": "Sequence item...",
     "add_item": "Add Item",
+    "statement_label": "Statement",
+    "statement_placeholder": "e.g., The sky is blue.",
+    "is_true_label": "Is it true?",
+    "true": "True",
+    "false": "False",
+    "options_label": "Options",
+    "option_placeholder": "Option text...",
+    "add_option": "Add Option",
+    "cloze_text_label": "Text (use {{...}} for clozes)",
+    "cloze_text_placeholder": "e.g., The {{capital}} of France is {{Paris}}.",
+    "pairs_label": "Matching Pairs",
+    "add_pair": "Add Pair",
+    "tags_label": "Tags (Optional)",
     "card_deleted_toast": "Card deleted.",
     "undo_button": "Undo",
     "empty_title": "No Cards Yet",

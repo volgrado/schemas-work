@@ -74,6 +74,14 @@
   let configurationInput = $state('');
   let selectedPdfFile = $state<File | null>(null);
   let cardQuantity = $state(10);
+  let selectedCardTypes = $state<SRS.CardType[]>([
+    'basic',
+    'input',
+    'true_false',
+    'multiple_choice',
+    'cloze',
+    'matching',
+  ]);
 
   // Manual Mode State
   let isManualMode = $state(false);
@@ -179,6 +187,7 @@
       ...commandBarState.strategySessionContext!,
       initialInput: configurationInput,
       quantity: cardQuantity,
+      types: selectedCardTypes,
     };
 
     // 1. Generate the prompt using the Command logic
@@ -427,6 +436,32 @@
                     min="1"
                     max="50"
                   />
+                </div>
+
+                <div class="config-option">
+                  <span class="label">Card Types</span>
+                  <div class="checkbox-group">
+                    {#each ['basic', 'input', 'true_false', 'multiple_choice', 'cloze', 'matching'] as type}
+                      <label class="checkbox-label">
+                        <input
+                          type="checkbox"
+                          value={type}
+                          checked={selectedCardTypes.includes(type as any)}
+                          onchange={(e) => {
+                            const t = type as any;
+                            if (e.currentTarget.checked) {
+                              selectedCardTypes = [...selectedCardTypes, t];
+                            } else {
+                              selectedCardTypes = selectedCardTypes.filter(
+                                (x) => x !== t
+                              );
+                            }
+                          }}
+                        />
+                        {type.replace('_', ' ')}
+                      </label>
+                    {/each}
+                  </div>
                 </div>
               {/if}
 
@@ -798,8 +833,38 @@
     color: var(--color-text-secondary);
   }
   .config-option input {
-    max-width: 120px;
+    width: 100%;
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-background);
+    color: var(--color-text);
   }
+  .config-option .label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    display: block;
+    margin-bottom: var(--space-xs);
+  }
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xs);
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-transform: capitalize;
+  }
+  .checkbox-label input {
+    width: auto;
+    margin: 0;
+  }
+
 
   .manual-flow-panel {
     padding: var(--space-md) 0;

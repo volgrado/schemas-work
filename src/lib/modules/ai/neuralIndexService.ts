@@ -21,7 +21,7 @@ export interface KnowledgeChunk {
 }
 export interface IndexMetadata {
   key: 'cloud_lastUpdated' | 'local_lastUpdated' | 'active_index_type';
-  value: any;
+  value: unknown;
 }
 export interface ScoredChunk {
   content: string;
@@ -35,7 +35,7 @@ class NeuralIndexDB extends Dexie {
   cloud_chunks!: Table<KnowledgeChunk, string>;
   local_chunks!: Table<KnowledgeChunk, string>;
   metadata!: Table<IndexMetadata, 'key'>;
-  chunks!: Table<any, any>; // For migration/cleanup if needed
+  chunks!: Table<unknown, unknown>; // For migration/cleanup if needed
 
   constructor() {
     super('NeuralIndexDatabase');
@@ -66,7 +66,7 @@ if (typeof Worker !== 'undefined') {
  */
 function atomizeDocumentInWorker(
   docId: string,
-  docJson: any
+  docJson: Record<string, unknown>
 ): Promise<{ id: string; content: string }[]> {
   return new Promise((resolve) => {
     if (!worker) {

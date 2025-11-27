@@ -42,7 +42,7 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
     interval: card.srs?.interval ?? SRS_DEFAULTS.INTERVAL,
     repetitions: card.srs?.repetitions ?? SRS_DEFAULTS.REPETITIONS,
     dueDate: card.srs?.dueDate ?? Date.now(),
-    learningStep: SRS_DEFAULTS.LEARNING_STEP, // Always start in the learning step for a new card.
+    learningStep: 0, // Start as "New" (Step 0). Step > 0 implies "Learning".
   };
 
   switch (card.type) {
@@ -91,6 +91,26 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
         id,
         deckId,
         type: 'multiple_choice',
+        content: card.content,
+        srs: baseSrs,
+        tags: [],
+        suspended: false,
+      };
+    case 'cloze':
+      return {
+        id,
+        deckId,
+        type: 'cloze',
+        content: card.content,
+        srs: baseSrs,
+        tags: [],
+        suspended: false,
+      };
+    case 'matching':
+      return {
+        id,
+        deckId,
+        type: 'matching',
         content: card.content,
         srs: baseSrs,
         tags: [],

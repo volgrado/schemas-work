@@ -52,6 +52,7 @@ export type IconName =
   | 'sun'
   | 'target'
   | 'trash-2'
+  | 'wifi-off'
   | 'x'
   | 'x-circle'
 

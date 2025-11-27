@@ -1,70 +1,71 @@
-# SchemasWork
+# Schemas Work
 
-SchemasWork is a modern, offline-first, and privacy-focused knowledge management tool designed to help you build and visualize complex schemas and conceptual frameworks. It leverages a powerful text editor and AI-driven features to streamline the process of learning, brainstorming, and documenting.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Svelte](https://img.shields.io/badge/svelte-v5-orange.svg)
+![Vite](https://img.shields.io/badge/vite-fast-yellow.svg)
+![TypeScript](https://img.shields.io/badge/typescript-strict-blue.svg)
 
-## Core Features
+**Schemas Work** is a modern, offline-first knowledge management tool designed to help you build, visualize, and master complex conceptual frameworks. It combines a powerful rich text editor with AI-driven insights and a spaced repetition system, all wrapped in a premium glassmorphic interface.
 
-- **Offline-First:** All your data is stored locally in your browser using IndexedDB. You can use the application without an internet connection.
-- **Privacy-Focused:** Your data never leaves your browser. All AI processing is done on the client-side.
-- **Rich Text Editor:** A powerful editor based on Tiptap that allows you to structure your knowledge in a hierarchical way.
-- **AI-Powered Assistance:**
-  - **Create Schema from Text:** Automatically generate a structured schema from unstructured text.
-  - **Expand Nodes:** Let the AI expand on a concept with relevant sub-points.
-  - **Generate Flashcards:** Instantly create study cards from your notes.
-- **Spaced Repetition System (SRS):** A built-in review system to help you remember what you've learned.
-- **Secure Vault:** Export and import your entire knowledge base with password-based encryption.
+## ✨ Key Features
 
-## Tech Stack
+-   **🧠 AI-Powered**: Generate schemas from text, expand concepts, and auto-create flashcards using local-first AI.
+-   **🔒 Offline & Private**: Built on **IndexedDB** and **Dexie**. Your data lives in your browser and never leaves without your permission.
+-   **💎 Premium Design**: A stunning "Glassmorphism" UI built with **Vanilla CSS** and modern design tokens.
+-   **📝 Rich Text Editor**: A customized **Tiptap** editor for structuring knowledge hierarchically.
+-   **🔄 Spaced Repetition**: Integrated SRS to help you retain what you learn.
 
-- **SvelteKit:** A framework for building robust Svelte apps.
-- **Tiptap:** A headless, framework-agnostic rich text editor.
-- **Y.js:** A CRDT implementation for collaborative editing (used here for state management).
-- **IndexedDB:** For local, persistent storage.
-- **Lucide Icons:** For a clean and consistent look and feel.
+## 📚 Documentation
 
-## Getting Started
+-   **[Architecture](./ARCHITECTURE.md)**: Learn about our Modular Monolith structure and Svelte 5 Runes usage.
+-   **[Design System](./DESIGN_SYSTEM.md)**: Explore our "Premium Glassmorphism" design philosophy and token usage.
+-   **[Contributing](./CONTRIBUTING.md)**: Guidelines for setting up the dev environment and submitting PRs.
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- [npm](https://www.npmjs.com/) (or `pnpm` or `yarn`)
+-   Node.js v18+
+-   npm (or pnpm/yarn)
 
 ### Installation
 
-1.  **Clone the repository:**
-
-    ```sh
-    git clone https://github.com/your-username/SchemasWork.git
-    cd SchemasWork
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/your-username/schemas-work.git
+    cd schemas-work
     ```
 
-2.  **Install dependencies:**
-
-    ```sh
+2.  **Install dependencies**:
+    ```bash
     npm install
     ```
 
-### Running the Development Server
+3.  **Start the development server**:
+    ```bash
+    npm run dev
+    ```
 
-Once you've installed the dependencies, you can start the development server:
+The app will be available at `http://localhost:5173`.
 
-```sh
-npm run dev
+## 🏗️ Build for Production
 
-# Or to open the app in a new browser tab automatically
-npm run dev -- --open
-```
+To create a production-ready build:
 
-The application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-To create a production-ready version of the app:
-
-```sh
+```bash
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+Preview the build locally:
 
-> **Note:** To deploy your app, you may need to install a SvelteKit [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+```bash
+npm run preview
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) to get started.
+
+## 📄 License
+
+This project is licensed under the MIT License.

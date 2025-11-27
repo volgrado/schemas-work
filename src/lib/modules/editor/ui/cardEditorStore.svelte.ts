@@ -135,6 +135,60 @@ export async function addCard(type: SRS.CardType): Promise<void> {
         suspended: false,
       };
       break;
+    case 'true_false':
+      newCardData = {
+        type: 'true_false',
+        content: {
+          statement: i18n.t('card_editor.true_false_statement'),
+          isTrue: true,
+        },
+        srs: defaultSrs,
+        tags: [],
+        suspended: false,
+      };
+      break;
+    case 'multiple_choice':
+      newCardData = {
+        type: 'multiple_choice',
+        content: {
+          question: i18n.t('card_editor.mc_question'),
+          options: ['Option A', 'Option B', 'Option C'],
+          correctOptionIndex: 0,
+        },
+        srs: defaultSrs,
+        tags: [],
+        suspended: false,
+      };
+      break;
+    case 'cloze':
+      newCardData = {
+        type: 'cloze',
+        content: {
+          text: i18n.t('card_editor.cloze_text_placeholder', {
+            fallback: 'The {{capital}} of France is {{Paris}}.',
+          }),
+          clozes: ['capital', 'Paris'],
+        },
+        srs: defaultSrs,
+        tags: [],
+        suspended: false,
+      };
+      break;
+    case 'matching':
+      newCardData = {
+        type: 'matching',
+        content: {
+          prompt: i18n.t('card_editor.matching_prompt'),
+          pairs: [
+            { left: 'Term 1', right: 'Def 1' },
+            { left: 'Term 2', right: 'Def 2' },
+          ],
+        },
+        srs: defaultSrs,
+        tags: [],
+        suspended: false,
+      };
+      break;
     case 'basic':
     default:
       newCardData = {
