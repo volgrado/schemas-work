@@ -1,17 +1,27 @@
-﻿<!--
+<!--
   @component
   ReviewController
 
-  Core UI del sistema de repeticiÃ³n espaciada.
-  Gestiona tarjetas tipo 'basic', 'input' y 'sequencing'.
+  @description
+  The central UI controller for the Spaced Repetition System (SRS) review session.
+  This component manages the lifecycle of a review session, rendering appropriate
+  card interfaces ('basic', 'input', 'sequencing') based on the current card type.
+
+  It orchestrates:
+  - Displaying the question/prompt side of a card.
+  - Handling user interactions (revealing answers, typing input, reordering lists).
+  - Providing immediate feedback for interactive cards.
+  - Submitting review quality scores (0-5) to the `reviewStore`.
+  - Showing session progress and a summary screen upon completion.
 -->
 <script lang="ts">
-  // --- Importaciones principales ---
+  // --- Svelte Transition & Animation ---
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
+  // --- Core Utilities & Stores ---
   import { i18n } from '$lib/utils/i18n.svelte';
-  // FIX: Importar el state rune y las acciones directamente desde el store.
+  // Import reactive state and actions directly from the store module
   import {
     reviewState,
     submitInteractiveAnswer,
@@ -22,44 +32,49 @@
   } from '$lib/stores/reviewStore.svelte';
   import { evaluateAnswer } from '$lib/modules/study/domain/reviewService';
 
+  // --- UI Components ---
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
-  // FIX: Importar el namespace SRS y crear alias locales para los tipos.
+
+  // --- Types & External Libs ---
   import type { SRS } from '$lib/types';
-  type ReviewQuality = SRS.ReviewQuality;
-  type Card = SRS.Card;
   import deepEqual from 'deep-eql';
 
-  // --- Estado local reactivo ---
+  type ReviewQuality = SRS.ReviewQuality;
+  type Card = SRS.Card;
+
+  // --- Local Reactive State (Runes) ---
   let userInput = $state('');
   let userSequence = $state<string[]>([]);
   let draggedItemIndex = $state<number | null>(null);
   let isSubmitting = $state(false);
 
-  // --- Variables derivadas reactivas ---
-  // FIX: Acceder al estado del rune directamente (sin $).
+  // --- Derived State ---
+  // Access the global store state directly (no $ prefix needed for imported state objects)
   const currentCard = $derived(
     reviewState.cardsToReview[reviewState.currentCardIndex]
   );
 
+  // Calculate session statistics on the fly
   const sessionProgress = $derived({
-    // FIX: AÃ±adir tipo explÃ­cito al parÃ¡metro 'c'.
     new: reviewState.cardsToReview.filter(
       (c: Card) => !c.srs || c.srs.repetitions === 0
     ).length,
     learning: [
       ...reviewState.cardsToReview,
       ...reviewState.failedQueue,
-      // FIX: AÃ±adir tipo explÃ­cito al parÃ¡metro 'c'.
     ].filter((c: Card) => c.srs?.learningStep > 0).length,
     due: reviewState.cardsToReview.filter(
       (c: Card) => c.srs?.repetitions > 0 && c.srs.learningStep === 0
     ).length,
   });
 
-  // --- Efecto: reinicia el estado al mostrar una nueva tarjeta ---
+  // --- Effects ---
+
+  // Effect: Reset local UI state when the card changes
   $effect(() => {
     if (currentCard && currentCard.type === 'sequencing') {
+      // Randomize the initial sequence for the user to solve
       userSequence = [...currentCard.content.items].sort(
         () => Math.random() - 0.5
       );
@@ -70,7 +85,12 @@
     isSubmitting = false;
   });
 
-  // --- Manejadores de eventos ---
+  // --- Interaction Handlers ---
+
+  /**
+   * Validates user input for 'input' type cards.
+   * Calculates a similarity score and submits it.
+   */
   async function handleCheckInput() {
     if (!currentCard || currentCard.type !== 'input' || isSubmitting) return;
     isSubmitting = true;
@@ -79,25 +99,33 @@
       userInput,
       currentCard.content.expected
     );
-    // FIX: Llamar a la funciÃ³n importada directamente.
+
+    // Show immediate visual feedback (Green/Red)
     submitInteractiveAnswer(quality >= 3);
 
+    // Auto-advance after a short delay if correct-ish, or let user review
     setTimeout(() => submitReview(quality), 2000);
   }
 
+  /**
+   * Validates the order for 'sequencing' type cards.
+   */
   function handleCheckSequence() {
     if (!currentCard || currentCard.type !== 'sequencing') return;
     const isCorrect = deepEqual(userSequence, currentCard.content.items);
     submitInteractiveAnswer(isCorrect);
   }
 
-  // LÃ³gica de arrastrar y soltar
+  // --- Drag and Drop Logic (for Sequencing Cards) ---
+
   function handleDragStart(index: number) {
     draggedItemIndex = index;
   }
+
   function handleDragOver(event: DragEvent) {
-    event.preventDefault();
+    event.preventDefault(); // Allow drop
   }
+
   function handleDrop(targetIndex: number) {
     if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
       draggedItemIndex = null;
@@ -116,6 +144,7 @@
   transition:fade={{ duration: 300, easing: quintOut }}
 >
   {#if reviewState.isFinished}
+    <!-- Session Summary Screen -->
     <div class="completion-screen">
       <h2>{i18n.t('review.congrats_title')}</h2>
       <p>
@@ -128,6 +157,7 @@
       >
     </div>
   {:else if currentCard}
+    <!-- Header Controls (Progress, Exit) -->
     <div class="global-controls">
       <div class="session-progress">
         <span class="new" title={i18n.t('review.progress.new_tooltip')}
@@ -154,8 +184,11 @@
       </Button>
     </div>
 
+    <!-- Main Flashcard Area -->
     <div class="card-panel" in:fly={{ y: 20, duration: 300, easing: quintOut }}>
       <div class="card-content">
+
+        <!-- Type: Basic -->
         {#if currentCard.type === 'basic'}
           <p class="question">{currentCard.content.question}</p>
           {#if reviewState.isAnswerShown}
@@ -163,6 +196,8 @@
               <p>{currentCard.content.answer}</p>
             </div>
           {/if}
+
+        <!-- Type: Input -->
         {:else if currentCard.type === 'input'}
           <p class="question">{currentCard.content.prompt}</p>
           <input
@@ -184,6 +219,8 @@
               <strong>{currentCard.content.expected}</strong>
             </div>
           {/if}
+
+        <!-- Type: Sequencing -->
         {:else if currentCard.type === 'sequencing'}
           <p class="question">{currentCard.content.prompt}</p>
           <div class="sequence-container" role="list">
@@ -223,8 +260,10 @@
         {/if}
       </div>
 
+      <!-- Footer Actions (Show Answer / Rate Card) -->
       <div class="card-actions">
         {#if !reviewState.isAnswerShown}
+          <!-- Initial State: Check/Show Answer buttons -->
           {#if currentCard.type === 'basic'}
             <Button onclick={showAnswer} size="lg">
               {i18n.t('review.showAnswer')}
@@ -245,6 +284,7 @@
             </Button>
           {/if}
         {:else if currentCard.type !== 'input'}
+          <!-- Answer Revealed State: Quality Rating Buttons -->
           <div class="review-buttons">
             <Button
               onclick={() => submitReview(0)}
@@ -274,7 +314,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .review-screen {
     position: fixed;
     inset: 0;

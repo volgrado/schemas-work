@@ -1,4 +1,22 @@
-﻿<!-- src/lib/components/ui/CommandBar.svelte -->
+<!--
+  @component
+  CommandBar
+
+  @description
+  A powerful, Spotlight-style command interface that serves as the central navigation and action hub.
+  It provides a unified entry point for:
+  - **Navigation:** Switching between documents, folders, and application views (Study Hub, Vault).
+  - **Search:** Semantic search across all content (using the Neural Index) and commands.
+  - **Actions:** Executing global commands like "New Schema" or "Read Aloud".
+  - **AI Tools:** Accessing AI-powered generation and refinement flows.
+
+  Features:
+  - **Global Shortcut:** Toggle with `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux).
+  - **State Management:** Uses `commandBarStore.svelte.ts` to manage visibility and view stack.
+  - **View Routing:** Dynamically renders sub-views (`MainView`, `SearchView`, `FileExplorer`) based on state.
+  - **Keyboard Navigation:** Full support for Arrow keys and Escape for rapid interaction.
+  - **Responsive Design:** Modals slide up from the bottom on mobile, fly in on desktop.
+-->
 <script lang="ts">
   // --- Svelte & Third-Party ---
   import { fade, fly } from 'svelte/transition';
@@ -10,19 +28,18 @@
   import ApiKeyModal from '$lib/components/features/settings/ApiKeyModal.svelte';
   import ErrorDiagnosticModal from '$lib/components/features/diagnostics/ErrorDiagnosticModal.svelte';
   import StrategySessionModal from '$lib/components/ai/StrategySessionModal.svelte';
-  // FIX: This path was likely intended to be relative to the `command-bar` folder.
   import PasswordModal from './PasswordModal.svelte';
-  import Icon from '@ui/Icon.svelte';
-  import Spinner from '@ui/Spinner.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte'; // Corrected absolute import
+  import Spinner from '$lib/core/ui/Spinner.svelte'; // Corrected absolute import
 
   // --- Command Bar Views ---
   import MainView from './MainView.svelte';
   import SearchView from './SearchView.svelte';
   import AiView from './AiView.svelte';
   import VaultView from './VaultView.svelte';
-  import FileExplorer from '@modules/file-system/ui/FileExplorer.svelte';
+  import FileExplorer from '$lib/modules/file-system/ui/FileExplorer.svelte'; // Corrected absolute import
   import StudyHubView from './StudyHubView.svelte';
-  // StatisticsView is lazy loaded
+  // StatisticsView is lazy loaded to reduce initial bundle size
   import DeckOptionsView from './DeckOptionsView.svelte';
 
   // --- Stores & Services ---
@@ -31,16 +48,16 @@
     close as closeCommandBar,
     toggle as toggleCommandBar,
     goBack,
-    // FIX: Import the missing action function.
     closeDiagnosticModal,
     closeSchemaModal,
+    closeApiKeyModal,
+    openApiKeyModal
   } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   
-  import TextInputModal from '@ui/TextInputModal.svelte';
+  import TextInputModal from '$lib/core/ui/TextInputModal.svelte'; // Corrected absolute import
 
   // --- Local State ---
   let query = $state('');
-  // REMOVED: let isApiKeyModalOpen = $state(false);
   let panelElement = $state<HTMLDivElement | null>(null);
   let searchInputElement = $state<HTMLInputElement | null>(null);
   let previouslyFocusedElement: HTMLElement | null = null;
@@ -48,8 +65,10 @@
 
   // --- Effects for Lifecycle and Side Effects ---
 
+  // Effect: Register global keyboard shortcut (Cmd+K / Ctrl+K)
   $effect(() => {
     const handleGlobalKeydown = (event: KeyboardEvent) => {
+      // Disable global toggle if another modal is already open to prevent stacking issues
       const anyModalIsOpen =
         commandBarState.isApiKeyModalOpen ||
         commandBarState.isDiagnosticModalOpen ||
@@ -68,8 +87,10 @@
     return () => window.removeEventListener('keydown', handleGlobalKeydown);
   });
 
+  // Effect: Manage focus and input state when opening/closing
   $effect(() => {
     if (commandBarState.isOpen) {
+      // Save current focus to restore later
       previouslyFocusedElement = document.activeElement as HTMLElement;
       query = '';
       
@@ -79,20 +100,25 @@
         setTimeout(() => searchInputElement?.focus(), 50);
       }
     } else {
+      // Restore focus
       previouslyFocusedElement?.focus();
     }
   });
 
   // --- Event Handlers ---
 
+  /**
+   * Handles keyboard navigation within the command bar.
+   * Delegates to specific views (like Search) or handles generic arrow navigation.
+   */
   function handlePanelKeydown(event: KeyboardEvent) {
-    // 1. Delegate to SearchView if active (query exists)
+    // 1. Delegate to SearchView logic if searching (active query)
     if (query.trim().length > 0 && searchViewInstance) {
       searchViewInstance.handleKeyDown(event);
       return;
     }
 
-    // 2. Handle Navigation for MainView / Other Views (when query is empty)
+    // 2. Handle List Navigation for MainView / Other Views (when query is empty)
     if (query.trim().length === 0) {
       if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
         event.preventDefault();
@@ -100,6 +126,7 @@
         const contentContainer = panelElement?.querySelector('.view-content');
         if (!contentContainer) return;
 
+        // Find all interactive elements in the current view
         const focusableSelector = 'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
         const focusableItems = Array.from(contentContainer.querySelectorAll(focusableSelector)) as HTMLElement[];
         
@@ -110,24 +137,24 @@
 
         if (event.key === 'ArrowDown') {
           if (currentFocus === searchInputElement) {
-            // From Input to First Item
+            // From Input -> First Item
             focusableItems[0]?.focus();
           } else if (currentIndex !== -1) {
-            // Next Item (Loop to first if at end, or stay at end? Let's loop)
+            // Item -> Next Item (Looping)
             const nextIndex = (currentIndex + 1) % focusableItems.length;
             focusableItems[nextIndex]?.focus();
           }
         } else if (event.key === 'ArrowUp') {
           if (currentIndex !== -1) {
             if (currentIndex === 0) {
-              // From First Item back to Input
+              // First Item -> Back to Input
               searchInputElement?.focus();
             } else {
-              // Previous Item
+              // Item -> Previous Item
               focusableItems[currentIndex - 1]?.focus();
             }
           } else if (currentFocus === searchInputElement) {
-            // From Input to Last Item (Loop around)
+            // Input -> Last Item (Loop around)
             focusableItems[focusableItems.length - 1]?.focus();
           }
         }
@@ -135,13 +162,13 @@
       }
     }
 
-    // 3. Global Escape handling
+    // 3. Global Escape handling (Back vs. Close)
     if (event.key === 'Escape') {
       if (commandBarState.currentView !== 'main') {
         event.preventDefault();
-        goBack();
+        goBack(); // Pop view stack
       } else {
-        closeCommandBar();
+        closeCommandBar(); // Close entirely
       }
     }
   }
@@ -149,6 +176,7 @@
   // --- Transitions ---
   type FlyAndScaleParams = { y: number; duration: number };
 
+  /** Custom transition for desktop: fly + scale */
   const flyAndScale = (
     node: Element,
     params: FlyAndScaleParams
@@ -165,26 +193,22 @@
     };
   };
 
+  /** Responsive transition chooser */
   const responsiveTransition = (
     node: Element,
     params: FlyAndScaleParams
   ): TransitionConfig => {
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
     if (isMobile) {
+      // Slide up from bottom on mobile
       return fly(node, { y: 100, duration: 250, easing: quintOut });
     }
     return flyAndScale(node, params);
   };
 
-  // --- Modal Control Functions ---
-  // REMOVED: function openApiKeyModal() ...
-  // REMOVED: function closeApiKeyModal() ...
-  import { closeApiKeyModal, openApiKeyModal } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-
 </script>
 
-<!-- All Modals are managed here for central control -->
-<!-- FIX: Pass `onClose` as a prop, not an event handler. -->
+<!-- Global Modals Managed by Command Bar -->
 <ApiKeyModal show={commandBarState.isApiKeyModalOpen} onClose={closeApiKeyModal} />
 
 <ErrorDiagnosticModal
@@ -205,11 +229,11 @@
     submitLabel={i18n.t('common.create')}
     onClose={closeSchemaModal}
     onsubmit={async (name) => {
-      // Import dynamically to avoid circular deps if needed, or just use the store
+      // Import dynamically to avoid circular deps if needed
       const { create } = await import('$lib/stores/documentStore.svelte');
-      const { closeSchemaModal } = await import('$lib/modules/command-bar/ui/commandBarStore.svelte');
-      
       await create(name);
+      // Close modal via the imported action to ensure state consistency
+      const { closeSchemaModal } = await import('$lib/modules/command-bar/ui/commandBarStore.svelte');
       closeSchemaModal();
     }}
   />
@@ -217,7 +241,7 @@
 
 <!-- Main CommandBar UI -->
 {#if commandBarState.isOpen}
-  <!-- FIX: Use a styled <button> for the overlay for better accessibility. -->
+  <!-- Overlay Backdrop -->
   <button
     class="overlay"
     onclick={closeCommandBar}
@@ -225,6 +249,7 @@
     aria-label={i18n.t('command_bar.close_aria_label')}
   ></button>
 
+  <!-- Main Panel Container -->
   <div
     class="panel"
     bind:this={panelElement}
@@ -236,7 +261,7 @@
     tabindex="-1"
     onkeydown={handlePanelKeydown}
   >
-    <!-- Persistent Search Input -->
+    <!-- Persistent Search Input Header -->
     <div class="input-wrapper">
       <Icon name="search" size={20} />
       <input
@@ -252,10 +277,10 @@
       {/if}
     </div>
 
-    <!-- Dynamic View Area -->
+    <!-- Dynamic Content Area -->
     <div class="view-content">
       {#if query.trim().length === 0}
-        <!-- The View Router with Transitions -->
+        <!-- ROUTER: Render active view from state stack -->
         {#key commandBarState.currentView}
           <div
             class="view-transition-wrapper"
@@ -270,7 +295,6 @@
               <MainView {openApiKeyModal} />
             {:else if commandBarState.currentView === 'ai-actions'}
               <AiView />
-              <!-- FIX: Corrected typo from `commandBarV5State` to `commandBarState`. -->
             {:else if commandBarState.currentView === 'vault'}
               <VaultView />
             {:else if commandBarState.currentView === 'file-explorer'}
@@ -287,7 +311,7 @@
           </div>
         {/key}
       {:else}
-        <!-- Search Results (Query Exists) -->
+        <!-- Search Results View (Active when typing) -->
         <div
           class="view-transition-wrapper"
           transition:fade={{ duration: 150 }}
@@ -362,7 +386,7 @@
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
-    border-bottom: 1px solid var(--glass-border); /* Use glass border for consistency */
+    border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.05);
   }
@@ -399,7 +423,7 @@
     min-height: 0;
   }
 
-  /* Dark theme overrides are handled by variables, but we keep specific tweaks if needed */
+  /* Dark theme overrides are handled by variables */
   :global(.dark-theme) .input-wrapper {
     border-color: var(--glass-border);
   }

@@ -1,6 +1,16 @@
 <!doctype html>
 <html lang="%lang%">
   <head>
+    <!--
+      @file app.html
+      @description
+      The root HTML template for the SvelteKit application.
+      It serves as the entry point for the browser and handles:
+      - **Metadata:** SEO descriptions, viewport settings, and theme colors.
+      - **Resource Hints:** Preloading critical assets (fonts) and preconnecting to APIs (Gemini) for performance.
+      - **PWA Integration:** Linking the web manifest and defining icons for various platforms (iOS, Android, Desktop).
+      - **SvelteKit Injection:** Placeholders (`%sveltekit.head%`, `%sveltekit.body%`) where the app is hydrated.
+    -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -12,7 +22,7 @@
     />
 
     <!-- THEME AND MANIFEST -->
-    <!-- The browser will automatically select the correct theme color based on the user's system preference -->
+    <!-- Defines the browser UI color (status bar, etc.) to match the app's theme -->
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
@@ -20,12 +30,13 @@
     />
     <meta
       name="theme-color"
-      media="(pre-fers-color-scheme: dark)"
+      media="(prefers-color-scheme: dark)"
       content="#8b5cf6"
     />
     <link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
 
     <!-- FONT OPTIMIZATION -->
+    <!-- Preload the variable font to reduce FOUT (Flash of Unstyled Text) -->
     <link
       rel="preload"
       href="/fonts/Inter-VariableFont_slnt,wght.woff2"
@@ -42,19 +53,17 @@
     />
 
     <!-- API OPTIMIZATION -->
+    <!-- Warm up the connection to Google's AI service -->
     <link rel="preconnect" href="https://generativelanguage.googleapis.com" />
     <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com" />
 
     <!-- FAVICON SET -->
-    <!-- Main modern favicon -->
     <link
       rel="icon"
       href="%sveltekit.assets%/favicon.svg"
       type="image/svg+xml"
     />
-    <!-- Legacy ICO favicon -->
     <link rel="icon" href="%sveltekit.assets%/favicon.ico" sizes="any" />
-    <!-- PNG fallbacks for other browsers -->
     <link
       rel="icon"
       href="%sveltekit.assets%/favicon-16x16.png"
@@ -67,7 +76,6 @@
       sizes="32x32"
       type="image/png"
     />
-    <!-- Apple touch icon for iOS home screens -->
     <link
       rel="apple-touch-icon"
       href="%sveltekit.assets%/apple-touch-icon.png"
@@ -76,6 +84,7 @@
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
+    <!-- The Svelte app is injected here. 'display: contents' ensures the div doesn't affect grid layouts. -->
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

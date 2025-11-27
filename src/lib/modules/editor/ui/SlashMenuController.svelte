@@ -1,12 +1,19 @@
-﻿<!--
+<!--
   @component
   SlashMenuController
 
   @description
   An exceptional, production-ready implementation of the floating slash command menu.
-  This component is a pure view, driven entirely by the `slashMenuStore`. It leverages
-  the `Popup` UI primitive to handle all complex positioning logic, making the component
-  itself simple, declarative, and robust.
+
+  This component acts as a purely reactive view layer driven by the `slashMenuStore`.
+  It handles the rendering of command groups, the searchable list of items, and
+  keyboard navigation feedback.
+
+  Key Features:
+  - **Reactive State:** Subscribes to `slashMenuState` to show/hide and filter items.
+  - **Keyboard Navigation:** Automatically scrolls the selected item into view.
+  - **Positioning:** Uses the `Popup` primitive to anchor perfectly to the cursor position.
+  - **Glassmorphism:** Features a high-quality glass effect for a modern, native app feel.
 -->
 <script lang="ts">
   import {
@@ -26,10 +33,12 @@
   // --- State ---
   let itemsListEl = $state<HTMLDivElement | undefined>();
 
+  // Effect: Scroll selected item into view when navigating with keyboard
   $effect(() => {
-    // This effect ensures the selected item is always visible for keyboard navigation.
+    // Only run if open and DOM is ready
     if (!slashMenuState.isOpen || !itemsListEl) return;
 
+    // Dependency on selectedIndex triggers re-run
     const index = slashMenuState.selectedIndex;
     
     tick().then(() => {
@@ -41,6 +50,10 @@
   });
 </script>
 
+<!--
+  The Popup component handles the complex math of positioning the menu
+  relative to the cursor (slashMenuState.clientRect) and keeping it on screen.
+-->
 <Popup
   isVisible={slashMenuState.isOpen}
   getReferenceClientRect={slashMenuState.clientRect
@@ -56,6 +69,7 @@
     transition:fly={{ y: 10, duration: 200, easing: quintOut }}
   >
     {#if slashMenuState.allItems.length > 0}
+      <!-- Group Tabs (e.g., "Content", "Media", "AI") -->
       <div class="group-tabs" role="tablist">
         {#each slashMenuState.groups as group, index}
           <button
@@ -73,6 +87,7 @@
         {/each}
       </div>
       
+      <!-- Scrollable List of Commands -->
       <div class="items-list" bind:this={itemsListEl} role="listbox">
         {#each slashMenuState.filteredItems as item, index (item.title)}
           <button
@@ -90,6 +105,8 @@
               <span class="title">{item.title}</span>
               <span class="description">{item.description}</span>
             </div>
+
+            <!-- Visual hint for the selected item -->
             {#if index === slashMenuState.selectedIndex}
               <div class="enter-hint">
                 <Icon name="corner-down-left" size={12} />
@@ -99,6 +116,7 @@
         {/each}
       </div>
     {:else}
+      <!-- Empty State -->
       <div class="empty-state">
         <Icon name="search" size={24} class="text-muted mb-2" />
         <p>{i18n.t('slash_menu.empty_state')}</p>
@@ -110,7 +128,7 @@
 <style>
   .slash-menu-container {
     outline: none;
-    /* Premium Glassmorphism */
+    /* Premium Glassmorphism Background */
     background: var(--glass-bg);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -128,7 +146,7 @@
     padding: var(--space-xs);
   }
 
-  /* --- Tabs --- */
+  /* --- Group Tabs --- */
   .group-tabs {
     display: flex;
     flex-shrink: 0;
@@ -137,12 +155,11 @@
     border-bottom: 1px solid var(--color-border);
     margin-bottom: var(--space-xs);
     overflow-x: auto;
-    /* Hide scrollbar */
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
   }
   .group-tabs::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome/Safari */
   }
 
   .group-tab {
@@ -205,6 +222,7 @@
     box-shadow: var(--shadow-sm);
   }
 
+  /* Selected item icon highlight */
   .menu-item.is-selected .icon-wrapper {
     background-color: var(--color-accent);
     color: white;
@@ -228,7 +246,7 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    min-width: 0; /* For truncation */
+    min-width: 0; /* Allows truncation */
   }
 
   .title {
@@ -264,9 +282,7 @@
     font-size: 0.9rem;
   }
   
-
-
-  /* --- Dark Mode Adjustments --- */
+  /* --- Theme Overrides --- */
   :global(.dark-theme) .slash-menu-container {
     background: rgba(22, 20, 29, 0.85);
     border-color: var(--color-border);

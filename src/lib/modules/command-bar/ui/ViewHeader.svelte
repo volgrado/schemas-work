@@ -1,20 +1,29 @@
-﻿<!--
+<!--
   @component
   ViewHeader
 
-  A standardized header for all command bar sub-views. It provides a consistent
-  layout with a title on the left and a slot for action buttons on the right,
-  ensuring a cohesive navigation experience.
+  @description
+  A standardized navigation header for Command Bar sub-views (e.g., "AI Actions", "File Explorer").
+
+  Features:
+  - **Consistent Layout:** Title on the left, optional back button, and a slot for right-aligned actions.
+  - **Accessibility:** Back button is semantic and labeled.
+  - **Theming:** Adapts to light/dark modes via CSS variables.
+
+  @props
+  - `title` (string): The text to display in the header.
+  - `onBack` (function | undefined): If provided, renders a back button that triggers this callback.
+  - `children` (snippet): Slot for rendering additional action buttons (e.g., "New Folder") on the right.
 -->
 <script lang="ts">
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import { i18n } from '$lib/utils/i18n.svelte';
+
   let {
     title,
     onBack,
-    children, // This captures the <slot> content for Svelte 5
-  } = $props<{ title: string; onBack?: () => void; children?: any }>();
-
-  import Icon from '$lib/core/ui/Icon.svelte';
-  import { i18n } from '$lib/utils/i18n.svelte';
+    children,
+  } = $props<{ title: string; onBack?: () => void; children?: import('svelte').Snippet }>();
 </script>
 
 <header class="view-header">
@@ -30,6 +39,8 @@
     {/if}
     <h2 class="view-title">{title}</h2>
   </div>
+
+  <!-- Right-aligned action buttons -->
   <div class="header-actions">
     {@render children?.()}
   </div>
@@ -45,6 +56,12 @@
     flex-shrink: 0;
   }
 
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
   .view-title {
     margin: 0;
     font-size: 0.9rem;
@@ -53,16 +70,6 @@
   }
 
   .header-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-  }
-
-  :global(.dark-theme) .view-header {
-    border-color: var(--panel-border-dark);
-  }
-
-  .header-left {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
@@ -84,5 +91,9 @@
   .back-button:hover {
     background-color: var(--btn-hover-bg);
     color: var(--color-text);
+  }
+
+  :global(.dark-theme) .view-header {
+    border-color: var(--panel-border-dark);
   }
 </style>

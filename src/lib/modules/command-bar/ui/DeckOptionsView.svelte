@@ -1,4 +1,21 @@
-﻿<!-- src/lib/components/ui/command-bar/DeckOptionsView.svelte -->
+<!--
+  @component
+  DeckOptionsView
+
+  @description
+  A dedicated configuration screen for a specific flashcard deck.
+  It allows users to customize the Spaced Repetition (SRS) algorithm parameters
+  for a single deck, overriding global defaults.
+
+  Features:
+  - **Configuration:** Edit "New Cards/Day", "Reviews/Day", "Learning Steps", and "Graduating Interval".
+  - **Async Loading:** Fetches options from IndexedDB on mount, displaying skeletons while loading.
+  - **Validation:** (Implicit) relies on standard input types.
+  - **Persistence:** Saves changes back to the database via `deckService`.
+
+  @props
+  - `deckId` (string): The ID of the deck to configure.
+-->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import { toast } from 'svelte-sonner';
@@ -8,29 +25,29 @@
   import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 
   // --- UI Component Imports ---
-  import Icon from '@ui/Icon.svelte';
-  import Spinner from '@ui/Spinner.svelte';
-  import Button from '@ui/Button.svelte';
-  import Input from '@ui/Input.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
+  import Spinner from '$lib/core/ui/Spinner.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Input from '$lib/core/ui/Input.svelte';
   import ViewHeader from './ViewHeader.svelte';
-  import CommandButton from './CommandButton.svelte';
 
   const { deckId } = $props<{ deckId: string }>();
 
+  // --- State ---
   let options = $state<DeckOptions | null>(null);
   let deckName = $state<string>('');
   let isSaving = $state(false);
 
+  // --- Effects ---
   $effect(() => {
     if (deckId) {
-      // Set state to null to ensure skeleton shows on navigation
+      // Reset state to null to trigger skeleton loading state
       options = null;
       deckName = '';
 
+      // Fetch options and metadata in parallel
       Promise.all([
         deckService.getDeckOptions(deckId),
-        // fileSystemStore is synchronous now, but we can wrap it or just call it.
-        // Since we are in a Promise.all, we can just resolve it.
         Promise.resolve(fileSystemStore.getItem(deckId)),
       ]).then(([optionsData, metadata]) => {
         options = optionsData;
@@ -39,6 +56,7 @@
     }
   });
 
+  // --- Actions ---
   async function handleSave() {
     if (!options || isSaving) return;
     isSaving = true;
@@ -55,8 +73,6 @@
   }
 </script>
 
-<!-- The entire template and style sections are correct. No changes are needed there. -->
-
 <div class="view-container">
   <ViewHeader title={deckName || i18n.t('deckOptions.title')} onBack={goBack}>
     <Button size="sm" onclick={handleSave} disabled={isSaving || !options}>
@@ -71,6 +87,7 @@
 
   <div class="content-area">
     {#if !options}
+      <!-- Skeleton Loading State -->
       <div class="options-form">
         {#each { length: 4 } as _, i (i)}
           <div class="form-field">
@@ -80,6 +97,7 @@
         {/each}
       </div>
     {:else}
+      <!-- Configuration Form -->
       <div class="options-form">
         <div class="form-field">
           <label for="maxNew">{i18n.t('deckOptions.maxNew')}</label>
@@ -121,7 +139,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .view-container {
     display: flex;
     flex-direction: column;
@@ -152,25 +169,17 @@
     color: var(--color-text-secondary);
   }
 
+  /* Skeleton Loader */
   .skeleton {
     background-color: var(--color-gray-100);
     border-radius: var(--border-radius-sm);
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   @keyframes pulse {
-    50% {
-      opacity: 0.6;
-    }
+    50% { opacity: 0.6; }
   }
-  .label-skeleton {
-    height: 14px;
-    width: 120px;
-    margin-bottom: 2px;
-  }
-  .input-skeleton {
-    height: 40px;
-    width: 100%;
-  }
+  .label-skeleton { height: 14px; width: 120px; margin-bottom: 2px; }
+  .input-skeleton { height: 40px; width: 100%; }
 
   :global(.dark-theme) .skeleton {
     background-color: var(--color-gray-800);

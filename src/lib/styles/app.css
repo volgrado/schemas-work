@@ -2,8 +2,20 @@
  * src/lib/styles/app.css
  *
  * ========================================================================
- * SCHEMAS.WORK GLOBAL STYLESHEET (REFACTORED V6.0 - Project Polaris)
+ * SCHEMAS.WORK GLOBAL STYLESHEET (V6.0 - Polaris)
  * ========================================================================
+ *
+ * This is the root CSS file for the application. It orchestrates the design
+ * system by importing tokens, setting base styles, and handling third-party
+ * library overrides (Tippy, ProseMirror, Sonner).
+ *
+ * Architecture:
+ * 1. **Tokens:** Variables for colors, spacing, typography (`tokens.css`).
+ * 2. **Typography:** Global prose styling (`typography.css`).
+ * 3. **Effects:** Reusable visual effects like glassmorphism (`glassmorphism.css`).
+ * 4. **Resets:** Standard box-sizing and scrollbar normalization.
+ * 5. **Utilities:** Helper classes (e.g., `.visually-hidden`).
+ * 6. **Overrides:** Specific adaptations for libraries to match the theme.
  */
 
 /* 1. IMPORTS
@@ -77,6 +89,7 @@ body {
 
 /* 4. ELEMENTS
    ========================================================================== */
+/* Standardizing form inputs for consistency across the app */
 input, textarea, select {
   width: 100%;
   padding: var(--space-sm) 12px;
@@ -98,7 +111,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 /* 5. THIRD PARTY OVERRIDES
    ========================================================================== */
 
-/* --- Tippy.js --- */
+/* --- Tippy.js (Tooltips) --- */
 .tippy-box {
   background-color: var(--color-text) !important;
   color: var(--color-background) !important;
@@ -112,15 +125,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   border: 1px solid var(--color-border) !important;
 }
 
-/* --- ProseMirror --- */
+/* --- ProseMirror (Editor) --- */
 .prose { caret-color: var(--color-accent); }
 .prose h1 { margin-top: 0; }
 .prose img { max-width: 100%; border-radius: var(--radius-md); }
+
+/* Removing default outlines to implement our own focus states */
 .prose .ProseMirror {
-  outline: none !important; /* Remove default focus outline rectangle */
+  outline: none !important;
 }
 .prose .ProseMirror * {
-  outline: none !important; /* Remove outline from all child elements */
+  outline: none !important;
 }
 .prose .ProseMirror h1,
 .prose .ProseMirror h2,
@@ -132,11 +147,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: none !important;
   border: none !important;
 }
-/* Remove ProseMirror gapcursor outline */
 .ProseMirror-gapcursor {
   display: none !important;
 }
-/* Remove ProseMirror node selection outline (the black rectangle) */
+/* Hiding the default blue selection rectangle for nodes */
 .ProseMirror-selectednode,
 [class*="ProseMirror-selected"],
 [class*="selectednode"] {
@@ -144,9 +158,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   border: none !important;
   box-shadow: none !important;
 }
-/* Note: Image selection outline is handled specifically in DocumentView.svelte */
 
-/* --- Hierarchical Heading Numbering --- */
+/* --- Automatic Hierarchical Numbering --- */
+/* Uses CSS counters to auto-number headings (1.1, 1.2, 2.1.1, etc.) */
 .prose {
   counter-reset: h1;
 }
@@ -180,24 +194,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   margin-left: 6.0rem;
 }
 
-.prose h7 {
-  counter-reset: h8;
-  margin-left: 7.2rem;
-}
-
-.prose h8 {
-  counter-reset: h9;
-  margin-left: 8.4rem;
-}
-
-.prose h9 {
-  counter-reset: h10;
-  margin-left: 9.6rem;
-}
-
-.prose h10 {
-  margin-left: 10.8rem;
-}
+/* Deep nesting support up to H10 */
+.prose h7 { counter-reset: h8; margin-left: 7.2rem; }
+.prose h8 { counter-reset: h9; margin-left: 8.4rem; }
+.prose h9 { counter-reset: h10; margin-left: 9.6rem; }
+.prose h10 { margin-left: 10.8rem; }
 
 .prose h1::before {
   counter-increment: h1;
@@ -280,12 +281,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 }
 
 /* --- TTS Highlight --- */
+/* The background color for the node (paragraph) being read */
 .prose .is-current-tts-node {
   outline: none !important;
   border-radius: var(--radius-sm) !important;
   background-color: color-mix(in srgb, var(--color-accent) 10%, transparent) !important;
   transition: all var(--transition-fast);
 }
+/* The "Karaoke" style highlight for the specific word being spoken */
 .prose .is-current-tts-word {
   background-color: color-mix(in srgb, var(--color-accent) 30%, transparent) !important;
   border-radius: var(--radius-sm) !important;
@@ -293,6 +296,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 }
 
 /* --- Focus Highlight (from NodeDetailPanel) --- */
+/* Visual cue when jumping from the tree/sidebar to the editor */
 .prose .focus-highlight {
   animation: focus-pulse 2s ease-out;
   background: linear-gradient(
@@ -321,6 +325,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 }
 
 /* --- Organic Canvas --- */
+/* Ensure the canvas sits behind everything else */
 :global(.organic-canvas) {
   position: fixed;
   top: 0;

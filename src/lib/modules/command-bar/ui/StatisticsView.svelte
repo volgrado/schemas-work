@@ -1,4 +1,16 @@
-﻿<!-- src/lib/components/ui/command-bar/StatisticsView.svelte -->
+<!--
+  @component
+  StatisticsView
+
+  @description
+  A visual analytics dashboard for tracking spaced repetition progress.
+  It aggregates review logs and card statuses to provide insights into retention and workload.
+
+  Features:
+  - **KPI Cards:** Displays total reviews, reviews today, and retention rates (Young/Mature).
+  - **Pie Chart:** Visualizes the distribution of cards (New vs. Learning vs. Review).
+  - **Async Data:** Fetches data from `statisticsService` on mount with a loading state.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -7,7 +19,6 @@
     Statistics,
     CardStatusDistribution,
   } from '$lib/modules/study/domain/statisticsService';
-  // FIX: Import the `goBack` action function directly from the store.
   import { goBack } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { i18n } from '$lib/utils/i18n.svelte';
 
@@ -15,17 +26,17 @@
   import Icon from '$lib/core/ui/Icon.svelte';
   import PieChart from '$lib/core/ui/PieChart.svelte';
   import ViewHeader from './ViewHeader.svelte';
-  import CommandButton from './CommandButton.svelte';
 
+  // --- State ---
   let stats = $state<Statistics | null>(null);
   let cardDistribution = $state<CardStatusDistribution | null>(null);
   let isLoading = $state(true);
 
+  // --- Lifecycle ---
   onMount(async () => {
     isLoading = true;
     try {
       const [statsData, distributionData] = await Promise.all([
-        // FIX: Use the correct function name `generateStatistics`.
         statisticsService.generateStatistics(),
         statisticsService.getCardStatusDistribution(),
       ]);
@@ -39,6 +50,8 @@
       isLoading = false;
     }
   });
+
+  // --- Derived State ---
 
   const pieChartData = $derived(() => {
     if (!cardDistribution) return [];
@@ -74,8 +87,6 @@
     ].filter((d) => d.value > 0);
   });
 
-  // Note: The structure of the `retention` object in your service differs slightly
-  // from the component's expectation. The service provides percentages directly.
   const youngRetention = $derived(() => stats?.retention.young ?? 0);
   const matureRetention = $derived(() => stats?.retention.mature ?? 0);
 
@@ -96,7 +107,7 @@
       <div class="state-message">{i18n.t('statistics.noData')}</div>
     {:else}
       <div class="stats-content" in:fade={{ duration: 300 }}>
-        <!-- Stat Cards -->
+        <!-- Key Performance Indicators -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon"><Icon name="check-circle" size={24} /></div>
@@ -132,7 +143,7 @@
           </div>
         </div>
 
-        <!-- Pie Chart Section -->
+        <!-- Distribution Chart -->
         <h3 class="section-title">{i18n.t('statistics.breakdownTitle')}</h3>
         <div class="chart-container">
           {#if pieChartData().length > 0}
@@ -149,7 +160,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .view-container {
     display: flex;
     flex-direction: column;
@@ -213,15 +223,9 @@
     color: var(--color-text);
   }
 
-  .retention-good {
-    color: var(--color-green-500) !important;
-  }
-  .retention-ok {
-    color: var(--color-orange-500) !important;
-  }
-  .retention-bad {
-    color: var(--color-danger) !important;
-  }
+  .retention-good { color: var(--color-green-500) !important; }
+  .retention-ok { color: var(--color-orange-500) !important; }
+  .retention-bad { color: var(--color-danger) !important; }
 
   .section-title {
     font-size: 0.9rem;

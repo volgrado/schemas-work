@@ -1,21 +1,36 @@
-﻿import { actionRegistry } from '$lib/actions/registry';
+/**
+ * @file init.ts
+ * @module init
+ * @description
+ * Handles application-level initialization tasks that don't fit into a specific store or component.
+ * Currently, it is primarily responsible for registering global actions with the `ActionRegistry`.
+ *
+ * This function is called by the `AppInitializer` component on startup and whenever the
+ * locale changes, ensuring command text is always localized.
+ */
+
+import { actionRegistry } from '$lib/actions/registry';
 import { close, setView, openDiagnosticModal, openApiKeyModal } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
 import { i18n } from '$lib/utils/i18n.svelte';
 
+/**
+ * Registers all primary Command Bar actions.
+ * Dynamic imports are used within handlers to keep the initial bundle size small
+ * and avoid circular dependencies during initialization.
+ */
 export function registerCommandBarActions() {
   const t = i18n.t;
 
   const actions = [
-    // --- Navigation Actions ---
+    // --- Navigation & Core Views ---
     {
       id: 'app.newSchema',
       title: t('command.new_schema'),
-      description: t('command.new_schema'), // Reusing title as description for now or add specific key
+      description: t('command.new_schema'),
       icon: 'plus',
       context: 'view:command-bar',
       handler: async () => {
         const { create } = await import('$lib/stores/documentStore.svelte');
-        const { get } = await import('svelte/store');
         
         const defaultName = t('file_explorer.default_schema_name');
         await create(defaultName);
@@ -55,7 +70,7 @@ export function registerCommandBarActions() {
       handler: () => setView('vault')
     },
     
-    // --- Feature Actions ---
+    // --- Features & Utilities ---
     {
       id: 'app.readAloud',
       title: t('command.read_schema'),
@@ -97,5 +112,7 @@ export function registerCommandBarActions() {
     }
   ];
 
+  // Batch register
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   actions.forEach(action => actionRegistry.register(action as any));
 }

@@ -1,9 +1,31 @@
-﻿<!-- src/lib/components/ai/AIHelperModal.svelte -->
+<!--
+  @component
+  AIHelperModal
+
+  @description
+  A generic, lower-level utility modal for manual AI interaction workflows.
+  Unlike the "Strategy Session" which is automated, this modal guides the user through
+  a manual copy-paste loop with an external AI (e.g., ChatGPT, Claude).
+
+  Features:
+  - **Step 1:** Displays the generated prompt for the user to copy.
+  - **Step 2:** Provides a text area for pasting the AI's JSON response.
+  - **Validation:** Real-time Zod schema validation of the pasted JSON.
+  - **Application:** Applies the validated data via a callback.
+
+  @props
+  - `show` (bindable boolean): Visibility control.
+  - `title` (string): Header title.
+  - `prompt` (string): The text to be copied.
+  - `validationSchema` (ZodSchema): The schema to validate the response against.
+  - `onapply` (function): Success callback with validated data.
+  - `onclose` (function): Close callback.
+-->
 <script lang="ts">
   import { z } from 'zod';
   import { toast } from 'svelte-sonner';
 
-  // --- UI Components & Utilities ---
+  // --- UI Components ---
   import Modal from '$lib/core/ui/Modal.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
@@ -11,7 +33,6 @@
   import * as errorService from '$lib/core/services/errorService';
   import { i18n } from '$lib/utils/i18n.svelte';
 
-  // --- Svelte 5 Props ---
   let {
     show = $bindable(false),
     title,
@@ -23,33 +44,43 @@
     show?: boolean;
     title: string;
     prompt: string;
-    validationSchema: z.ZodSchema;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validationSchema: z.ZodSchema<any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onapply: (data: any) => void;
     onclose: () => void;
   }>();
 
-  // --- Local State ---
+  // --- State ---
   let jsonInput = $state('');
   let jsonTextarea = $state<HTMLTextAreaElement | null>(null);
 
+  // --- Effects ---
   $effect(() => {
     if (show) {
       jsonInput = '';
+      // Auto-focus the input area when modal opens (UX improvement)
       setTimeout(() => jsonTextarea?.focus(), 100);
     }
   });
 
+  // --- Logic ---
+  // Derived state: Parse and validate the input JSON in real-time
   const parseResult = $derived(() => {
     const trimmedInput = jsonInput.trim();
+
     if (trimmedInput === '') {
       return { success: false as const };
     }
+
     try {
       const parsed = JSON.parse(trimmedInput);
       const validation = validationSchema.safeParse(parsed);
+
       if (validation.success) {
         return { success: true as const, data: validation.data };
       } else {
+        // Format Zod error for display
         const firstError = validation.error.issues[0];
         const errorMessage = i18n.t('aiHelper.errors.zodValidationError', {
           path: firstError.path.join('.'),
@@ -64,6 +95,8 @@
       };
     }
   });
+
+  // --- Actions ---
 
   function handleApply() {
     const result = parseResult();
@@ -85,6 +118,8 @@
 
 <Modal {title} bind:show onClose={onclose}>
   <div class="assistant-container">
+
+    <!-- Step 1: Copy Prompt -->
     <div class="step">
       <div class="step-header">
         <h4>{i18n.t('aiHelper.step1.title')}</h4>
@@ -94,9 +129,11 @@
         </Button>
       </div>
       <p>{i18n.t('aiHelper.step1.description')}</p>
+      <!-- Read-only textarea for the prompt text -->
       <Textarea readonly={true} rows={8} value={prompt} />
     </div>
 
+    <!-- Step 2: Paste Response -->
     <div class="step">
       <div class="step-header"><h4>{i18n.t('aiHelper.step2.title')}</h4></div>
       <p>{i18n.t('aiHelper.step2.description')}</p>
@@ -107,11 +144,14 @@
         placeholder={i18n.t('aiHelper.step2.placeholder')}
         invalid={!parseResult().success && jsonInput.trim() !== ''}
       />
+
+      <!-- Validation Error Message -->
       {#if !parseResult().success && jsonInput.trim() !== ''}
         <p class="error-message">{parseResult().error}</p>
       {/if}
     </div>
 
+    <!-- Footer Actions -->
     <footer class="modal-actions">
       <Button onclick={onclose} variant="secondary"
         >{i18n.t('common.cancel')}</Button

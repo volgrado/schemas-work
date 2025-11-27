@@ -1,10 +1,23 @@
+<!--
+  @component
+  NodeDetailFooter
+
+  @description
+  The persistent footer for the Node Detail Panel.
+  It houses context-sensitive actions or embeds the TTS Controller when active.
+
+  Features:
+  - **Context Switching:** Toggles between default actions and the embedded `TTSController`.
+  - **Study Integration:** Launches TTS study mode starting from the current node.
+  - **Navigation:** "Document" button jumps back to the editor view, scrolling to the node.
+-->
 <script lang="ts">
   import {
     ttsState,
     startReading
   } from '$lib/modules/tts/ui/ttsStore.svelte';
   import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
-  import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
+  import { setActiveView } from '$lib/stores/uiStore.svelte';
   import { nodeDetailState, scrollToNodeInEditor } from '$lib/stores/nodeDetailStore.svelte';
   import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
   import { toast } from 'svelte-sonner';
@@ -14,21 +27,19 @@
   import TTSController from '$lib/modules/tts/ui/TTSController.svelte';
 
   /**
-   * Switch to editor view and scroll to the node's position.
-   * The panel will auto-close when switching views.
+   * Navigates the user back to the main document editor, focusing on the current node.
    */
   function focusInDocument() {
-    // Switch to editor view (panel will auto-close)
     setActiveView('editor');
     
-    // Small delay to allow view transition, then scroll
+    // Defer scroll to ensure the view transition has started
     setTimeout(() => {
       scrollToNodeInEditor();
     }, 150);
   }
 
   /**
-   * Start TTS study mode from this node.
+   * Initiates Text-to-Speech playback starting from the current node.
    */
   function studyFromHere() {
     const { instance: editor } = editorState;
@@ -37,13 +48,13 @@
       return;
     }
 
-    // Ensure node IDs exist
+    // Ensure consistency
     editor.chain().focus().ensureNodeIds().run();
 
-    // Get all readable nodes
+    // Generate the reading queue
     const allNodes = getReadableNodes(editor);
     
-    // Find the index of the current node
+    // Locate start position
     const currentIndex = allNodes.findIndex(
       (n: TTS.ReadableNode) => n.parentHeadingId === nodeDetailState.activeNodeId
     );
@@ -53,7 +64,7 @@
       return;
     }
 
-    // Start from the current node onwards
+    // Play
     const nodesToRead = allNodes.slice(currentIndex);
     startReading(nodesToRead);
     
@@ -62,6 +73,7 @@
 </script>
 
 <footer class="panel-footer">
+  <!-- Conditional Render: Show Player OR Actions -->
   {#if ttsState.status !== 'idle'}
     <TTSController embedded={true} />
   {:else}
@@ -121,7 +133,7 @@
     }
   }
 
-  /* Hide labels on very narrow screens, show icons only */
+  /* Hide labels on very narrow screens */
   @media (max-width: 280px) {
     .label {
       display: none;

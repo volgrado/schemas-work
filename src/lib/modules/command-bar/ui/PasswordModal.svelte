@@ -1,10 +1,20 @@
-﻿<!-- 
-  @file PasswordModal.svelte
+<!--
   @component
+  PasswordModal
 
   @description
-  An exceptional and secure modal for handling vault import/export operations.
-  It prompts the user for a password and orchestrates the backup service.
+  A specialized modal designed for high-security operations (Vault Import/Export).
+  It acts as a gateway for the `backupService`, requiring user authentication via a password
+  before encrypting (export) or decrypting (import) the vault data.
+
+  Features:
+  - **Context-Aware:** Adapts title/description based on the action ('import' vs 'export').
+  - **Auto-Focus:** Automatically focuses the password input when opened.
+  - **Loading State:** Disables inputs and shows a spinner during cryptographic operations.
+  - **Error Handling:** Catches and reports errors via `errorService` while gracefully resetting UI.
+
+  @props
+  - `show` (bindable boolean): Visibility control.
 -->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
@@ -12,24 +22,26 @@
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
-  // FIX: Import the reactive state rune directly from the store.
   import { commandBarState } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import * as backupService from '$lib/services/features/backupService';
   import * as errorService from '$lib/core/services/errorService';
 
-  // --- Svelte 5 Props ---
+  // --- Props ---
   let { show = $bindable(false) } = $props<{ show?: boolean }>();
 
-  // --- Local State ---
+  // --- State ---
   let passwordInput = $state('');
   let isProcessing = $state(false);
   let passwordInputElement = $state<HTMLInputElement | null>(null);
 
-  // --- Derived State ---
-  // FIX: Access the rune state directly without the '$' prefix.
+  // --- Derived ---
+  // Determine context from the global command bar state
   const action = $derived(commandBarState.passwordModalAction);
   const isExport = $derived(action === 'export');
 
+  // --- Effects ---
+
+  // Effect: Auto-focus input on open
   $effect(() => {
     if (show) {
       setTimeout(() => {
@@ -38,8 +50,11 @@
     }
   });
 
+  // --- Actions ---
+
   function closeAndReset() {
     show = false;
+    // Delay reset to allow transition to finish
     setTimeout(() => {
       passwordInput = '';
       isProcessing = false;
@@ -60,6 +75,7 @@
     } catch (error) {
       errorService.reportError(error, { operation: `backup:${action}` });
     } finally {
+      // Close regardless of success/failure (toast handles feedback)
       closeAndReset();
     }
   }
@@ -78,6 +94,7 @@
         ? i18n.t('command_bar.password_modal.description.export')
         : i18n.t('command_bar.password_modal.description.import')}
     </p>
+
     <input
       type="password"
       bind:this={passwordInputElement}
@@ -87,6 +104,7 @@
       autocomplete="new-password"
       disabled={isProcessing}
     />
+
     <footer class="modal-actions">
       <Button
         onclick={closeAndReset}
@@ -111,17 +129,22 @@
 </Modal>
 
 <style>
-  /* All styles are unchanged and correct */
   .password-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
   }
+
   .explanation {
     color: var(--color-text-secondary);
     line-height: 1.6;
     margin: 0;
   }
+
+  /*
+    Note: Input styling is inherited from global app.css input[type="password"]
+  */
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -130,6 +153,7 @@
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-lg);
   }
+
   :global(.dark-theme) .modal-actions {
     border-color: var(--color-border-dark);
   }

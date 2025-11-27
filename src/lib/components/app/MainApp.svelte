@@ -1,8 +1,28 @@
-﻿<script lang="ts">
+<!--
+  @component
+  MainApp
+
+  @description
+  The root application component that acts as the primary layout controller.
+  It manages the high-level state of the application, switching between
+  Review Mode and the standard Workspace Mode (Editor/Tree).
+
+  It also orchestrates global UI elements like:
+  - The App Header (Navigation & Actions)
+  - The main Workspace View (split between Editor and Tree)
+  - Floating Action Buttons (FAB) for AI commands
+  - Global Modals (Formula Editor, Media Editor)
+  - Text-to-Speech (TTS) Controller
+  - Slash Command Menu Controller
+
+  @props
+  - `onShowWelcome`: Callback function to trigger the welcome screen (e.g., for new users).
+-->
+<script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   
   // --- Stores ---
-  import { uiState, openCommandBar, closeModal, setActiveView, cycleColorMode } from '$lib/stores/uiStore.svelte';
+  import { uiState, openCommandBar, closeModal, cycleColorMode } from '$lib/stores/uiStore.svelte';
   import { reviewState, startReview } from '$lib/stores/reviewStore.svelte';
   import { open as openCardEditor } from '$lib/modules/editor/ui/cardEditorStore.svelte';
   import { documentState } from '$lib/stores/documentStore.svelte';
@@ -16,7 +36,6 @@
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Modal from '$lib/core/ui/Modal.svelte';
-  import Spinner from '$lib/core/ui/Spinner.svelte';
 
   // --- Props ---
   let { onShowWelcome } = $props<{ onShowWelcome: () => void }>();
@@ -25,6 +44,10 @@
   const config = $derived(uiState.modal.config);
 
   // --- Actions ---
+  /**
+   * Toggles the active view between 'editor' and 'tree'.
+   * This allows the user to switch context seamlessly.
+   */
   function toggleView() {
     uiState.activeView = uiState.activeView === 'editor' ? 'tree' : 'editor';
   }
@@ -46,6 +69,7 @@
       onShowWelcome={onShowWelcome}
     >
       <div class="header-actions">
+        <!-- Color Mode Toggle (Visualization) -->
         <Button
           id="color-mode-toggle"
           variant="icon"
@@ -62,6 +86,7 @@
           {/if}
         </Button>
 
+        <!-- View Toggle (Editor vs. Graph) -->
         <Button
           id="view-toggle-graph"
           variant="icon"
@@ -76,6 +101,8 @@
             <Icon name="file-text" size={18} />
           {/if}
         </Button>
+
+        <!-- Document Actions (Study, Cards) - Only visible if a doc is loaded -->
         {#if documentState.docId && !reviewState.isReviewing}
           <Button
             id="study-button"
@@ -97,17 +124,19 @@
       </div>
     </AppHeader>
 
-    <!-- WorkspaceView now uses uiState internally, so no need to pass currentView -->
+    <!-- WorkspaceView: The main content area (Editor + Tree) -->
     <WorkspaceView />
 
-    <!-- Lazy Load Card Editor -->
+    <!-- Lazy Load Card Editor Panel -->
     {#await import('$lib/modules/editor/ui/CardEditorPanel.svelte') then { default: CardEditorPanel }}
        <CardEditorPanel />
     {/await}
 
+    <!-- Global Controllers (Hidden UI Logic) -->
     <TTSController />
     <SlashMenuController />
 
+    <!-- AI Command Bar Trigger -->
     <FloatingActionButton
       id="ai-strategy-btn"
       icon="command"
@@ -116,6 +145,7 @@
       onclick={openCommandBar}
     />
 
+    <!-- Global Modals -->
     {#if uiState.modal.show && config}
       {#if config.type === 'formula'}
         {#await import('$lib/modules/editor/ui/FormulaEditorModal.svelte') then { default: FormulaEditorModal }}

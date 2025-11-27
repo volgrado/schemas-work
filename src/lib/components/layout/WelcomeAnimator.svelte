@@ -3,38 +3,30 @@
   WelcomeAnimator
 
   @description
-  An exceptional state machine for the welcome screen, orchestrating its appearance and
-  disappearance. It uses Svelte's built-in transition events for robust, timer-free
-  animation management, representing a best-practice pattern for lifecycle control.
-
-  It listens for the start event from the WelcomeScreen, triggers a fade-out, and
-  notifies its parent via the `oncomplete` callback precisely when the animation finishes.
+  A state controller that wraps `WelcomeScreen`.
+  It orchestrates the exit animation lifecycle, ensuring the parent component
+  receives the `oncomplete` signal only after the visual transition has fully finished.
 
   @props
-  - `oncomplete`: {() => void} - Callback fired after the exit animation has completed.
+  - `oncomplete` (function): Callback fired when the exit animation finishes.
 -->
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import WelcomeScreen from './WelcomeScreen.svelte';
 
-  // REFACTOR: Use a callback prop for events, the idiomatic Svelte 5 pattern.
   let { oncomplete } = $props<{ oncomplete: () => void }>();
 
   /**
-   * The single source of truth for controlling the exit animation. When this becomes
-   * true, the `out:fade` transition is triggered on the wrapper div.
+   * Controls the visibility of the welcome screen.
+   * Setting this to true triggers the `out:fade` transition.
    */
   let isExiting = $state(false);
 
-  /**
-   * Initiates the exit animation sequence by simply updating the state.
-   */
   function handleStart() {
     isExiting = true;
   }
 </script>
 
-<!-- The `#if` block ensures the component and its transitions are removed from the DOM after exit. -->
 {#if !isExiting}
   <div
     class="animator-wrapper"
@@ -42,7 +34,6 @@
     out:fade={{ duration: 250 }}
     onoutroend={oncomplete}
   >
-    <!-- REFACTOR: Use the modern `onstart` prop to handle the child's event. -->
     <WelcomeScreen onstart={handleStart} />
   </div>
 {/if}

@@ -1,4 +1,22 @@
-﻿<!-- src/lib/components/ui/ErrorDiagnosticModal.svelte -->
+<!--
+  @component
+  ErrorDiagnosticModal
+
+  @description
+  A developer-centric tool for inspecting application health.
+  It displays a chronological list of error logs captured by the `errorService`,
+  providing a transparent way to debug issues in production.
+
+  Features:
+  - **Log Viewer:** Collapsible, detailed JSON view of each error log.
+  - **Copy Report:** Generates a formatted text report (including User Agent) for easy sharing.
+  - **Persistence:** Clears stored logs from LocalStorage.
+  - **Navigation:** Integrated back button to return to the Command Bar.
+
+  @props
+  - `show` (boolean): Visibility control.
+  - `onClose` (function): Close callback.
+-->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import Modal from '$lib/core/ui/Modal.svelte';
@@ -13,18 +31,22 @@
   let {
     show = false,
     onClose,
-    children,
-  } = $props<{ show?: boolean; onClose: () => void; children?: any }>();
+  } = $props<{ show?: boolean; onClose: () => void; }>();
 
+  // --- State ---
   let logs = $state<ErrorLog[]>([]);
   let logAreaEl = $state<HTMLDivElement | null>(null);
 
+  // --- Effects ---
   $effect(() => {
     if (show) {
-      logs = errorService.getLogs().reverse();
+      // Fetch latest logs when modal opens
+      logs = errorService.getLogs().reverse(); // Newest first
       logAreaEl?.scrollTo(0, 0);
     }
   });
+
+  // --- Actions ---
 
   async function copyLogs() {
     if (logs.length === 0) {
@@ -51,10 +73,8 @@
     toast.info(i18n.t('toast.info.error_logs_cleared'));
   }
 
-  // FIX: Updated the function to correctly handle a string or number timestamp.
   const isStale = (timestamp: string | number) => {
     const oneDay = 24 * 60 * 60 * 1000;
-    // Convert the timestamp to a numeric value before comparison.
     const logTime = new Date(timestamp).getTime();
     return Date.now() - logTime > oneDay;
   };
@@ -122,7 +142,6 @@
 </Modal>
 
 <style>
-  /* Styles remain the same */
   .diagnostic-container {
     display: flex;
     flex-direction: column;
@@ -135,7 +154,7 @@
     line-height: 1.6;
   }
   .log-area {
-    background-color: var(--color-background-raised); /* Use raised background for contrast */
+    background-color: var(--color-background-raised);
     border-radius: var(--radius-md);
     padding: var(--space-sm);
     max-height: 45vh;
@@ -160,12 +179,12 @@
     list-style: none;
     transition: background-color 0.2s ease;
   }
-  .log-summary::-webkit-details-marker {
-    display: none;
-  }
+  .log-summary::-webkit-details-marker { display: none; }
+
   .log-summary:hover {
-    background-color: var(--color-background); /* Slight contrast on hover */
+    background-color: var(--color-background);
   }
+
   .summary-content {
     display: flex;
     flex-direction: column;
@@ -176,9 +195,8 @@
     color: var(--color-text-tertiary);
     font-size: 0.75rem;
   }
-  .timestamp.stale {
-    opacity: 0.7;
-  }
+  .timestamp.stale { opacity: 0.7; }
+
   .message {
     font-weight: 600;
     font-family: var(--font-main);
@@ -210,5 +228,4 @@
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
   }
-  /* Removed manual dark theme overrides as tokens handle it */
 </style>
