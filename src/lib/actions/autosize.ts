@@ -1,55 +1,66 @@
-// src/lib/actions/autosize.ts
+/**
+ * @file autosize.ts
+ * @module actions
+ * @description
+ * A Svelte action that automatically adjusts the height of a `<textarea>` element
+ * to fit its content dynamically.
+ *
+ * Mechanism:
+ * 1. Resets height to `auto` to allow shrinking.
+ * 2. Reads `scrollHeight` to determine content height.
+ * 3. Adjusts for border-box model if necessary.
+ * 4. Uses `ResizeObserver` to handle layout changes (e.g. window resize).
+ */
+
+import type { Action } from 'svelte/action';
 
 /**
- * A reusable Svelte action that automatically resizes a textarea to fit its content.
- *
- * This enhanced version uses a ResizeObserver to automatically adjust the textarea's
- * height when its dimensions change for any reason (e.g., window resize), not just on user input.
- * It gracefully handles the 'box-sizing' CSS property to ensure accurate sizing.
- *
- * @param {HTMLTextAreaElement} node The textarea element to autosize.
- * @returns {import('svelte/action').ActionReturn} An object with a destroy method for cleanup.
+ * Enables auto-sizing behavior on a textarea.
+ * @param node - The HTMLTextAreaElement.
  */
-export function autosize(node: HTMLTextAreaElement) {
+export const autosize: Action<HTMLTextAreaElement> = (node) => {
   let isObserving = false;
 
   function resize() {
-    // 1. Reset height to 'auto'. This is crucial to allow the textarea to shrink
-    //    if the content is deleted. It also forces the browser to recalculate scrollHeight.
+    // 1. Reset height to 'auto'. This allows the textarea to shrink if content is deleted.
+    //    Crucial: Without this, it would only ever grow.
     node.style.height = 'auto';
 
-    // 2. Account for 'box-sizing: border-box'. The scrollHeight property includes padding
-    //    but not the border. By getting the computed style, we can ensure the final
-    //    height is pixel-perfect.
+    // 2. Calculate precise height, accounting for box-sizing
     const style = getComputedStyle(node);
+    const scrollHeight = node.scrollHeight;
+
     if (style.boxSizing === 'border-box') {
       const verticalBorders =
         parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-      node.style.height = `${node.scrollHeight + verticalBorders}px`;
+      node.style.height = `${scrollHeight + verticalBorders}px`;
     } else {
-      node.style.height = `${node.scrollHeight}px`;
+      node.style.height = `${scrollHeight}px`;
     }
   }
 
-  // Use a ResizeObserver to handle all size changes, including window resizing.
+  // Handle external layout changes (e.g. window resize)
   const observer = new ResizeObserver(() => {
-    // The observer might fire multiple times; we only need to resize once.
-    // CORRECTED: Typo fixed here.
     if (isObserving) resize();
   });
 
-  // Set initial size and start listening
+  // Init
   resize();
+
+  // Bind listeners
   node.addEventListener('input', resize);
+  // Also listen for change events (e.g. pasted content)
+  node.addEventListener('change', resize);
+
   observer.observe(node);
-  isObserving = true; // Start observing after the initial resize
+  isObserving = true;
 
   return {
     destroy() {
-      // Cleanup all listeners and observers
       node.removeEventListener('input', resize);
-      observer.unobserve(node);
+      node.removeEventListener('change', resize);
+      observer.disconnect();
       isObserving = false;
     },
   };
-}
+};

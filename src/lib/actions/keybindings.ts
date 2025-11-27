@@ -1,12 +1,15 @@
 /**
- * @file Manages keyboard shortcuts and maps them to actions.
- * @module keybindingManager
+ * @file keybindings.ts
+ * @module actions
+ * @description
+ * Global manager for keyboard shortcuts.
+ * It listens to window-level `keydown` events, parses them into a standardized format
+ * (e.g., "Mod+Shift+K"), and resolves them against the `ActionRegistry`.
+ * It handles context-sensitive dispatching (Global vs. Editor vs. Command Bar).
  */
-import { onMount, onDestroy } from 'svelte';
-import { actionRegistry } from './registry';
-import { uiState } from '$lib/stores/uiStore.svelte';
 
-type KeyHandler = (event: KeyboardEvent) => void;
+import { actionRegistry, type ActionContextType } from './registry';
+import { uiState } from '$lib/stores/uiStore.svelte';
 
 class KeybindingManager {
   private isMac = typeof navigator !== 'undefined' ? /Mac|iPod|iPhone|iPad/.test(navigator.platform) : false;
@@ -17,6 +20,9 @@ class KeybindingManager {
     }
   }
 
+  /**
+   * Cleans up event listeners.
+   */
   destroy() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.handleKeydown);
@@ -24,23 +30,19 @@ class KeybindingManager {
   }
 
   private handleKeydown = (event: KeyboardEvent) => {
-    // Ignore if inside an input/textarea/contenteditable unless it's a special command?
-    // For now, we want global commands to work, but maybe not if typing text.
-    // But editor commands SHOULD work when typing.
-    
-    // We need to parse the event to a string like "Mod+B"
+    // 1. Parse the event into a recognizable string key (e.g., "Mod+S")
     const keyString = this.eventToKeyString(event);
     if (!keyString) return;
 
-    // Find actions with this shortcut
+    // 2. Find all actions registered with this shortcut
     const actions = actionRegistry.getAll().filter(a => 
       a.shortcuts?.some(s => this.normalizeShortcut(s) === keyString)
     );
 
     if (actions.length === 0) return;
 
-    // Determine current context
-    let currentContext = 'global';
+    // 3. Determine the current application context
+    let currentContext: ActionContextType = 'global';
     if (uiState.commandBar.isOpen) {
       currentContext = 'view:command-bar';
     } else if (uiState.activeView === 'editor') {
@@ -49,17 +51,14 @@ class KeybindingManager {
       currentContext = 'tree';
     }
 
-    // Filter actions by context
-    // We prioritize specific context matches over global ones if both exist?
-    // Or we just execute the one that matches the current context.
+    // 4. Filter actions: Only allow Global actions or actions matching current context
     const validActions = actions.filter(a => 
       a.context === 'global' || a.context === currentContext
     );
 
     if (validActions.length === 0) return;
 
-    // If we have multiple matches (e.g. global and specific), which one wins?
-    // Usually specific wins.
+    // 5. Prioritize specific context over global context
     validActions.sort((a, b) => {
       if (a.context === currentContext && b.context === 'global') return -1;
       if (a.context === 'global' && b.context === currentContext) return 1;
@@ -68,18 +67,26 @@ class KeybindingManager {
 
     const actionToExecute = validActions[0];
 
+    // 6. Execute if enabled
     if (actionToExecute) {
-      // Check if enabled
+      // Respect 'isEnabled' guard
       if (actionToExecute.isEnabled && !actionToExecute.isEnabled()) {
         return;
       }
       
+      // Execute via Registry
       actionRegistry.execute(actionToExecute.id);
+
+      // Prevent default browser behavior (e.g. Ctrl+S saving webpage)
       event.preventDefault();
       event.stopPropagation();
     }
   };
 
+  /**
+   * Converts a DOM KeyboardEvent into a standardized string representation.
+   * Handles platform differences (Mac 'Meta' vs Windows 'Ctrl').
+   */
   private eventToKeyString(event: KeyboardEvent): string {
     const parts = [];
     if (event.metaKey && this.isMac) parts.push('Mod');
@@ -87,9 +94,9 @@ class KeybindingManager {
     if (event.altKey) parts.push('Alt');
     if (event.shiftKey) parts.push('Shift');
     
-    // Handle special keys
+    // Ignore modifier-only events
     const key = event.key.toUpperCase();
-    if (['CONTROL', 'SHIFT', 'ALT', 'META'].includes(key)) return ''; // Just a modifier
+    if (['CONTROL', 'SHIFT', 'ALT', 'META'].includes(key)) return '';
     
     parts.push(key);
     return parts.join('+');
@@ -100,8 +107,8 @@ class KeybindingManager {
   }
 }
 
-// Singleton instance
+/**
+ * Singleton instance of the KeybindingManager.
+ * Initialized once at the module level to ensure global capture.
+ */
 export const keybindingManager = new KeybindingManager();
-
-// Svelte action or component to enable keybindings?
-// Since it's global, we can just import it in the root layout or use a useKeybindings action.
