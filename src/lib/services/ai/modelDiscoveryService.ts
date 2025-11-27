@@ -1,3 +1,12 @@
+/**
+ * @file modelDiscoveryService.ts
+ * @service
+ * @description
+ * Implements logic for discovering and filtering available AI models from the provider (Gemini).
+ * This service ensures that the application dynamically adapts to the user's available models
+ * while filtering out unsupported or experimental models that could cause instability.
+ */
+
 import * as errorService from '$lib/core/services/errorService';
 
 // NEW: A list of keywords to filter out unwanted, specialized, or internal models.
@@ -15,10 +24,13 @@ const EXCLUDED_KEYWORDS_IN_MODEL_ID = [
 
 /**
  * Fetches the list of model IDs available from the Gemini API for a given key.
- * This function is used to validate our statically defined models.
  *
- * @param apiKey The user's Google AI (Gemini) API key.
- * @returns A Set of available model ID strings (e.g., 'gemini-pro').
+ * This function performs a live query against the Gemini API to retrieve all models
+ * accessible to the provided API key. It applies a rigorous set of filters to ensure
+ * only text-generation models suitable for the application's use cases are returned.
+ *
+ * @param {string} apiKey - The user's Google AI (Gemini) API key.
+ * @returns {Promise<Set<string>>} A promise that resolves to a Set of available model ID strings (e.g., 'gemini-pro').
  */
 export async function fetchAvailableGeminiModels(
   apiKey: string
@@ -37,6 +49,7 @@ export async function fetchAvailableGeminiModels(
     const modelIds = new Set<string>();
 
     if (data.models) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const model of data.models) {
         const modelId = model.name.replace('models/', '');
 
