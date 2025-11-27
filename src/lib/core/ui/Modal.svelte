@@ -1,4 +1,26 @@
-﻿<!-- src/lib/components/ui/Modal.svelte (Final Corrected Version) -->
+<!--
+  @component
+  Modal
+
+  @description
+  A robust, accessible, and animated modal dialog component.
+  It serves as the foundation for all dialog interactions in the application (e.g., API keys, Password prompts).
+
+  Features:
+  - **Accessibility:** Implements a focus trap (`use:focusTrap`) to keep keyboard navigation within the modal.
+  - **Animations:** Uses a custom `flyAndScale` transition for a premium "pop" effect.
+  - **Responsive:** Adapts to a bottom-sheet style on mobile devices.
+  - **Glassmorphism:** Leverages the global glass design tokens for the background and border.
+  - **Shortcuts:** Closes on `Escape` key press.
+
+  @props
+  - `show` (bindable boolean): Controls the visibility of the modal.
+  - `title` (string | null): The header title of the modal.
+  - `onClose` (function): Callback triggered when the modal should close (overlay click, close button, escape).
+  - `onBack` (function | null): Optional callback to show a back button in the header.
+  - `showOverlay` (boolean): Whether to render the backdrop overlay. Default: `true`.
+  - `width` (string): [Deprecated] The width is now standardized to match the CommandBar (640px max).
+-->
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import type { TransitionConfig } from 'svelte/transition';
@@ -28,11 +50,11 @@
     children?: import('svelte').Snippet;
   }>();
 
-  // All modals are now 640px to match CommandBar
   let panelClass = 'modal-panel';
   let modalPanel = $state<HTMLDivElement | null>(null);
   let modalOverlay = $state<HTMLDivElement | null>(null);
 
+  // Effect: Handle global Escape key to close the modal
   $effect(() => {
     if (show) {
       const handleKeydown = (event: KeyboardEvent) => {
@@ -41,6 +63,7 @@
         }
       };
       window.addEventListener('keydown', handleKeydown);
+      // Prevent scrolling of the body content while modal is open
       document.body.style.overflow = 'hidden';
       return () => {
         window.removeEventListener('keydown', handleKeydown);
@@ -49,6 +72,9 @@
     }
   });
 
+  /**
+   * Custom transition that combines a vertical fly with a slight scale effect.
+   */
   const flyAndScale = (
     node: Element,
     params: FlyAndScaleParams
@@ -66,6 +92,7 @@
 </script>
 
 {#if show}
+  <!-- Backdrop Overlay -->
   {#if showOverlay}
     <div
       bind:this={modalOverlay}
@@ -80,8 +107,8 @@
       tabindex="0"
     ></div>
   {/if}
-  <!-- THE FIX: Changed `{if}` to `{/if}` -->
 
+  <!-- Modal Panel -->
   <div
     bind:this={modalPanel}
     class={panelClass}
@@ -102,7 +129,6 @@
             >
               <Icon name="arrow-left" size={20} />
             </button>
-
           {/if}
           <h2 class="modal-title" id="modal-title">{title}</h2>
         </div>
@@ -123,23 +149,15 @@
 {/if}
 
 <style>
-  /* Styles remain the same */
   .modal-overlay {
     position: fixed;
     inset: 0;
-    /* Use the glass-overlay variable or class directly if possible, but here we map to the variable */
-    background-color: rgba(0, 0, 0, 0.4); /* Fallback */
+    background-color: rgba(0, 0, 0, 0.4);
     z-index: var(--z-modal-overlay);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     transition: opacity var(--duration-base) var(--ease-out);
   }
-  
-  /* Apply glass-overlay styles via @apply or just use the class in markup. 
-     Since we can't use @apply without PostCSS config, we'll manually sync with glassmorphism.css 
-     OR better, we update the markup to use the global class. 
-     For now, let's use the variables defined in glassmorphism.css if they are globally available.
-  */
   
   .modal-overlay:focus-visible {
     outline: 2px solid var(--color-accent);
@@ -154,7 +172,7 @@
     width: 100%;
     max-width: 640px;
     
-    /* Premium Glassmorphism - using variables from glassmorphism.css */
+    /* Premium Glassmorphism */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));

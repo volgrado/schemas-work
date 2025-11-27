@@ -2,44 +2,39 @@
   @component
   ContextMenu
 
-  An exceptional, floating contextual menu that intelligently positions itself to remain
-  within the viewport. It provides a robust and accessible foundation for building
-  right-click menus and other contextual actions.
+  @description
+  A sophisticated, self-positioning contextual menu component.
+  It provides a foundation for custom right-click or dropdown menus that automatically
+  adjust their position to stay within the viewport bounds.
 
   Features:
-  - Smartly positioned using `@floating-ui/dom` to prevent overflow.
-  - Automatically closes on outside clicks or 'Escape' key presses.
-  - Manages focus by automatically focusing the first item, a critical accessibility feature.
-  - Polished fade-and-scale transition for a premium feel.
-  - Modern Svelte 5 implementation with declarative, side-effect-free logic.
+  - **Smart Positioning:** Uses `@floating-ui/dom` to calculate optimal coordinates (flip/shift).
+  - **Accessibility:** Automatically focuses the first interactive item for keyboard users.
+  - **Dismissal:** Closes on outside clicks or `Escape` key press.
+  - **Transitions:** Smooth fade-in and scale animation.
 
-  Props:
-  - `x`: The desired horizontal (left) position in pixels.
-  - `y`: The desired vertical (top) position in pixels.
-  - `onClose`: A callback function invoked when the menu should be closed.
+  @props
+  - `x` (number): The viewport X coordinate for anchoring.
+  - `y` (number): The viewport Y coordinate for anchoring.
+  - `onClose` (function): Callback to close the menu.
+  - `children` (snippet): The content of the menu (usually buttons).
 -->
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import type { TransitionConfig } from 'svelte/transition';
   import { computePosition, flip, shift } from '@floating-ui/dom';
   import type { VirtualElement } from '@floating-ui/dom';
 
-  // --- Svelte 5 Props ---
   let {
     x,
     y,
     onClose,
     children, // Accept the children render snippet
-  } = $props<{ x: number; y: number; onClose: () => void; children: any }>();
+  } = $props<{ x: number; y: number; onClose: () => void; children: import('svelte').Snippet }>();
 
-  // --- Svelte 5 State ---
   let menuElement = $state<HTMLDivElement | null>(null);
-  let floatingStyle = $state('opacity: 0;'); // Start invisible
+  let floatingStyle = $state('opacity: 0;'); // Start invisible to prevent flash before position calculation
 
-  /**
-   * ENHANCEMENT: This `$effect` handles all side effects (event listeners for closing)
-   * and their cleanup. It runs only once when the component is created.
-   */
+  // Effect: Handle outside clicks and Escape key
   $effect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuElement && !menuElement.contains(event.target as Node)) {
@@ -52,23 +47,20 @@
       }
     };
 
-    // Using capture phase to catch events early.
+    // Use capture phase to handle events before they bubble up to potential triggers
     document.addEventListener('click', handleClickOutside, true);
     document.addEventListener('keydown', handleKeydown, true);
 
-    // The return function is the cleanup, preventing memory leaks.
     return () => {
       document.removeEventListener('click', handleClickOutside, true);
       document.removeEventListener('keydown', handleKeydown, true);
     };
   });
 
-  /**
-   * ENHANCEMENT: This `$effect` handles smart positioning and focus management.
-   */
+  // Effect: Calculate Position & Manage Focus
   $effect(() => {
     if (menuElement) {
-      // Define a virtual element based on the x/y coordinates.
+      // Create a virtual element representing the click coordinates
       const virtualReference: VirtualElement = {
         getBoundingClientRect: () => ({
           x,
@@ -82,7 +74,7 @@
         }),
       };
 
-      // Calculate the optimal position, flipping if necessary.
+      // Calculate position, ensuring menu stays on screen
       computePosition(virtualReference, menuElement, {
         placement: 'bottom-start',
         middleware: [flip(), shift({ padding: 8 })],
@@ -90,7 +82,7 @@
         floatingStyle = `left: ${finalX}px; top: ${finalY}px;`;
       });
 
-      // Focus the first interactive item in the menu for accessibility.
+      // Auto-focus the first item for keyboard accessibility
       const firstItem = menuElement.querySelector<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
@@ -134,9 +126,10 @@
 
     border-radius: var(--radius-md);
     padding: var(--space-xs);
-    transform-origin: top left; /* For the scale animation */
+    transform-origin: top left; /* Scale animation origin */
   }
 
+  /* Button styling for children */
   :global(.context-menu-panel button) {
     display: flex;
     align-items: center;
