@@ -1,12 +1,33 @@
-﻿<!-- src/lib/components/study/QuickCardEditorModal.svelte -->
+<!--
+  @component
+  QuickCardEditorModal
+
+  @description
+  A powerful modal for editing existing flashcards during a review or study session.
+  It supports all card types (Basic, Input, Sequencing) and allows for quick modifications
+  without leaving the current context.
+
+  Features:
+  - **Context Retention:** Clones the card data to allow safe editing without mutating the source prematurely.
+  - **Dirty Checking:** Detects unsaved changes and warns the user before closing.
+  - **CRUD Actions:** Update content, delete card, or move card (change source).
+  - **Suspension:** Toggle card suspension status directly.
+
+  @props
+  - `show` (bindable boolean): Visibility control.
+  - `card` (Card): The card to edit.
+  - `onClose` (function): Close callback.
+  - `onUpdate` (function): Success callback for updates.
+  - `onDelete` (function): Success callback for deletion.
+  - `onChangeSource` (function): Callback to trigger the Relink flow.
+-->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import type { SRS } from '$lib/types';
-  type Card = SRS.Card;
   import * as cardService from '$lib/modules/study/domain/cardService';
   import { toast } from 'svelte-sonner';
 
-  // UI Components
+  // --- UI Components ---
   import Modal from '$lib/core/ui/Modal.svelte';
   import Button from '$lib/core/ui/Button.svelte';
   import Input from '$lib/core/ui/Input.svelte';
@@ -14,6 +35,8 @@
   import Toggle from '$lib/core/ui/Toggle.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import TagInput from '$lib/core/ui/TagInput.svelte';
+
+  type Card = SRS.Card;
 
   let { 
     show = $bindable(false), 
@@ -31,21 +54,25 @@
     onChangeSource?: (card: Card) => void;
   }>();
 
+  // --- State ---
   let editableCard = $state<Card | null>(null);
 
+  // --- Effects ---
   $effect(() => {
     if (show) {
-      // Deep clone the card to prevent mutating the original prop
+      // Deep clone the card to create a detached editing buffer
       editableCard = JSON.parse(JSON.stringify(card));
     }
   });
 
+  // Derived: Check if the buffer differs from the original prop
   const hasUnsavedChanges = $derived(
     editableCard ? JSON.stringify(editableCard) !== JSON.stringify(card) : false
   );
 
+  // --- Actions ---
+
   function requestClose() {
-    // FIX: Access the derived value directly.
     if (hasUnsavedChanges) {
       if (confirm(i18n.t('quickCardEditor.unsavedChangesConfirm'))) {
         onClose?.();
@@ -86,6 +113,8 @@
 <Modal bind:show title={i18n.t('quickCardEditor.title')} onClose={requestClose}>
   {#if editableCard}
     <div class="card-editor-content">
+
+      <!-- Polymorphic Editor Fields based on Card Type -->
       {#if editableCard.type === 'basic'}
         {@const c = editableCard.content}
         <div class="field">
@@ -96,6 +125,7 @@
           <label for="answer">{i18n.t('quickCardEditor.answerLabel')}</label
           ><Textarea id="answer" bind:value={c.answer} rows={3} />
         </div>
+
       {:else if editableCard.type === 'input'}
         {@const c = editableCard.content}
         <div class="field">
@@ -106,6 +136,7 @@
           <label for="expected">{i18n.t('quickCardEditor.expectedLabel')}</label
           ><Input id="expected" bind:value={c.expected} />
         </div>
+
       {:else if editableCard.type === 'sequencing'}
         {@const c = editableCard.content}
         <div class="field">
@@ -113,9 +144,11 @@
             >{i18n.t('quickCardEditor.instructionLabel')}</label
           ><Textarea id="prompt-seq" bind:value={c.prompt} rows={2} />
         </div>
+
         <div class="group-label">
           {i18n.t('quickCardEditor.sequenceGroupLabel')}
         </div>
+
         <div class="sequence-items-list">
           {#each c.items as item, i (i)}
             <div class="sequence-item">
@@ -129,7 +162,6 @@
               <Button
                 onclick={() =>
                   (c.items = c.items.filter(
-                    // FIX: Add explicit types for the filter callback parameters.
                     (_: string, idx: number) => idx !== i
                   ))}
                 variant="ghost"
@@ -151,16 +183,21 @@
           {i18n.t('quickCardEditor.addItem')}
         </Button>
       {/if}
+
+      <!-- Shared Fields -->
       <div class="field">
         <label for="tags">{i18n.t('quickCardEditor.tagsLabel')}</label>
         <TagInput id="tags" bind:tags={editableCard.tags} />
       </div>
     </div>
+
+    <!-- Footer Actions -->
     <div class="card-actions-footer">
       <div class="suspend-toggle">
         <label for="suspend">{i18n.t('quickCardEditor.suspendLabel')}</label>
         <Toggle id="suspend" bind:checked={editableCard.suspended} />
       </div>
+
       <div class="footer-buttons">
         <div class="left-actions">
           <Button
@@ -183,7 +220,6 @@
           <Button onclick={requestClose} variant="secondary"
             >{i18n.t('quickCardEditor.cancel')}</Button
           >
-          <!-- FIX: Access the derived value directly. -->
           <Button onclick={handleSaveAndClose} disabled={!hasUnsavedChanges}>
             {i18n.t('quickCardEditor.save')}
           </Button>
@@ -222,7 +258,6 @@
   .sequence-item :global(input) {
     flex-grow: 1;
   }
-  /* FIX: Use `:global()` to target the class on the child Button component. */
   :global(.add-item-btn) {
     align-self: flex-start;
   }
@@ -256,7 +291,6 @@
     display: flex;
     gap: var(--space-sm);
   }
-  /* FIX: Use `:global()` to target the class on the child Button component. */
   :global(.destructive-btn) {
     color: var(--color-danger);
   }
@@ -270,7 +304,8 @@
     flex-direction: column;
     gap: var(--space-xs);
   }
-  /* Removed redundant dark theme overrides */
+
+  /* Theme Overrides */
   :global(.dark-theme) .suspend-toggle {
     background-color: var(--color-gray-800);
   }

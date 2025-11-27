@@ -1,54 +1,64 @@
-﻿<script lang="ts">
+<!--
+  @component
+  WorkspaceView
+
+  @description
+  The main content area of the application, responsible for rendering either the
+  Text Editor or the Tree Visualization based on the current `uiState`.
+
+  Features:
+  - **Dynamic View Switching:** Toggles between `DocumentView` (Editor) and `StandardTree` (Visualization).
+  - **Lazy Loading:** Asynchronously imports the Tree component to improve initial load time.
+  - **State Management:** Orchestrates document loading states (Loading, Error, Ready, Empty).
+  - **Tree Flattening:** Synchronizes the tree structure with the `nodeDetailStore` for linear navigation.
+-->
+<script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import type { Node as ProseMirrorNode } from 'prosemirror-model';
   import { fade } from 'svelte/transition';
 
   // --- Components ---
   import DocumentView from '$lib/modules/editor/ui/DocumentView.svelte';
-  // SchemaTree is now lazy loaded
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
   import Spinner from '$lib/core/ui/Spinner.svelte';
   import EmptyState from '$lib/core/ui/EmptyState.svelte';
 
-  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
+  // --- Stores & Services ---
   import {
     nodeDetailState,
-    openPanel,
     setFlattenedTree,
   } from '$lib/stores/nodeDetailStore.svelte';
   import { extractContentWithPositions } from '$lib/utils/contentExtraction';
-
-  // --- Stores ---
   import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  import { uiState, setActiveView } from '$lib/stores/uiStore.svelte';
+  import { uiState } from '$lib/stores/uiStore.svelte';
   import {
     documentState,
     create as createDocument,
-    setFocusCommand,
   } from '$lib/stores/documentStore.svelte';
-  import { editorState, updateSelection } from '$lib/modules/editor/ui/editorStore.svelte';
-
-
-  // --- Services ---
+  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
   import * as schemaService from '$lib/services/features/schemaService';
 
-  // --- Logic ---
+  // --- State ---
   let treeData = $state<ReturnType<
     typeof schemaService.documentToTreeData
   > | null>(null);
 
   let visualizationMode = $state<'tree'>('tree');
 
+  // --- Effects ---
+
+  // Effect: Sync tree visualization data whenever the editor content changes (revision)
   $effect(() => {
-    const revision = editorState.revision;
+    const revision = editorState.revision; // Dependency
     const docStatus = documentState.status;
     const editorDoc = editorState.instance?.state.doc;
 
     if (docStatus === 'ready' && editorDoc) {
       const generatedTree = schemaService.documentToTreeData(editorDoc);
       treeData = generatedTree;
-      // Flatten tree whenever data changes
+
+      // Regenerate the flattened navigation list for the Detail Panel
       flattenTreeForNavigation(generatedTree);
     } else {
       treeData = null;
@@ -56,7 +66,12 @@
     }
   });
 
+  // --- Logic ---
 
+  /**
+   * Flattens the hierarchical tree data into a linear array.
+   * This powers the "Next/Previous Node" navigation in the Node Detail Panel.
+   */
   function flattenTreeForNavigation(data: any): void {
     const editor = editorState.instance;
     if (!editor || !data) {
@@ -66,11 +81,11 @@
 
     const flattenedNodes: Array<{ id: string; title: string; content: string }> = [];
     
-    // Recursive traversal of treeData
+    // Recursive traversal
     const traverse = (node: any) => {
       const nodeId = node.id;
       
-      // Find the heading node in the ProseMirror document
+      // Locate corresponding node in ProseMirror document
       let headingNode: ProseMirrorNode | null = null;
       let headingPos = -1;
       
@@ -86,7 +101,7 @@
         const typedHeadingNode = headingNode as ProseMirrorNode;
         const title = typedHeadingNode.textContent;
         
-        // Extract content
+        // Extract content belonging to this heading
         let endPos = editor.state.doc.content.size;
         const currentLevel = typedHeadingNode.attrs.level;
         let foundNextHeading = false;
@@ -132,11 +147,14 @@
   class:is-editor-view={uiState.activeView === 'editor'}
   class:is-tree-view={uiState.activeView === 'tree'}
 >
+  <!-- State: Loading -->
   {#if documentState.status === 'loading'}
     <div class="status-message loading-state" in:fade>
       <Spinner size="lg" />
       <p>{i18n.t('page.status.loading_schema')}</p>
     </div>
+
+  <!-- State: Error -->
   {:else if documentState.status === 'error'}
     <div class="status-container" in:fade>
       <div class="error-content">
@@ -158,10 +176,12 @@
         </div>
       </div>
     </div>
+
+  <!-- State: Ready (Document Loaded) -->
   {:else if documentState.ydoc}
     {@const currentTreeData = treeData}
 
-    <!-- Editor View Wrapper -->
+    <!-- View: Editor -->
     <div
       class="view-wrapper"
       style:display={uiState.activeView === 'editor' ? 'flex' : 'none'}
@@ -178,7 +198,7 @@
       </div>
     </div>
 
-    <!-- Tree View Wrapper -->
+    <!-- View: Tree Visualization -->
     <div
       class="view-wrapper"
       style:display={uiState.activeView === 'tree' ? 'block' : 'none'}
@@ -189,6 +209,7 @@
           {@const visualizationView = $state.snapshot(visualizationMode)}
           
           {#if visualizationView === 'tree'}
+            <!-- Lazy load D3 visualization -->
             {#await import('$lib/components/visualization/StandardTree.svelte') then { default: StandardTree }}
               <StandardTree
                 treeData={currentTreeData}
@@ -208,8 +229,9 @@
         {/if}
       </div>
     </div>
+
+  <!-- State: Empty (No Document) -->
   {:else}
-    <!-- Empty State (No Document Loaded) -->
     <div class="view-wrapper" style:display="flex" style:justify-content="center" style:align-items="center">
       <EmptyState
         title={i18n.t('document.empty_state.title')}
@@ -241,7 +263,7 @@
   .main-content.is-editor-view .view-wrapper {
     overflow-y: auto;
     padding: var(--space-xl) var(--space-lg) var(--space-xxl);
-    /* Increased top padding to give more breathing room between header and document */
+    /* Add breathing room for the fixed header */
     padding-top: calc(var(--height-header) + var(--space-xl));
     display: flex;
     justify-content: center;
@@ -273,7 +295,7 @@
     font-style: italic;
   }
 
-  /* --- Styles for the new error panel --- */
+  /* Error Panel Styles */
   .status-container {
     display: flex;
     justify-content: center;

@@ -1,39 +1,34 @@
-﻿<!--
-  @file MainView.svelte
+<!--
   @component
+  MainView
 
   @description
-  The primary view for the command bar, displaying the main list of available commands.
-  It adheres to the standardized view layout and reactively derives its command list from
-  the `commandService`, ensuring the UI is always in sync with the application's state.
+  The primary landing view for the Command Bar.
+  It renders the top-level list of available actions (e.g., "New Schema", "Study Decks", "AI Assistant").
+
+  Features:
+  - **Reactive Commands:** Automatically updates the list based on the `actionRegistry` state.
+  - **Context Awareness:** Commands can be enabled/disabled based on app state (e.g., "Read Aloud" disabled if no editor).
+  - **Standard Layout:** Uses `ViewHeader` and `CommandButton` for visual consistency.
+
+  @props
+  - `openApiKeyModal`: Callback to open the API settings (passed down for specific commands).
 -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
-  // REMOVED: import { getCommands } from '$lib/modules/command-bar/domain/commandService';
   import { actionRegistry } from '$lib/actions/registry';
-  // --- VVVV CORRECTED (1/2): Import the reactive state object directly. VVVV ---
-  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
-  import { editorState } from '$lib/modules/editor/ui/editorStore.svelte'; // Changed from editorStore
   import { i18n } from '$lib/utils/i18n.svelte';
-  import type { Search } from '$lib/types';
-  type Command = Search.Command;
+  import type { IconName } from '$lib/types/iconName';
 
-  // --- UI Component Imports ---
+  // --- UI Components ---
   import Icon from '$lib/core/ui/Icon.svelte';
   import CommandButton from './CommandButton.svelte';
   import ViewHeader from './ViewHeader.svelte';
 
   let { openApiKeyModal } = $props<{ openApiKeyModal: () => void }>();
 
-  // --- Reactive State Derivation ---
-  // --- VVVV CORRECTED (2/2): Access reactive state directly from the imported state object. VVVV ---
-  let ttsStatus = $derived(ttsState.status);
-  let isEditorReady = $derived(!!editorState.instance); // Changed from editorStore.state
-
-  import type { IconName } from '$lib/types/iconName';
-
-  // The command list is reactively updated whenever the dependent state changes.
-  // We fetch from registry.
+  // --- Reactive State ---
+  // We use a version counter to trigger re-evaluation of the command list
+  // when the registry changes (e.g., new plugins loaded).
   let registryVersion = $state(0);
 
   $effect(() => {
@@ -43,8 +38,9 @@
     return unsubscribe;
   });
 
+  // Derive the list of commands for the 'view:command-bar' context
   let mainCommands = $derived.by(() => {
-    // Depend on registryVersion to trigger re-calculation
+    // Dependency on registryVersion ensures reactivity
     registryVersion; 
     return actionRegistry.getActionsByContext('view:command-bar').map(action => ({
       id: action.id,
@@ -59,11 +55,11 @@
 <div class="view-container">
   <ViewHeader title={i18n.t('main_view.title')} />
 
-  <div class="action-list">
+  <div class="action-list" role="menu">
     {#each mainCommands as command (command.id)}
       <CommandButton
         id={command.id}
-        onclick={(event) => command.action()}
+        onclick={() => command.action()}
         disabled={command.isEnabled ? !command.isEnabled() : false}
       >
         <Icon name={command.icon} size={20} />
@@ -74,7 +70,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .view-container {
     display: flex;
     flex-direction: column;

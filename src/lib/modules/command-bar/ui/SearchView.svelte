@@ -1,16 +1,27 @@
-﻿<!-- src/lib/components/ui/command-bar/SearchView.svelte -->
+<!--
+  @component
+  SearchView
+
+  @description
+  The interactive search interface for the Command Bar.
+  It handles:
+  - **Federated Search:** Queries both Commands and Knowledge (Content) via `searchService`.
+  - **Recent Searches:** Displays and manages a history of recent queries.
+  - **Keyboard Navigation:** Supports Arrow keys for selection and Enter for execution.
+  - **Result Highlighting:** Uses `highlightText` to visually emphasize matches.
+  - **Debouncing:** Limits search API calls for performance.
+
+  @props
+  - `query` (bindable string): The current search text entered by the user.
+  - `openApiKeyModal` (function): Callback to open settings if needed by a command.
+-->
 <script lang="ts">
   import { close as closeCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
-  // VVVV CORRECTED IMPORT VVVV
   import { load as loadDocument } from '$lib/stores/documentStore.svelte';
   import { debounce } from '$lib/core/utils/debounce';
   import { performSearch } from '$lib/modules/search/domain/searchService';
   import type { SearchOptions } from '$lib/modules/command-bar/domain/commandService';
   import type { Search } from '$lib/types';
-  type Command = Search.Command;
-  type ContentSearchResult = Search.ContentResult;
-  type ResultItem = Search.ResultItem;
-  type SearchResultGroup = Search.ResultGroup;
   import {
     getRecentSearches,
     addRecentSearch,
@@ -19,13 +30,18 @@
   import { i18n } from '$lib/utils/i18n.svelte';
   import { highlightText } from '$lib/utils/highlight';
 
+  type Command = Search.Command;
+  type ContentSearchResult = Search.ContentResult;
+  type ResultItem = Search.ResultItem;
+  type SearchResultGroup = Search.ResultGroup;
+
   // --- Props ---
   let { query = $bindable(), openApiKeyModal } = $props<{
     query: string;
     openApiKeyModal: () => void;
   }>();
 
-  // --- Exposed State & Methods ---
+  // --- Exposed State (for parent to check loading) ---
   let status: 'idle' | 'loading' | 'done' | 'error' = $state('idle');
   export { status };
 
@@ -36,12 +52,14 @@
   let resultsContainerElement = $state<HTMLDivElement | null>(null);
 
   // --- Derived State ---
+  // Flattens the grouped results into a single list for keyboard navigation
   const flatList = $derived(
     query.trim().length === 0
       ? recentSearches
       : resultGroups.flatMap((group) => group.items)
   );
 
+  // Calculate start indices for each group to map flat index back to group index
   const groupStartIndices = $derived(() => {
     const indices: number[] = [];
     let currentIndex = 0;
@@ -53,6 +71,11 @@
   });
 
   // --- Methods ---
+
+  /**
+   * Handles keyboard navigation (Arrow keys, Enter).
+   * Implements "skip disabled items" logic.
+   */
   export function handleKeyDown(event: KeyboardEvent) {
     if (flatList.length === 0 && !['Escape'].includes(event.key)) return;
     if (['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
@@ -60,14 +83,19 @@
     } else {
       return;
     }
+
     function findNextEnabled(startIndex: number, direction: 1 | -1): number {
       const currentFlatList = flatList;
       let nextIndex =
         (startIndex + direction + currentFlatList.length) %
         currentFlatList.length;
+
+      // Iterate to find the next enabled item
       for (let i = 0; i < currentFlatList.length; i++) {
         const item = currentFlatList[nextIndex];
-        if (typeof item === 'string') return nextIndex;
+        if (typeof item === 'string') return nextIndex; // Recent searches are always enabled
+
+        // Check 'isEnabled' guard for commands
         if (
           item &&
           'isEnabled' in item &&
@@ -83,6 +111,7 @@
       }
       return startIndex;
     }
+
     switch (event.key) {
       case 'ArrowDown':
         activeIndex = findNextEnabled(activeIndex, 1);
@@ -94,7 +123,7 @@
         const selectedItem = flatList[activeIndex];
         if (selectedItem) {
           if (typeof selectedItem === 'string') {
-            query = selectedItem;
+            query = selectedItem; // Fill query with recent search
           } else {
             handleItemSelect(selectedItem);
           }
@@ -103,11 +132,17 @@
     }
   }
 
+  /**
+   * Executes the search logic via `searchService`.
+   * Debounced to prevent API thrashing.
+   */
   const runSearch = debounce(async (searchText: string) => {
     status = 'loading';
     try {
       const commandOptions: SearchOptions = { openApiKeyModal };
       resultGroups = await performSearch(searchText, commandOptions);
+
+      // Save successful searches that yield knowledge results
       if (
         resultGroups.some((g) => g.type === 'Knowledge' && g.items.length > 0)
       ) {
@@ -121,13 +156,18 @@
     }
   }, 300);
 
+  /**
+   * Executes the action associated with the selected item (Command or Content).
+   */
   function handleItemSelect(item: ResultItem) {
     if ('action' in item) {
+      // Command
       const isEnabled = !item.isEnabled || item.isEnabled();
       if (isEnabled) {
         item.action();
       }
     } else {
+      // Content Result -> Load Document
       loadDocument(item.docId, item.nodeId || null);
       closeCommandBar();
     }
@@ -144,10 +184,13 @@
   }
 
   // --- Effects ---
+
+  // Effect: Sync recent searches on mount/change
   $effect(() => {
     recentSearches = getRecentSearches();
   });
 
+  // Effect: Trigger search when query changes
   $effect(() => {
     const trimmedQuery = query.trim();
     if (trimmedQuery.length > 0) {
@@ -156,9 +199,10 @@
       status = 'idle';
       resultGroups = [];
     }
-    activeIndex = 0;
+    activeIndex = 0; // Reset selection on new search
   });
 
+  // Effect: Keep active item in view
   $effect(() => {
     if (!resultsContainerElement) return;
     const activeElement = resultsContainerElement.querySelector(
@@ -175,6 +219,7 @@
   bind:this={resultsContainerElement}
   role="listbox"
 >
+  <!-- Recent Searches State -->
   {#if query.trim().length === 0 && recentSearches.length > 0}
     <div class="results-group">
       <h3 class="group-title">{i18n.t('search_view.recent_searches')}</h3>
@@ -195,6 +240,7 @@
     </div>
   {/if}
 
+  <!-- Search Results State -->
   {#if resultGroups.length > 0}
     {#each resultGroups as group, groupIndex (group.type)}
       <div class="results-group">
@@ -269,6 +315,7 @@
     {/each}
   {/if}
 
+  <!-- Status Messages -->
   {#if flatList.length === 0 && query.trim().length === 0 && recentSearches.length === 0}
     <div class="status-text">{i18n.t('search_view.prompt')}</div>
   {:else if status === 'error'}

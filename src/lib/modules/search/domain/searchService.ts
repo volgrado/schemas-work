@@ -1,25 +1,33 @@
 /**
  * @file searchService.ts
- * @service
- * @description Orchestrates command and content search across the entire application vault.
+ * @module search
+ * @description
+ * The central search orchestration service for the application.
+ *
+ * This service coordinates:
+ * - Semantic content search (via Neural Index).
+ * - Command search (via Command Bar logic).
+ * - Result aggregation and formatting.
+ * - Path generation for breadcrumbs.
  */
 
 import * as neuralIndexService from '$lib/services/ai/neuralIndexService';
 import { fileSystemStore } from '@modules/file-system';
 import type { SchemaMetadata } from '$lib/types';
 import { searchCommands, type SearchOptions } from '@modules/command-bar';
-// REFINEMENT: Import the Search namespace for all search-related types.
 import type { Search } from '$lib/types';
 import * as errorService from '$lib/core/services/errorService';
 
-// --- HELPER FUNCTIONS (INTERNAL) ---
+// --- Internal Helpers ---
 
 /**
- * Creates an ellipsed snippet of text centered around the first matching query word.
- * @param fullText The complete text of the description.
- * @param query The user's search query.
- * @param maxLength The desired maximum length of the snippet.
- * @returns A smaller, context-rich snippet.
+ * Creates a short, contextual snippet of text centered around the best match for the query.
+ * This improves the relevance of search results displayed to the user.
+ *
+ * @param fullText - The complete text content to snippet.
+ * @param query - The user's search string.
+ * @param maxLength - The maximum character length of the returned snippet.
+ * @returns {string} A truncated string with ellipses.
  */
 function createCenteredSnippet(
   fullText: string,
@@ -35,6 +43,7 @@ function createCenteredSnippet(
   const lowerCaseText = fullText.toLowerCase();
   let firstMatchIndex = -1;
 
+  // Find the first occurrence of any query word
   for (const word of queryWords) {
     const index = lowerCaseText.indexOf(word);
     if (index !== -1) {
@@ -49,7 +58,9 @@ function createCenteredSnippet(
       : fullText;
   }
 
+  // Calculate start index to center the match
   const idealStart = Math.max(0, firstMatchIndex - Math.floor(maxLength / 2));
+  // Adjust start to the beginning of a word to avoid cutting words in half
   const start =
     idealStart === 0 ? 0 : fullText.lastIndexOf(' ', idealStart) + 1;
 
@@ -62,10 +73,11 @@ function createCenteredSnippet(
 }
 
 /**
- * Recursively finds the full path of an item in the directory hierarchy.
- * @param itemId The ID of the item to find the path for.
- * @param docMap A map of all documents for efficient lookups.
- * @returns A breadcrumb-style path string.
+ * Recursively reconstructs the breadcrumb path for a file system item.
+ *
+ * @param itemId - The ID of the item.
+ * @param docMap - A lookup map of all documents/folders.
+ * @returns {string} A slash-separated path string (e.g., "Physics / Mechanics").
  */
 function getItemPath(
   itemId: string,
@@ -73,26 +85,27 @@ function getItemPath(
 ): string {
   const pathParts: string[] = [];
   let currentItem = docMap.get(itemId);
-  // Traverse up the parent chain until there's no parent or the parent can't be found.
+
+  // Traverse up the parent chain
   while (currentItem?.parentId) {
     const parent = docMap.get(currentItem.parentId);
     if (parent) {
       pathParts.unshift(parent.title);
-      currentItem = parent; // Move up the tree
+      currentItem = parent;
     } else {
-      break; // Parent not found, stop traversing
+      break;
     }
   }
   return pathParts.join(' / ');
 }
 
 /**
- * Performs a semantic search for content chunks across the vault.
- * @param queryText The user's search query.
- * @param docMap A map of all documents.
- * @returns An array of formatted content search results.
+ * Executes the semantic search against the Neural Index.
+ *
+ * @param queryText - The search query.
+ * @param docMap - The map of all documents for title/path resolution.
+ * @returns {Promise<Search.ContentResult[]>} List of content matches.
  */
-// REFINEMENT: Use the namespaced Search.ContentResult type.
 async function findContent(
   queryText: string,
   docMap: Map<string, SchemaMetadata>
@@ -117,6 +130,8 @@ async function findContent(
     const doc = docMap.get(chunk.docId);
     if (!doc) return null;
 
+    // Format the content for display
+    // Assuming chunk content is stored as "Term\nDescription: ..."
     const snippetParts = chunk.content.split('\nDescription: ');
     const term = snippetParts[0];
     const description = snippetParts[1] || '';
@@ -145,32 +160,35 @@ async function findContent(
 // =================================================================
 
 /**
- * Performs a comprehensive search for both content and commands.
- * @param queryText The user's search query.
- * @param commandOptions Options required for command search functionality.
- * @returns A promise that resolves to an array of grouped search results.
+ * Performs a federated search across Command and Knowledge domains.
+ *
+ * @param queryText - The raw search string from the user.
+ * @param commandOptions - Configuration for the command search (e.g., callbacks).
+ * @returns {Promise<Search.ResultGroup[]>} Grouped results ready for the UI.
  */
-// REFINEMENT: Use the namespaced Search.ResultGroup type.
 export async function performSearch(
   queryText: string,
   commandOptions: SearchOptions
 ): Promise<Search.ResultGroup[]> {
   const trimmedQuery = queryText.trim();
   const resultGroups: Search.ResultGroup[] = [];
+
+  // Hydrate the doc map for efficient lookups
   const allDocs = fileSystemStore.getAll();
   const docMap = new Map<string, SchemaMetadata>(
     allDocs.map((doc) => [doc.id, doc])
   );
 
-  // Run content and command searches in parallel for performance.
+  // Run searches in parallel
   const [contentResults, commandResults] = await Promise.all([
+    // Only run expensive content search if query is long enough
     trimmedQuery.length > 2
       ? findContent(trimmedQuery, docMap)
       : Promise.resolve([]),
     searchCommands(trimmedQuery, commandOptions),
   ]);
 
-  // Add groups to the final results only if they contain items.
+  // Aggregate results
   if (commandResults.length > 0) {
     resultGroups.push({ type: 'Commands', items: commandResults });
   }

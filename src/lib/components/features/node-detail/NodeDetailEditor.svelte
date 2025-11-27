@@ -1,25 +1,44 @@
+<!--
+  @component
+  NodeDetailEditor
+
+  @description
+  A dedicated Tiptap editor instance running inside the Node Detail side panel.
+  It allows users to edit the content of a specific node (and its children) in isolation
+  while keeping the main document synchronized.
+
+  Features:
+  - **Isolated Editing:** Loads a slice of the main document into a separate editor instance.
+  - **Bi-directional Sync:** Changes in the panel are propagated to the main editor via ProseMirror transactions.
+  - **TTS Highlighting:** Visualizes the current spoken word (Karaoke effect) within the panel context.
+  - **Slash Commands:** Supports the same slash commands as the main editor.
+
+  @props
+  - None (Driven by `nodeDetailState` and `editorStore`).
+-->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import { SlashCommandExtension } from '$lib/modules/editor/infra/extensions/SlashCommandExtension';
   import { DataPosExtension } from '$lib/modules/editor/infra/extensions/DataPosExtension';
-  import { TTSHighlightExtension } from '$lib/modules/editor/infra/extensions/TTSHighlightExtension'; // NEW
+  import { TTSHighlightExtension } from '$lib/modules/editor/infra/extensions/TTSHighlightExtension';
   import { nodeDetailState } from '$lib/stores/nodeDetailStore.svelte';
   import { editorState } from '$lib/modules/editor/ui/editorStore.svelte';
-  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte'; // NEW
-  import { DOMSerializer, DOMParser } from 'prosemirror-model';
+  import { ttsState } from '$lib/modules/tts/ui/ttsStore.svelte';
 
   let element = $state<HTMLDivElement | null>(null);
   let editor = $state<Editor | null>(null);
 
-  // We need to track the local content range to sync back to the main doc
+  // Range in the main document that this panel represents
   let localStartPos = $derived(nodeDetailState.contentStartPos);
   let localEndPos = $derived(nodeDetailState.contentEndPos);
 
-  // Flag to prevent infinite loops (Panel Update -> Main Update -> Panel Update)
+  // Sync lock to prevent circular updates (Panel -> Main -> Panel)
   let isSyncing = false;
+  let lastLoadedId: string | null = null;
 
+  // --- Lifecycle ---
   onMount(() => {
     if (!element) return;
 
@@ -27,24 +46,22 @@
       element,
       extensions: [
         StarterKit,
+        // Configure slash commands to work in this secondary editor view
         SlashCommandExtension.configure({
             allowAnyView: true,
         }),
         DataPosExtension,
-        TTSHighlightExtension, // NEW
+        TTSHighlightExtension,
       ],
-      content: nodeDetailState.content, // Initialize with HTML content
+      content: nodeDetailState.content, // Initial load
       editorProps: {
         attributes: {
           class: 'prose focus:outline-none max-w-none',
         },
       },
-      onCreate: ({ editor }) => {
-        // Editor created
-      },
-      onUpdate: ({ editor, transaction }) => {
+      onUpdate: ({ transaction }) => {
         if (!transaction.docChanged || isSyncing) return;
-        syncToMainDocument(editor);
+        syncToMainDocument(editor!);
       },
     });
 
@@ -53,36 +70,30 @@
     };
   });
 
-  // Sync TTS State to Editor Highlights
+  // --- Effects ---
+
+  // Effect: Sync TTS highlighting
   $effect(() => {
     if (!editor || editor.isDestroyed) return;
 
     const { status, currentWordRange, currentNodeIndex, nodesToRead } = ttsState;
 
+    // Clear if not playing or if context is lost
     if (status !== 'playing' || !currentWordRange || !nodesToRead[currentNodeIndex]) {
       editor.commands.clearTTSHighlight();
       return;
     }
 
     const currentNode = nodesToRead[currentNodeIndex];
+
+    // Calculate relative positions within the node's text content
     const relStart = currentWordRange.from - currentNode.pos - 1;
     const relEnd = currentWordRange.to - currentNode.pos - 1;
 
     editor.commands.setTTSHighlight(currentNode.pos, relStart, relEnd);
   });
-
-  // React to external content changes (e.g. from TTS or navigation)
-  $effect(() => {
-    const newContent = nodeDetailState.content;
-    const newId = nodeDetailState.activeNodeId;
-    
-    if (editor && !editor.isDestroyed) {
-        // Logic handled below
-    }
-  });
   
-  let lastLoadedId: string | null = null;
-  
+  // Effect: Load new content when the active node changes in the global state
   $effect(() => {
       if (nodeDetailState.activeNodeId !== lastLoadedId && editor) {
           isSyncing = true;
@@ -92,6 +103,12 @@
       }
   });
 
+  // --- Logic ---
+
+  /**
+   * Propagates changes from this isolated editor back to the main document.
+   * Uses `tr.replaceWith` to surgically update only the relevant range.
+   */
   function syncToMainDocument(panelEditor: Editor) {
     if (localStartPos === null || localEndPos === null) return;
     
@@ -99,19 +116,20 @@
     if (!mainEditor) return;
 
     const { state, view } = mainEditor;
-    
     const panelDoc = panelEditor.state.doc;
-    
     const tr = state.tr;
     
+    // Safety check for bounds
     if (localStartPos >= state.doc.content.size) return;
     
     try {
+        // Replace the range in the main doc with the panel's new content
         tr.replaceWith(localStartPos, localEndPos, panelDoc.content);
         
         if (tr.docChanged) {
             view.dispatch(tr);
             
+            // Update our tracking range to match the new content size
             const newSize = panelDoc.content.size;
             nodeDetailState.contentEndPos = localStartPos + newSize;
         }
@@ -126,11 +144,10 @@
 <style>
   .node-detail-editor {
     height: 100%;
-    /* Ensure slash menu popup can position correctly relative to this or body */
   }
   
+  /* Typography overrides for the side panel context */
   :global(.node-detail-editor .prose) {
-    /* Match existing styles */
     color: var(--color-text-secondary);
     font-size: 0.95rem;
     line-height: 1.7;

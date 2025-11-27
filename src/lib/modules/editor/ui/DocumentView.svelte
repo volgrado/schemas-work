@@ -1,4 +1,19 @@
-<!-- src/lib/components/editor/DocumentView.svelte -->
+<!--
+  @component
+  DocumentView
+
+  @description
+  The visual container for the Tiptap editor instance.
+
+  Responsibilities:
+  - **Mounting:** Initializes the `EditorController` when the component mounts.
+  - **Lifecycle:** Properly cleans up the editor instance on unmount to prevent memory leaks.
+  - **Reactivity Bridge:**
+    - Syncs review highlights (flashcards) from `reviewStore`.
+    - Syncs TTS highlights (currently spoken word/node) from `ttsStore` and triggers auto-scrolling.
+    - Syncs visualization modes (Color Mode) from `uiStore`.
+  - **Styling:** Applies editor-specific styles, including custom node views (ResizableImage) and color mode overrides.
+-->
 <script lang="ts">
   // --- LIFECYCLE HOOKS ---
   import { onMount, onDestroy } from 'svelte';
@@ -38,11 +53,11 @@
       return;
     }
 
-    // Lazy load the heavy EditorController
+    // Lazy load the heavy EditorController to keep initial bundle size small
     (async () => {
       const { EditorController } = await import('$lib/modules/editor/infra/EditorController');
       
-      if (!element) return; // Component might have unmounted
+      if (!element) return; // Component might have unmounted during load
 
       controller = new EditorController({
         element,
@@ -61,6 +76,7 @@
   });
 
   // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER BRIDGE FOR REVIEWS ---
+  // Syncs flashcard review highlights (e.g., "active card") to the editor.
   $effect(() => {
     const reviewDecorations = reviewState.decorationSet;
     if (!controller) return;
@@ -69,11 +85,12 @@
   });
 
   // --- REACTIVE EFFECT: DYNAMIC HIGHLIGHTER & AUTOSCROLL BRIDGE FOR TTS ---
+  // Syncs Text-to-Speech highlights and triggers auto-scrolling.
   $effect(() => {
     const { status, nodesToRead, currentNodeIndex, currentWordRange } = ttsState;
     if (!controller || !controller.editor) return;
 
-    // Create the highlight for the current node (paragraph/heading)
+    // 1. Highlight the current node (paragraph/heading)
     let nodeDecoSet = DecorationSet.empty;
     if (['playing', 'paused'].includes(status) && nodesToRead.length > 0) {
       const currentNode = nodesToRead[currentNodeIndex];
@@ -87,7 +104,7 @@
       }
     }
 
-    // Create the highlight for the current word
+    // 2. Highlight the current word (Karaoke effect)
     let wordDecoSet = DecorationSet.empty;
     if (currentWordRange) {
       const wordDeco = Decoration.inline(
@@ -98,19 +115,20 @@
       wordDecoSet = DecorationSet.create(controller.editor.state.doc, [wordDeco]);
     }
 
-    // Update highlighter
+    // 3. Update the highlighter plugin
     controller.updateHighlighter({
       ttsDecorations: nodeDecoSet,
       ttsWordDecorations: wordDecoSet,
     });
 
-    // Trigger autoscroll
+    // 4. Trigger autoscroll if playing
     if (status === 'playing') {
       setTimeout(() => controller?.autoscrollToHighlight(), 0);
     }
   });
 
   // --- REACTIVE EFFECT: COLOR MODE DECORATIONS ---
+  // Syncs the visualization mode (e.g., coloring headings by level)
   $effect(() => {
     if (!controller) return;
     const { colorMode } = uiState;
@@ -125,9 +143,12 @@
 ></div>
 
 <style>
-  /* All highlight styles are now handled by the global app.css,
-     so this component only needs styles for its specific extensions. */
+  /*
+    Note: Most editor styles are global (in app.css) or provided by the typography plugin.
+    These styles specifically handle custom node views and dynamic overlays.
+  */
 
+  /* Resizable Image Wrapper & Handles */
   :global(.resizable-image-wrapper) {
     position: relative;
     display: inline-block;
@@ -147,28 +168,12 @@
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-md);
   }
-  :global(.resize-handle.top-left) {
-    top: -8px;
-    left: -8px;
-    cursor: nwse-resize;
-  }
-  :global(.resize-handle.top-right) {
-    top: -8px;
-    right: -8px;
-    cursor: nesw-resize;
-  }
-  :global(.resize-handle.bottom-left) {
-    bottom: -8px;
-    left: -8px;
-    cursor: nesw-resize;
-  }
-  :global(.resize-handle.bottom-right) {
-    bottom: -8px;
-    right: -8px;
-    cursor: nwse-resize;
-  }
+  :global(.resize-handle.top-left) { top: -8px; left: -8px; cursor: nwse-resize; }
+  :global(.resize-handle.top-right) { top: -8px; right: -8px; cursor: nesw-resize; }
+  :global(.resize-handle.bottom-left) { bottom: -8px; left: -8px; cursor: nesw-resize; }
+  :global(.resize-handle.bottom-right) { bottom: -8px; right: -8px; cursor: nwse-resize; }
 
-  /* AGGRESSIVE OVERRIDES FOR SELECTION RECTANGLE */
+  /* Cleanup: Remove default ProseMirror selection outlines to rely on our custom styling */
   :global(.ProseMirror-selectednode),
   :global([class*="ProseMirror-selected"]),
   :global([class*="selectednode"]) {
@@ -186,21 +191,8 @@
     outline: none !important;
   }
 
-  /* --- COLOR MODE: BY LEVEL --- */
-  /* Using the same gradients as StandardTree for consistency */
-  
-  /* Level 1: Blue */
-  /* Level 1: Blue - SKIPPED (Root) */
-  /* :global(.color-mode-by-level h1) {
-    color: #3b82f6; 
-    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    width: fit-content;
-  } */
-
-  /* Level 2: Blue (Shifted from L1) */
+  /* --- COLOR MODE: BY LEVEL (Gradients applied to Headings) --- */
+  /* Level 2: Blue */
   :global(.color-mode-by-level h2) {
     color: #3b82f6; 
     background: var(--gradient-blue);
@@ -209,8 +201,7 @@
     background-clip: text;
     width: fit-content;
   }
-
-  /* Level 3: Orange/Pink (Shifted from L2) */
+  /* Level 3: Orange/Pink */
   :global(.color-mode-by-level h3) {
     color: #f97316;
     background: var(--gradient-orange);
@@ -219,8 +210,7 @@
     background-clip: text;
     width: fit-content;
   }
-
-  /* Level 4: Emerald/Sky (Shifted from L3) */
+  /* Level 4: Emerald/Sky */
   :global(.color-mode-by-level h4) {
     color: #10b981;
     background: var(--gradient-green);
@@ -229,8 +219,7 @@
     background-clip: text;
     width: fit-content;
   }
-
-  /* Level 5: Violet/Fuchsia (Shifted from L4) */
+  /* Level 5: Violet/Fuchsia */
   :global(.color-mode-by-level h5) {
     color: #8b5cf6;
     background: var(--gradient-purple);
@@ -239,8 +228,7 @@
     background-clip: text;
     width: fit-content;
   }
-
-  /* Level 6: Cyan/Blue (Shifted from L5) */
+  /* Level 6: Cyan/Blue */
   :global(.color-mode-by-level h6) {
     color: #06b6d4;
     background: var(--gradient-cyan);
@@ -249,7 +237,8 @@
     background-clip: text;
     width: fit-content;
   }
-  /* --- COLOR MODE: BY PATH (Branch Colors) --- */
+
+  /* --- COLOR MODE: BY PATH (Applied by Tiptap Plugin via class names) --- */
   :global(.branch-color-0) {
     color: #3b82f6 !important;
     background: var(--gradient-blue) !important;

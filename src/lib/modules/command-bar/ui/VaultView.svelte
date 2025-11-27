@@ -1,7 +1,18 @@
-﻿<!-- src/lib/components/ui/command-bar/VaultView.svelte -->
+<!--
+  @component
+  VaultView
+
+  @description
+  The "Vault Management" submenu in the Command Bar.
+  It provides high-level actions for data portability:
+  - **Export Vault:** Backup the entire database to an encrypted JSON file.
+  - **Import Vault:** Restore a previous backup (wiping current data).
+
+  Implementation Note:
+  - Uses `PasswordModal` (triggered via `commandBarStore`) to secure these sensitive operations.
+-->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
-  // FIX: Import the action functions directly from the store.
   import {
     goBack,
     openPasswordModal,
@@ -14,17 +25,14 @@
 </script>
 
 <div class="view-container">
-  <ViewHeader title={i18n.t('vault_view.title')} onBack={goBack}>
-  </ViewHeader>
+  <ViewHeader title={i18n.t('vault_view.title')} onBack={goBack} />
 
   <div class="action-list">
-    <!-- FIX: Call the imported action function directly. -->
     <CommandButton onclick={() => openPasswordModal('export')}>
       <Icon name="download-cloud" size={20} />
       <span>{i18n.t('vault_view.export_button')}</span>
     </CommandButton>
 
-    <!-- FIX: Call the imported action function directly. -->
     <CommandButton onclick={() => openPasswordModal('import')}>
       <Icon name="upload-cloud" size={20} />
       <span>{i18n.t('vault_view.import_button')}</span>
@@ -33,7 +41,6 @@
 </div>
 
 <style>
-  /* All styles are unchanged and correct */
   .view-container {
     display: flex;
     flex-direction: column;

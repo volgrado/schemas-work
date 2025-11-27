@@ -1,4 +1,3 @@
-﻿<!--
 <!--
   @component
   WelcomeScreen
@@ -6,14 +5,13 @@
   @description
   An exceptional welcome and feature overview screen for the application. It creates a
   strong first impression with a clean layout and a delightful, staggered entrance
-  animation for all its content. Now integrates the cinematic intro sequence.
+  animation for all its content.
 
   @props
   - `onstart`: {() => void} - Callback fired when the user clicks the "Start Creating" button.
-  - `onShowTour`: {() => void} - Callback fired when the user wants to see the tour (after intro).
 -->
 <script lang="ts">
-  import { fly, fade } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
   // --- UI Components & Utilities ---
@@ -88,7 +86,6 @@
     >
       <div class="button-group">
         <Button onclick={() => {
-          console.log('[WelcomeScreen] Get Started clicked');
           if (typeof onstart === 'function') onstart();
         }} size="lg" variant="primary">
           {i18n.t('welcome.cta')}
@@ -108,12 +105,12 @@
     padding: var(--space-lg);
     box-sizing: border-box;
     overflow-y: auto;
-    position: relative; /* For absolute positioning of intro if needed */
+    position: relative;
     background: radial-gradient(
       circle at 50% 30%,
       hsl(var(--color-accent-hsl) / 0.08) 0%,
       transparent 60%
-    ); /* Subtle background glow */
+    );
   }
 
   /* --- Landing Styles --- */
@@ -132,7 +129,7 @@
   }
   .title {
     font-family: var(--font-main);
-    font-size: 3.5rem; /* Larger */
+    font-size: 3.5rem;
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 0;
@@ -144,7 +141,6 @@
     display: inline-block;
   }
   .accent-word {
-    /* Inherits gradient now, or we can make it distinct */
     color: var(--color-accent);
     -webkit-text-fill-color: var(--color-accent);
   }
@@ -182,8 +178,8 @@
   .feature :global(svg) {
     color: var(--color-accent);
     flex-shrink: 0;
-    margin-top: 2px; /* Slight alignment tweak */
-    filter: drop-shadow(0 2px 4px hsl(var(--color-accent-hsl) / 0.3)); /* Icon glow */
+    margin-top: 2px;
+    filter: drop-shadow(0 2px 4px hsl(var(--color-accent-hsl) / 0.3));
   }
   .feature-title {
     font-size: 1.1rem;

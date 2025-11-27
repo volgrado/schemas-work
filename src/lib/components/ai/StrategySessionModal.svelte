@@ -1,4 +1,24 @@
-﻿<!-- src/lib/components/ai/StrategySessionModal.svelte -->
+<!--
+  @component
+  StrategySessionModal
+
+  @description
+  The core interface for the "AI Action Workbench".
+  It orchestrates the entire generative AI workflow:
+  1.  **Configuration:** Users provide instructions, upload context (PDFs), and set parameters.
+  2.  **Generation:** The request is sent to the AI service (Gemini).
+  3.  **Preview & Refinement:** The AI's output (Schema or Flashcards) is visualized. Users can refine it with further prompts.
+  4.  **Application:** The final content is applied to the document or saved as cards.
+
+  Features:
+  - **Dual-Panel Layout:** Configuration on the left, Live Preview on the right.
+  - **Manual Mode:** A fallback flow that generates a prompt for the user to copy-paste into an external AI tool (e.g., ChatGPT), then paste the JSON back.
+  - **Multimodal:** Supports PDF file uploads for context-aware generation.
+  - **Error Handling:** Robust error states with retry options.
+
+  @props
+  - `show` (bindable boolean): Visibility control.
+-->
 <script lang="ts">
   import { getCommand } from '$lib/services/ai/commands/CommandFactory';
   import type { WorkbenchState } from '$lib/services/ai/commands/IAICommand';
@@ -38,7 +58,7 @@
 
   let { show = $bindable() } = $props<{ show: boolean }>();
 
-  // --- STATE ---
+  // --- State Machine ---
   type View =
     | 'configure'
     | 'loading'
@@ -49,22 +69,25 @@
 
   let view = $state<View>('configure');
   let errorMessage = $state('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let draftContent = $state<any>(null);
   let refinementText = $state('');
   let configurationInput = $state('');
   let selectedPdfFile = $state<File | null>(null);
   let cardQuantity = $state(10);
 
-  // --- State for manual mode ---
+  // Manual Mode State
   let isManualMode = $state(false);
   let generatedPrompt = $state('');
   let pastedJson = $state('');
 
+  // DOM Refs
   let configTextarea = $state<HTMLTextAreaElement | null>(null);
   let refineTextarea = $state<HTMLTextAreaElement | null>(null);
   let tiptapPreviewInstance = $state<TiptapPreview | null>(null);
   let hasSelection = $state(false);
 
+  // Derived Context
   const command = $derived(
     commandBarState.strategySessionContext?.action
       ? getCommand(commandBarState.strategySessionContext.action)
@@ -75,6 +98,7 @@
     commandBarState.strategySessionContext?.action
   );
 
+  // --- Lifecycle ---
   function resetState() {
     view = 'configure';
     draftContent = null;
@@ -92,6 +116,7 @@
     if (show) {
       const context = commandBarState.strategySessionContext;
 
+      // If we are refining existing content, skip configuration
       if (context?.action?.startsWith('refine-')) {
         const initialDocument = context.fullDocumentJSON;
         if (initialDocument) {
@@ -103,12 +128,15 @@
           view = 'error';
         }
       } else {
+        // Default: Start at configuration
         view = 'configure';
         setTimeout(() => configTextarea?.focus(), 100);
       }
     }
     return () => resetState();
   });
+
+  // --- Actions ---
 
   function handleFileSelect(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -130,6 +158,10 @@
     }
   }
 
+  /**
+   * Orchestrates the generation request.
+   * Supports both direct API calls and the "Manual Mode" prompt generation flow.
+   */
   async function runGeneration(instruction: string) {
     const currentCommand = command;
     const actionStr = currentAction;
@@ -150,12 +182,14 @@
       quantity: cardQuantity,
     };
 
+    // 1. Generate the prompt using the Command logic
     const textPrompt = currentCommand.getPrompt(
       promptContext,
       currentWorkbenchState,
       instruction
     );
 
+    // 2. Handle Manual Mode Flow
     if (isManualMode) {
       let finalPrompt = textPrompt;
       if (selectedPdfFile) {
@@ -168,6 +202,7 @@
       return;
     }
 
+    // 3. Handle Automated API Flow
     const model = getModelById(settingsState.selectedModelId);
     const apiKeyObject = getNextAvailableKey('gemini');
 
@@ -183,6 +218,7 @@
     ];
 
     try {
+      // Call AI Service
       const rawResult = await aiService.generateContent(
         messages,
         model,
@@ -192,30 +228,24 @@
       );
 
       if (commandBarState.strategySessionContext?.action !== actionStr) {
-        return;
+        return; // User navigated away
       }
 
-      // Step 1: Ensure the AI output has a valid Tiptap document structure.
+      // Normalization & Post-processing
       let normalizedResult = normalizeTiptapJSON(rawResult);
 
-      // Step 2: If it's a document, scan it for KaTeX text and convert it to nodes.
       if (actionStr.includes('document') || actionStr.includes('schema')) {
         normalizedResult = postProcessKaTeX(normalizedResult);
       }
 
-      // Step 3: Set the final content based on the action type.
-      console.warn('[StrategySession] Action String:', actionStr);
+      // Content Extraction based on type
       if (
         actionStr.includes('cards') ||
         actionStr.includes('flashcards') ||
-        actionStr === 'generate-flashcards-doc' // Explicit check
+        actionStr === 'generate-flashcards-doc'
       ) {
-        // For cards, we expect an array, which normalizeTiptapJSON places in the `content` property.
-        console.warn('[StrategySession] Normalized Result for Cards:', normalizedResult);
         draftContent = normalizedResult.content || [];
-        console.warn('[StrategySession] Draft Content (Cards):', draftContent);
       } else {
-        // For documents, we use the entire processed document object.
         draftContent = normalizedResult;
       }
 
@@ -227,6 +257,8 @@
       view = 'error';
     }
   }
+
+  // --- Manual Mode Handlers ---
 
   function handleCopyToClipboard() {
     navigator.clipboard.writeText(generatedPrompt);
@@ -248,7 +280,6 @@
       }
 
       let normalizedResult = normalizeTiptapJSON(validation.data);
-      // Also process KaTeX in manually pasted JSON
       if (
         currentAction?.includes('document') ||
         currentAction?.includes('schema')
@@ -265,6 +296,8 @@
       view = 'error';
     }
   }
+
+  // --- Finalization ---
 
   async function handleApplyChanges() {
     if (command && draftContent) {
@@ -297,11 +330,14 @@
   width="xl"
 >
   <div class="session-container">
+    <!-- View: Loading -->
     {#if view === 'loading'}
       <div class="status-overlay" transition:fade>
         <Spinner size="lg" />
         <p>{i18n.t('ai_workbench.loading_text')}</p>
       </div>
+
+    <!-- View: Error -->
     {:else if view === 'error'}
       <div class="status-overlay error" transition:fade>
         <Icon name="alert-triangle" size={32} />
@@ -313,6 +349,7 @@
       </div>
     {/if}
 
+    <!-- View: Manual Mode Step 1 (Prompt) -->
     {#if view === 'manual-prompt'}
       <div class="manual-flow-panel" transition:fade>
         <h4 class="panel-title">
@@ -334,6 +371,8 @@
           </Button>
         </div>
       </div>
+
+    <!-- View: Manual Mode Step 2 (Paste) -->
     {:else if view === 'manual-paste'}
       <div class="manual-flow-panel" transition:fade>
         <h4 class="panel-title">
@@ -362,8 +401,11 @@
           </Button>
         </div>
       </div>
+
+    <!-- Standard Split View (Configure/Refine + Preview) -->
     {:else}
       <div class="panels-wrapper" class:loading={view === 'loading'}>
+        <!-- Left Panel: Inputs -->
         <div
           class="left-panel"
           in:fly={{ y: 10, duration: 300, delay: 200 }}
@@ -402,6 +444,8 @@
                   command?.placeholder || 'ai_workbench.configure.placeholder'
                 )}
               ></textarea>
+
+              <!-- PDF Upload -->
               <div class="context-upload-section">
                 <h5 class="panel-subtitle">
                   <Icon name="paperclip" size={16} />
@@ -459,6 +503,7 @@
           {/if}
         </div>
 
+        <!-- Right Panel: Preview -->
         <div
           class="right-panel"
           in:fly={{ y: 10, duration: 300, delay: 300 }}
@@ -493,6 +538,7 @@
     {/if}
   </div>
 
+  <!-- Footer Actions -->
   <footer class="modal-actions" out:fade>
     <div class="manual-toggle-wrapper">
       <Toggle

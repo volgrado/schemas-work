@@ -3,28 +3,27 @@
   CommandButton
 
   @description
-  An exceptional, specialized button component designed exclusively for use within the
-  command bar's view lists. It encapsulates the specific styling, hover effects, and
-  micro-interactions for a command item, providing a consistent and polished user
-  experience across all command bar views.
+  A specialized button component optimized for use within Command Bar lists.
+  It encapsulates the standard row layout (Icon + Text) and interaction states
+  (hover, focus, active) expected in a Spotlight-style interface.
 
-  It acts as a single source of truth for command styling, ensuring that any design
-  updates are propagated everywhere it's used.
+  Features:
+  - **Layout:** Flex-based row layout with consistent padding and gap.
+  - **Interactions:** Subtle scale effect on active, accent color on hover.
+  - **Slots:** Expects an `Icon` and text label in the default slot.
 
   @props
-  - `class`: {string} (optional) - Additional CSS classes for layout control.
-  - `@restProps`: All other standard HTML button attributes (`disabled`, `onclick`, etc.)
-    are forwarded directly to the underlying `<button>` element.
+  - `class` (string): Additional CSS classes.
+  - `...rest`: Forwarded HTML button attributes.
 -->
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  // --- Svelte 5 Props ---
   let {
     class: additionalClasses = '',
-    children, // Capture the default slot
+    children, // Svelte 5 snippet for content
     ...rest
-  } = $props<HTMLButtonAttributes & { class?: string; children?: any }>();
+  } = $props<HTMLButtonAttributes & { class?: string; children?: import('svelte').Snippet }>();
 </script>
 
 <button class="action-button {additionalClasses}" {...rest}>
@@ -63,9 +62,8 @@
   }
 
   /*
-    This `:global` selector is a pragmatic way to style the `Icon` component
-    passed into the default slot. It targets any SVG within the button, which
-    is reliable given this component's specific, controlled usage.
+    Target the SVG (Icon) within the button to apply hover effects.
+    This ensures the icon scales and changes color along with the button state.
   */
   :global(.action-button svg) {
     color: var(--color-gray-500);
@@ -80,8 +78,9 @@
     transform: scale(1.1);
   }
 
+  /* Tactile feedback */
   .action-button:active:not(:disabled) {
-    transform: scale(0.985); /* Tactile feedback on click */
+    transform: scale(0.985);
   }
 
   .action-button:disabled {

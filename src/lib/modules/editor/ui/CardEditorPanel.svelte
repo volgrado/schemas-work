@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   @component
   CardEditorPanel
 
@@ -30,11 +30,13 @@
   // Initialize Controller
   const controller = new CardEditorController();
   
+  // Element references for popups/focus management
   let addCardButtonEl = $state<HTMLElement | null>(null);
 
 </script>
 
 {#if cardEditorState.isOpen}
+  <!-- Overlay Backdrop: Click to close -->
   <button
     class="overlay"
     onclick={() => controller.closePanel()}
@@ -42,12 +44,14 @@
     aria-label="Close card editor"
   ></button>
 
+  <!-- Sliding Panel Container -->
   <div
     class="panel"
     transition:fly={{ y: 100, duration: 250, easing: quintOut }}
     role="dialog"
     aria-labelledby="panel-title"
   >
+    <!-- Header: Title, Tooltip, Status, Actions -->
     <header class="header">
       <div class="header-left">
         <div class="header-title">
@@ -68,6 +72,7 @@
       </div>
 
       <div class="header-actions">
+        <!-- Add Card Button + Dropdown Menu -->
         <div class="add-card-container" bind:this={addCardButtonEl}>
           <Button
             variant="secondary"
@@ -78,6 +83,7 @@
           </Button>
         </div>
 
+        <!-- Add Card Menu Popup -->
         <Popup
           bind:isVisible={controller.showAddMenu}
           referenceEl={addCardButtonEl}
@@ -135,6 +141,7 @@
       </div>
     </header>
 
+    <!-- Main Editor Content Area -->
     <div class="editor-content">
       {#if cardEditorState.fetchStatus === 'loading'}
         <p>{i18n.t('card_editor_panel.loading')}</p>
@@ -148,6 +155,7 @@
               animate:flip={{ duration: 300 }}
               use:controller.registerElement={card.id}
             >
+              <!-- Card Type Badge -->
               <div
                 class="card-type-indicator"
                 class:basic={card.type === 'basic'}
@@ -156,7 +164,9 @@
               >
                 {card.type}
               </div>
+
               <div class="card-inputs">
+                <!-- Basic Card Inputs -->
                 {#if card.type === 'basic'}
                   <div class="field">
                     <label for="q-{card.id}"
@@ -182,6 +192,8 @@
                       use:autosize
                     ></textarea>
                   </div>
+
+                <!-- Input Card Inputs -->
                 {:else if card.type === 'input'}
                   <div class="field">
                     <label for="p-{card.id}"
@@ -209,6 +221,8 @@
                       oninput={() => controller.handleUpdate(card)}
                     />
                   </div>
+
+                <!-- Sequencing Card Inputs -->
                 {:else if card.type === 'sequencing'}
                   <div class="field">
                     <label for="s-{card.id}"
@@ -269,6 +283,8 @@
                       'card_editor_panel.add_item'
                     )}</button
                   >
+
+                <!-- True/False Card Inputs -->
                 {:else if card.type === 'true_false'}
                   <div class="field">
                     <label for="s-{card.id}">{i18n.t('card_editor_panel.statement_label')}</label>
@@ -305,6 +321,8 @@
                       </label>
                     </div>
                   </div>
+
+                <!-- Multiple Choice Card Inputs -->
                 {:else if card.type === 'multiple_choice'}
                   <div class="field">
                     <label for="q-{card.id}">{i18n.t('card_editor_panel.question_label')}</label>
@@ -363,6 +381,8 @@
                     </div>
                   </div>
                 {/if}
+
+                <!-- Shared: Tags Input -->
                 <div class="field">
                   <label for="tags-{card.id}">Tags</label>
                   <TagInput
@@ -372,6 +392,8 @@
                   />
                 </div>
               </div>
+
+              <!-- Shared: Delete Button -->
               <button
                 class="remove-card-button"
                 onclick={() => controller.handleRemoveCard(card.id)}
@@ -382,6 +404,7 @@
           {/each}
         </div>
       {:else}
+        <!-- Empty State -->
         <div class="empty-state">
           <Icon name="plus-square" size={40} />
           <h4>{i18n.t('card_editor_panel.empty_title')}</h4>

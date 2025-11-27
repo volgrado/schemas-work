@@ -1,9 +1,13 @@
-﻿/**
+/**
  * @file CardEditorController.svelte.ts
  * @module editor
  * @description
- * Controller for the CardEditorPanel component. Encapsulates business logic,
- * drag-and-drop state, and DOM interactions.
+ * The Controller for the CardEditorPanel component.
+ * This class encapsulates the complex UI logic for the card editor, including:
+ * - Managing local state for drag-and-drop operations (sequencing cards).
+ * - Handling DOM interactions like scrolling to new cards.
+ * - Debouncing updates to prevent database thrashing.
+ * - Providing a clean API for the view (`CardEditorPanel.svelte`) to bind to.
  */
 
 import { tick } from 'svelte';
@@ -17,21 +21,22 @@ type Card = SRS.Card;
 type CardType = Card['type'];
 
 export class CardEditorController {
-    // Drag and Drop State
+    // --- State (Runes) ---
+    /** The index of the item currently being dragged (for sequencing cards). */
     draggedItemIndex = $state<number | null>(null);
+    /** The index of the potential drop target (for visual feedback). */
     dropTargetIndex = $state<number | null>(null);
-
-    // UI State
+    /** Whether the "Add Card" dropdown menu is visible. */
     showAddMenu = $state(false);
     
-    // DOM References
+    // --- Internal Properties ---
+    /** Map of card IDs to their DOM elements, used for auto-scrolling. */
     cardElements = new Map<string, HTMLElement>();
-
-    // Debounced updaters map to prevent data loss between different cards
+    /** Registry of debounced update functions, one per card ID, to ensure independent throttling. */
     private updateHandlers = new Map<string, (card: Card) => void>();
 
     constructor() {
-        // React to new cards being added to scroll them into view
+        // Effect: Watch for a new card being added and scroll it into view.
         $effect(() => {
             const newCardId = cardEditorState.lastAddedCardId;
             if (newCardId) {
@@ -40,6 +45,13 @@ export class CardEditorController {
         });
     }
 
+    // --- DOM Management ---
+
+    /**
+     * Svelte action to register a card's DOM element.
+     * @param node - The HTMLElement of the card.
+     * @param id - The unique ID of the card.
+     */
     registerElement(node: HTMLElement, id: string) {
         this.cardElements.set(id, node);
         return {
@@ -49,11 +61,16 @@ export class CardEditorController {
         };
     }
 
+    /**
+     * Scrolls the viewport to the specified card and focuses its first input.
+     * @param cardId - The ID of the target card.
+     */
     async scrollToCard(cardId: string) {
-        await tick(); // Wait for DOM update
+        await tick(); // Wait for DOM updates to complete
         const element = this.cardElements.get(cardId);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Attempt to auto-focus the first editable field for better UX
             const firstInput = element.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
             if (firstInput) {
                 firstInput.focus();
@@ -61,20 +78,35 @@ export class CardEditorController {
         }
     }
 
+    // --- CRUD Operations ---
+
+    /**
+     * Updates a card's data with debouncing to reduce write operations.
+     * @param card - The updated card object.
+     */
     handleUpdate(card: Card) {
         let handler = this.updateHandlers.get(card.id);
         if (!handler) {
+            // Create a dedicated debounced handler for this specific card
             handler = debounce((c: Card) => updateCard(c), 500);
             this.updateHandlers.set(card.id, handler);
         }
         handler(card);
     }
 
+    /**
+     * Adds a new card of the specified type.
+     * @param type - The type of card to create (e.g., 'basic', 'input').
+     */
     handleAddCard(type: CardType) {
         addCardToStore(type);
         this.showAddMenu = false;
     }
 
+    /**
+     * Removes a card and shows a toast with an Undo option.
+     * @param cardId - The ID of the card to remove.
+     */
     async handleRemoveCard(cardId: string) {
         const deletedCard = await deleteCard(cardId);
         if (deletedCard) {
@@ -87,6 +119,10 @@ export class CardEditorController {
         }
     }
 
+    /**
+     * Adds a new item to a sequencing card's list.
+     * @param card - The sequencing card to modify.
+     */
     addSequenceItem(card: Card) {
         if (card.type === 'sequencing') {
             card.content.items = [...card.content.items, ''];
@@ -94,6 +130,11 @@ export class CardEditorController {
         }
     }
 
+    /**
+     * Removes an item from a sequencing card's list.
+     * @param card - The sequencing card to modify.
+     * @param itemIndex - The index of the item to remove.
+     */
     removeSequenceItem(card: Card, itemIndex: number) {
         if (card.type === 'sequencing') {
             card.content.items = card.content.items.filter((_, i) => i !== itemIndex);
@@ -101,7 +142,7 @@ export class CardEditorController {
         }
     }
 
-    // --- Drag and Drop Logic ---
+    // --- Drag and Drop Logic (Sequencing Cards) ---
 
     handleDragStart(index: number, event: DragEvent) {
         if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -109,7 +150,7 @@ export class CardEditorController {
     }
 
     handleDragOver(targetIndex: number, event: DragEvent) {
-        event.preventDefault();
+        event.preventDefault(); // Necessary to allow dropping
         if (this.draggedItemIndex !== targetIndex) {
             this.dropTargetIndex = targetIndex;
         }
@@ -124,9 +165,12 @@ export class CardEditorController {
             this.resetDragState();
             return;
         }
+
+        // Reorder the items array
         const newItems = [...card.content.items];
         const [draggedItem] = newItems.splice(this.draggedItemIndex, 1);
         newItems.splice(targetIndex, 0, draggedItem);
+
         card.content.items = newItems;
         this.handleUpdate(card);
         this.resetDragState();
@@ -136,6 +180,8 @@ export class CardEditorController {
         this.draggedItemIndex = null;
         this.dropTargetIndex = null;
     }
+
+    // --- Navigation ---
 
     closePanel() {
         close();

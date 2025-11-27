@@ -1,13 +1,31 @@
-<!-- src/lib/components/ai/TiptapPreview.svelte (FINAL ARCHITECTURE) -->
+<!--
+  @component
+  TiptapPreview
+
+  @description
+  A lightweight, read-only Tiptap editor instance used to visualize document content
+  within a modal or sidebar.
+
+  Use Cases:
+  - **AI Strategy Session:** Showing a preview of the document to allow the user to select
+    a specific text range for refinement.
+  - **Review:** Displaying document context without enabling full editing capabilities.
+
+  Features:
+  - **Selection API:** Exposes `getCurrentSelection()` to allow parent components to retrieve
+    the user's highlighted text range imperatively.
+  - **Read-Only:** Configured with `editable: false`.
+  - **Minimal Extensions:** Loads only the essential extensions (StarterKit) for performance.
+
+  @props
+  - `content` (object | null): The Tiptap JSON content to render.
+-->
 <script lang="ts">
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import Heading from '@tiptap/extension-heading';
-  // The custom Selection extension is no longer needed as we aren't firing a callback.
-  // import { Selection } from '$lib/modules/editor/infra/extensions/Selection';
 
   // --- Props ---
-  // FIX: The onSelectionUpdate prop has been removed.
   let { content } = $props<{
     content: object | null;
   }>();
@@ -16,6 +34,8 @@
   let element = $state<HTMLDivElement | null>(null);
   let editor = $state<Editor | null>(null);
 
+  // Extend Heading to support 'nodeId' attribute, ensuring consistent parsing
+  // with the main editor schema.
   const CustomHeading = Heading.extend({
     addAttributes() {
       return {
@@ -25,8 +45,14 @@
     },
   });
 
-  // --- FIX: Expose a function for the parent to call ---
-  // This is the new component API for getting the selection imperatively.
+  // --- Public API ---
+
+  /**
+   * Retrieves the current text selection from the preview editor.
+   * Used by the parent (e.g., StrategySessionModal) to get the context for AI commands.
+   *
+   * @returns An object containing the range and text, or null if no selection.
+   */
   export function getCurrentSelection(): {
     from: number;
     to: number;
@@ -40,28 +66,34 @@
     return { from, to, text };
   }
 
+  // --- Lifecycle ---
+
+  // Initialize Editor
   $effect(() => {
     if (!element) return;
     const editorInstance = new Editor({
       element: element,
-      editable: false,
+      editable: false, // Read-only mode
       extensions: [
         StarterKit.configure({
-          heading: false, // We use CustomHeading
+          heading: false, // Disable default heading to use ours
         }),
         CustomHeading,
       ],
       content: content || {},
     });
     editor = editorInstance;
+
     return () => {
       editor?.destroy();
       editor = null;
     };
   });
 
+  // Sync Content
   $effect(() => {
     if (editor && content) {
+      // Only update if content actually changed to avoid cursor jumps (even in read-only)
       if (JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) {
         editor.commands.setContent(content, { emitUpdate: false });
       }
@@ -71,7 +103,6 @@
 
 <div class="prose" bind:this={element}></div>
 
-<!-- The style section remains the same, with user-select enabled -->
 <style>
   .prose {
     height: 100%;
@@ -80,18 +111,24 @@
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-sm);
   }
+
+  /* Enable text selection even in read-only mode */
   :global(.prose .ProseMirror) {
     user-select: text;
   }
+
+  /* Custom selection color */
   :global(.prose ::selection) {
     background-color: hsl(var(--color-accent-hsl) / 0.4);
   }
+
   :global(.prose blockquote) {
     border-left: 3px solid var(--color-border);
     padding-left: 1rem;
     margin-left: 0.5rem;
     color: var(--color-text-secondary);
   }
+
   :global(.dark-theme) .prose {
     border-color: var(--color-border-dark);
   }

@@ -1,4 +1,22 @@
-﻿<!-- src/lib/components/ui/ApiKeyModal.svelte -->
+<!--
+  @component
+  ApiKeyModal
+
+  @description
+  The central configuration hub for AI settings.
+  It manages:
+  - **Model Selection:** Choosing between official models (e.g., Gemini Pro) and dynamically discovered ones.
+  - **API Key Management:** Adding, removing, and validating provider keys.
+  - **Discovery:** Automatically testing keys to find available models via `modelDiscoveryService`.
+
+  Structure:
+  - Uses a tabbed interface ('Models' vs. 'Keys') to separate concerns.
+  - Delegates the content of each tab to sub-components (`ApiKeyModelsTab`, `ApiKeyKeysTab`).
+
+  @props
+  - `show` (boolean): Visibility control.
+  - `onClose` (function): Close callback.
+-->
 <script lang="ts">
   import {
     settingsState,
@@ -18,7 +36,7 @@
   import { open as openCommandBar } from '$lib/modules/command-bar/ui/commandBarStore.svelte';
   import { fade } from 'svelte/transition';
 
-  // Sub-components
+  // --- Sub-components ---
   import ApiKeyModelsTab from './api-key-modal/ApiKeyModelsTab.svelte';
   import ApiKeyKeysTab from './api-key-modal/ApiKeyKeysTab.svelte';
 
@@ -27,20 +45,31 @@
     onClose: () => void;
   }>();
 
+  // --- State ---
   let activeTab = $state<'models' | 'keys'>('models');
   let isDiscoveringModels = $state(false);
   let discoveredModelIds = $state<Set<string> | null>(null);
   let discoveredModels = $state<AiModel[]>([]);
 
+  // --- Logic ---
+
+  /**
+   * Fetches available models from the provider using the given API key.
+   * Updates the local list of "discovered" (non-standard) models.
+   */
   async function discoverModels(apiKey: string): Promise<boolean> {
     isDiscoveringModels = true;
     try {
       const liveIds = await fetchAvailableGeminiModels(apiKey);
       discoveredModelIds = liveIds;
+
       const knownModelIds = new Set(SUPPORTED_MODELS.map((m) => m.id));
+
+      // Filter out models we already know about
       discoveredModels = Array.from(liveIds)
         .filter((id) => !knownModelIds.has(id))
         .map(createDiscoveredModel);
+
       return true;
     } catch (error) {
       toast.error(i18n.t('apiKeyModal.toast.invalid_key_error'));
@@ -51,6 +80,7 @@
     }
   }
 
+  // Effect: Trigger discovery when modal opens if a key exists
   $effect(() => {
     if (show) {
       const geminiKey = settingsState.apiKeys.find(
@@ -60,6 +90,7 @@
         discoverModels(geminiKey.key);
       }
     } else {
+      // Reset state on close
       activeTab = 'models';
       discoveredModelIds = null;
       discoveredModels = [];
@@ -74,13 +105,16 @@
 
 <Modal title={i18n.t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
   <div class="ai-settings-content">
-    <!-- Premium Tabs -->
+
+    <!-- Navigation Tabs -->
     <div class="tabs-container">
-      <div class="tabs">
+      <div class="tabs" role="tablist">
         <button
           class="tab-button"
           class:active={activeTab === 'models'}
           onclick={() => (activeTab = 'models')}
+          role="tab"
+          aria-selected={activeTab === 'models'}
         >
           <Icon name="sparkles" size={16} />
           <span>{i18n.t('apiKeyModal.tabs.models')}</span>
@@ -92,6 +126,8 @@
           class="tab-button"
           class:active={activeTab === 'keys'}
           onclick={() => (activeTab = 'keys')}
+          role="tab"
+          aria-selected={activeTab === 'keys'}
         >
           <Icon name="key" size={16} />
           <span>{i18n.t('apiKeyModal.tabs.keys')}</span>
@@ -102,6 +138,7 @@
       </div>
     </div>
 
+    <!-- Tab Content -->
     {#if activeTab === 'models'}
       <ApiKeyModelsTab 
         {isDiscoveringModels}
@@ -117,6 +154,7 @@
       />
     {/if}
 
+    <!-- Footer -->
     <div class="modal-actions">
       <Button onclick={onClose} variant="ghost">{i18n.t('common.close')}</Button>
     </div>
@@ -130,7 +168,7 @@
     gap: var(--space-lg);
   }
 
-  /* --- Tabs --- */
+  /* Tabs Styling */
   .tabs-container {
     border-bottom: 1px solid var(--color-border);
     margin-bottom: var(--space-xs);
@@ -181,4 +219,3 @@
     border-top: 1px solid var(--color-border);
   }
 </style>
-

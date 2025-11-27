@@ -1,8 +1,17 @@
 <!--
-  src/lib/components/ui/NodeDetailPanel.svelte
-  A docked side panel that displays detailed information about a selected node.
-  This component is controlled by the `nodeDetailStore` and features a robust
-  CSS-based fly-in and fly-out animation.
+  @component
+  NodeDetailPanel
+
+  @description
+  A sophisticated, resizable side panel that acts as the primary interface for
+  interacting with individual nodes (headings) when in Tree View.
+
+  Features:
+  - **Content Editing:** Embeds a Tiptap-based editor (`NodeDetailEditor`) for direct content manipulation.
+  - **Navigation:** Supports keyboard navigation (Arrow keys) to traverse sibling nodes.
+  - **TTS Integration:** Visually highlights text as it is being read aloud by the TTS engine.
+  - **Glassmorphism:** Uses a glass-layer background for a modern, contextual feel.
+  - **Resizability:** Integrated `ResizeHandle` allows user customization of panel width.
 -->
 <script lang="ts">
   import {
@@ -23,11 +32,13 @@
 
   import TTSAutoFollowController from './controllers/TTSAutoFollowController.svelte';
 
-  /**
-   * Resize Logic
-   */
+  // --- Resize Logic ---
   let startWidth = 0;
 
+  /**
+   * Handlers for the drag-to-resize interaction.
+   * Updates the global state to disable transitions during resize for performance.
+   */
   function handleResizeStart() {
     setIsResizing(true);
     startWidth = nodeDetailState.width;
@@ -41,14 +52,14 @@
     setIsResizing(false);
   }
 
+  // --- TTS Highlighting Effect ---
 
-  /**
-   * Effect for highlighting the currently read block in the panel.
-   */
+  // Effect: Syncs the panel's scroll position and highlighting with the active TTS node.
   $effect(() => {
     const status = ttsState.status;
     const currentIndex = ttsState.currentNodeIndex;
     
+    // Cleanup if not playing
     if (status !== 'playing' && status !== 'paused') {
       const contentEl = document.querySelector('.panel-content');
       if (contentEl) {
@@ -61,13 +72,16 @@
     const currentNode = ttsState.nodesToRead[currentIndex];
     if (!currentNode) return;
 
+    // Delay to ensure DOM is ready
     setTimeout(() => {
       const contentEl = document.querySelector('.panel-content');
       if (!contentEl) return;
 
+      // Remove old highlight
       const prev = contentEl.querySelector('.tts-active-block');
       if (prev) prev.classList.remove('tts-active-block');
 
+      // Apply new highlight based on data-pos attribute
       const target = contentEl.querySelector(`[data-pos="${currentNode.pos}"]`);
       if (target) {
         target.classList.add('tts-active-block');
@@ -75,13 +89,14 @@
       }
     }, 50);
   });
-  /**
-   * Effect to handle global keyboard events for accessibility and navigation.
-   */
+
+  // --- Keyboard Navigation Effect ---
+
+  // Effect: Registers global keyboard shortcuts when the panel is open.
   $effect(() => {
     if (nodeDetailState.isOpen) {
       const handleKeydown = (event: KeyboardEvent) => {
-        // Only handle global shortcuts if we are NOT editing
+        // Only handle global shortcuts if we are NOT editing text
         const isEditing = document.activeElement?.closest('.node-detail-editor');
 
         if (event.key === 'Escape') {
@@ -90,11 +105,11 @@
         }
         
         if (isEditing) {
-          // If editing, let the editor handle it.
-          // Do NOT stop propagation here in capture phase, or the editor won't get it.
+          // Let the editor handle its own shortcuts
           return; 
         }
 
+        // Navigation Shortcuts
         if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
           event.preventDefault();
           navigateToSibling('prev');
@@ -102,6 +117,7 @@
           event.preventDefault();
           navigateToSibling('next');
         }
+        // Focus on node in tree
         else if (event.key === 'Enter') {
           event.preventDefault();
           requestFocus();
@@ -113,9 +129,9 @@
     }
   });
 
-  /**
-   * Effect to handle view synchronization.
-   */
+  // --- View Sync Effect ---
+
+  // Effect: Automatically close the panel if the user switches back to the main editor view.
   $effect(() => {
     const currentView = uiState.activeView;
     if (currentView === 'editor' && nodeDetailState.isOpen) {
@@ -140,15 +156,17 @@
   aria-hidden={!nodeDetailState.isOpen}
   onkeydown={handlePanelKeydown}
 >
+  <!-- Resize Handler (Left Edge) -->
   <ResizeHandle 
     onResize={handleResize}
     onResizeStart={handleResizeStart}
     onResizeEnd={handleResizeEnd}
   />
 
+  <!-- Headless Controller for TTS syncing -->
   <TTSAutoFollowController />
 
-  <!-- Glass Background Layer -->
+  <!-- Visual: Glass Background Layer -->
   <div class="glass-layer"></div>
 
   <NodeDetailHeader />
@@ -182,7 +200,6 @@
       transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       visibility 0.5s;
     z-index: var(--z-elevated);
-    /* Shadow handled by glass layer or here? Let's keep it here for depth */
     box-shadow: var(--shadow-2xl);
     
     /* Fix for scrolling */
@@ -214,7 +231,7 @@
     min-height: 0; /* Crucial for flex scrolling */
   }
 
-  /* Highlight Active Block */
+  /* Highlight Active Block (Paragraph level) */
   :global(.tts-active-block) {
     background-color: hsla(var(--color-accent-hsl) / 0.15) !important;
     border-left: 4px solid var(--color-accent) !important;
@@ -224,7 +241,7 @@
     box-shadow: 0 2px 8px -2px hsla(var(--color-accent-hsl) / 0.2) !important;
   }
 
-  /* Highlight Active Word (Karaoke) */
+  /* Highlight Active Word (Karaoke style) */
   :global(.is-current-tts-word) {
     background-color: var(--color-accent) !important;
     color: white !important;

@@ -1,14 +1,29 @@
+<!--
+  @component
+  OrganicCanvas
+
+  @description
+  A high-performance, procedurally generated background component.
+  It creates a deterministic "starfield" effect using a seeded PRNG (Pseudo-Random Number Generator),
+  ensuring that the background pattern remains consistent across re-renders and window resizes.
+
+  Features:
+  - **Deterministic Generation:** Uses `mulberry32` seeded PRNG so the starfield layout is stable.
+  - **Theme Aware:** Automatically adapts colors and contrast based on the application theme (light/dark).
+  - **Performance Optimized:** Uses an off-screen canvas for static elements and a separate layer for animations.
+  - **Shooting Stars:** Adds subtle, randomized shooting star animations for visual interest.
+
+  @props
+  - `isExiting` (boolean): Optional prop to trigger a fade-out transition.
+-->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  // Assumes your store is in 'src/lib/stores'
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import type { Theme } from '$lib/stores/themeStore.svelte';
-  // Assumes your canvas drawing functions are in 'src/lib/utils'
   import { drawStars, drawArtisticDetails } from '$lib/utils/canvas-themes';
   import type { CanvasTheme } from '$lib/utils/canvas-themes';
-  // Import the reusable utilities
   import { debounce } from '$lib/core/utils/debounce';
-  import { mulberry32 } from '$lib/core/utils/prng'; // 1. Import the PRNG utility
+  import { mulberry32 } from '$lib/core/utils/prng';
 
   let { isExiting = false } = $props<{ isExiting?: boolean }>();
 
@@ -20,8 +35,7 @@
   let cachedCanvas: HTMLCanvasElement | null = null;
   let cachedTheme: CanvasTheme | null = null;
 
-  // 2. Define a constant seed for the deterministic background generation.
-  // Changing this number will generate a completely different (but still stable) universe.
+  // Define a constant seed for the deterministic background generation.
   const STARFIELD_SEED = 2024;
 
   // --- Resize Optimization State ---
@@ -52,6 +66,7 @@
   function init(force = false) {
     if (!canvasEl) return;
 
+    // Prevent unnecessary redraws on minor resize events (e.g., mobile browser chrome toggle)
     const widthChanged =
       Math.abs(window.innerWidth - lastRenderedWidth) > RESIZE_THRESHOLD_PX;
     const heightChanged =
@@ -66,11 +81,12 @@
     canvasEl.width = lastRenderedWidth;
     canvasEl.height = lastRenderedHeight;
 
-    // 3. Create a new PRNG instance from our seed *every time* we init.
+    // Create a new PRNG instance from our seed *every time* we init.
     // This "resets" the sequence of random numbers, ensuring the same star
     // pattern is drawn regardless of canvas size.
     const random = mulberry32(STARFIELD_SEED);
 
+    // Cache check: If dimensions and theme haven't effectively changed, reuse the static canvas.
     if (
       cachedCanvas &&
       cachedCanvas.width === canvasEl.width &&
@@ -81,6 +97,7 @@
       artisticDetailsReady = true;
       artisticDetailsAlpha = 1;
     } else {
+      // Full redraw needed
       artisticDetailsReady = false;
       artisticDetailsAlpha = 0;
       staticBgCanvas = document.createElement('canvas');
@@ -89,7 +106,7 @@
       const staticCtx = staticBgCanvas.getContext('2d');
       if (!staticCtx) return;
       
-      // ENHANCEMENT: Use CSS variables for theme colors
+      // Use CSS variables for consistent theme colors
       const computedStyle = getComputedStyle(document.documentElement);
       const bgColor = currentTheme === 'dark' 
         ? computedStyle.getPropertyValue('--color-background').trim() || '#000000'
@@ -98,7 +115,7 @@
       staticCtx.fillStyle = bgColor;
       staticCtx.fillRect(0, 0, staticBgCanvas.width, staticBgCanvas.height);
 
-      // 4. Pass the seeded 'random' function to the drawing utilities.
+      // Draw base star layer
       drawStars(
         staticCtx,
         canvasEl.width,
@@ -107,11 +124,12 @@
         random
       );
 
+      // Draw artistic details (nebulae, clusters) asynchronously to unblock main thread slightly
       setTimeout(() => {
-        if (!staticBgCanvas || !canvasEl) return; // FIX: Check canvasEl existence
+        if (!staticBgCanvas || !canvasEl) return;
         const staticCtx = staticBgCanvas.getContext('2d');
         if (!staticCtx) return;
-        // Also pass it to the artistic details function.
+
         drawArtisticDetails(
           staticCtx,
           canvasEl.width,
@@ -119,6 +137,7 @@
           currentTheme,
           random
         );
+
         cachedCanvas = staticBgCanvas;
         cachedTheme = currentTheme;
         artisticDetailsReady = true;
@@ -129,27 +148,23 @@
     shootingStarInterval = window.setInterval(createShootingStar, 25000);
   }
 
-  // This function remains unchanged. We want shooting stars to be truly random,
-  // not deterministic like the background.
+  /**
+   * Creates a shooting star instance with randomized properties.
+   * Unlike the background, this is truly random for visual dynamism.
+   */
   function createShootingStar() {
     if (!canvasEl) return;
     const scaleFactor = Math.max(0.5, Math.min(canvasEl.width / 1200, 1.2));
     const angle = Math.random() * Math.PI * 2;
     const edge = Math.floor(Math.random() * 4);
     let x, y;
-    if (edge === 0) {
-      x = 0;
-      y = Math.random() * canvasEl.height;
-    } else if (edge === 1) {
-      x = canvasEl.width;
-      y = Math.random() * canvasEl.height;
-    } else if (edge === 2) {
-      x = Math.random() * canvasEl.width;
-      y = 0;
-    } else {
-      y = canvasEl.height;
-      x = Math.random() * canvasEl.width;
-    }
+
+    // Spawn from random edge
+    if (edge === 0) { x = 0; y = Math.random() * canvasEl.height; }
+    else if (edge === 1) { x = canvasEl.width; y = Math.random() * canvasEl.height; }
+    else if (edge === 2) { x = Math.random() * canvasEl.width; y = 0; }
+    else { y = canvasEl.height; x = Math.random() * canvasEl.width; }
+
     shootingStars.push({
       x,
       y,
@@ -160,22 +175,29 @@
     });
   }
 
-  // ... (animate, handleVisibilityChange, $effect, onMount, onDestroy are unchanged and correct)
+  /**
+   * The main animation loop.
+   * Draws the static background image and then overlays animated elements.
+   */
   function animate() {
     animationFrameId = requestAnimationFrame(animate);
     if (!canvasEl) return;
     const ctx = canvasEl.getContext('2d');
     if (!ctx) return;
+
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    // Fade in artistic details once ready
     if (artisticDetailsReady && artisticDetailsAlpha < 1) {
       artisticDetailsAlpha = Math.min(1, artisticDetailsAlpha + 0.015);
     }
+
     if (staticBgCanvas) {
       ctx.drawImage(staticBgCanvas, 0, 0);
     }
-    ctx.globalAlpha = artisticDetailsAlpha;
     
-    // ENHANCEMENT: Dynamic star color based on theme
+    // Draw animations
+    ctx.globalAlpha = artisticDetailsAlpha;
     const starColor = currentTheme === 'dark' ? '255, 255, 255' : '100, 100, 130';
     
     for (let i = shootingStars.length - 1; i >= 0; i--) {
@@ -183,6 +205,7 @@
       s.x += s.speed * Math.cos(s.angle);
       s.y += s.speed * Math.sin(s.angle);
       s.alpha -= 0.015;
+
       if (
         s.alpha <= 0 ||
         s.x < -s.len ||
@@ -193,6 +216,7 @@
         shootingStars.splice(i, 1);
         continue;
       }
+
       const tailX = s.x - s.len * Math.cos(s.angle);
       const tailY = s.y - s.len * Math.sin(s.angle);
       const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
@@ -229,9 +253,11 @@
     const effectiveTheme = resolveTheme(themeStore.theme);
     if (effectiveTheme !== currentTheme) {
       currentTheme = effectiveTheme;
-      // FIX: Wait for the DOM class to be updated by the parent layout before reading styles
+      // Defer init to allow CSS variables to update in the DOM
       setTimeout(() => init(true), 0);
     }
+
+    // Handle system theme changes dynamically
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
       if (themeStore.theme === 'system') {
@@ -283,7 +309,6 @@
     display: block;
     width: 100%;
     height: 100%;
-    /* A fallback background color in case the canvas takes time to render */
     background-color: var(--color-background);
   }
 </style>
