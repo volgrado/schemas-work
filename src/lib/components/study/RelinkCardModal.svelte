@@ -1,27 +1,37 @@
-﻿<!--
+<!--
   @component
   RelinkCardModal
 
   @description
   An exceptional modal for re-linking a flashcard to a different schema (deck).
-  It provides a clear list of available schemas, a smooth skeleton loading state,
-  and emits events to notify the parent of changes.
+
+  Features:
+  - **Schema Browsing:** Lists all available documents (decks) for selection.
+  - **Validation:** Prevents re-linking to the same deck or invalid targets.
+  - **Async State:** Displays a skeleton loader while fetching metadata.
+  - **Events:** Emits update events to parent components.
+
+  @props
+  - `show` (bindable boolean): Visibility control.
+  - `card` (Card): The card object being modified.
+  - `onClose` (function): Close callback.
+  - `onUpdate` (function): Success callback with the modified card.
 -->
 <script lang="ts">
   import { i18n } from '$lib/utils/i18n.svelte';
   import { toast } from 'svelte-sonner';
-  // FIX: Import the SRS namespace and create a local alias for the Card type.
   import type { SRS, SchemaMetadata } from '$lib/types';
-  type Card = SRS.Card;
   import { fileSystemStore } from '@modules/file-system';
   import * as cardService from '$lib/modules/study/domain/cardService';
 
   // --- UI Component Imports ---
-  import Modal from '@ui/Modal.svelte';
-  import Button from '@ui/Button.svelte';
-  import Icon from '@ui/Icon.svelte';
+  import Modal from '$lib/core/ui/Modal.svelte';
+  import Button from '$lib/core/ui/Button.svelte';
+  import Icon from '$lib/core/ui/Icon.svelte';
 
-  // --- Svelte 5 Props and Events ---
+  type Card = SRS.Card;
+
+  // --- Props ---
   let { 
     show = $bindable(false), 
     card,
@@ -39,12 +49,13 @@
   let selectedSchemaId = $state(card.deckId);
   let isLoading = $state(true);
 
+  // --- Effects ---
   $effect(() => {
     async function loadSchemas() {
       if (show) {
         isLoading = true;
         selectedSchemaId = card.deckId;
-        // fileSystemStore is synchronous
+        // Fetch available schemas synchronously from the store cache
         const allItems = fileSystemStore.getAll();
         schemas = allItems.filter((item) => item.type === 'schema');
         isLoading = false;
@@ -53,6 +64,7 @@
     loadSchemas();
   });
 
+  // --- Actions ---
   async function handleRelink() {
     if (!selectedSchemaId) {
       toast.error(i18n.t('relinkCard.noSelectionError'));
@@ -87,13 +99,14 @@
     <p class="description">{i18n.t('relinkCard.description')}</p>
 
     {#if isLoading}
+      <!-- Loading Skeletons -->
       <ul class="schema-list skeleton-list">
-        <!-- FIX: Add key and type to prevent potential implicit 'any' error -->
         {#each { length: 3 } as _, i (i)}
           <li><div class="skeleton skeleton-item"></div></li>
         {/each}
       </ul>
     {:else}
+      <!-- Schema List -->
       <ul class="schema-list">
         {#each schemas as schema (schema.id)}
           <li>
@@ -125,7 +138,6 @@
 </Modal>
 
 <style>
-  /* All styles are unchanged and correct */
   .description {
     color: var(--color-text-secondary);
     margin-bottom: var(--space-md);
@@ -189,18 +201,11 @@
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   @keyframes pulse {
-    50% {
-      opacity: 0.6;
-    }
+    50% { opacity: 0.6; }
   }
-  .skeleton-list {
-    border-color: transparent;
-  }
-  .skeleton-item {
-    height: 40px;
-    width: 100%;
-  }
-  /* Removed redundant dark theme overrides */
+  .skeleton-list { border-color: transparent; }
+  .skeleton-item { height: 40px; width: 100%; }
+
   :global(.dark-theme) .current-tag {
     background-color: var(--color-gray-700);
     color: var(--color-text-dark-tertiary);

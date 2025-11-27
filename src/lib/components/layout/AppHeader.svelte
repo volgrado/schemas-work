@@ -1,6 +1,23 @@
-﻿<!-- src/lib/components/layout/AppHeader.svelte -->
-<script lang="ts">
+<!--
+  @component
+  AppHeader
 
+  @description
+  The responsive navigation bar that persists at the top of the active workspace.
+
+  Features:
+  - **Branding:** Displays the logo and app name (clickable to return home).
+  - **Slots:** A central slot for context-specific actions (injected by `MainApp`).
+  - **Global Controls:** Always shows Language and Theme toggles on the right.
+  - **Context Awareness:** Only renders when a document is active (`documentState.docId`).
+  - **State Cleanup:** `showWelcome` utility ensures a clean reset when navigating home.
+
+  @props
+  - `show` (boolean): Animation trigger.
+  - `onShowWelcome` (function): Callback to return to the landing page.
+  - `children` (snippet): Slot for dynamic center actions.
+-->
+<script lang="ts">
   import { fade } from 'svelte/transition';
   import type { Snippet } from 'svelte';
 
@@ -10,7 +27,7 @@
   import LanguageSwitcher from '$lib/components/layout/LanguageSwitcher.svelte';
   import ThemeToggleButton from '$lib/core/ui/ThemeToggleButton.svelte';
 
-  // VVVV CORRECTED IMPORTS VVVV
+  // --- Stores & Actions ---
   import {
     documentState,
     close as closeDocument,
@@ -32,10 +49,9 @@
   }>();
 
   /**
-   * Resets all relevant app states and dispatches the 'showWelcome' event.
+   * Resets all relevant app states (TTS, Editor, Review) and navigates to the Welcome screen.
    */
   function showWelcome() {
-    // VVVV CORRECTED METHOD CALL VVVV
     closeDocument();
     stopReading();
     closeCardEditor();
@@ -44,10 +60,12 @@
   }
 </script>
 
-<!-- VVVV CORRECTED STATE ACCESS VVVV -->
+<!-- Header is only visible when a document is active -->
 {#if show && documentState.docId}
   <header class="app-header {className}" transition:fade={{ duration: 300 }}>
     <div class="header-content">
+
+      <!-- Left: Brand / Home -->
       <div class="header-section left">
         <button
           class="brand-button"
@@ -61,10 +79,12 @@
         </button>
       </div>
 
+      <!-- Center: Dynamic Actions (Editor controls, etc.) -->
       <div class="header-section center">
         {@render children?.()}
       </div>
 
+      <!-- Right: Global Preferences -->
       <div class="header-section right">
         <LanguageSwitcher />
         <ThemeToggleButton />
@@ -74,7 +94,6 @@
 {/if}
 
 <style>
-  /* All styles are unchanged and correct */
   .app-header {
     position: fixed;
     top: 0;
@@ -108,16 +127,9 @@
     align-items: center;
     gap: var(--space-sm);
   }
-  .header-section.left {
-    justify-content: flex-start;
-  }
-  .header-section.center {
-    justify-content: center;
-    min-width: 0;
-  }
-  .header-section.right {
-    justify-content: flex-end;
-  }
+  .header-section.left { justify-content: flex-start; }
+  .header-section.center { justify-content: center; min-width: 0; }
+  .header-section.right { justify-content: flex-end; }
 
   .brand-button {
     display: flex;
@@ -134,6 +146,7 @@
   .brand-button:hover {
     background-color: var(--color-gray-100);
   }
+
   .logo-wrapper {
     display: grid;
     place-items: center;
@@ -142,6 +155,7 @@
   .brand-button:hover .logo-wrapper {
     transform: rotate(-15deg) scale(1.1);
   }
+
   .brand-name {
     font-size: var(--font-size-xl);
     font-weight: 700;
@@ -153,10 +167,11 @@
     color: var(--color-accent);
   }
 
+  /* Mobile adjustments */
   @media (max-width: 640px) {
     .brand-name,
     :global(.header-section .btn > svg + span) {
-      display: none;
+      display: none; /* Hide text labels on small screens */
     }
     .brand-button {
       gap: 0;

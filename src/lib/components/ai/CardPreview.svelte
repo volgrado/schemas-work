@@ -1,20 +1,37 @@
-﻿<!-- src/lib/components/ai/CardPreview.svelte -->
+<!--
+  @component
+  CardPreview
+
+  @description
+  A read-only visualizer for a collection of flashcards.
+  Used primarily in the "AI Strategy Session" to show the user what cards will be generated
+  before they commit to saving them.
+
+  Features:
+  - **Polymorphic Rendering:** Displays different layouts for Basic, Input, and Sequencing cards.
+  - **Skeleton Loading:** Shows a shimmer effect while AI is generating content.
+  - **Responsive List:** Handles scrolling for large sets of generated cards.
+
+  @props
+  - `cards` (Array): The list of card objects (or a wrapper object) to display.
+  - `loading` (boolean): Whether to show the loading skeleton state.
+-->
 <script lang="ts">
   import type { SRS } from '$lib/types';
-  type Card = SRS.Card;
-  type NewCard = SRS.NewCard;
   import { fade } from 'svelte/transition';
   import { i18n } from '$lib/utils/i18n.svelte';
 
+  type Card = SRS.Card;
+  type NewCard = SRS.NewCard;
   type PreviewCard = Card | NewCard;
 
-  // --- Props ---
   let { cards: rawCards, loading = false } = $props<{
+    // Handle both direct array and wrapped object (common in AI responses)
     cards: PreviewCard[] | { type: string; content: PreviewCard[] };
     loading?: boolean;
   }>();
 
-  // Robustly extract the array of cards
+  // Robustly extract the array of cards from the prop
   let cards = $derived.by(() => {
     if (Array.isArray(rawCards)) return rawCards;
     if (rawCards && typeof rawCards === 'object' && 'content' in rawCards && Array.isArray(rawCards.content)) {
@@ -23,7 +40,9 @@
     return [];
   });
 
-  // --- Keying for Svelte animations ---
+  // --- Helpers ---
+
+  // Generate stable keys for animation
   const cardKeys = new WeakMap<PreviewCard, string>();
   let keyCounter = 0;
   function getCardKey(card: PreviewCard) {
@@ -33,17 +52,13 @@
     return cardKeys.get(card)!;
   }
 
-  // --- Helpers ---
+  // Format fill-in-the-blank prompts
   function formatInputPrompt(prompt: string): string {
     return prompt.replace(
       /\{\{\.\.\.\}\}/g,
       '<span class="input-blank">_________</span>'
     );
   }
-
-  $effect(() => {
-    console.log('[CardPreview] Cards prop updated:', cards);
-  });
 </script>
 
 <div class="card-preview-container">
@@ -55,15 +70,18 @@
 
   <div class="card-list">
     {#if loading}
+      <!-- Skeleton Loading State -->
       {#each { length: 3 } as _}
         <div class="card skeleton" in:fade></div>
       {/each}
     {:else if cards?.length > 0}
+      <!-- Render Cards -->
       {#each cards as card (getCardKey(card))}
         <div class="card" in:fade>
           <div class="card-header">
             <span class="card-type">{card.type}</span>
           </div>
+
           <div class="card-content">
             {#if card.type === 'basic'}
               <div class="field">
@@ -110,7 +128,7 @@
   }
   .preview-header {
     display: flex;
-    justify-content: flex-end; /* Changed */
+    justify-content: flex-end;
     align-items: center;
     padding: 0 0 var(--space-sm) 0;
     border-bottom: 1px solid var(--color-border);
@@ -123,7 +141,7 @@
   .card-list {
     flex-grow: 1;
     overflow-y: auto;
-    padding: var(--space-md) 2px 0 0; /* Adjusted padding */
+    padding: var(--space-md) 2px 0 0;
   }
   .card {
     background-color: var(--color-background);
@@ -132,7 +150,7 @@
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--space-md);
     transition: all 0.2s ease;
-    padding: var(--space-xs) var(--space-md) var(--space-md) var(--space-md); /* Added padding */
+    padding: var(--space-xs) var(--space-md) var(--space-md) var(--space-md);
     overflow: hidden;
   }
   .card-header {
@@ -192,9 +210,7 @@
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   @keyframes pulse {
-    50% {
-      opacity: 0.6;
-    }
+    50% { opacity: 0.6; }
   }
   :global(.dark-theme) .skeleton {
     background-color: var(--color-gray-800);

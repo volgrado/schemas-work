@@ -1,11 +1,15 @@
-﻿<!--
+<!--
   @component
   LanguageSwitcher
 
   @description
-  An exceptional, robust, and fully accessible language switcher component. It leverages
-  the `Popup` UI primitive and a custom `clickOutside` action to provide a polished
-  and intuitive user experience, adhering to modern Svelte 5 patterns.
+  A dropdown component for changing the application's locale.
+
+  Features:
+  - **Reactive State:** Updates `i18n` store on selection.
+  - **Accessibility:** Uses ARIA roles (`menu`, `menuitem`) and manages focus.
+  - **Popup Primitives:** Leverages the `Popup` component for positioning.
+  - **Dismissal:** Closes on outside clicks (`clickOutside` action) or Escape key.
 -->
 <script lang="ts">
   import { i18n, translations } from '$lib/utils/i18n.svelte';
@@ -15,12 +19,12 @@
   import Popup from '$lib/core/ui/Popup.svelte';
   import Button from '$lib/core/ui/Button.svelte';
 
-  // --- Svelte 5 State ---
+  // --- State ---
   let menuVisible = $state(false);
-  // FIX: This will now refer to the wrapper div, so the more general `HTMLElement` is the correct type.
   let triggerEl = $state<HTMLElement | null>(null);
   let menuEl = $state<HTMLUListElement | null>(null);
 
+  // --- Actions ---
   const clickOutside: Action<HTMLElement, () => void> = (node, callback) => {
     const handleClick = (event: MouseEvent) => {
       if (
@@ -39,6 +43,9 @@
     };
   };
 
+  // --- Effects ---
+
+  // Effect: Keyboard navigation (Escape to close)
   $effect(() => {
     if (!menuVisible) return;
     const handleKeydown = (event: KeyboardEvent) => {
@@ -52,6 +59,7 @@
     };
   });
 
+  // Effect: Auto-focus first item on open
   $effect(() => {
     if (menuVisible && menuEl) {
       setTimeout(() => {
@@ -71,10 +79,6 @@
 </script>
 
 <div class="lang-switcher">
-  <!--
-    FIX: Wrap the Button component in a native element.
-    `bind:this` now correctly captures the `HTMLDivElement` for the Popup to use.
-  -->
   <div bind:this={triggerEl}>
     <Button
       variant="ghost"
@@ -118,7 +122,6 @@
 <style>
   .lang-switcher {
     position: relative;
-    /* This ensures the triggerEl div doesn't take up extra space */
     display: inline-block;
   }
   .lang-menu {
