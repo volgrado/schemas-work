@@ -106,52 +106,65 @@ const inputCardSchema = z.object({
   content: inputCardContentSchema,
 });
 
+// --- God-Level Cards (Antigravity) ---
+
 /**
- * Content schema for a "Sequencing" flashcard, where the user orders items.
+ * Content schema for a "Contextual Cloze" flashcard.
+ * Teaches grammar in situ.
  */
+const clozeCardContentSchema = z.object({
+  text: z.string().describe("The full sentence with {{c1::hidden words}} marked."),
+  hint: z.string().optional().describe("Optional hint to show when stuck."),
+  mediaUrl: z.string().optional().describe("Optional image URL for visual context."),
+});
+const clozeCardSchema = z.object({
+  type: z.literal('cloze'),
+  content: clozeCardContentSchema,
+});
+
+/**
+ * Content schema for a "Semantic Matching" flashcard.
+ * Use for rapid-fire vocabulary association.
+ */
+const matchingCardContentSchema = z.object({
+  prompt: z.string().describe("Instructions, e.g., 'Match the Greek verbs to English'"),
+  pairs: z.array(z.object({
+    left: z.string(),
+    right: z.string()
+  })).min(2).describe("List of correct pairs."),
+});
+const matchingCardSchema = z.object({
+  type: z.literal('matching'),
+  content: matchingCardContentSchema,
+});
+
+// --- Legacy Support (Still valid schemas, just less prioritized) ---
+
 const sequencingCardContentSchema = z.object({
   prompt: z.string().min(1),
   items: z
     .array(z.string())
     .min(2, 'Sequencing card must have at least 2 items.'),
 });
-
-/**
- * Schema for a complete sequencing flashcard, identified by `type: 'sequencing'`.
- */
 const sequencingCardSchema = z.object({
   type: z.literal('sequencing'),
   content: sequencingCardContentSchema,
 });
 
-/**
- * Content schema for a "True/False" flashcard.
- */
 const trueFalseCardContentSchema = z.object({
   statement: z.string().min(1),
   isTrue: z.boolean(),
 });
-
-/**
- * Schema for a complete True/False flashcard, identified by `type: 'true_false'`.
- */
 const trueFalseCardSchema = z.object({
   type: z.literal('true_false'),
   content: trueFalseCardContentSchema,
 });
 
-/**
- * Content schema for a "Multiple Choice" flashcard.
- */
 const multipleChoiceCardContentSchema = z.object({
   question: z.string().min(1),
   options: z.array(z.string()).min(2, 'Multiple choice must have at least 2 options.'),
   correctOptionIndex: z.number().int().min(0),
 });
-
-/**
- * Schema for a complete Multiple Choice flashcard, identified by `type: 'multiple_choice'`.
- */
 const multipleChoiceCardSchema = z.object({
   type: z.literal('multiple_choice'),
   content: multipleChoiceCardContentSchema,
@@ -161,14 +174,14 @@ const multipleChoiceCardSchema = z.object({
  * Zod schema for validating the AI response for the "Generate Flashcards" feature.
  *
  * This validator expects an array of flashcard objects. It uses a `discriminatedUnion`
- * based on the `type` property ('basic', 'input', 'sequencing', 'true_false', 'multiple_choice') to dynamically apply
- * the correct validation schema for each card in the array. This allows for handling
- * a polymorphic array of different card structures in a type-safe manner.
+ * based on the `type` property to dynamically apply the correct validation schema.
  */
 export const FlashcardResponseSchema = z.array(
   z.discriminatedUnion('type', [
     basicCardSchema,
     inputCardSchema,
+    clozeCardSchema,    // Added
+    matchingCardSchema, // Added
     sequencingCardSchema,
     trueFalseCardSchema,
     multipleChoiceCardSchema,

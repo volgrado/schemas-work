@@ -1,0 +1,60 @@
+{
+  "version": "CEFR Companion Volume 2020",
+  "levels": ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"],
+  "scales": {
+    "overall_listening": {
+      "Pre-A1": "Can recognize everyday, familiar words, provided they are delivered clearly and slowly in a clearly defined, familiar everyday context.",
+      "A1": "Can follow speech which is very slow and carefully articulated, with long pauses for him/her to assimilate meaning.",
+      "A2": "Can understand enough to be able to meet needs of a concrete type provided speech is clearly and slowly articulated.",
+      "B1": "Can understand straightforward factual information about common everyday or job related topics, identifying both general messages and specific details, provided speech is clearly articulated in a generally familiar accent.",
+      "B2": "Can understand the main ideas of propositionally and linguistically complex speech on both concrete and abstract topics delivered in a standard dialect, including technical discussions in his/her field of specialization.",
+      "C1": "Can understand enough to follow extended speech on abstract and complex topics beyond his/her own field, though he/she may need to confirm occasional details, especially if the accent is unfamiliar.",
+      "C2": "Has no difficulty in understanding any kind of spoken language, whether live or broadcast, delivered at fast native speed."
+    },
+    "overall_reading": {
+      "Pre-A1": "Can recognize familiar names, words and very basic phrases on simple notices in the most common everyday situations.",
+      "A1": "Can understand very short, simple texts a single phrase at a time, picking up familiar names, words and basic phrases and rereading as required.",
+      "A2": "Can understand short, simple texts on familiar matters of a concrete type which consist of high frequency everyday or job-related language.",
+      "B1": "Can read straightforward factual texts on subjects related to his/her field and interest with a satisfactory level of comprehension.",
+      "B2": "Can read with a large degree of independence, adapting style and speed of reading to different texts and purposes, and using appropriate reference sources selectively.",
+      "C1": "Can understand in detail lengthy, complex texts, whether or not they relate to his/her own area of speciality, provided he/she can reread difficult sections.",
+      "C2": "Can understand and interpret critically virtually all forms of the written language including abstract, structurally complex, or highly colloquial literary and non-literary writings."
+    },
+    "online_interaction": {
+      "Pre-A1": "Can post simple online greetings and short messages using basic formulaic expressions.",
+      "A1": "Can post simple online greetings, short messages, and very short statements about himself/herself.",
+      "A2": "Can engage in basic social interaction online (e.g. simple greetings, thanks, short comments), writing very short, simple notes and emails.",
+      "B1": "Can post online accounts of social events, experiences and activities referring to embedded links and media and sharing personal feelings.",
+      "B2": "Can engage actively in online discussions, stating and responding to opinions on topics of interest at some length, provided contributors avoid unusual or complex language.",
+      "C1": "Can express him/herself with clarity and precision in real-time online interaction, adjusting language flexibly and effectively for social, academic or professional purposes.",
+      "C2": "Can participate effectively in live online professional or academic discussion, asking for and giving further clarification of complex, abstract issues as necessary."
+    },
+    "mediation_text": {
+      "A1": "Can convey simple, predictable information of immediate interest given in short, simple texts on familiar matters, provided he/she can read the text several times.",
+      "A2": "Can convey the main point(s) of a short, simple text on everyday subjects of immediate interest provided he/she can read it clearly.",
+      "B1": "Can convey information given in clear, well-structured informational texts on subjects that are familiar or of personal or current interest.",
+      "B2": "Can convey the main points made in long texts expressed in clear standard language on topics of personal or professional interest.",
+      "C1": "Can convey the main points and relevant details of complex texts, whether or not they relate to his/her own professional field.",
+      "C2": "Can explain the subtle distinctions and implications of complex texts, even those on abstract or unfamiliar topics."
+    },
+    "plurilingual_comprehension": {
+      "A1": "Can understand short, simple words and phrases by using the similarities between the target language and other languages he/she knows.",
+      "A2": "Can exploit easily identifiable vocabulary (e.g. internationalisms) to understand the general idea of short, simple texts.",
+      "B1": "Can deduce the meaning of unknown words by using his/her knowledge of the vocabulary and grammar of other languages he/she knows.",
+      "B2": "Can use his/her knowledge of other languages to understand the main points of a text on a familiar topic, even if he/she does not know the target language well.",
+      "C1": "Can effectively use his/her plurilingual repertoire to understand complex texts and interactions, switching languages where appropriate.",
+      "C2": "Can mediate effectively between languages and cultures, exploiting his/her full plurilingual repertoire to facilitate communication in complex situations."
+    }
+  },
+  "alte_rules": {
+    "item_writing": [
+      "Distractors must be indisputably wrong, not just less likely.",
+      "Items must be answerable solely from the provided text.",
+      "Independence: One item's success must not depend on another."
+    ],
+    "test_structure": {
+      "A1_B1": "Use 3-option Multiple Choice.",
+      "B2_plus": "Use 4-option Multiple Choice."
+    }
+  }
+}

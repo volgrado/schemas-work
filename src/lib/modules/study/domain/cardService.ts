@@ -48,73 +48,42 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
   switch (card.type) {
     case 'basic':
       return {
-        id,
-        deckId,
-        type: 'basic',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
+        id, deckId, type: 'basic',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
     case 'input':
       return {
-        id,
-        deckId,
-        type: 'input',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
+        id, deckId, type: 'input',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
-    case 'sequencing':
-      return {
-        id,
-        deckId,
-        type: 'sequencing',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
-      };
-    case 'true_false':
-      return {
-        id,
-        deckId,
-        type: 'true_false',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
-      };
-    case 'multiple_choice':
-      return {
-        id,
-        deckId,
-        type: 'multiple_choice',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
-      };
+
+    // --- God-Level Cards ---
     case 'cloze':
       return {
-        id,
-        deckId,
-        type: 'cloze',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
+        id, deckId, type: 'cloze',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
     case 'matching':
       return {
-        id,
-        deckId,
-        type: 'matching',
-        content: card.content,
-        srs: baseSrs,
-        tags: [],
-        suspended: false,
+        id, deckId, type: 'matching',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
+      };
+
+    // --- Legacy / Other ---
+    case 'sequencing':
+      return {
+        id, deckId, type: 'sequencing',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
+      };
+    case 'true_false':
+      return {
+        id, deckId, type: 'true_false',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
+      };
+    case 'multiple_choice':
+      return {
+        id, deckId, type: 'multiple_choice',
+        content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
     default:
         // Improved exhaustive check

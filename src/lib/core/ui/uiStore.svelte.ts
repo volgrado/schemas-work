@@ -18,6 +18,10 @@ export type { NodeDetailState } from '$lib/modules/editor/ui/nodeDetailStore.sve
 let activeView = $state<'editor' | 'tree'>('editor');
 let colorMode = $state<'none' | 'by-level' | 'by-path'>('by-level'); // Default to by-level
 
+// Phase 2: Dual Mode State
+let mode = $state<'standard' | 'immersive'>('standard');
+let isGenieActive = $state(false);
+
 // --- Unified State Object ---
 // We use getters to expose the reactive state objects from the other stores.
 export const uiState = {
@@ -27,6 +31,13 @@ export const uiState = {
   get colorMode() { return colorMode; },
   set colorMode(v) { colorMode = v; },
   
+  // Phase 2: Dual Mode Expose
+  get mode() { return mode; },
+  set mode(v) { mode = v; },
+
+  get isGenieActive() { return isGenieActive; },
+  set isGenieActive(v) { isGenieActive = v; },
+
   get modal() { return modalState; },
   get commandBar() { return commandBarState; },
   get nodeDetail() { return nodeDetailState; }
@@ -47,6 +58,22 @@ export function cycleColorMode() {
   const currentIndex = modes.indexOf(colorMode);
   const nextIndex = (currentIndex + 1) % modes.length;
   colorMode = modes[nextIndex];
+}
+
+// Phase 2: Dual Mode Actions
+export function toggleMode(target: 'standard' | 'immersive') {
+  mode = target;
+  if (target === 'standard') {
+    isGenieActive = false;
+  }
+}
+
+export function openGenie() {
+  isGenieActive = true;
+}
+
+export function closeGenie() {
+  isGenieActive = false;
 }
 
 // --- Modal Actions (Proxy) ---

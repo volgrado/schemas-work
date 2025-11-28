@@ -22,8 +22,10 @@
   import NodeDetailPanel from '$lib/modules/editor/ui/node-detail/NodeDetailPanel.svelte';
   import GlobalErrorBoundary from '$lib/core/ui/GlobalErrorBoundary.svelte';
   import AppInitializer from '$lib/core/app-shell/AppInitializer.svelte';
+  import LanguageImmersiveLayer from '$lib/modules/pedagogy/ui/LanguageImmersiveLayer.svelte';
   import type { Snippet } from 'svelte';
 
+  import { uiState } from '$lib/core/ui/uiStore.svelte';
   import { nodeDetailState } from '$lib/modules/editor/ui/nodeDetailStore.svelte';
   import {
     themeStore,
@@ -122,6 +124,10 @@
 
     <!-- Toast notification container -->
     <Toaster position="bottom-center" />
+
+    {#if uiState.mode === 'immersive'}
+      <LanguageImmersiveLayer />
+    {/if}
 
     {#if isSafeMode}
       <div class="safe-mode-banner">
