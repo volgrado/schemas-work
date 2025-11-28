@@ -97,14 +97,14 @@
     color: white;
     border-color: var(--color-accent);
     box-shadow: var(--shadow-sm);
+    position: relative; /* Ensure pseudo-element is positioned relative to button */
+    overflow: hidden; /* Clip the shine effect */
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--color-accent-hover);
     border-color: var(--color-accent-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
-    overflow: hidden; /* For shine effect */
-    position: relative;
   }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
@@ -125,8 +125,11 @@
     );
     transform: skewX(-20deg);
     transition: none;
+    opacity: 0; /* Hide by default */
+    pointer-events: none;
   }
   .btn-primary:hover:not(:disabled)::after {
+    opacity: 1;
     animation: shine 0.75s;
   }
   @keyframes shine {
