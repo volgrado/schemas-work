@@ -15,6 +15,7 @@ import { documentState } from '$lib/modules/editor/ui/documentStore.svelte';
 import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
 import { startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
 import { toast } from 'svelte-sonner';
+import { uiState, toggleMode, openGenie } from '$lib/core/ui/uiStore.svelte';
 
 export interface SlashCommandProps {
   editor: Editor;
@@ -291,6 +292,28 @@ function registerCommands() {
           };
           openModal(config);
         }
+      },
+    },
+
+    // --- Group: Modes ---
+    {
+      id: 'editor.enter_language_mode',
+      title: 'Start Language Immersion',
+      description: 'Switch to the AI Tutor experience.',
+      group: 'Modes',
+      icon: 'sparkles',
+      context: 'editor',
+      handler: (ctx: unknown) => {
+        const { editor, range } = ctx as SlashCommandProps;
+
+        // 1. Clean up
+        editor.chain().focus().deleteRange(range).run();
+
+        // 2. ACTIVATE IMMERSIVE OVERLAY
+        toggleMode('immersive');
+
+        // 3. (Optional) Open Genie
+        openGenie();
       },
     },
 

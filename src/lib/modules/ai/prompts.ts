@@ -10,6 +10,7 @@
 
 import type { JSONContent } from '@tiptap/core';
 import type { SRS } from '$lib/types';
+import cefrStandards from '$lib/data/cefr_standards.json';
 
 /**
  * Generates a prompt for the "Create Schema from Text" command.
@@ -82,6 +83,73 @@ Now, expand the concept "${nodeText}" according to all rules and constraints.
 }
 
 /**
+ * Generates a prompt for creating a CEFR-compliant language lesson.
+ * Injects "Plurilingual" strategies and "Input Hypothesis" rules.
+ */
+export function getLanguageLessonPrompt(
+  l1: string,
+  l2: string,
+  cefrLevel: string,
+  topic: string,
+  knownConcepts: string[] = []
+): string {
+
+  const negativePrompt = knownConcepts.length > 0
+    ? `**DEDUPLICATION (ALREADY KNOWN):**\nThe user knows: ${knownConcepts.join(', ')}. \nRefer to these concepts as "As we know..." DO NOT re-teach them.`
+    : '';
+
+  return `
+**ROLE:** Expert ${l2} Curriculum Designer (Level: ${cefrLevel}).
+**STUDENT PROFILE:** Native ${l1} speaker.
+**TOPIC:** ${topic}
+
+**PEDAGOGICAL RULES (STRICT):**
+1.  **Plurilingual Bridge:** Explicitly point out similarities between ${l1} and ${l2}. Use cognates to accelerate learning.
+2.  **Input Hypothesis (i+1):** Text must be 80% comprehensible (Level < ${cefrLevel}) and 20% new (${topic}).
+3.  **No Abstract Grammar:** Teach grammar through *context* and *examples* first.
+4.  **Cultural Reflection:** Include a note comparing ${l1} culture to ${l2} culture regarding this topic.
+
+${negativePrompt}
+
+**LESSON STRUCTURE (TIPTAP JSON):**
+- **Hook:** A cultural fact.
+- **Immersion:** A dialogue in ${l2} (using ${cefrLevel} vocabulary).
+- **Analysis:** Breakdown of the grammar in the dialogue.
+- **Mission:** A small task for the user (e.g., "Write a reply").
+
+**OUTPUT:**
+Generate a VALID Tiptap JSON document.
+`;
+}
+
+/**
+ * Generates a prompt for an Action-Oriented "Mission" (Task-based learning).
+ */
+export function getActionMissionPrompt(
+  missionType: 'mediation' | 'transaction',
+  context: string,
+  l1: string,
+  l2: string
+): string {
+  return `
+**ROLE:** Action-Oriented Task Designer.
+**SOURCE:** Guide to Action-Oriented Education.
+**MISSION TYPE:** ${missionType}.
+**CONTEXT:** ${context}.
+
+**TASK:**
+Create a scenario where the user must act as a mediator between ${l1} and ${l2}.
+*Example:* "Read this ${l2} menu and explain the vegan options to your ${l1} friend."
+
+**OUTPUT (JSON):**
+Provide a Tiptap document with:
+1. The Source Text (in ${l2}).
+2. The Scenario Description (in ${l1}).
+3. A 'Call to Action' for the user to write their response.
+`;
+}
+
+/**
  * Generates a prompt for the "Generate Study Cards" command.
  * Instructs the AI to act as a pedagogical expert and create a set of high-quality,
  * varied flashcards from the text of an entire document.
@@ -93,37 +161,39 @@ export function getGenerateCardsPrompt(
   },
   documentText: string
 ): string {
+  // If specific types are requested, use them. Otherwise, default to the "God-Level" preference.
+  // We prioritize Cloze and Matching as per "Antigravity" rules.
   const typeList =
-    settings.types.length > 0 ? settings.types.join(', ') : 'any';
+    settings.types.length > 0
+      ? settings.types.join(', ')
+      : 'cloze, matching';
 
   return `
 **ROLE AND OBJECTIVE:**
-You are an expert in pedagogical science, specializing in creating effective, high-quality study materials based on the principles of active recall. Your objective is to analyze the provided document text and generate a set of study cards that are conceptually significant and promote deep learning.
+You are an expert Learning Scientist (Sovereign University). Your objective is to create high-efficacy study materials.
+
+**STRICT CARD TYPE DEFINITIONS:**
+1.  **CLOZE (Priority #1 - Context):** Use for Grammar/Syntax.
+    - Syntax: "The {{c1::cat}} sat on the mat."
+    - Rule: Hide the *grammatical operator* (e.g., the ending, the article), not just random words.
+2.  **MATCHING (Priority #2 - Speed):** Use for Vocabulary.
+    - Create pairs (Word <-> Definition) or (L1 <-> L2).
+3.  **BASIC (Fallback):** Question/Answer.
+
+**ALTE ITEM WRITING RULES:**
+- **No Ambiguity:** Distractors in multiple choice (if requested) must be 100% incorrect.
+- **Self-Contained:** Cards must be answerable without opening the book.
 
 **TASK & CONSTRAINTS:**
 - Generate **exactly ${settings.quantity}** study cards.
 - The cards MUST be a mix of the following types: **[${typeList}]**.
-- The cards must be of exceptional quality, targeting the most critical concepts, relationships, and processes within the document. Avoid trivial information.
 
 **RULES & OUTPUT STRUCTURE:**
-1.  Your response must be ONLY a valid JSON array of card objects. Do not wrap it in a parent object or include any explanatory text.
-2.  Each object in the array must conform to one of the following TypeScript interfaces:
-
-\`\`\`typescript
-interface BasicCard { type: 'basic'; content: { question: string; answer: string; }; }
-interface InputCard { type: 'input'; content: { prompt: string; expected: string; }; }
-interface SequencingCard { type: 'sequencing'; content: { prompt: string; items: string[]; }; }
-interface TrueFalseCard { type: 'true_false'; content: { statement: string; isTrue: boolean; }; }
-interface MultipleChoiceCard { type: 'multiple_choice'; content: { question: string; options: string[]; correctOptionIndex: number; }; }
-interface ClozeCard { type: 'cloze'; content: { text: string; clozes: string[]; }; }
-interface MatchingCard { type: 'matching'; content: { prompt: string; pairs: { left: string; right: string; }[]; }; }
-\`\`\`
-
-**TYPE-SPECIFIC INSTRUCTIONS:**
-- **Cloze**: The \`text\` must contain the full sentence. The \`clozes\` array must contain the exact words from the text that should be hidden. Example: text="The capital of France is Paris.", clozes=["Paris"].
-- **Matching**: Create 3-5 pairs of related items (e.g., Term/Definition, Country/Capital).
-- **Multiple Choice**: Provide 3-4 plausible options.
-
+1.  Your response must be ONLY a valid JSON array of card objects. Do not wrap it in a parent object.
+2.  Each object in the array must conform to the project's interfaces (see schemas):
+    - Cloze: { type: 'cloze', content: { text: "Full sentence with {{c1::cloze}}", hint: "optional" } }
+    - Matching: { type: 'matching', content: { prompt: "Match items", pairs: [{left: "A", right: "B"}] } }
+    - Basic: { type: 'basic', content: { question: "Q", answer: "A" } }
 
 **DOCUMENT TEXT TO ANALYZE:**
 ---
@@ -131,7 +201,7 @@ ${documentText}
 ---
 
 **BEGIN CARD GENERATION:**
-Now, create the JSON array of study cards based on the document and all the rules provided.
+Now, create the JSON array of study cards.
 `;
 }
 
