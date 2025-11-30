@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file aiService.ts
  * @service
  *
@@ -16,6 +16,7 @@ import { i18n } from '$lib/utils/i18n.svelte';
 import { AiValidationError } from './AiValidationError';
 import { fileToBase64 } from '$lib/utils/fileUtils';
 import { GeminiProvider } from './providers/geminiProvider';
+
 
 // --- CONSTANTS ---
 // The threshold for switching to the File API. Set slightly below 20MB to be safe.
@@ -65,19 +66,20 @@ export async function generateEmbedding(
     );
   }
 }
-
 /**
  * Sends a conversational history (potentially with a file) to the Gemini API.
  * It automatically chooses the correct method (inline vs. File API) based on file size.
  */
-export async function generateContent<T extends z.ZodType<any, any>>(
+export async function generateContent<T extends z.ZodType<any, any> | undefined = undefined>(
   messages: AiMessage[],
   model: AiModel,
   apiKey: string,
-  validationSchema: T,
-  file: File | null = null,
+  validationSchema?: T,
+  files: File[] = [],
   retries = 1
-): Promise<z.infer<T>> {
+): Promise<T extends z.ZodType<any, any> ? z.infer<T> : string> {
+
+
 
   if (model.provider !== 'gemini') {
     throw new AiServiceError(
@@ -87,25 +89,27 @@ export async function generateContent<T extends z.ZodType<any, any>>(
 
   const finalParts: AiMessagePart[] = [...(messages[0]?.parts || [])];
 
-  if (file) {
-    if (file.size > FILE_API_SIZE_LIMIT_BYTES) {
-      throw new AiServiceError(
-        i18n.t('ai_service.errors.file_too_large_hard_limit', {
-          limit: FILE_API_SIZE_LIMIT_BYTES / (1024 * 1024),
-        })
-      );
-    }
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.size > FILE_API_SIZE_LIMIT_BYTES) {
+        throw new AiServiceError(
+          i18n.t('ai_service.errors.file_too_large_hard_limit', {
+            limit: FILE_API_SIZE_LIMIT_BYTES / (1024 * 1024),
+          })
+        );
+      }
 
-    if (file.size > INLINE_FILE_SIZE_LIMIT_BYTES) {
-      const fileName = await GeminiProvider.uploadFile(file, apiKey);
-      finalParts.unshift({
-        file_data: { mime_type: file.type, file_uri: fileName },
-      });
-    } else {
-      const base64Data = await fileToBase64(file);
-      finalParts.unshift({
-        inline_data: { mime_type: file.type, data: base64Data },
-      });
+      if (file.size > INLINE_FILE_SIZE_LIMIT_BYTES) {
+        const fileName = await GeminiProvider.uploadFile(file, apiKey);
+        finalParts.unshift({
+          file_data: { mime_type: file.type, file_uri: fileName },
+        });
+      } else {
+        const base64Data = await fileToBase64(file);
+        finalParts.unshift({
+          inline_data: { mime_type: file.type, data: base64Data },
+        });
+      }
     }
   }
 
@@ -113,22 +117,32 @@ export async function generateContent<T extends z.ZodType<any, any>>(
   let lastResponseText = '';
 
   try {
-    const payload = {
+    const payload: any = {
       contents: finalMessages,
-      generationConfig: { response_mime_type: 'application/json' },
+      generationConfig: {
+        temperature: 0.7,
+      }
     };
+
+    if (validationSchema) {
+      payload.generationConfig.response_mime_type = 'application/json';
+    }
 
     const content = await GeminiProvider.generateContent(model.id, payload, apiKey);
     lastResponseText = content;
 
-    const dataFromApi = JSON.parse(content);
-    const validation = validationSchema.safeParse(dataFromApi);
+    if (validationSchema) {
+      const dataFromApi = JSON.parse(content);
+      const validation = validationSchema.safeParse(dataFromApi);
 
-    if (!validation.success) {
-      throw new AiValidationError(validation.error);
+      if (!validation.success) {
+        throw new AiValidationError(validation.error);
+      }
+
+      return validation.data;
     }
 
-    return validation.data;
+    return content as any;
   } catch (error) {
     // --- SELF-HEALING BLOCK ---
     if (error instanceof AiValidationError && retries > 0) {
@@ -170,7 +184,7 @@ export async function generateContent<T extends z.ZodType<any, any>>(
         model,
         apiKey,
         validationSchema,
-        null, // Do not include the file in the retry
+        [], // Do not include files in the retry
         retries - 1
       );
     }
@@ -182,4 +196,40 @@ export async function generateContent<T extends z.ZodType<any, any>>(
       i18n.t('ai_service.errors.unexpected_generate_content_error')
     );
   }
+}
+
+/**
+ * Streams content from the AI model.
+ * @param messages The conversation history.
+ * @param model The AI model to use.
+ * @param apiKey The API key.
+ * @param onChunk Callback for each chunk of text generated.
+ */
+export async function streamContent(
+  messages: AiMessage[],
+  model: AiModel,
+  apiKey: string,
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  let fullText = '';
+
+
+
+  if (model.provider === 'gemini') {
+    const payload = {
+      contents: messages,
+      generationConfig: { response_mime_type: 'application/json' },
+    };
+    
+    const stream = GeminiProvider.streamGenerateContent(model.id, payload, apiKey);
+    
+    for await (const chunk of stream) {
+      fullText += chunk;
+      onChunk(chunk);
+    }
+    
+    return fullText;
+  }
+
+  throw new AiServiceError(i18n.t('ai_service.errors.unsupported_provider', { provider: model.provider }));
 }

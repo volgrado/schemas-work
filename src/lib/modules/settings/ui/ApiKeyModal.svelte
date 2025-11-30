@@ -40,13 +40,15 @@
   import ApiKeyModelsTab from './api-key-modal/ApiKeyModelsTab.svelte';
   import ApiKeyKeysTab from './api-key-modal/ApiKeyKeysTab.svelte';
 
-  const { show = false, onClose } = $props<{
+
+  const { show = false, onClose, initialTab = 'models' } = $props<{
     show?: boolean;
     onClose: () => void;
+    initialTab?: 'models' | 'keys';
   }>();
 
   // --- State ---
-  let activeTab = $state<'models' | 'keys'>('models');
+  let activeTab = $state<'models' | 'keys'>(initialTab);
   let isDiscoveringModels = $state(false);
   let discoveredModelIds = $state<Set<string> | null>(null);
   let discoveredModels = $state<AiModel[]>([]);
@@ -91,7 +93,7 @@
       }
     } else {
       // Reset state on close
-      activeTab = 'models';
+      activeTab = initialTab;
       discoveredModelIds = null;
       discoveredModels = [];
     }
@@ -103,7 +105,7 @@
   }
 </script>
 
-<Modal title={i18n.t('apiKeyModal.title')} {show} {onClose} onBack={handleBack}>
+<Modal title="AI Settings" {show} {onClose} onBack={handleBack}>
   <div class="ai-settings-content">
     <!-- Navigation Tabs -->
     <div class="tabs-container">
@@ -140,6 +142,7 @@
             ></div>
           {/if}
         </button>
+
       </div>
     </div>
 
@@ -155,6 +158,8 @@
     {#if activeTab === 'keys'}
       <ApiKeyKeysTab {isDiscoveringModels} {discoverModels} />
     {/if}
+
+
 
     <!-- Footer -->
     <div class="modal-actions">

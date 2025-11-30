@@ -108,6 +108,63 @@ export interface ActionOrientedTask {
   inputPrompt?: string; // e.g., "Type your response here..."
   validationRegex?: string; // Simple client-side validation
   choices?: string[]; // For multiple choice
+  
+  // --- Lesson Content (Assimil Style) ---
+  lessonContent?: LessonContent;
+}
+
+export interface LessonContent {
+  dialogue: DialogueLine[];
+  phonetics: PhoneticGuide[];
+  vocabulary: VocabularyItem[];
+  grammar: GrammarNote[];
+  footnotes: Footnote[];
+  exercises: Exercise[];
+}
+
+export interface Footnote {
+  id: number;
+  word: string; // The word/phrase being annotated
+  note: string; // The explanation
+}
+
+export interface PhoneticGuide {
+  sound: string;
+  ipa: string;
+  description: string;
+  audio?: string; // URL or ID for individual sound
+}
+
+export interface DialogueLine {
+  speaker: string;
+  target: string;
+  native: string;
+  audio?: string;
+  voiceId?: string; // Suggested voice type/gender or specific ID
+  timing?: { start: number; end: number }[]; // For karaoke
+}
+
+export interface VocabularyItem {
+  term: string;
+  definition: string;
+  context: string;
+}
+
+export interface GrammarNote {
+  rule: string;
+  explanation: string;
+  examples: string[];
+}
+
+export interface Exercise {
+  id: string;
+export interface Exercise {
+  id: string;
+  type: 'translation' | 'fill_blank' | 'matching' | 'reorder' | 'choice' | 'cloze';
+  prompt: string;
+  options?: string[];
+  correctAnswer: string | string[];
+  explanation: string;
 }
 
 export type FeedbackStyle = 'recast' | 'prompt' | 'explicit_correction' | 'metalinguistic_clue';

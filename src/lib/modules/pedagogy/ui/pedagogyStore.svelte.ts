@@ -5,8 +5,8 @@
  * Separates the "Background View" (Map, Manager) from "Modals/Overlays" (Briefing, Encounter).
  */
 
-export type PedagogyView = 'GENESIS' | 'MAP' | 'MANAGER';
-export type PedagogyModal = 'NONE' | 'BRIEFING' | 'DEBRIEF' | 'DASHBOARD' | 'ENCOUNTER' | 'MENTOR';
+export type PedagogyView = 'GENESIS' | 'MAP' | 'MANAGER' | 'CURRICULUM';
+export type PedagogyModal = 'NONE' | 'BRIEFING' | 'DEBRIEF' | 'ENCOUNTER' | 'MENTOR';
 
 export interface PedagogyState {
   view: PedagogyView;
@@ -76,16 +76,7 @@ export function openDebrief(nodeId: string) {
   pedagogyState.modal = 'DEBRIEF';
 }
 
-/**
- * Toggles the Neural State Dashboard.
- */
-export function toggleDashboard() {
-  if (pedagogyState.modal === 'DASHBOARD') {
-    pedagogyState.modal = 'NONE';
-  } else {
-    pedagogyState.modal = 'DASHBOARD';
-  }
-}
+
 
 /**
  * Closes any active modal.

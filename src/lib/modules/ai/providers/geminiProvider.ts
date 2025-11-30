@@ -119,4 +119,131 @@ export class GeminiProvider {
 
     return content;
   }
+  /**
+   * Generates content using the specified model with streaming.
+   * Yields chunks of text as they arrive.
+   */
+  static async *streamGenerateContent(
+    modelId: string,
+    payload: any,
+    apiKey: string
+  ): AsyncGenerator<string, void, unknown> {
+    const apiUrl = `${this.BASE_URL}/models/${modelId}:streamGenerateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.json();
+      throw new AiServiceError(
+        i18n.t('ai_service.errors.gemini_api_error', {
+          status: response.status,
+          message: errorBody.error?.message || 'Unknown API error',
+        })
+      );
+    }
+
+    if (!response.body) {
+      throw new AiServiceError(i18n.t('ai_service.errors.no_content'));
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        // Gemini streams a JSON array: [{...}, {...}]
+        // But in streaming mode, it sends chunks that might contain multiple JSON objects or partials.
+        // Actually, the stream endpoint returns a series of JSON objects, usually formatted as a list if viewed as a whole,
+        // but over the wire it's often just concatenated JSON objects or comma-separated.
+        // Wait, standard Gemini REST stream returns a JSON array structure incrementally.
+        // Typically: '[' ... ',' ... ',' ... ']'
+        // Parsing this manually is tricky.
+        // EASIER STRATEGY: Look for "text": "..." fields in the raw buffer if possible, OR
+        // Use a simpler approach: Accumulate and try to parse known complete objects.
+        
+        // Let's assume standard behavior: It returns valid JSON objects representing chunks.
+        // Actually, for `streamGenerateContent`, it returns a stream of `GenerateContentResponse` objects.
+        
+        // Simple parsing for now:
+        // We will yield the raw text found in "text" fields.
+        
+        // Regex to find "text": "..."
+        // This is hacky but robust for streaming without a full parser.
+        // A better way is to accumulate valid JSON blocks.
+        
+        // Let's try to parse complete JSON objects from the buffer.
+        // The stream usually sends `[{...},\n` or similar.
+        
+        // For this implementation, let's just yield the raw text if we can find it, 
+        // or better, let's use a library if available, but we don't have one.
+        
+        // Let's try to extract text using regex from the current chunk + buffer.
+        // Note: This might miss split unicode characters or split JSON tokens.
+        
+        // Alternative: Just return the raw chunk and let the caller handle it? No, we want to abstract the provider.
+        
+        // Let's use a simple bracket counter to find complete JSON objects.
+        let braceCount = 0;
+        let startIndex = 0;
+        let inString = false;
+        let escape = false;
+
+        for (let i = 0; i < buffer.length; i++) {
+          const char = buffer[i];
+          
+          if (escape) {
+            escape = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escape = true;
+            continue;
+          }
+          
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{') {
+              if (braceCount === 0) startIndex = i;
+              braceCount++;
+            } else if (char === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                // Found a complete object
+                const jsonStr = buffer.substring(startIndex, i + 1);
+                try {
+                  const parsed = JSON.parse(jsonStr);
+                  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (text) yield text;
+                  
+                  // Advance buffer
+                  buffer = buffer.substring(i + 1);
+                  i = -1; // Reset loop for new buffer
+                } catch (e) {
+                  // Ignore parse errors, maybe it wasn't a full object yet or just noise
+                }
+              }
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
 }

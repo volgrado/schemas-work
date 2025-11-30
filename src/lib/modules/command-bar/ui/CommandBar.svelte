@@ -42,6 +42,7 @@
   // StatisticsView is lazy loaded to reduce initial bundle size
   import DeckOptionsView from './DeckOptionsView.svelte';
 
+
   // --- Stores & Services ---
   import {
     commandBarState,
@@ -221,6 +222,7 @@
 <ApiKeyModal
   show={commandBarState.isApiKeyModalOpen}
   onClose={closeApiKeyModal}
+  initialTab={commandBarState.apiKeyModalInitialTab}
 />
 
 <ErrorDiagnosticModal
@@ -308,6 +310,8 @@
               {#await import('./StatisticsView.svelte') then module}
                 <module.default />
               {/await}
+            {:else if commandBarState.currentView === 'deck-options' && commandBarState.viewPayload}
+              <DeckOptionsView deckId={commandBarState.viewPayload.deckId} />
             {:else if commandBarState.currentView === 'deck-options' && commandBarState.viewPayload}
               <DeckOptionsView deckId={commandBarState.viewPayload.deckId} />
             {/if}

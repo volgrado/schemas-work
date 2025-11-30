@@ -1,44 +1,45 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { seedCurriculumDatabase, getNextRecommendedNode, generateActionOrientedTask } from '../pedagogyService';
-import { DexiePersistenceAdapter } from '../services/persistence';
+import { pedagogyController } from '../ui/PedagogyController.svelte';
+import { curriculumStore } from '../core/curriculumStore.svelte';
 
-// Mock Persistence Adapter
-vi.mock('../services/persistence', () => {
-  return {
-    DexiePersistenceAdapter: class {
-      getAllNodes() { return Promise.resolve([]); }
-      saveNodes() { return Promise.resolve(); }
-      saveNode() { return Promise.resolve(); }
-    }
-  };
-});
-
-describe('UI Integration Logic', () => {
-  let db: DexiePersistenceAdapter;
-
+describe('Pedagogy Controller Integration', () => {
   beforeEach(() => {
-    db = new DexiePersistenceAdapter();
+    // Reset stores
+    curriculumStore.curriculums = [];
+    curriculumStore.activeCurriculumId = null;
+    pedagogyController.currentScenario = null;
+    pedagogyController.activeTask = null;
   });
 
-  it('should seed database if empty', async () => {
-    const nodes = await db.getAllNodes();
-    if (nodes.length === 0) {
-      const seed = seedCurriculumDatabase();
-      expect(seed.length).toBeGreaterThan(0);
-    }
+  it('should initialize a session with a default curriculum', () => {
+    // 1. Create a curriculum
+    const manifesto = { language: 'es', intent: 'Test Protocol' };
+    const curriculum = curriculumStore.create(manifesto);
+    
+    // 2. Load it
+    pedagogyController.loadCurriculum(curriculum.id);
+    expect(pedagogyController.activeCurriculum?.id).toBe(curriculum.id);
+
+    // 3. Start Session
+    pedagogyController.startSession();
+    
+    // 4. Verify Scenario and Task
+    expect(pedagogyController.currentScenario).toBeDefined();
+    expect(pedagogyController.activeTask).toBeDefined();
+    expect(pedagogyController.activeTask?.role).toBeDefined();
   });
 
-  it('should recommend a node and generate a task', () => {
-    const nodes = seedCurriculumDatabase();
-    const policy = { stateVector: [0.5, 0.5, 0.5], actionSpace: [], rewardFunction: 'default' };
-    
-    const nextNode = getNextRecommendedNode(nodes, policy);
-    expect(nextNode).toBeDefined();
-    
-    if (nextNode) {
-      const task = generateActionOrientedTask(nextNode, 'functional');
-      expect(task.description).toBeDefined();
-    }
+  it('should advance tasks on completion', () => {
+    pedagogyController.startSession();
+    const firstTask = pedagogyController.activeTask;
+    expect(firstTask).toBeDefined();
+
+    // Complete task
+    pedagogyController.completeTask(0.9);
+
+    // Should move to next task or complete scenario
+    // Since default scenario has multiple tasks, it should change or stay if only 1 task
+    // Let's check if taskIndex increased
+    expect(pedagogyController.taskIndex).toBeGreaterThan(0);
   });
 });

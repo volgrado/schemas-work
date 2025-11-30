@@ -5,15 +5,51 @@
   import { generateConstellation, type NodeData } from '../utils/layoutGenerator';
   import NodeMarker from './NodeMarker.svelte';
   import type { ManifestoData } from './ManifestoForm.svelte';
+  import type { Scenario } from '../domain/models';
 
   interface Props {
     data: ManifestoData | null;
+    scenario?: Scenario | null;
     onComplete: () => void;
   }
 
-  let { data, onComplete }: Props = $props();
+  let { data, scenario, onComplete }: Props = $props();
 
-  const nodes = generateConstellation('sovereign-learner-seed');
+  // If we have a scenario, we map its tasks to nodes. Otherwise we use the seed.
+  let nodes = $derived.by(() => {
+    if (scenario && scenario.tasks.length > 0) {
+      // Map AI tasks to visual nodes
+      // We'll use a simple layout strategy: Root -> Tasks radiating out
+      const root: NodeData = {
+          id: 'root',
+          title: scenario.title,
+          type: 'core',
+          status: 'mastered',
+          x: 50,
+          y: 50,
+          parents: []
+      };
+      
+      const mappedNodes: NodeData[] = [root];
+
+      scenario.tasks.forEach((task, index) => {
+          const angle = (index / scenario.tasks.length) * Math.PI * 2;
+          const distance = 20 + (index % 2) * 5; // Stagger distance
+          mappedNodes.push({
+              id: task.id,
+              title: task.description.substring(0, 20) + '...',
+              type: 'pragmatic', // Default type
+              status: 'locked',
+              x: 50 + Math.cos(angle) * distance,
+              y: 50 + Math.sin(angle) * distance,
+              parents: ['root']
+          });
+      });
+      return mappedNodes;
+    } else {
+      return generateConstellation('sovereign-learner-seed');
+    }
+  });
   
   // Animation State
   let visibleNodeIds = $state<Set<string>>(new Set());

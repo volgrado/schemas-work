@@ -136,6 +136,16 @@ export function getNextAvailableKey(provider: Provider): ApiKey | null {
   const model = getModelById(settingsState.selectedModelId);
   if (!model) return null;
 
+  if (model.provider === 'local-gemma-3n') {
+    return {
+      id: 'local-dummy-key',
+      key: 'local',
+      provider: 'local-gemma-3n',
+      lastUsed: Date.now(),
+      requests: []
+    };
+  }
+
   const providerKeys = settingsState.apiKeys
     .filter((k) => k.provider === provider)
     .sort((a, b) => (a.lastUsed || 0) - (b.lastUsed || 0));

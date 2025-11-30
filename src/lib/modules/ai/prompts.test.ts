@@ -38,13 +38,13 @@ describe('prompts', () => {
     it('should generate a prompt with specified card types', () => {
       const settings = {
         quantity: 10,
-        types: ['basic', 'input'] as SRS.CardType[],
+        types: ['basic', 'cloze'] as SRS.CardType[],
       };
       const docText = 'Content for flashcards.';
 
       const prompt = prompts.getGenerateCardsPrompt(settings, docText);
       expect(prompt).toContain('exactly 10** study cards');
-      expect(prompt).toContain('basic, input');
+      expect(prompt).toContain('basic, cloze');
       expect(prompt).toContain(docText);
     });
 
@@ -57,7 +57,7 @@ describe('prompts', () => {
 
       const prompt = prompts.getGenerateCardsPrompt(settings, docText);
 
-      expect(prompt).toContain('any');
+      expect(prompt).toContain('cloze, matching');
     });
   });
 

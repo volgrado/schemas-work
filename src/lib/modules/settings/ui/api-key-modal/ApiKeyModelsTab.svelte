@@ -36,7 +36,7 @@
       >
         <optgroup label={i18n.t('apiKeyModal.optgroup.supported')}>
           {#each SUPPORTED_MODELS as model (model.id)}
-            {@const isAvailable = discoveredModelIds?.has(model.id)}
+            {@const isAvailable = discoveredModelIds?.has(model.id) || model.provider.startsWith('local-')}
             <option
               value={model.id}
               disabled={discoveredModelIds !== null && !isAvailable}

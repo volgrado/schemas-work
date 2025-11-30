@@ -87,7 +87,7 @@ export async function create(
     documentState.provider = provider;
     documentState.status = 'ready';
 
-    documentState.initialContent = content || {
+    documentState.initialContent = content ? $state.snapshot(content) : {
       type: 'doc',
       content: [
         {

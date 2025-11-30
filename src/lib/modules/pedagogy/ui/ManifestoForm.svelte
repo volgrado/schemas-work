@@ -85,6 +85,19 @@
       prompt: 'Define your Tribe. Where will you be a "Legitimate Peripheral Participant"?',
       placeholder: 'e.g., Corporate Boardroom, Street Market, Academic Conference...',
       type: 'text'
+    },
+    {
+      id: 'model',
+      chapter: 'Ω',
+      title: 'The Oracle',
+      subtitle: 'Intelligence Engine',
+      prompt: 'Select the AI model that will forge your path. (Flash is recommended for speed/cost).',
+      options: [
+        { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fast & Efficient)' },
+        { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Deep Reasoning)' },
+        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Legacy Speed)' }
+      ],
+      type: 'select'
     }
   ];
 
@@ -136,23 +149,6 @@
           />
           <div class="hint">Press Cmd+Enter to confirm</div>
         </div>
-    {:else if steps[step].type === 'select'}
-      <div class="options-grid">
-        {#each steps[step].options as option}
-          <button
-            class="option-card"
-            class:selected={data[steps[step].id as keyof ManifestoData] === option.value}
-            onclick={() => {
-              // @ts-ignore - Dynamic key access
-              data[steps[step].id] = option.value;
-              setTimeout(nextStep, 300);
-            }}
-          >
-            {option.label}
-          </button>
-        {/each}
-      </div>
-    {:else if steps[step].type === 'multi-select'}
       <div class="options-grid">
         {#each steps[step].options as option}
           <button
@@ -183,6 +179,10 @@
     max-width: 800px;
     margin: 0 auto;
     color: var(--color-text);
+    background: rgba(15, 23, 42, 0.8); /* Dark background */
+    backdrop-filter: blur(12px); /* Glass effect */
+    border-radius: 16px; /* Optional rounded corners if it's a modal, but here it's full screen usually. Let's keep it simple or make it fill. */
+    /* Actually, if it's full screen overlay, we might want the background on the container, but putting it here ensures the form itself is readable. */
   }
 
   .progress-bar {

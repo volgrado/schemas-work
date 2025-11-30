@@ -5,7 +5,7 @@
  * Defines global domain types for the application.
  */
 
-export type Provider = 'gemini';
+export type Provider = 'gemini' | 'local-gemma-3n' | 'local-webllm';
 
 export interface Identity {
   publicKey: string;

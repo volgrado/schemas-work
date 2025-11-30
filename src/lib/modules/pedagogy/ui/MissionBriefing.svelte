@@ -4,6 +4,8 @@
   import Modal from '$lib/core/ui/Modal.svelte';
   import { type MissionConfig } from './pedagogyStore.svelte';
 
+  import { curriculumStore } from '../core/curriculumStore.svelte';
+
   interface Props {
     nodeId: string;
     onClose: () => void;
@@ -12,21 +14,31 @@
 
   let { nodeId, onClose, onEngage }: Props = $props();
 
-  // Mock Data - In a real app, this would be fetched based on nodeId
-  const missionData = {
-    title: "Negotiate a Treaty",
-    chapter: "VI: The Inner Game",
-    context: {
-      role: "Ambassador",
-      scenario: "Diplomatic Reception",
-      location: "Neo-Tokyo Embassy"
-    },
-    objectives: [
-      "Secure the trade deal without offending the host.",
-      "Use the 'Usted' form for all diplomatic interactions.",
-      "Identify the hidden agenda of the rival delegate."
-    ]
-  };
+  // Derive real mission data from the store
+  let missionData = $derived.by(() => {
+    const task = curriculumStore.activeCurriculum?.scenario?.tasks?.find((t: any) => t.id === nodeId);
+    
+    if (task) {
+      return {
+        title: task.description, // Or task.title if available
+        chapter: "Chapter " + (curriculumStore.activeCurriculum?.scenario?.tasks?.indexOf(task) + 1),
+        context: {
+          role: task.role,
+          scenario: task.context,
+          location: "Simulated Environment" // We might need to add location to the schema if needed
+        },
+        objectives: task.criteria || [task.outcome]
+      };
+    }
+    
+    // Fallback if not found (shouldn't happen if logic is correct)
+    return {
+      title: "Unknown Mission",
+      chapter: "???",
+      context: { role: "Unknown", scenario: "Unknown", location: "Unknown" },
+      objectives: ["Mission data not found."]
+    };
+  });
 
   // State
   let step = $state(0);

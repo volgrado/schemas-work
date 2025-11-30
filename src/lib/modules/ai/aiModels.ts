@@ -25,6 +25,14 @@ export interface AiModel {
   rpm: number;
   /** The default requests-per-day rate limit for this model. */
   rpd: number;
+  /** Optional description for the UI */
+  description?: string;
+  /** Optional context window size */
+  contextWindow?: number;
+  /** Optional capabilities list */
+  capabilities?: string[];
+  /** Optional premium flag */
+  isPremium?: boolean;
 }
 
 /**
@@ -33,26 +41,54 @@ export interface AiModel {
  */
 export const SUPPORTED_MODELS: AiModel[] = [
   {
-    id: 'gemini-1.5-flash-latest',
-    name: 'Gemini 1.5 Flash',
+    id: 'gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
     provider: 'gemini',
-    rpm: 3, // A safe, conservative default
-    rpd: 1500,
+    rpm: 2,
+    rpd: 50,
+    description: 'State-of-the-art reasoning model.'
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'gemini',
+    rpm: 10,
+    rpd: 250,
+    description: 'Balanced performance and speed.'
+  },
+  {
+    id: 'gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash-Lite',
+    provider: 'gemini',
+    rpm: 15,
+    rpd: 1000,
+    description: 'Extremely fast, lightweight model.'
+  },
+  {
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    provider: 'gemini',
+    rpm: 15,
+    rpd: 200,
+    description: 'Previous generation fast model.'
   },
   {
     id: 'gemini-1.5-pro-latest',
     name: 'Gemini 1.5 Pro',
     provider: 'gemini',
     rpm: 2,
-    rpd: 1000,
+    rpd: 50,
+    description: 'Legacy reasoning model.'
   },
   {
-    id: 'gemini-1.0-pro',
-    name: 'Gemini 1.0 Pro',
+    id: 'gemini-1.5-flash-latest',
+    name: 'Gemini 1.5 Flash',
     provider: 'gemini',
-    rpm: 5,
-    rpd: 2500,
+    rpm: 15,
+    rpd: 1500,
+    description: 'Legacy fast model.'
   },
+
 ];
 
 /**

@@ -121,27 +121,9 @@
             <li role="presentation">
               <button
                 role="menuitem"
-                onclick={() => controller.handleAddCard('input')}
-                ><Icon name="edit-3" size={16} />{i18n.t(
-                  'card_editor_panel.add_input'
-                )}</button
-              >
-            </li>
-            <li role="presentation">
-              <button
-                role="menuitem"
                 onclick={() => controller.handleAddCard('sequencing')}
                 ><Icon name="list" size={16} />{i18n.t(
                   'card_editor_panel.add_sequence'
-                )}</button
-              >
-            </li>
-            <li role="presentation">
-              <button
-                role="menuitem"
-                onclick={() => controller.handleAddCard('true_false')}
-                ><Icon name="check-circle" size={16} />{i18n.t(
-                  'card_editor_panel.add_true_false'
                 )}</button
               >
             </li>
@@ -201,7 +183,6 @@
               <div
                 class="card-type-indicator"
                 class:basic={card.type === 'basic'}
-                class:input={card.type === 'input'}
                 class:sequencing={card.type === 'sequencing'}
               >
                 {card.type}
@@ -237,39 +218,6 @@
                       oninput={() => controller.handleUpdate(card)}
                       use:autosize
                     ></textarea>
-                  </div>
-
-                  <!-- Input Card Inputs -->
-                {:else if card.type === 'input'}
-                  <div class="field">
-                    <label for="p-{card.id}"
-                      >{i18n.t('card_editor_panel.prompt_label')}</label
-                    >
-                    <input
-                      id="p-{card.id}"
-                      type="text"
-                      placeholder={i18n.t(
-                        'card_editor_panel.prompt_placeholder'
-                      )}
-                      bind:value={card.content.prompt}
-                      oninput={() => controller.handleUpdate(card)}
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="e-{card.id}"
-                      >{i18n.t(
-                        'card_editor_panel.expected_answer_label'
-                      )}</label
-                    >
-                    <input
-                      id="e-{card.id}"
-                      type="text"
-                      placeholder={i18n.t(
-                        'card_editor_panel.expected_answer_placeholder'
-                      )}
-                      bind:value={card.content.expected}
-                      oninput={() => controller.handleUpdate(card)}
-                    />
                   </div>
 
                   <!-- Sequencing Card Inputs -->
@@ -338,50 +286,6 @@
                       'card_editor_panel.add_item'
                     )}</button
                   >
-
-                  <!-- True/False Card Inputs -->
-                {:else if card.type === 'true_false'}
-                  <div class="field">
-                    <label for="s-{card.id}"
-                      >{i18n.t('card_editor_panel.statement_label')}</label
-                    >
-                    <input
-                      id="s-{card.id}"
-                      type="text"
-                      placeholder={i18n.t(
-                        'card_editor_panel.statement_placeholder'
-                      )}
-                      bind:value={card.content.statement}
-                      oninput={() => controller.handleUpdate(card)}
-                    />
-                  </div>
-                  <div class="field">
-                    <span class="field-label"
-                      >{i18n.t('card_editor_panel.is_true_label')}</span
-                    >
-                    <div class="radio-group">
-                      <label class="radio-label">
-                        <input
-                          type="radio"
-                          name="tf-{card.id}"
-                          value={true}
-                          bind:group={card.content.isTrue}
-                          onchange={() => controller.handleUpdate(card)}
-                        />
-                        {i18n.t('card_editor_panel.true')}
-                      </label>
-                      <label class="radio-label">
-                        <input
-                          type="radio"
-                          name="tf-{card.id}"
-                          value={false}
-                          bind:group={card.content.isTrue}
-                          onchange={() => controller.handleUpdate(card)}
-                        />
-                        {i18n.t('card_editor_panel.false')}
-                      </label>
-                    </div>
-                  </div>
 
                   <!-- Multiple Choice Card Inputs -->
                 {:else if card.type === 'multiple_choice'}
@@ -456,10 +360,7 @@
                       </button>
                     </div>
                   </div>
-                {/if}
-
-                <!-- Cloze Card Inputs -->
-                {#if card.type === 'cloze'}
+                {:else if card.type === 'cloze'}
                   <div class="field">
                     <label for="c-{card.id}"
                       >{i18n.t('card_editor_panel.cloze_text_label')}</label
@@ -618,7 +519,7 @@
     box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    max-height: 80vh;
   }
   .header {
     display: flex;
@@ -742,12 +643,10 @@
     letter-spacing: 0.7px;
     border-radius: var(--radius-md) 0 var(--radius-sm) 0;
     color: white;
+    background-color: var(--color-text-tertiary); /* Default for others */
   }
   .card-type-indicator.basic {
     background-color: var(--color-accent);
-  }
-  .card-type-indicator.input {
-    background-color: var(--chart-color-2);
   }
   .card-type-indicator.sequencing {
     background-color: var(--chart-color-3);

@@ -26,7 +26,16 @@ import Bold from '@tiptap/extension-bold';
 import Italic from '@tiptap/extension-italic';
 import Placeholder from '@tiptap/extension-placeholder';
 import Paragraph from '@tiptap/extension-paragraph';
+import Blockquote from '@tiptap/extension-blockquote';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import HardBreak from '@tiptap/extension-hard-break';
 import { NodeIdExtension } from '$lib/modules/editor/infra/extensions/NodeIdExtension';
 import { SlashCommandExtension } from '$lib/modules/editor/infra/extensions/SlashCommandExtension';
 import {
@@ -98,8 +107,19 @@ export class EditorController {
         Document,
         Paragraph,
         HorizontalRule,
+        HardBreak,
         Text,
         Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+        Blockquote,
+        BulletList,
+        OrderedList,
+        ListItem,
+        Table.configure({
+          resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
 
         // Basic Marks
         Bold,
@@ -149,7 +169,8 @@ export class EditorController {
 
     // Seed initial content if provided (e.g. from "Create from Text" AI command)
     if (initialContent) {
-      this.editor.commands.setContent(initialContent, { emitUpdate: false });
+      console.log('[EditorController] Seeding initial content', initialContent);
+      this.editor.commands.setContent(initialContent); // Removed emitUpdate: false to ensure persistence
       const currentDocId = documentState.docId;
       // Immediately index the new content for search
       if (currentDocId) {

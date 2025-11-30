@@ -20,6 +20,7 @@
   import type { SRS } from '$lib/types';
   import { fade } from 'svelte/transition';
   import { i18n } from '$lib/utils/i18n.svelte';
+  import UIIcon from '$lib/core/ui/Icon.svelte';
 
   type Card = SRS.Card;
   type NewCard = SRS.NewCard;
@@ -97,15 +98,58 @@
                 <span class="field-label">Answer</span>
                 <p class="answer">{card.content.answer}</p>
               </div>
-            {:else if card.type === 'input'}
+            {:else if card.type === 'multiple_choice'}
               <div class="field">
-                <span class="field-label">Prompt</span>
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                <p>{@html formatInputPrompt(card.content.prompt)}</p>
+                <span class="field-label">Question</span>
+                <p>{card.content.question}</p>
               </div>
               <div class="field">
-                <span class="field-label">Expected</span>
-                <p class="answer">{card.content.expected}</p>
+                <span class="field-label">Options</span>
+                <ul class="preview-list">
+                  {#each card.content.options || [] as option, i}
+                    <li
+                      class:correct={i === card.content.correctOptionIndex}
+                    >
+                      {option}
+                      {#if i === card.content.correctOptionIndex}
+                        <UIIcon name="check" size={14} />
+                      {/if}
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {:else if card.type === 'cloze'}
+              <div class="field">
+                <span class="field-label">Cloze Text</span>
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                <p>{@html formatInputPrompt(card.content.text)}</p>
+              </div>
+              {#if card.content.clozes?.length > 0}
+                <div class="field">
+                  <span class="field-label">Answers</span>
+                  <div class="tags">
+                    {#each card.content.clozes as cloze}
+                      <span class="tag">{cloze}</span>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            {:else if card.type === 'matching'}
+              <div class="field">
+                <span class="field-label">Prompt</span>
+                <p>{card.content.prompt}</p>
+              </div>
+              <div class="field">
+                <span class="field-label">Pairs</span>
+                <ul class="preview-list">
+                  {#each card.content.pairs || [] as pair}
+                    <li class="pair-item">
+                      <span>{pair.left}</span>
+                      <UIIcon name="arrow-right" size={12} />
+                      <span class="answer-text">{pair.right}</span>
+                    </li>
+                  {/each}
+                </ul>
               </div>
             {:else if card.type === 'sequencing'}
               <div class="field">
@@ -115,7 +159,7 @@
               <div class="field">
                 <span class="field-label">Sequence</span>
                 <ol class="sequence-list">
-                  {#each card.content.items as item, i (i)}<li>
+                  {#each card.content.items || [] as item, i (i)}<li>
                       {item}
                     </li>{/each}
                 </ol>
@@ -227,6 +271,49 @@
   }
   :global(.dark-theme) .preview-header {
     border-color: var(--color-border-dark);
+  }
+  .preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  .preview-list li {
+    padding: var(--space-xs) var(--space-sm);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .preview-list li.correct {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border: 1px solid var(--color-success-border);
+  }
+  .pair-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  .answer-text {
+    font-weight: 600;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .tag {
+    background-color: var(--color-accent-bg);
+    color: var(--color-accent-text);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
   }
   :global(.dark-theme) .card {
     background-color: var(--color-background-dark);

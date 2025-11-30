@@ -22,7 +22,7 @@
   import NodeDetailPanel from '$lib/modules/editor/ui/node-detail/NodeDetailPanel.svelte';
   import GlobalErrorBoundary from '$lib/core/ui/GlobalErrorBoundary.svelte';
   import AppInitializer from '$lib/core/app-shell/AppInitializer.svelte';
-  import LanguageImmersiveLayer from '$lib/modules/pedagogy/ui/LanguageImmersiveLayer.svelte';
+
   import type { Snippet } from 'svelte';
 
   import { uiState } from '$lib/core/ui/uiStore.svelte';
@@ -156,10 +156,7 @@
       Renders either the Standard App Grid or the Immersive Layer.
       This ensures better performance by unmounting the unused view.
     -->
-    {#if uiState.mode === 'immersive'}
-      <LanguageImmersiveLayer />
-    {:else}
-      <main
+    <main
         class="app-grid"
         class:panel-open={nodeDetailState.isOpen}
         class:is-resizing={nodeDetailState.isResizing}
@@ -175,7 +172,6 @@
         <!-- The collapsible side panel -->
         <NodeDetailPanel />
       </main>
-    {/if}
   </div>
 {/if}
 

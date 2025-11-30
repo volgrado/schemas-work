@@ -192,6 +192,14 @@ export function getAiCommands(
       },
       isEnabled: () => hasActiveDocument && hasEditorInstance,
     },
+    {
+      id: 'create-lesson-from-docs',
+      label: 'Create Lesson from Docs',
+      icon: 'book-open',
+      action: () => {
+        openStrategySession({ action: 'create-lesson-from-docs' });
+      },
+    },
   ];
 }
 

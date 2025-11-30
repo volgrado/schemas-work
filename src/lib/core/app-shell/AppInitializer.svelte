@@ -34,9 +34,24 @@
   // --- Initialization Logic ---
 
   // One-time boot
-  onMount(() => {
+  onMount(async () => {
     if (browser) {
       AppController.initialize();
+
+      // Cleanup Local AI (WebLLM) caches if they exist
+      if ('caches' in window) {
+        try {
+          const keyList = await caches.keys();
+          const webllmKeys = keyList.filter(key => key.includes('webllm') || key.includes('gh-config'));
+          if (webllmKeys.length > 0) {
+            console.log('Cleaning up Local AI caches:', webllmKeys);
+            await Promise.all(webllmKeys.map(key => caches.delete(key)));
+            console.log('Local AI caches deleted.');
+          }
+        } catch (e) {
+          console.warn('Failed to clean up Local AI caches:', e);
+        }
+      }
     }
   });
 

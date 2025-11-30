@@ -18,9 +18,7 @@ export namespace SRS {
 
   export type CardType =
     | 'basic'
-    | 'input'
     | 'sequencing'
-    | 'true_false'
     | 'multiple_choice'
     | 'cloze'
     | 'matching';
@@ -38,19 +36,9 @@ export namespace SRS {
     content: { question: string; answer: string };
   }
 
-  export interface InputCard extends CardBase {
-    type: 'input';
-    content: { prompt: string; expected: string };
-  }
-
   export interface SequencingCard extends CardBase {
     type: 'sequencing';
     content: { prompt: string; items: string[] };
-  }
-
-  export interface TrueFalseCard extends CardBase {
-    type: 'true_false';
-    content: { statement: string; isTrue: boolean };
   }
 
   export interface MultipleChoiceCard extends CardBase {
@@ -80,18 +68,14 @@ export namespace SRS {
 
   export type Card =
     | BasicCard
-    | InputCard
     | SequencingCard
-    | TrueFalseCard
     | MultipleChoiceCard
     | ClozeCard
     | MatchingCard;
 
   export type NewCard =
     | Omit<BasicCard, 'id' | 'deckId'>
-    | Omit<InputCard, 'id' | 'deckId'>
     | Omit<SequencingCard, 'id' | 'deckId'>
-    | Omit<TrueFalseCard, 'id' | 'deckId'>
     | Omit<MultipleChoiceCard, 'id' | 'deckId'>
     | Omit<ClozeCard, 'id' | 'deckId'>
     | Omit<MatchingCard, 'id' | 'deckId'>;

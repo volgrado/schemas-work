@@ -25,7 +25,7 @@
   import ViewHeader from './ViewHeader.svelte';
 
   const { openApiKeyModal: _openApiKeyModal } = $props<{
-    openApiKeyModal: () => void;
+    openApiKeyModal: (initialTab?: 'models' | 'keys' | 'local') => void;
   }>();
 
   // --- Reactive State ---

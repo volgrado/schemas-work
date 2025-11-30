@@ -156,7 +156,7 @@
   --z-max: 9999;
 
   /* --- Legacy Z-Index Mapping --- */
-  --z-context-menu: var(--z-dropdown);
+  --z-context-menu: var(--z-popover);
   --z-command-bar: var(--z-modal);
   --z-modal-overlay: var(--z-overlay);
   --z-modal-panel: var(--z-modal);

@@ -7,6 +7,7 @@ export interface Curriculum {
   createdAt: number;
   lastActive: number;
   manifesto: any;   // The full manifesto data
+  scenario?: any;   // The generated scenario (tasks, etc.)
   progress: {
     mastered: string[]; // IDs of mastered nodes
     unlocked: string[]; // IDs of unlocked nodes
@@ -44,7 +45,7 @@ class CurriculumStore {
     }
   }
 
-  create(manifesto: any) {
+  create(manifesto: any, scenario?: any) {
     const newCurriculum: Curriculum = {
       id: crypto.randomUUID(),
       language: manifesto.language || 'en',
@@ -52,6 +53,7 @@ class CurriculumStore {
       createdAt: Date.now(),
       lastActive: Date.now(),
       manifesto,
+      scenario,
       progress: {
         mastered: [],
         unlocked: ['start-node'] // Mock start
@@ -61,7 +63,45 @@ class CurriculumStore {
     this.curriculums.push(newCurriculum);
     this.activeCurriculumId = newCurriculum.id;
     this.save();
+    this.save();
     return newCurriculum;
+  }
+
+  expandNode(newTasks: any[]) {
+    if (!this.activeCurriculum || !this.activeCurriculum.scenario) return;
+    
+    // Append new tasks to the scenario
+    // We assume the caller has already set up IDs and parent relationships if needed
+    // But for flat list, we just push them.
+    // Ideally we should check for duplicates.
+    
+    if (!this.activeCurriculum.scenario.tasks) {
+      this.activeCurriculum.scenario.tasks = [];
+    }
+    
+    this.activeCurriculum.scenario.tasks.push(...newTasks);
+    this.save();
+    
+    // Force reactivity update by re-assigning (Svelte 5 Runes might handle deep mutation if using $state correctly, 
+    // but here curriculums is an array of objects, so deep mutation inside an object in the array might not trigger unless we use a class or update the array reference)
+    // Actually, since 'curriculums' is $state, mutating deep properties *should* work if they are accessed via the proxy.
+    // But let's trigger an update to be safe.
+    this.curriculums = [...this.curriculums];
+  }
+
+  markTaskMastered(taskId: string) {
+    if (!this.activeCurriculum) return;
+
+    const progress = this.activeCurriculum.progress;
+    if (!progress.mastered.includes(taskId)) {
+      progress.mastered.push(taskId);
+      
+      // Logic to unlock next nodes could go here
+      // For now, we assume everything is unlocked or unlocking is implicit
+      
+      this.save();
+      this.curriculums = [...this.curriculums]; // Trigger reactivity
+    }
   }
 
   switch(id: string) {

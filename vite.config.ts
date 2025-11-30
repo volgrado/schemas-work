@@ -1,13 +1,8 @@
 /**
  * @file vite.config.ts
  * @description
- * The main configuration file for Vite, the build tool and development server.
- * This file configures:
- * - The SvelteKit plugin for handling Svelte components and routing.
- * - The Vitest plugin for running unit tests.
- * - Svelte Testing Library integration for component testing.
- * - Build settings (targets, minification).
- * - Test environment settings (globals, jsdom, setup files).
+ * The main configuration file for Vite.
+ * Updated to include Cross-Origin headers for Local LLM (WebGPU) support.
  */
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
@@ -20,6 +15,23 @@ export default defineConfig({
     // Enables testing support for Svelte components
     svelteTesting(),
   ],
+
+  // -----------------------------------------------------------------------
+  // 🚀 NEW: Server Configuration for Local AI (SharedArrayBuffer)
+  // -----------------------------------------------------------------------
+  server: {
+    headers: {
+      // These two headers are MANDATORY for MediaPipe/WebGPU to work.
+      // They enable "Cross-Origin Isolation" allowing high-memory usage.
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+    // Ensure Vite can serve the model files from your static/public folder
+    fs: {
+      allow: ['.'] 
+    }
+  },
+
   build: {
     // Target modern browsers (ESNext) for smaller bundles and better performance
     target: 'esnext',

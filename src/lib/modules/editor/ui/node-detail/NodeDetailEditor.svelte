@@ -20,6 +20,14 @@
   import { onMount, onDestroy } from 'svelte';
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
+  import { Table } from '@tiptap/extension-table';
+  import { TableRow } from '@tiptap/extension-table-row';
+  import { TableCell } from '@tiptap/extension-table-cell';
+  import { TableHeader } from '@tiptap/extension-table-header';
+  import Blockquote from '@tiptap/extension-blockquote';
+  import BulletList from '@tiptap/extension-bullet-list';
+  import OrderedList from '@tiptap/extension-ordered-list';
+  import ListItem from '@tiptap/extension-list-item';
   import {
     SlashCommandExtension,
     DataPosExtension,
@@ -54,6 +62,16 @@
         }),
         DataPosExtension,
         TTSHighlightExtension,
+        Table.configure({
+          resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
+        Blockquote,
+        BulletList,
+        OrderedList,
+        ListItem,
       ],
       content: nodeDetailState.content, // Initial load
       editorProps: {

@@ -44,14 +44,12 @@
   type Card = SRS.Card;
 
   // --- Local Reactive State (Runes) ---
-  let userInput = $state('');
   let userSequence = $state<string[]>([]);
   let draggedItemIndex = $state<number | null>(null);
   let isSubmitting = $state(false);
 
   // New State for Enhanced Types
   let selectedOptionIndex = $state<number | null>(null); // For Multiple Choice
-  let selectedBool = $state<boolean | null>(null); // For True/False
   let clozeInputs = $state<string[]>([]); // For Cloze
   let matchingPairs = $state<{ left: string; right: string | null }[]>([]); // For Matching
   let draggedRightItem = $state<string | null>(null); // For Matching Drag & Drop
@@ -81,29 +79,36 @@
   $effect(() => {
     if (currentCard) {
       // Reset common state
-      userInput = '';
       isSubmitting = false;
       selectedOptionIndex = null;
-      selectedBool = null;
       clozeInputs = [];
       matchingPairs = [];
       draggedRightItem = null;
 
       // Type-specific initialization
       if (currentCard.type === 'sequencing') {
-        userSequence = [...currentCard.content.items].sort(
+        userSequence = [...(currentCard.content.items || [])].sort(
           () => Math.random() - 0.5
         );
       } else if (currentCard.type === 'cloze') {
         // Initialize inputs for each cloze
-        clozeInputs = new Array(currentCard.content.clozes.length).fill('');
+        let clozes = currentCard.content.clozes || [];
+        
+        // Fallback: If clozes array is missing, extract from text
+        if (clozes.length === 0 && currentCard.content.text) {
+           const matches = [...currentCard.content.text.matchAll(/\{\{(?:c\d+::)?(.*?)(?:::[^}]*)?\}\}/g)];
+           clozes = matches.map(m => m[1]);
+           // Patch the content temporarily so the template can use it
+           currentCard.content.clozes = clozes;
+        }
+
+        clozeInputs = new Array(clozes.length).fill('');
       } else if (currentCard.type === 'matching') {
         // Shuffle the right side for matching
-        const rights = currentCard.content.pairs.map((p) => p.right);
-        const shuffledRights = rights.sort(() => Math.random() - 0.5);
+        const rights = (currentCard.content.pairs || []).map((p) => p.right);
         // Initialize pairs with empty right side (or shuffled if we want them pre-filled but wrong)
         // Let's start with empty slots for a drag-and-drop feel
-        matchingPairs = currentCard.content.pairs.map((p) => ({
+        matchingPairs = (currentCard.content.pairs || []).map((p) => ({
           left: p.left,
           right: null,
         }));
@@ -114,26 +119,6 @@
   });
 
   // --- Interaction Handlers ---
-
-  /**
-   * Validates user input for 'input' type cards.
-   * Calculates a similarity score and submits it.
-   */
-  async function handleCheckInput() {
-    if (!currentCard || currentCard.type !== 'input' || isSubmitting) return;
-    isSubmitting = true;
-
-    const quality = await evaluateAnswer(
-      userInput,
-      currentCard.content.expected
-    );
-
-    // Show immediate visual feedback (Green/Red)
-    submitInteractiveAnswer(quality >= 3);
-
-    // Auto-advance after a short delay if correct-ish, or let user review
-    setTimeout(() => submitReview(quality), 2000);
-  }
 
   /**
    * Validates the order for 'sequencing' type cards.
@@ -156,21 +141,16 @@
     submitInteractiveAnswer(isCorrect);
   }
 
-  function handleCheckTrueFalse() {
-    if (
-      !currentCard ||
-      currentCard.type !== 'true_false' ||
-      selectedBool === null
-    )
-      return;
-    const isCorrect = selectedBool === currentCard.content.isTrue;
-    submitInteractiveAnswer(isCorrect);
-  }
-
   function handleCheckCloze() {
     if (!currentCard || currentCard.type !== 'cloze') return;
     // Check if all inputs match the clozes (case-insensitive for leniency)
-    const isCorrect = currentCard.content.clozes.every(
+    let clozes = currentCard.content.clozes || [];
+    if (clozes.length === 0 && currentCard.content.text) {
+        const matches = [...currentCard.content.text.matchAll(/\{\{(?:c\d+::)?(.*?)(?:::[^}]*)?\}\}/g)];
+        clozes = matches.map(m => m[1]);
+    }
+
+    const isCorrect = clozes.every(
       (expected, i) =>
         clozeInputs[i]?.trim().toLowerCase() === expected.toLowerCase()
     );
@@ -180,7 +160,7 @@
   function handleCheckMatching() {
     if (!currentCard || currentCard.type !== 'matching') return;
     // Check if all pairs are correct
-    const isCorrect = currentCard.content.pairs.every((pair) => {
+    const isCorrect = (currentCard.content.pairs || []).every((pair) => {
       const userPair = matchingPairs.find((p) => p.left === pair.left);
       return userPair?.right === pair.right;
     });
@@ -306,29 +286,6 @@
             </div>
           {/if}
 
-          <!-- Type: Input -->
-        {:else if currentCard.type === 'input'}
-          <p class="question">{currentCard.content.prompt}</p>
-          <input
-            type="text"
-            class="input-field"
-            placeholder={i18n.t('review.inputPlaceholder')}
-            bind:value={userInput}
-            disabled={reviewState.isAnswerShown || isSubmitting}
-            onkeydown={(e) => e.key === 'Enter' && handleCheckInput()}
-          />
-          {#if reviewState.isAnswerShown}
-            <div
-              class="feedback"
-              class:correct={reviewState.lastAnswerCorrect}
-              class:incorrect={!reviewState.lastAnswerCorrect}
-              transition:fade
-            >
-              {i18n.t('review.correctAnswer')}
-              <strong>{currentCard.content.expected}</strong>
-            </div>
-          {/if}
-
           <!-- Type: Sequencing -->
         {:else if currentCard.type === 'sequencing'}
           <p class="question">{currentCard.content.prompt}</p>
@@ -367,40 +324,6 @@
             </div>
           {/if}
 
-          <!-- Type: True/False -->
-        {:else if currentCard.type === 'true_false'}
-          <p class="question">{currentCard.content.statement}</p>
-          <div class="tf-options">
-            <Button
-              variant={selectedBool === true ? 'primary' : 'secondary'}
-              onclick={() => (selectedBool = true)}
-              disabled={reviewState.isAnswerShown}
-            >
-              {i18n.t('review.true')}
-            </Button>
-            <Button
-              variant={selectedBool === false ? 'primary' : 'secondary'}
-              onclick={() => (selectedBool = false)}
-              disabled={reviewState.isAnswerShown}
-            >
-              {i18n.t('review.false')}
-            </Button>
-          </div>
-          {#if reviewState.isAnswerShown}
-            <div
-              class="feedback"
-              class:correct={reviewState.lastAnswerCorrect}
-              class:incorrect={!reviewState.lastAnswerCorrect}
-              transition:fade
-            >
-              {reviewState.lastAnswerCorrect
-                ? i18n.t('review.correct_exclamation')
-                : i18n.t('review.incorrect_exclamation')}
-              {i18n.t('review.the_answer_is')}
-              <strong>{currentCard.content.isTrue}</strong>.
-            </div>
-          {/if}
-
           <!-- Type: Multiple Choice -->
         {:else if currentCard.type === 'multiple_choice'}
           <p class="question">{currentCard.content.question}</p>
@@ -431,36 +354,68 @@
           <div class="cloze-text">
             {#each currentCard.content.text.split(/(\{\{.*?\}\})/) as part, i}
               {#if part.startsWith('{{') && part.endsWith('}}')}
-                {@const clozeIndex = currentCard.content.clozes.indexOf(
-                  part.slice(2, -2)
-                )}
+                {@const clozes: string[] = currentCard.content.clozes || []}
+                <!-- 
+                  Extract the raw content inside braces. 
+                  Handle both simple "{{word}}" and Anki-style "{{c1::word}}".
+                -->
+                {@const rawContent = part.slice(2, -2)}
+                {@const cleanContent = rawContent.includes('::') ? rawContent.split('::')[1] : rawContent}
+                
+                <!-- 
+                  Find the index of this cloze answer in the `clozes` array.
+                  We match against the clean content.
+                -->
+                {@const clozeIndex = clozes.findIndex((c: string) => c === cleanContent)}
+
                 {#if clozeIndex !== -1}
+                  {@const isAnswerShown = reviewState.isAnswerShown}
+                  {@const userAnswer = clozeInputs[clozeIndex] || ''}
+                  {@const correctAnswer = currentCard.content.clozes[clozeIndex]}
+                  {@const isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase()}
+                  {@const isEmpty = userAnswer.trim() === ''}
+
                   <input
                     type="text"
                     class="cloze-input"
-                    bind:value={clozeInputs[clozeIndex]}
-                    disabled={reviewState.isAnswerShown}
-                    class:correct={reviewState.isAnswerShown &&
-                      clozeInputs[clozeIndex]?.toLowerCase() ===
-                        currentCard.content.clozes[clozeIndex].toLowerCase()}
-                    class:incorrect={reviewState.isAnswerShown &&
-                      clozeInputs[clozeIndex]?.toLowerCase() !==
-                        currentCard.content.clozes[clozeIndex].toLowerCase()}
+                    value={isAnswerShown && isEmpty ? correctAnswer : userAnswer}
+                    oninput={(e) => clozeInputs[clozeIndex] = e.currentTarget.value}
+                    size={Math.max(2, (userAnswer || correctAnswer).length + 1)}
+                    disabled={isAnswerShown}
+                    class:correct={isAnswerShown && isCorrect}
+                    class:incorrect={isAnswerShown && !isCorrect && !isEmpty}
+                    class:missed={isAnswerShown && isEmpty}
                   />
-                  {#if reviewState.isAnswerShown && clozeInputs[clozeIndex]?.toLowerCase() !== currentCard.content.clozes[clozeIndex].toLowerCase()}
+                  <!-- Only show external correction if the user typed something wrong. 
+                       If they typed nothing, the answer is now inside the box (missed state). -->
+                  {#if isAnswerShown && !isCorrect && !isEmpty}
                     <span class="cloze-correction"
-                      >{currentCard.content.clozes[clozeIndex]}</span
+                      >{correctAnswer}</span
                     >
                   {/if}
                 {:else}
-                  <!-- Fallback if parsing fails -->
-                  <span>{part}</span>
+                  <!-- Fallback: If we can't map it to an answer, just show the text (or a blank) -->
+                  <span class="cloze-error" title="Could not map cloze">[?]</span>
                 {/if}
               {:else}
                 <span>{part}</span>
               {/if}
             {/each}
           </div>
+
+          {#if reviewState.isAnswerShown}
+            <div class="answer cloze-solution" transition:fade>
+               <p class="answer-label">{i18n.t('review.correct_answers')}:</p>
+               <div class="cloze-answers-list">
+                  {#each currentCard.content.clozes || [] as answer, i}
+                     <div class="cloze-answer-item">
+                        <span class="cloze-index">{i + 1}.</span>
+                        <span class="cloze-value">{answer}</span>
+                     </div>
+                  {/each}
+               </div>
+            </div>
+          {/if}
 
           <!-- Type: Matching -->
         {:else if currentCard.type === 'matching'}
@@ -522,8 +477,23 @@
                 {/each}
               </div>
             </div>
-          </div>
-        {/if}
+            </div>
+            
+            {#if reviewState.isAnswerShown}
+              <div class="answer matching-solution" transition:fade>
+                <p class="answer-label">{i18n.t('review.correct_answers')}:</p>
+                <div class="matching-pairs-list">
+                  {#each currentCard.content.pairs || [] as pair}
+                    <div class="matching-pair-item">
+                      <span class="match-item left static">{pair.left}</span>
+                      <span class="connector">→</span>
+                      <span class="match-item right static">{pair.right}</span>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            {/if}
       </div>
 
       <!-- Footer Actions (Show Answer / Rate Card) -->
@@ -533,16 +503,6 @@
           {#if currentCard.type === 'basic'}
             <Button onclick={showAnswer} size="lg">
               {i18n.t('review.showAnswer')}
-            </Button>
-          {:else if currentCard.type === 'input'}
-            <Button
-              onclick={handleCheckInput}
-              size="lg"
-              disabled={isSubmitting}
-            >
-              {#if isSubmitting}{i18n.t('review.evaluating')}{:else}{i18n.t(
-                  'review.check'
-                )}{/if}
             </Button>
           {:else if currentCard.type === 'sequencing'}
             <Button onclick={handleCheckSequence} size="lg">
@@ -556,14 +516,6 @@
             >
               {i18n.t('review.check')}
             </Button>
-          {:else if currentCard.type === 'true_false'}
-            <Button
-              onclick={handleCheckTrueFalse}
-              size="lg"
-              disabled={selectedBool === null}
-            >
-              {i18n.t('review.check')}
-            </Button>
           {:else if currentCard.type === 'cloze'}
             <Button onclick={handleCheckCloze} size="lg">
               {i18n.t('review.check')}
@@ -573,7 +525,7 @@
               {i18n.t('review.check')}
             </Button>
           {/if}
-        {:else if currentCard.type !== 'input'}
+        {:else}
           <!-- Answer Revealed State: Quality Rating Buttons -->
           <div class="review-buttons">
             <Button
@@ -596,7 +548,7 @@
             <Button onclick={() => submitReview(5)} size="md" variant="primary">
               {i18n.t('review.easy')}
             </Button>
-          </div>
+            </div>
         {/if}
       </div>
     </div>
@@ -646,6 +598,7 @@
     box-shadow: var(--shadow-xl);
     width: 100%;
     max-width: 600px;
+    max-height: calc(100vh - 120px); /* Prevent overflow */
     border: 1px solid var(--color-border);
     overflow: hidden;
     display: flex;
@@ -658,40 +611,43 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow-y: auto; /* Allow scrolling */
   }
   .question {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: var(--space-md);
+    font-size: 1.4rem; /* Increased size */
+    font-weight: 700; /* Bolder */
+    margin-bottom: var(--space-lg);
+    line-height: 1.4;
+    color: var(--color-text);
   }
   .answer {
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
   }
   .card-actions {
     background-color: var(--color-background);
     border-top: 1px solid var(--color-border);
-    padding: var(--space-sm) var(--space-lg);
+    padding: var(--space-md) var(--space-lg); /* Increased padding */
     display: flex;
     justify-content: center;
-    min-height: 60px;
+    min-height: 80px; /* Taller footer */
   }
   .review-buttons {
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--space-md); /* More gap */
   }
-  .input-field {
-    width: 100%;
-    padding: var(--space-sm);
-    font-size: 1rem;
-    border-radius: var(--border-radius-sm);
-  }
+
   .feedback {
     margin-top: var(--space-md);
-    padding: var(--space-sm);
-    border-radius: var(--space-sm);
-    font-weight: 500;
+    padding: var(--space-md);
+    border-radius: var(--space-md);
+    font-weight: 600;
     border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
   }
   .feedback.correct {
     background-color: var(--color-success-bg);
@@ -710,21 +666,25 @@
     margin-top: var(--space-md);
   }
   .sequence-item {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-md);
     background-color: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--space-sm);
+    border-radius: var(--space-md);
     cursor: grab;
     transition:
       background-color 0.2s,
-      box-shadow 0.2s;
+      box-shadow 0.2s,
+      transform 0.2s;
+    font-weight: 500;
   }
   .sequence-item:active {
     cursor: grabbing;
+    transform: scale(1.02);
   }
   .sequence-item.is-dragging {
     background-color: hsl(var(--color-accent-hsl) / 0.1);
     box-shadow: var(--shadow-lg);
+    border-color: var(--color-accent);
   }
   .completion-screen {
     text-align: center;
@@ -748,35 +708,29 @@
 
   /* --- Styles for Enhanced Card Types --- */
 
-  /* True/False */
-  .tf-options {
-    display: flex;
-    gap: var(--space-md);
-    justify-content: center;
-    margin-top: var(--space-lg);
-  }
-
   /* Multiple Choice */
   .mc-options {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
   }
   .mc-option {
     display: flex;
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
+    border: 2px solid var(--color-border); /* Thicker border */
+    border-radius: var(--border-radius-lg);
     background: var(--color-background);
     cursor: pointer;
     text-align: left;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
   .mc-option:hover:not(:disabled) {
     background: var(--color-bg-secondary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
   .mc-option.selected {
     border-color: var(--color-accent);
@@ -793,64 +747,123 @@
     color: var(--color-danger-text);
   }
   .option-letter {
-    font-weight: 700;
+    font-weight: 800;
     color: var(--color-text-secondary);
-    min-width: 24px;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+    border-radius: 50%;
+    font-size: 0.9rem;
+  }
+  .mc-option.selected .option-letter {
+    background: var(--color-accent);
+    color: white;
   }
 
   /* Cloze */
   .cloze-text {
-    font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.8;
+    font-size: 1.2rem;
   }
   .cloze-input {
-    border: none;
-    border-bottom: 2px solid var(--color-border);
-    background: transparent;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-sm);
+    background: var(--color-background);
+    font-size: 0.95em; /* Slightly smaller to fit */
+    font-family: inherit;
+    color: var(--color-text);
+    font-weight: 500;
     text-align: center;
-    font-weight: 600;
-    color: var(--color-accent);
-    padding: 0 var(--space-xs);
-    margin: 0 var(--space-xs);
-    width: 120px;
-    transition: border-color 0.2s;
+    padding: 4px 8px;
+    margin: 0 4px;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    vertical-align: baseline;
+    width: auto; /* Let size attribute control width */
+    max-width: 100%; /* Prevent overflow */
   }
   .cloze-input:focus {
     outline: none;
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px hsla(var(--color-accent-hsl) / 0.2);
   }
   .cloze-input.correct {
-    border-color: var(--color-success);
-    color: var(--color-success);
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-color: var(--color-success-border);
   }
   .cloze-input.incorrect {
-    border-color: var(--color-danger);
-    color: var(--color-danger);
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    border-color: var(--color-danger-border);
+  }
+  .cloze-input.missed {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border-color: var(--color-warning-text);
+    font-style: italic;
   }
   .cloze-correction {
-    font-size: 0.9rem;
-    color: var(--color-success);
+    color: var(--color-success-text);
+    font-weight: 700;
+    margin-left: 4px;
+  }
+  .cloze-solution {
+    margin-top: var(--space-lg);
+    padding: var(--space-md);
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+  :global(.dark-theme) .cloze-solution {
+    background-color: var(--color-gray-800);
+  }
+  .answer-label {
     font-weight: 600;
-    margin-left: var(--space-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-sm);
+    font-size: 0.9rem;
+  }
+  .cloze-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  .cloze-answer-item {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: baseline;
+    font-size: 1rem;
+  }
+  .cloze-index {
+    color: var(--color-text-tertiary);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+  .cloze-value {
+    font-weight: 600;
+    color: var(--color-success-text);
   }
 
   /* Matching */
   .matching-container {
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
-    margin-top: var(--space-md);
+    gap: var(--space-xl);
   }
   .pairs-area {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-md);
   }
   .match-row {
-    display: grid;
-    grid-template-columns: 1fr 30px 1fr;
+    display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-md);
   }
   .match-item {
     padding: var(--space-sm) var(--space-md);
@@ -891,9 +904,34 @@
   .match-slot:hover {
     border-color: var(--color-accent);
   }
-  .empty-slot-placeholder {
-    font-size: 0.8rem;
-    color: var(--color-text-tertiary);
+  .matching-solution {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+  }
+  .matching-pairs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .matching-pair-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+  .match-item.static {
+    cursor: default;
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border);
+    box-shadow: none;
+  }
+  .match-item.static.left {
+    font-weight: 600;
+  }
+  .match-item.static.right {
+    color: var(--color-success-text);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-bg);
   }
   .pool-area {
     padding-top: var(--space-md);

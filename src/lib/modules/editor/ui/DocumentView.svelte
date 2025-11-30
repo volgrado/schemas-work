@@ -65,7 +65,7 @@
         element,
         ydoc,
         provider,
-        initialContent,
+        initialContent: initialContent ? $state.snapshot(initialContent) : null,
       });
 
       controller.mount();

@@ -15,14 +15,16 @@ export type CommandBarView =
   | 'study-hub'
   | 'vault'
   | 'deck-options'
-  | 'statistics';
+  | 'statistics'
+  | 'local-model-manager';
 export type PasswordModalAction = 'export' | 'import';
 export type AiHelperAction =
   | 'create-schema-from-text'
   | 'expand-node'
   | 'generate-flashcards-doc'
   | 'refine-document'
-  | 'refine-cards';
+  | 'refine-cards'
+  | 'create-lesson-from-docs';
 
 export interface StrategySessionContext {
   action: AiHelperAction;
@@ -50,6 +52,7 @@ export interface CommandBarState {
   currentParentId: string | null;
   isSchemaModalOpen: boolean;
   isApiKeyModalOpen: boolean;
+  apiKeyModalInitialTab: 'models' | 'keys' | 'local';
 }
 
 // --- Initial State and Reactive State Declaration ---
@@ -68,6 +71,7 @@ const initialState: CommandBarState = {
   currentParentId: null,
   isSchemaModalOpen: false,
   isApiKeyModalOpen: false,
+  apiKeyModalInitialTab: 'models',
 };
 
 export const commandBarState = $state<CommandBarState>({ ...initialState });
@@ -172,9 +176,10 @@ export function closeSchemaModal(): void {
 }
 
 /** Opens the API Key modal. */
-export function openApiKeyModal(): void {
+export function openApiKeyModal(initialTab: 'models' | 'keys' | 'local' = 'models'): void {
   commandBarState.isOpen = false;
   commandBarState.isApiKeyModalOpen = true;
+  commandBarState.apiKeyModalInitialTab = initialTab;
 }
 
 /** Closes the API Key modal. */

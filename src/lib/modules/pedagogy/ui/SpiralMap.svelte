@@ -4,6 +4,9 @@
   import { select, zoom, zoomIdentity } from 'd3';
   import NodeMarker from './NodeMarker.svelte';
   import { generateConstellation, generateBranchNodes, type NodeData } from '../utils/layoutGenerator';
+  import { curriculumStore } from '../core/curriculumStore.svelte';
+  import { AiCurriculumGenerator } from '../curriculum/aiCurriculumGenerator';
+  import type { ActionOrientedTask } from '../domain/models';
 
   interface Props {
     onSelectNode: (id: string) => void;
@@ -16,9 +19,83 @@
   let shakingNodeId = $state<string | null>(null);
   let expandedNodes = $state<Set<string>>(new Set());
   let hoveredNodeId = $state<string | null>(null);
+  let isExpanding = $state(false);
 
-  // Generate the constellation based on a fixed seed
-  let curriculumNodes = $state(generateConstellation('sovereign-learner-seed'));
+  // Generate the constellation based on the active curriculum
+  let curriculumNodes = $derived.by(() => {
+    const active = curriculumStore.activeCurriculum;
+    
+    if (active && active.scenario && active.scenario.tasks && active.scenario.tasks.length > 0) {
+      // Map Scenario Tasks to Nodes
+      const root: NodeData = {
+          id: 'root',
+          title: active.scenario.title || active.title,
+          type: 'core',
+          status: 'mastered',
+          x: 50,
+          y: 50,
+          parents: []
+      };
+      
+      const mappedNodes: NodeData[] = [root];
+      const tasks = active.scenario.tasks as (ActionOrientedTask & { parentId?: string })[];
+
+      tasks.forEach((task, index) => {
+          // Calculate position based on parent
+          const parentId = task.parentId || 'root';
+          const parentNode = mappedNodes.find(n => n.id === parentId) || root;
+          
+          // Simple layout: Radial fan out from parent
+          // We need a deterministic way to place them based on index or hash
+          // For now, let's use a simple random-ish distribution based on ID hash or index
+          // But 'index' is global.
+          
+          // Find siblings to determine angle
+          const siblings = tasks.filter(t => (t.parentId || 'root') === parentId);
+          const siblingIndex = siblings.findIndex(t => t.id === task.id);
+          
+          // If parent is root, use full circle. If parent is a node, use a sector.
+          let angle;
+          let distance;
+          
+          if (parentId === 'root') {
+             angle = (siblingIndex / siblings.length) * Math.PI * 2;
+             distance = 20 + (siblingIndex % 2) * 5;
+          } else {
+             // Branching out: Use parent's angle + offset
+             // We need parent's angle relative to its parent (grandparent)
+             // This requires recursive calculation or storing angle.
+             // Simplified: Just radiate out from parent's position relative to center (50,50)
+             const dx = parentNode.x - 50;
+             const dy = parentNode.y - 50;
+             const parentAngle = Math.atan2(dy, dx);
+             
+             // Fan out +/- 45 degrees
+             const spread = Math.PI / 2; // 90 degrees
+             const startAngle = parentAngle - spread / 2;
+             const step = spread / (siblings.length + 1);
+             angle = startAngle + step * (siblingIndex + 1);
+             distance = 15;
+          }
+
+          const isMastered = active.progress?.mastered?.includes(task.id);
+          const isUnlocked = active.progress?.unlocked?.includes(task.id) || parentId === 'root' || isMastered; // Simplified unlock logic
+
+          mappedNodes.push({
+              id: task.id,
+              title: task.description.substring(0, 20) + '...',
+              type: 'pragmatic',
+              status: isMastered ? 'mastered' : (isUnlocked ? 'active' : 'locked'),
+              x: parentNode.x + Math.cos(angle) * distance,
+              y: parentNode.y + Math.sin(angle) * distance,
+              parents: [parentId]
+          });
+      });
+      return mappedNodes;
+    } else {
+      return generateConstellation('sovereign-learner-seed');
+    }
+  });
 
   function triggerActivation(node: NodeData) {
     // 1. Activate the clicked node
@@ -66,22 +143,36 @@
     }
   }
 
-  function handleExpand(e: MouseEvent, node: NodeData) {
-    e.stopPropagation(); // Prevent node selection
-    if (expandedNodes.has(node.id)) return;
+  async function handleExpand(e: MouseEvent, node: NodeData) {
+    e.stopPropagation();
+    if (expandedNodes.has(node.id) || isExpanding) return;
 
-    // Generate new branch nodes, passing existing nodes for collision detection
-    const newNodes = generateBranchNodes(node, 'sovereign-seed-' + node.id, curriculumNodes);
+    isExpanding = true;
     
-    // Add them to the universe
-    curriculumNodes = [...curriculumNodes, ...newNodes];
-    expandedNodes.add(node.id);
-    
-    // Trigger activation on the new nodes too!
-    setTimeout(() => {
-      newNodes.forEach(n => n.activated = true);
-      setTimeout(() => newNodes.forEach(n => n.activated = false), 2000);
-    }, 500);
+    try {
+        // Find the task object
+        const active = curriculumStore.activeCurriculum;
+        const task = active?.scenario?.tasks?.find((t: any) => t.id === node.id);
+        
+        if (task) {
+            const generator = new AiCurriculumGenerator();
+            const newTasks = await generator.expandCurriculumNode(task);
+            
+            // Add parentId to new tasks
+            const tasksWithParent = newTasks.map(t => ({ ...t, parentId: node.id }));
+            
+            curriculumStore.expandNode(tasksWithParent);
+            expandedNodes.add(node.id);
+        } else {
+            // Fallback for root or non-task nodes (e.g. seed nodes if mixed)
+            // But we are in AI mode now.
+            console.warn("Cannot expand: Task not found for node", node.id);
+        }
+    } catch (err) {
+        console.error("Failed to expand node:", err);
+    } finally {
+        isExpanding = false;
+    }
   }
 
   function handleMentor(e: MouseEvent, node: NodeData) {
@@ -157,13 +248,7 @@
               style="opacity: {node.status !== 'locked' ? 0.5 * (1 - (node.decay || 0)) : 0.3}" 
             />
             
-            <!-- Pulse for Active Paths -->
-            {#if node.status !== 'locked'}
-              <path
-                d={pathD}
-                class="connection-pulse"
-              />
-            {/if}
+            <!-- Pulse Removed for Performance -->
           {/if}
         {/each}
       {/each}
@@ -304,36 +389,17 @@
     filter: drop-shadow(0 0 5px var(--color-info));
   }
 
-  .connection-pulse {
-    fill: none;
-    stroke: var(--color-accent);
-    stroke-width: 1px;
-    stroke-dasharray: 10 100;
-    stroke-linecap: round;
-    animation: pulse-flow 5s linear infinite;
-    filter: drop-shadow(0 0 4px var(--color-accent));
-    opacity: 0.8;
-    vector-effect: non-scaling-stroke;
-  }
-
-  @keyframes pulse-flow {
-    0% { stroke-dashoffset: 110; opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { stroke-dashoffset: -110; opacity: 0; }
-  }
+  /* .connection-pulse removed */
+  /* @keyframes pulse-flow removed */
 
   .node-wrapper {
     position: absolute;
     transform: translate(-50%, -50%);
     z-index: 10;
-    animation: float 6s ease-in-out infinite;
+    /* animation: float 6s ease-in-out infinite; REMOVED for performance */
   }
 
-  @keyframes float {
-    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-    50% { transform: translate(-50%, -50%) translateY(-10px); }
-  }
+  /* @keyframes float removed */
 
   .interaction-layer {
     position: relative;

@@ -24,6 +24,14 @@
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import Heading from '@tiptap/extension-heading';
+  import { Table } from '@tiptap/extension-table';
+  import { TableRow } from '@tiptap/extension-table-row';
+  import { TableCell } from '@tiptap/extension-table-cell';
+  import { TableHeader } from '@tiptap/extension-table-header';
+  import Blockquote from '@tiptap/extension-blockquote';
+  import BulletList from '@tiptap/extension-bullet-list';
+  import OrderedList from '@tiptap/extension-ordered-list';
+  import ListItem from '@tiptap/extension-list-item';
 
   // --- Props ---
   const { content } = $props<{
@@ -79,8 +87,18 @@
           heading: false, // Disable default heading to use ours
         }),
         CustomHeading,
+        Table.configure({
+          resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
+        Blockquote,
+        BulletList,
+        OrderedList,
+        ListItem,
       ],
-      content: content || {},
+      content: content ? $state.snapshot(content) : {},
     });
     editor = editorInstance;
 
@@ -95,7 +113,7 @@
     if (editor && content) {
       // Only update if content actually changed to avoid cursor jumps (even in read-only)
       if (JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) {
-        editor.commands.setContent(content, { emitUpdate: false });
+        editor.commands.setContent($state.snapshot(content), { emitUpdate: false });
       }
     }
   });

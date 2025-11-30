@@ -40,7 +40,10 @@
     showOverlay = true,
     width = 'default',
     alignment = 'center',
+
     children,
+    footer,
+    class: className = '',
   } = $props<{
     show?: boolean;
     title: string | null;
@@ -49,10 +52,13 @@
     showOverlay?: boolean;
     width?: ModalWidth;
     alignment?: 'center' | 'top';
+    class?: string;
     children?: import('svelte').Snippet;
+    footer?: import('svelte').Snippet;
   }>();
 
   const panelClass = 'modal-panel';
+  
   let modalPanel = $state<HTMLDivElement | null>(null);
   let modalOverlay = $state<HTMLDivElement | null>(null);
 
@@ -165,7 +171,7 @@
   <!-- Modal Panel -->
   <div
     bind:this={modalPanel}
-    class="{panelClass} {alignment} {width}"
+    class="{panelClass} {alignment} {width} {className}"
     role="dialog"
     aria-modal="true"
     aria-labelledby={title ? 'modal-title' : undefined}
@@ -216,6 +222,12 @@
     <main class="modal-content">
       {@render children?.()}
     </main>
+
+    {#if footer}
+      <footer class="modal-footer">
+        {@render footer()}
+      </footer>
+    {/if}
   </div>
 {/if}
 
@@ -239,7 +251,7 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    width: 100%;
+    width: calc(100% - var(--space-lg));
     /* Default max-width, overridden by variants */
     max-width: 640px;
 
@@ -253,7 +265,7 @@
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    max-height: 80vh;
     min-height: 100px; /* Prevent collapse */
     outline: none;
   }
@@ -271,14 +283,16 @@
   .modal-panel.lg { max-width: 896px; }
   .modal-panel.xl { max-width: 1024px; }
 
-  .modal-panel.center {
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
+  @media (min-width: 641px) {
+    .modal-panel.center {
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
 
-  .modal-panel.top {
-    top: 15%;
-    max-height: 80vh;
+    .modal-panel.top {
+      top: 15%;
+      max-height: 80vh;
+    }
   }
 
   /* Drag Handle Styles */
@@ -310,11 +324,19 @@
       width: 100%;
       max-width: 100%;
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-      max-height: 90vh;
+      max-height: 85vh;
     }
 
     .drag-handle-area {
       display: flex;
+    }
+
+    .modal-header {
+      padding: var(--space-md);
+    }
+
+    .modal-content {
+      padding: var(--space-md);
     }
   }
   .modal-header {
@@ -373,5 +395,13 @@
   .modal-content {
     padding: var(--space-lg);
     overflow-y: auto;
+    flex: 1; /* Allow content to grow and push footer down */
+  }
+
+  .modal-footer {
+    padding: var(--space-md) var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    background: var(--glass-bg); /* Match modal background */
+    flex-shrink: 0;
   }
 </style>

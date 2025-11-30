@@ -14,6 +14,7 @@
 /// <reference lib="webworker" />
 /// <reference types="vite/client" />
 
+// @ts-ignore - Virtual module provided by SvelteKit
 import { build, files, version } from '$service-worker';
 
 /**
@@ -83,6 +84,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') {
     return;
   }
+
+  // --- LOCAL AI MODEL PROXY ---
 
   // The core fetch handler logic
   async function respond(): Promise<Response> {

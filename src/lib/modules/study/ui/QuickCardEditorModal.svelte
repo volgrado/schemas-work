@@ -124,16 +124,6 @@
           <label for="answer">{i18n.t('quickCardEditor.answerLabel')}</label
           ><Textarea id="answer" bind:value={c.answer} rows={3} />
         </div>
-      {:else if editableCard.type === 'input'}
-        {@const c = editableCard.content}
-        <div class="field">
-          <label for="prompt">{i18n.t('quickCardEditor.promptLabel')}</label
-          ><Textarea id="prompt" bind:value={c.prompt} rows={3} />
-        </div>
-        <div class="field">
-          <label for="expected">{i18n.t('quickCardEditor.expectedLabel')}</label
-          ><Input id="expected" bind:value={c.expected} />
-        </div>
       {:else if editableCard.type === 'sequencing'}
         {@const c = editableCard.content}
         <div class="field">

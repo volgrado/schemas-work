@@ -51,11 +51,7 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
         id, deckId, type: 'basic',
         content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
-    case 'input':
-      return {
-        id, deckId, type: 'input',
-        content: card.content, srs: baseSrs, tags: [], suspended: false,
-      };
+
 
     // --- God-Level Cards ---
     case 'cloze':
@@ -75,11 +71,7 @@ function createCard(deckId: string, card: SRS.NewCard): SRS.Card {
         id, deckId, type: 'sequencing',
         content: card.content, srs: baseSrs, tags: [], suspended: false,
       };
-    case 'true_false':
-      return {
-        id, deckId, type: 'true_false',
-        content: card.content, srs: baseSrs, tags: [], suspended: false,
-      };
+
     case 'multiple_choice':
       return {
         id, deckId, type: 'multiple_choice',

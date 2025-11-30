@@ -25,6 +25,8 @@ export {
   getNextRecommendedNode
 } from './curriculum/scheduler';
 
+export { AiCurriculumGenerator } from './curriculum/aiCurriculumGenerator';
+
 import { HybridAIService } from './services/ai-connector';
 import type { ContentGenerator } from './domain/models';
 
@@ -32,3 +34,5 @@ export async function generateContent(generator: ContentGenerator, context: any)
   const service = new HybridAIService();
   return service.generateContent(generator, context);
 }
+
+export { pedagogyController } from './ui/PedagogyController.svelte';
