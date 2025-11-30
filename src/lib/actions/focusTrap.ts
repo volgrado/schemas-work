@@ -65,10 +65,10 @@ export function focusTrap(node: HTMLElement, enabled: boolean = true) {
         node.querySelectorAll(focusableSelector)
       ) as HTMLElement[];
       if (focusable.length > 0) {
-        focusable[0].focus();
+        focusable[0].focus({ preventScroll: true });
       } else {
         // Fallback: focus the container if nothing inside is interactive
-        node.focus();
+        node.focus({ preventScroll: true });
       }
     }, 10);
   }

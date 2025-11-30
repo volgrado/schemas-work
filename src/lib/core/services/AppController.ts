@@ -113,6 +113,25 @@ export class AppController {
         context: 'view:command-bar',
         handler: () => setView('vault'),
       },
+      {
+        id: 'app.startImmersive',
+        title: 'Start Immersive Learning',
+        description: 'Enter the 3D Language Learning Mode',
+        icon: 'graduation-cap',
+        context: 'view:command-bar',
+        handler: async () => {
+          console.log('🎓 Command Triggered: Start Immersive Learning');
+          try {
+            const { goto } = await import('$app/navigation');
+            const { close } = await import('$lib/modules/command-bar/ui/commandBarStore.svelte');
+            console.log('🔄 Navigating to immersive route...');
+            goto('/language');
+            close();
+          } catch (e) {
+            console.error('❌ Failed to start immersive mode:', e);
+          }
+        },
+      },
 
       // --- Features & Utilities ---
       {
@@ -132,6 +151,9 @@ export class AppController {
             '$lib/modules/tts/infra/ttsUtils'
           );
           const { toast } = await import('svelte-sonner');
+          const { close } = await import(
+            '$lib/modules/command-bar/ui/commandBarStore.svelte'
+          );
 
           const editor = editorState.instance;
           if (editor) {

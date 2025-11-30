@@ -9,6 +9,7 @@
 
   @props
   - `onstart`: {() => void} - Callback fired when the user clicks the "Start Creating" button.
+  - `onLanguageStart`: {() => void} - Callback fired when the user clicks the "Enter Language OS" button.
 -->
 <script lang="ts">
   import { fly } from 'svelte/transition';
@@ -19,12 +20,18 @@
   import Button from '$lib/core/ui/Button.svelte';
   import Icon from '$lib/core/ui/Icon.svelte';
 
-  const { onstart } = $props<{
+  const { onstart, onLanguageStart } = $props<{
     onstart: () => void;
+    onLanguageStart?: () => void;
   }>();
 
   // --- Landing Page Data ---
   const features = [
+    {
+      icon: 'monitor',
+      title: 'Language OS',
+      desc: 'Immersive 3D environment for language acquisition.',
+    },
     {
       icon: 'sparkles',
       title: 'feature.ai_structure.title',
@@ -41,7 +48,7 @@
       desc: 'feature.learn.description',
     },
     {
-      icon: 'wifi-off', // Updated to reflect Offline capability
+      icon: 'wifi-off',
       title: 'feature.privacy.title',
       desc: 'feature.privacy.description',
     },
@@ -76,8 +83,8 @@
             <Icon name={feature.icon} size={24} />
           </div>
           <div class="feature-text">
-            <h2 class="feature-title">{i18n.t(feature.title)}</h2>
-            <p>{i18n.t(feature.desc)}</p>
+            <h2 class="feature-title">{feature.title === 'Language OS' ? feature.title : i18n.t(feature.title)}</h2>
+            <p>{feature.desc.startsWith('feature.') ? i18n.t(feature.desc) : feature.desc}</p>
           </div>
         </div>
       {/each}
@@ -96,6 +103,17 @@
           variant="primary"
         >
           {i18n.t('welcome.cta')}
+        </Button>
+
+        <Button
+          onclick={() => {
+            if (typeof onLanguageStart === 'function') onLanguageStart();
+          }}
+          size="lg"
+          variant="ghost"
+        >
+          <span class="icon">🌐</span>
+          Enter Language OS
         </Button>
       </div>
       <p class="cta-support-text">{i18n.t('welcome.cta_support')}</p>

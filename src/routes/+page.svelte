@@ -1,5 +1,6 @@
 ﻿<script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import MainLayout from '$lib/core/ui/layout/MainLayout.svelte';
   import { fileSystemStore } from '$lib/modules/file-system/stores/fileSystemStore.svelte';
   import {
@@ -82,6 +83,10 @@
     // Automatically proceed to the main app after the intro animation
     onWelcomeAnimationComplete();
   }
+
+  function handleLanguageStart() {
+    goto('/language');
+  }
 </script>
 
 {#if showWelcomeUI}
@@ -91,7 +96,10 @@
     {/await}
   {:else}
     {#await import('$lib/core/ui/layout/WelcomeScreen.svelte') then { default: WelcomeScreen }}
-      <WelcomeScreen onstart={onWelcomeAnimationComplete} />
+      <WelcomeScreen 
+        onstart={onWelcomeAnimationComplete} 
+        onLanguageStart={handleLanguageStart}
+      />
     {/await}
   {/if}
 {:else if showMainUI}

@@ -310,3 +310,30 @@ export function replay(): void {
 export function toggleSettings(): void {
   ttsState.isSettingsExpanded = !ttsState.isSettingsExpanded;
 }
+
+/**
+ * Speaks a single phrase with automatic voice selection based on language.
+ * Used for "Sovereign Phonetics" and other one-off speech events.
+ */
+export function speakPhrase(text: string, lang: string = 'en'): void {
+  if (!ttsState.isInitialized || !ttsService) return;
+
+  // Auto-select voice for the requested language
+  const voice = ttsState.availableVoices.find(v => v.lang.startsWith(lang)) || 
+                ttsState.availableVoices[0];
+  
+  if (!voice) {
+    console.warn(`TTS: No voice found for language ${lang}`);
+    return;
+  }
+
+  ttsService.cancel(); // Stop any current speech
+  ttsService.speak(text, {
+    voiceId: voice.id,
+    rate: 0.9, // Slightly slower for clarity
+    volume: 1,
+    onEnd: () => {
+      // Optional: Reset state or notify completion
+    }
+  });
+}

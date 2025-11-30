@@ -16,6 +16,7 @@ import { getReadableNodes } from '$lib/modules/tts/infra/ttsUtils';
 import { startReading } from '$lib/modules/tts/ui/ttsStore.svelte';
 import { toast } from 'svelte-sonner';
 import { uiState, toggleMode, openGenie } from '$lib/core/ui/uiStore.svelte';
+import { goto } from '$app/navigation';
 
 export interface SlashCommandProps {
   editor: Editor;
@@ -309,8 +310,8 @@ function registerCommands() {
         // 1. Clean up
         editor.chain().focus().deleteRange(range).run();
 
-        // 2. ACTIVATE IMMERSIVE OVERLAY
-        toggleMode('immersive');
+        // 2. NAVIGATE TO IMMERSIVE ROUTE
+        goto('/language');
 
         // 3. (Optional) Open Genie
         openGenie();

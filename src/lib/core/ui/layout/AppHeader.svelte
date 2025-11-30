@@ -41,8 +41,10 @@
     onShowWelcome,
     class: className = '',
     show,
+    forceVisible = false,
   } = $props<{
     show?: boolean;
+    forceVisible?: boolean;
     class?: string;
     children: Snippet;
     onShowWelcome?: () => void;
@@ -60,8 +62,8 @@
   }
 </script>
 
-<!-- Header is only visible when a document is active -->
-{#if show && documentState.docId}
+<!-- Header is only visible when a document is active or forced -->
+{#if show && (documentState.docId || forceVisible)}
   <header class="app-header {className}" transition:fade={{ duration: 300 }}>
     <div class="header-content">
       <!-- Left: Brand / Home -->

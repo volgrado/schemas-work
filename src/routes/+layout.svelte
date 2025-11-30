@@ -125,9 +125,7 @@
     <!-- Toast notification container -->
     <Toaster position="bottom-center" />
 
-    {#if uiState.mode === 'immersive'}
-      <LanguageImmersiveLayer />
-    {/if}
+
 
     {#if isSafeMode}
       <div class="safe-mode-banner">
@@ -153,22 +151,31 @@
       Dynamically adjusts columns to accommodate the side panel (NodeDetailPanel).
       The inline style handles the smooth transition of the panel width.
     -->
-    <main
-      class="app-grid"
-      class:panel-open={nodeDetailState.isOpen}
-      class:is-resizing={nodeDetailState.isResizing}
-      style="grid-template-columns: 1fr {nodeDetailState.isOpen
-        ? `min(${nodeDetailState.width}px, 90vw)`
-        : '0px'}"
-    >
-      <!-- The main content area where pages are rendered -->
-      <div class="content-area">
-        {@render children?.()}
-      </div>
+    <!--
+      Main Layout Switch
+      Renders either the Standard App Grid or the Immersive Layer.
+      This ensures better performance by unmounting the unused view.
+    -->
+    {#if uiState.mode === 'immersive'}
+      <LanguageImmersiveLayer />
+    {:else}
+      <main
+        class="app-grid"
+        class:panel-open={nodeDetailState.isOpen}
+        class:is-resizing={nodeDetailState.isResizing}
+        style="grid-template-columns: 1fr {nodeDetailState.isOpen
+          ? `min(${nodeDetailState.width}px, 90vw)`
+          : '0px'}"
+      >
+        <!-- The main content area where pages are rendered -->
+        <div class="content-area">
+          {@render children?.()}
+        </div>
 
-      <!-- The collapsible side panel -->
-      <NodeDetailPanel />
-    </main>
+        <!-- The collapsible side panel -->
+        <NodeDetailPanel />
+      </main>
+    {/if}
   </div>
 {/if}
 

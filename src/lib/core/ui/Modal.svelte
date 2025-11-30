@@ -39,6 +39,7 @@
     onBack = null,
     showOverlay = true,
     width = 'default',
+    alignment = 'center',
     children,
   } = $props<{
     show?: boolean;
@@ -47,12 +48,52 @@
     onBack?: (() => void) | null;
     showOverlay?: boolean;
     width?: ModalWidth;
+    alignment?: 'center' | 'top';
     children?: import('svelte').Snippet;
   }>();
 
   const panelClass = 'modal-panel';
   let modalPanel = $state<HTMLDivElement | null>(null);
   let modalOverlay = $state<HTMLDivElement | null>(null);
+
+  // Swipe to Close Logic
+  let startY = $state(0);
+  let currentY = $state(0);
+  let isDragging = $state(false);
+
+  function handleTouchStart(e: TouchEvent) {
+    // Only enable swipe on mobile
+    if (window.innerWidth > 640) return;
+    
+    // Only start if we are at the top of the scroll (if content is scrollable)
+    // For simplicity, we attach this to the header, so it's always safe.
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!isDragging) return;
+    const y = e.touches[0].clientY;
+    const delta = y - startY;
+    
+    // Only allow dragging down
+    if (delta > 0) {
+      currentY = delta;
+      e.preventDefault(); // Prevent scrolling while dragging
+    }
+  }
+
+  function handleTouchEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+
+    if (currentY > 100) { // Threshold to close
+      onClose();
+    } else {
+      // Snap back
+      currentY = 0;
+    }
+  }
 
   // Effect: Handle global Escape key to close the modal
   $effect(() => {
@@ -81,6 +122,19 @@
   ): TransitionConfig => {
     const style = getComputedStyle(node);
     const transform = style.transform === 'none' ? '' : style.transform;
+    
+    // Check if we are on mobile (matching the CSS breakpoint)
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
+    if (isMobile) {
+      return {
+        duration: params.duration,
+        css: (t: number) => `
+          transform: ${transform} translateY(${(1 - t) * 100}%);
+        `
+      };
+    }
+
     return {
       ...params,
       css: (t: number, u: number) => `
@@ -111,15 +165,32 @@
   <!-- Modal Panel -->
   <div
     bind:this={modalPanel}
-    class={panelClass}
+    class="{panelClass} {alignment} {width}"
     role="dialog"
     aria-modal="true"
     aria-labelledby={title ? 'modal-title' : undefined}
     transition:flyAndScale={{ y: 20, duration: 300 }}
     use:focusTrap={true}
+    style:transform={currentY > 0 ? `translateY(${currentY}px)` : undefined}
+    style:transition={isDragging ? 'none' : 'transform 0.3s ease-out'}
   >
+    <!-- Mobile Drag Handle -->
+    <div 
+      class="drag-handle-area"
+      ontouchstart={handleTouchStart}
+      ontouchmove={handleTouchMove}
+      ontouchend={handleTouchEnd}
+    >
+      <div class="drag-handle"></div>
+    </div>
+
     {#if title}
-      <header class="modal-header">
+      <header 
+        class="modal-header"
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouchMove}
+        ontouchend={handleTouchEnd}
+      >
         <div class="modal-header-left">
           {#if onBack}
             <button
@@ -152,7 +223,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.2);
     z-index: var(--z-modal-overlay);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -165,11 +236,11 @@
 
   .modal-panel {
     position: fixed;
-    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: var(--z-modal-panel);
+    transform: translateX(-50%);
+    z-index: 1000;
     width: 100%;
+    /* Default max-width, overridden by variants */
     max-width: 640px;
 
     /* Premium Glassmorphism */
@@ -183,7 +254,49 @@
     display: flex;
     flex-direction: column;
     max-height: 85vh;
+    min-height: 100px; /* Prevent collapse */
     outline: none;
+  }
+
+  /* Width Variants */
+  .modal-panel :global(.sm) { max-width: 480px; }
+  .modal-panel :global(.default) { max-width: 640px; }
+  .modal-panel :global(.lg) { max-width: 896px; } /* 32rem * 1.75? No, 896px is standard lg */
+  .modal-panel :global(.xl) { max-width: 1024px; }
+
+  /* Since the class is applied to the element itself, we don't need :global if we use the class name directly in the selector list if it was separate. 
+     But here .modal-panel has the class. So: */
+  .modal-panel.sm { max-width: 480px; }
+  .modal-panel.default { max-width: 640px; }
+  .modal-panel.lg { max-width: 896px; }
+  .modal-panel.xl { max-width: 1024px; }
+
+  .modal-panel.center {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .modal-panel.top {
+    top: 15%;
+    max-height: 80vh;
+  }
+
+  /* Drag Handle Styles */
+  .drag-handle-area {
+    display: none; /* Hidden on desktop */
+    width: 100%;
+    height: 20px;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    flex-shrink: 0;
+  }
+
+  .drag-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
   }
 
   /* Mobile: slide from bottom like phone apps */
@@ -199,6 +312,10 @@
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
       max-height: 90vh;
     }
+
+    .drag-handle-area {
+      display: flex;
+    }
   }
   .modal-header {
     display: flex;
@@ -207,6 +324,7 @@
     padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
+    touch-action: none; /* Prevent scrolling on header */
   }
   .modal-header-left {
     display: flex;
